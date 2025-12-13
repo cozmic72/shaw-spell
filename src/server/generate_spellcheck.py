@@ -99,9 +99,13 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
     print("Using simple word list approach (no affix compression)")
 
     # Collect all unique Shavian words, filtering by dialect
+    # Track which words are proper nouns only vs. mixed usage
     shavian_words = set()
+    proper_noun_only = defaultdict(bool)  # shaw -> True if ALL entries are proper nouns
+    has_entries = defaultdict(bool)  # shaw -> True if we've seen this word
     namer_dot = '·'  # U+00B7 MIDDLE DOT
 
+    # First pass: collect all words and track their POS patterns
     for key, entries in readlex_data.items():
         # Extract lemma from key for dialect filtering
         lemma = extract_lemma_from_key(key)
@@ -117,15 +121,31 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
             if not shaw:
                 continue
 
-            # Add the base word
-            shavian_words.add(shaw)
-
-            # For proper nouns, also add version with namer dot
             pos = entry.get('pos', '')
-            if is_proper_noun(pos):
-                # Add namer dot prefix if not already present
-                if not shaw.startswith(namer_dot):
-                    shavian_words.add(namer_dot + shaw)
+
+            # Track whether this word form has seen any entries yet
+            if not has_entries[shaw]:
+                # First time seeing this word - assume it's proper noun only
+                proper_noun_only[shaw] = is_proper_noun(pos)
+                has_entries[shaw] = True
+            else:
+                # Already seen this word - if this entry is NOT a proper noun,
+                # then the word has mixed usage
+                if not is_proper_noun(pos):
+                    proper_noun_only[shaw] = False
+
+    # Second pass: add words based on their usage patterns
+    for shaw, is_only_proper in proper_noun_only.items():
+        if is_only_proper:
+            # Pure proper noun: add ONLY with namer dot
+            if not shaw.startswith(namer_dot):
+                shavian_words.add(namer_dot + shaw)
+        else:
+            # Mixed usage or common noun: add both forms
+            shavian_words.add(shaw)
+            # Also add with namer dot for when used as proper noun
+            if not shaw.startswith(namer_dot):
+                shavian_words.add(namer_dot + shaw)
 
     # Sort words
     sorted_words = sorted(shavian_words)

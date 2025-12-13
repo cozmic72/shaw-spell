@@ -3,6 +3,8 @@ dictionaries/*/objects/
 
 # Build directory (XML files are large, but can be regenerated)
 build/*.xml
+build/*.dic
+build/*.aff
 
 # macOS
 .DS_Store

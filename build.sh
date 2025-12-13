@@ -1,22 +1,6 @@
 #!/bin/bash
 #
-# Build script for Shavian dictionaries
-#
-# Usage:
-#   ./build.sh                        - Generate XML and build all dictionaries
-#   ./build.sh shavian-english        - Build only Shavian-English dictionary
-#   ./build.sh english-shavian shavian-shavian - Build specific dictionaries
-#   ./build.sh install                - Build all and install to ~/Library/Dictionaries
-#   ./build.sh shavian-english install - Build one and install
-#   ./build.sh --rebuild-cache        - Rebuild Shavian definition cache first
-#   ./build.sh clean                  - Clean build artifacts
-#   ./build.sh clean-cache            - Clean definition caches
-#
-# Build process:
-#   1. Check/build Shavian definition cache (src/build_definition_caches.py)
-#   2. Generate dictionary XML files (src/generate_dictionaries.py)
-#   3. Build .dictionary bundles (Apple's build_dict.sh)
-#   4. Optionally install to ~/Library/Dictionaries
+# Build script for Shavian language tools (dictionaries and spell-check)
 #
 
 set -e  # Exit on error
@@ -28,6 +12,7 @@ cd "$SCRIPT_DIR"
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[0;33m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 echo_step() {
@@ -42,10 +27,89 @@ echo_warning() {
     echo -e "${YELLOW}Warning:${NC} $1"
 }
 
+show_help() {
+    echo -e "${BOLD}Shavian Language Tools Build Script${NC}\n"
+    echo -e "${BOLD}USAGE:${NC}"
+    echo -e "    ./build.sh [OPTIONS] [DICTIONARIES...] [COMMAND]\n"
+    echo -e "${BOLD}DICTIONARIES (build specific dictionaries):${NC}"
+    echo -e "    shavian-english         Shavian → English dictionary"
+    echo -e "    english-shavian         English → Shavian dictionary"
+    echo -e "    shavian-shavian         Shavian → Shavian dictionary\n"
+    echo -e "    ${BLUE}Default:${NC} All three dictionaries if none specified\n"
+    echo -e "${BOLD}COMMANDS:${NC}"
+    echo -e "    install                 Build and install to ~/Library/Dictionaries"
+    echo -e "                            (Must restart Dictionary.app after install)\n"
+    echo -e "    spellcheck              Generate Hunspell spell-check files"
+    echo -e "    spellcheck install      Generate and install to ~/Library/Spelling\n"
+    echo -e "    clean                   Remove build artifacts (*.xml, objects/)"
+    echo -e "    clean-cache             Remove definition caches"
+    echo -e "    clean-all               Remove all build artifacts and caches\n"
+    echo -e "    -h, --help             Show this help message\n"
+    echo -e "${BOLD}OPTIONS:${NC}"
+    echo -e "    --rebuild-cache        Force rebuild of Shavian definition cache\n"
+    echo -e "${BOLD}EXAMPLES:${NC}"
+    echo -e "    # Build all dictionaries"
+    echo -e "    ./build.sh\n"
+    echo -e "    # Build and install only Shavian-English"
+    echo -e "    ./build.sh shavian-english install\n"
+    echo -e "    # Build specific dictionaries"
+    echo -e "    ./build.sh english-shavian shavian-shavian\n"
+    echo -e "    # Force rebuild cache, then build all"
+    echo -e "    ./build.sh --rebuild-cache\n"
+    echo -e "    # Generate spell-check files"
+    echo -e "    ./build.sh spellcheck\n"
+    echo -e "    # Install spell-check files"
+    echo -e "    ./build.sh spellcheck install\n"
+    echo -e "    # Clean everything"
+    echo -e "    ./build.sh clean-all\n"
+    echo -e "${BOLD}BUILD PROCESS:${NC}"
+    echo -e "    Dictionaries:"
+    echo -e "      1. Check/build Shavian definition cache (src/build_definition_caches.py)"
+    echo -e "      2. Generate dictionary XML files (src/generate_dictionaries.py)"
+    echo -e "      3. Build .dictionary bundles (Apple's build_dict.sh)"
+    echo -e "      4. Optionally install to ~/Library/Dictionaries\n"
+    echo -e "    Spell-check:"
+    echo -e "      1. Generate Hunspell files from readlex (src/generate_spellcheck.py)"
+    echo -e "      2. Optionally install to ~/Library/Spelling\n"
+    echo -e "${BOLD}DATA SOURCES:${NC}"
+    echo -e "    - readlex.json:     Shavian word list with pronunciations"
+    echo -e "    - WordNet:          English definitions (Open English WordNet 2024)\n"
+    echo -e "${BOLD}MORE INFO:${NC}"
+    echo -e "    See README.txt for detailed documentation"
+}
+
+# Show help and exit
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Handle spellcheck command
+if [ "$1" = "spellcheck" ]; then
+    echo_step "Generating Hunspell spell-check files..."
+    ./src/generate_spellcheck.py
+    echo_success "Spell-check files generated"
+
+    # Install if requested
+    if [ "$2" = "install" ]; then
+        echo_step "Installing to ~/Library/Spelling..."
+        mkdir -p ~/Library/Spelling
+        cp build/shaw.dic ~/Library/Spelling/
+        cp build/shaw.aff ~/Library/Spelling/
+        echo_success "Installation complete!"
+        echo ""
+        echo "Shavian spell-check installed to ~/Library/Spelling"
+        echo "Restart applications to use the new dictionary"
+    fi
+    exit 0
+fi
+
 # Clean build artifacts
 if [ "$1" = "clean" ]; then
     echo_step "Cleaning build artifacts..."
     rm -rf build/*.xml
+    rm -rf build/shaw.dic
+    rm -rf build/shaw.aff
     rm -rf dictionaries/*/objects
     echo_success "Clean complete"
     exit 0
@@ -58,6 +122,19 @@ if [ "$1" = "clean-cache" ]; then
     rm -f data/transliterations.json  # Old cache format
     echo_success "Cache clean complete"
     echo "Run ./build.sh to rebuild caches"
+    exit 0
+fi
+
+# Clean all
+if [ "$1" = "clean-all" ]; then
+    echo_step "Cleaning all build artifacts and caches..."
+    rm -rf build/*.xml
+    rm -rf build/shaw.dic
+    rm -rf build/shaw.aff
+    rm -rf dictionaries/*/objects
+    rm -f data/definitions-shavian.json
+    rm -f data/transliterations.json
+    echo_success "Complete clean finished"
     exit 0
 fi
 

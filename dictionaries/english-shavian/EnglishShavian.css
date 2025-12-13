@@ -5,7 +5,7 @@
 d|entry {
 }
 
-/* Headword (English text) */
+/* Headword (Shavian text) */
 h1 {
 	font-size: 250%;
 	font-weight: bold;
@@ -13,7 +13,13 @@ h1 {
 	margin-bottom: 0.3em;
 }
 
-/* Forms section - Shavian spellings with IPA */
+hr {
+	border: none;
+	border-top: 1px solid #ddd;
+	margin: 1.5em 0;
+}
+
+/* Forms section - English words with IPA */
 .forms {
 	margin: 0.5em 0;
 	padding: 0.5em;
@@ -21,26 +27,46 @@ h1 {
 	border-radius: 4px;
 }
 
-.forms p {
-	margin: 0.2em 0;
+/* Individual word entry */
+.word-entry {
+	margin: 0.5em 0;
 }
 
-.forms b {
-	font-size: 120%;
+/* Main word form (transliterated English) */
+.word-main {
+	font-size: 130%;
+	font-weight: bold;
+}
+
+/* Grammatical label (appears below word in grey) */
+.word-label {
+	font-size: 85%;
+	color: #888;
+	margin-top: 0.2em;
+	margin-left: 0.3em;
 }
 
 .ipa {
 	color: #666;
 	font-family: "Doulos SIL", "Charis SIL", serif;
+	margin-left: 0.5em;
+}
+
+.gramform {
+	color: #888;
+	font-size: 90%;
+	font-style: italic;
+	margin-left: 0.3em;
 }
 
 .variant {
 	color: #888;
 	font-size: 90%;
 	font-style: italic;
+	margin-left: 0.5em;
 }
 
-/* Definitions section (transliterated to Shavian) */
+/* Definitions section */
 .definitions {
 	margin-top: 1em;
 }
@@ -52,7 +78,6 @@ h1 {
 .definition p {
 	margin: 0.3em 0;
 	line-height: 1.6;
-	font-size: 110%;
 }
 
 .definition i {
@@ -78,12 +103,24 @@ h1 {
 		color: white;
 	}
 
+	hr {
+		border-top-color: #444;
+	}
+
 	.forms {
 		background-color: #2a2a2a;
 	}
 
+	.word-label {
+		color: #999;
+	}
+
 	.ipa {
 		color: #aaa;
+	}
+
+	.gramform {
+		color: #999;
 	}
 
 	.variant {

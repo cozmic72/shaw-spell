@@ -1,8 +1,8 @@
-# Shaw Spell
+# Shaw-Spell
 
 **Complete Shavian language support for macOS**
 
-Shaw Spell brings the Shavian alphabet to your Mac with comprehensive dictionaries and intelligent spell checking. Look up words, check spelling, and work seamlessly in both English and Shavian script.
+Shaw-Spell brings the Shavian alphabet to your Mac with comprehensive dictionaries and intelligent spell checking. Look up words, check spelling, and work seamlessly in both English and Shavian script.
 
 ## What You Get
 
@@ -29,7 +29,7 @@ Shaw Spell brings the Shavian alphabet to your Mac with comprehensive dictionari
 ### Quick Install (Recommended)
 
 1. Download `ShawSpellInstaller.dmg` from releases
-2. Open the DMG and run **Install Shaw Spell.app**
+2. Open the DMG and run **Install Shaw-Spell.app**
 3. Choose your dialect (British English, American English, or both)
 4. Click Install
 5. Restart Dictionary.app and any text editors
@@ -38,7 +38,7 @@ The installer handles everything: dictionaries, spell checking, and system integ
 
 ### Uninstalling
 
-Run **Uninstall Shaw Spell.app** from the DMG, or use the included `uninstall.sh` script.
+Run **Uninstall Shaw-Spell.app** from the DMG, or use the included `uninstall.sh` script.
 
 ## Building from Source
 
@@ -99,8 +99,8 @@ make clean
 - `build/dictionaries/` - Dictionary bundles for Dictionary.app
 - `build/shaw-{gb,us}.{dic,aff}` - Hunspell spell checking dictionaries
 - `build/ShavianSpellServer.service` - Spell checking service
-- `build/Install Shaw Spell.app` - Graphical installer
-- `build/Uninstall Shaw Spell.app` - Graphical uninstaller
+- `build/Install Shaw-Spell.app` - Graphical installer
+- `build/Uninstall Shaw-Spell.app` - Graphical uninstaller
 - `build/ShawSpellInstaller.dmg` - Distribution package
 
 ## Using the Dictionaries
@@ -123,7 +123,7 @@ Or in individual apps:
 
 **Edit → Spelling and Grammar → Show Spelling and Grammar** (language dropdown at bottom)
 
-Select "ShawDict" as your spell checker. It intelligently handles both Shavian and English text:
+Select "Shaw-Spell" as your spell checker. It intelligently handles both Shavian and English text:
 - Shavian text (𐑐-𐑿) is checked against the Shavian dictionary
 - English text (a-z) uses the system spell checker
 

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>io.joro.shaw-spell.spellserver</string>
+	<string>io.joro.Shaw-Spell</string>
 	<key>ProgramArguments</key>
 	<array>
 		<string>__HOME__/Library/Services/ShavianSpellServer.service/Contents/MacOS/ShavianSpellServer</string>

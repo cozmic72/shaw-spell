@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleIdentifier</key>
-	<string>io.joro.shaw-spell.shavian-shavian-gb</string>
+	<string>{{BUNDLE_ID}}</string>
 	<key>CFBundleName</key>
-	<string>Shavian (GB)</string>
+	<string>{{BUNDLE_NAME}}</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>DCSDictionaryCopyright</key>
-	<string>Based on readlex data and Open English WordNet 2024</string>
+	<string>{{DESCRIPTION}}</string>
 	<key>DCSDictionaryManufacturerName</key>
-	<string>Shavian Dictionary Project</string>
+	<string>Shaw-Spell</string>
 	<key>DCSDictionaryFrontMatterReferenceID</key>
 	<string>front_back_matter</string>
 	<key>DCSDictionaryUseSystemAppearance</key>

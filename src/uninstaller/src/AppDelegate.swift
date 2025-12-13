@@ -1,6 +1,6 @@
 //
 //  AppDelegate.swift
-//  Shaw Spell Uninstaller
+//  Shaw-Spell Uninstaller
 //
 //  Main application delegate for the uninstaller.
 //
@@ -21,14 +21,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                          styleMask: [.titled, .closable, .miniaturizable],
                          backing: .buffered,
                          defer: false)
-        window.title = "Uninstall Shaw Spell"
+        window.title = "Uninstall Shaw-Spell"
         window.center()
 
         guard let contentView = window.contentView else { return }
 
         // Title label
         let titleLabel = NSTextField(frame: NSRect(x: 20, y: 390, width: 560, height: 40))
-        titleLabel.stringValue = "Shaw Spell Uninstaller"
+        titleLabel.stringValue = "Shaw-Spell Uninstaller"
         titleLabel.isBezeled = false
         titleLabel.drawsBackground = false
         titleLabel.isEditable = false
@@ -39,7 +39,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Subtitle
         let subtitleLabel = NSTextField(frame: NSRect(x: 20, y: 360, width: 560, height: 20))
-        subtitleLabel.stringValue = "Remove all Shaw Spell components from your system"
+        subtitleLabel.stringValue = "Remove all Shaw-Spell components from your system"
         subtitleLabel.isBezeled = false
         subtitleLabel.drawsBackground = false
         subtitleLabel.isEditable = false
@@ -109,7 +109,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Check if anything is installed
         if components.contains("Nothing found") {
             uninstallButton.isEnabled = false
-            statusLabel.stringValue = "Shaw Spell is not installed"
+            statusLabel.stringValue = "Shaw-Spell is not installed"
         }
 
         window.makeKeyAndOrderFront(nil)
@@ -200,7 +200,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if !foundAnything {
-            output = "Nothing found - Shaw Spell does not appear to be installed.\n"
+            output = "Nothing found - Shaw-Spell does not appear to be installed.\n"
         } else {
             output += "Note: Log files and preferences will not be removed.\n"
             output += "See the completion message for optional cleanup."
@@ -213,7 +213,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Confirm uninstallation
         let alert = NSAlert()
         alert.messageText = "Confirm Uninstallation"
-        alert.informativeText = "Are you sure you want to remove Shaw Spell from your system? This cannot be undone."
+        alert.informativeText = "Are you sure you want to remove Shaw-Spell from your system? This cannot be undone."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Uninstall")
         alert.addButton(withTitle: "Cancel")
@@ -363,7 +363,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let alert = NSAlert()
             alert.messageText = "Uninstallation Complete"
             alert.informativeText = """
-            Shaw Spell has been removed from your system.
+            Shaw-Spell has been removed from your system.
 
             Optional cleanup:
             • Log file: ~/Library/Logs/ShavianSpellServer.log

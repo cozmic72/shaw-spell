@@ -1,10 +1,10 @@
-# Makefile for Shaw Spell Installer
+# Makefile for Shaw-Spell Installer
 #
-# Builds a native macOS installer application for Shaw Spell
+# Builds a native macOS installer application for Shaw-Spell
 
 # Configuration
-APP_NAME = Install Shaw Spell
-BUNDLE_NAME = Install Shaw Spell.app
+APP_NAME = Install Shaw-Spell
+BUNDLE_NAME = Install Shaw-Spell.app
 EXECUTABLE_NAME = ShawSpellInstaller
 BUNDLE_IDENTIFIER = io.joro.shaw-spell.installer
 CODESIGN_IDENTITY = Jonathan Ross
@@ -27,18 +27,37 @@ RESOURCES_DIR = $(CONTENTS_DIR)/Resources
 # Icon (generated in build dir)
 ICON_FILE = $(BUILD_DIR)/installer/AppIcon.icns
 
-.PHONY: all clean install icon
+.PHONY: clean install icon
 
-all: $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE)
+# Use marker file to avoid directory timestamp issues
+BUNDLE_MARKER = $(BUILD_DIR)/.installer-built
+
+all: $(BUNDLE_MARKER)
+
+$(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist resources/*
 	@echo "Building application bundle..."
 	@mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
 	@cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(MACOS_DIR)/"
 	@cp src/Info.plist "$(CONTENTS_DIR)/"
 	@echo "Copying resources..."
 	@cp "$(ICON_FILE)" "$(RESOURCES_DIR)/"
-	@cp resources/installation-info.html "$(RESOURCES_DIR)/"
+	@cp resources/* "$(RESOURCES_DIR)/" 2>/dev/null || true
+	@echo "Bundling dictionaries and components for installation..."
+	@mkdir -p "$(RESOURCES_DIR)/dictionaries"
+	@mkdir -p "$(RESOURCES_DIR)/hunspell"
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-gb/Shavian-English-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-gb/English-Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-gb/Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-us/Shavian-English-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-us/English-Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-us/Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp "$(BUILD_DIR)/shaw-gb.dic" "$(BUILD_DIR)/shaw-gb.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
+	@cp "$(BUILD_DIR)/shaw-us.dic" "$(BUILD_DIR)/shaw-us.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/ShavianSpellServer.service" "$(RESOURCES_DIR)/" 2>/dev/null || true
+	@cp "../../src/spellserver/io.joro.shaw-spell.spellserver.plist" "$(RESOURCES_DIR)/" 2>/dev/null || true
 	@echo "Code signing application..."
 	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" "$(BUNDLE_DIR)" 2>/dev/null || echo "Warning: Code signing failed (not critical for testing)"
+	@touch $(BUNDLE_MARKER)
 	@echo ""
 	@echo "Installer app created at: $(BUNDLE_DIR)"
 	@echo "You can run it with: open \"$(BUNDLE_DIR)\""
@@ -58,7 +77,7 @@ icon: $(ICON_FILE)
 
 clean:
 	@echo "Cleaning installer artifacts..."
-	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/installer" "$(BUILD_DIR)/$(EXECUTABLE_NAME)"
+	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/installer" "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(BUNDLE_MARKER)"
 	@echo "Clean complete"
 
 install:

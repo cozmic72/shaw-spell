@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 20px;
+    margin: 0;
+}
+h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+}
+p {
+    margin: 0 0 15px 0;
+}
+.feature-list {
+    margin: 20px 0;
+    padding-left: 0;
+    list-style: none;
+}
+.feature-list li {
+    margin: 10px 0;
+    padding-left: 25px;
+    position: relative;
+}
+.feature-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #007AFF;
+    font-weight: bold;
+}
+@media (prefers-color-scheme: dark) {
+    .feature-list li:before {
+        color: #0A84FF;
+    }
+}
+</style>
+</head>
+<body>
+<h1>Welcome to Shaw-Spell</h1>
+
+<p>Shaw-Spell brings comprehensive Shavian language support to your Mac with dictionaries and intelligent spell checking.
+Built on <a href="https://readlex.pythonanywhere.com">ReadLex</a> and
+    <a href="https://github.com/globalwordnet/english-wordnet/releases">Open English Wordnet.</a></p>
+
+<ul class="feature-list">
+<li><strong>Three dictionaries for Dictionary.app</strong><br>
+Shavian &rarr; English, English &rarr; Shavian, and Shavian &rarr; Shavian</li>
+
+<li><strong>System-wide spell checking</strong><br>
+Works in TextEdit, Pages, Mail, and all native macOS apps</li>
+<li>Also <strong>handles orthodox spelling</strong><br>
+    so you can use Shaw-Spell as your default spell checker</li>
+
+<li><strong>75,000+ Shavian words</strong><br>
+With definitions, pronunciations, and usage examples</li>
+</ul>
+
+<p>This installer will install both British and American English variants. You can choose which to use in your system settings.</p>
+</body>
+</html>

@@ -28,7 +28,7 @@ autoreleasepool {
 
     var registered = false
     for lang in languages {
-        if server.registerLanguage(lang, byVendor: "ShawDict") {
+        if server.registerLanguage(lang, byVendor: "Shaw-Spell") {
             NSLog("ShavianSpellServer: Registered \(lang) spell checker")
             registered = true
         } else {

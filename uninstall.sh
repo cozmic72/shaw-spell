@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Shaw Spell Uninstaller
+# Shaw-Spell Uninstaller
 #
-# Removes all Shaw Spell components from the system.
+# Removes all Shaw-Spell components from the system.
 #
 
 set -e
 
-echo "Shaw Spell Uninstaller"
+echo "Shaw-Spell Uninstaller"
 echo "====================="
 echo ""
 
@@ -92,7 +92,7 @@ if [ "$USER_DICTS_INSTALLED" = false ] && \
    [ "$USER_SERVICE_INSTALLED" = false ] && \
    [ "$SYSTEM_SERVICE_INSTALLED" = false ] && \
    [ "$LAUNCH_AGENT_INSTALLED" = false ]; then
-    echo "  Nothing found - Shaw Spell does not appear to be installed."
+    echo "  Nothing found - Shaw-Spell does not appear to be installed."
     echo ""
     exit 0
 fi

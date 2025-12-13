@@ -107,10 +107,10 @@ install: all
 	@echo "Installing LaunchAgent..."
 	@mkdir -p $(HOME)/Library/LaunchAgents
 	@mkdir -p $(HOME)/Library/Logs
-	@sed "s|__HOME__|$(HOME)|g" io.joro.shaw-spell.spellserver.plist > $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist
+	@sed "s|__HOME__|$(HOME)|g" io.joro.Shaw-Spell.plist > $(HOME)/Library/LaunchAgents/io.joro.Shaw-Spell.plist
 	@echo "Loading LaunchAgent..."
-	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist 2>/dev/null || true
-	@launchctl load $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist
+	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.Shaw-Spell.plist 2>/dev/null || true
+	@launchctl load $(HOME)/Library/LaunchAgents/io.joro.Shaw-Spell.plist
 	@echo "Updating services..."
 	@/System/Library/CoreServices/pbs -update
 	@echo ""
@@ -120,15 +120,15 @@ install: all
 	@echo "To use the spell server:"
 	@echo "1. Restart any applications that use spell-checking"
 	@echo "2. In System Settings > Keyboard > Text Input > Edit..."
-	@echo "3. Look for 'ShawDict' spell checkers in the list"
+	@echo "3. Look for 'Shaw-Spell' spell checkers in the list"
 	@echo ""
 	@echo "Logs: $(HOME)/Library/Logs/ShavianSpellServer.log"
 
 uninstall:
 	@echo "Uninstalling from $(INSTALL_DIR)..."
 	@echo "Stopping LaunchAgent..."
-	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist 2>/dev/null || true
-	@rm -f $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist
+	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.Shaw-Spell.plist 2>/dev/null || true
+	@rm -f $(HOME)/Library/LaunchAgents/io.joro.Shaw-Spell.plist
 	@rm -f $(HOME)/Library/LaunchAgents/org.shavian.spellserver.plist
 	@rm -rf $(INSTALL_DIR)/$(BUNDLE_NAME)
 	@/System/Library/CoreServices/pbs -update

@@ -1,7 +1,7 @@
-# Makefile for Shaw Spell
+# Makefile for Shaw-Spell
 # Provides incremental builds for dictionaries and spell checker
 
-.PHONY: all clean clean-cache clean-all install uninstall help spellcheck spellserver installer uninstaller-app dmg transliterations shavian-english english-shavian shavian-shavian test
+.PHONY: all clean clean-cache clean-all install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian test
 .DEFAULT_GOAL := help
 
 # Configuration
@@ -34,9 +34,7 @@ DICT_ENGLISH_SHAVIAN_US = build/dictionaries/English-Shavian-us.dictionary
 DICT_SHAVIAN_SHAVIAN_US = build/dictionaries/Shavian-us.dictionary
 
 # Dictionary source directories
-DICT_SHAVIAN_ENGLISH_DIR = src/dictionaries/shavian-english
-DICT_ENGLISH_SHAVIAN_DIR = src/dictionaries/english-shavian
-DICT_SHAVIAN_SHAVIAN_DIR = src/dictionaries/shavian-shavian
+DICT_DIR = src/dictionaries
 
 # Determine which dictionaries need the cache
 CACHE_DEPS = $(READLEX_PATH) $(WORDNET_PATH) $(CACHE_SCRIPT)
@@ -46,7 +44,7 @@ CACHE_DEPS = $(READLEX_PATH) $(WORDNET_PATH) $(CACHE_SCRIPT)
 ###########################################
 
 help:
-	@echo "Shaw Spell Build System"
+	@echo "Shaw-Spell Build System"
 	@echo ""
 	@echo "Targets:"
 	@echo "  all                 Build dictionaries and spell checker"
@@ -152,43 +150,34 @@ build/shavian-shavian-us.xml: data/definitions-shavian-us.json $(READLEX_PATH) $
 ###########################################
 
 # Current dialect rules
-$(DICT_SHAVIAN_ENGLISH): $(XML_SHAVIAN_ENGLISH) $(DICT_SHAVIAN_ENGLISH_DIR)/ShavianEnglish.css $(DICT_SHAVIAN_ENGLISH_DIR)/ShavianEnglish.plist
-	@echo "Building Shavian-English dictionary ($(DIALECT))..."
-	@cd $(DICT_SHAVIAN_ENGLISH_DIR) && $(MAKE) DIALECT=$(DIALECT)
+$(DICT_SHAVIAN_ENGLISH): $(XML_SHAVIAN_ENGLISH)
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-english DIALECT=$(DIALECT)
 
-$(DICT_ENGLISH_SHAVIAN): $(XML_ENGLISH_SHAVIAN) $(DICT_ENGLISH_SHAVIAN_DIR)/EnglishShavian.css
-	@echo "Building English-Shavian dictionary ($(DIALECT))..."
-	@cd $(DICT_ENGLISH_SHAVIAN_DIR) && $(MAKE) DIALECT=$(DIALECT)
+$(DICT_ENGLISH_SHAVIAN): $(XML_ENGLISH_SHAVIAN)
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=english-shavian DIALECT=$(DIALECT)
 
-$(DICT_SHAVIAN_SHAVIAN): $(XML_SHAVIAN_SHAVIAN) $(DICT_SHAVIAN_SHAVIAN_DIR)/ShavianShavian.css
-	@echo "Building Shavian-Shavian dictionary ($(DIALECT))..."
-	@cd $(DICT_SHAVIAN_SHAVIAN_DIR) && $(MAKE) DIALECT=$(DIALECT)
+$(DICT_SHAVIAN_SHAVIAN): $(XML_SHAVIAN_SHAVIAN)
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-shavian DIALECT=$(DIALECT)
 
 # Explicit rules for GB dictionaries
-$(DICT_SHAVIAN_ENGLISH_GB): build/shavian-english-gb.xml $(DICT_SHAVIAN_ENGLISH_DIR)/ShavianEnglish.css $(DICT_SHAVIAN_ENGLISH_DIR)/ShavianEnglish.plist
-	@echo "Building Shavian-English dictionary (GB)..."
-	@cd $(DICT_SHAVIAN_ENGLISH_DIR) && $(MAKE) DIALECT=gb
+$(DICT_SHAVIAN_ENGLISH_GB): build/shavian-english-gb.xml
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-english DIALECT=gb
 
-$(DICT_ENGLISH_SHAVIAN_GB): build/english-shavian-gb.xml $(DICT_ENGLISH_SHAVIAN_DIR)/EnglishShavian.css
-	@echo "Building English-Shavian dictionary (GB)..."
-	@cd $(DICT_ENGLISH_SHAVIAN_DIR) && $(MAKE) DIALECT=gb
+$(DICT_ENGLISH_SHAVIAN_GB): build/english-shavian-gb.xml
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=english-shavian DIALECT=gb
 
-$(DICT_SHAVIAN_SHAVIAN_GB): build/shavian-shavian-gb.xml $(DICT_SHAVIAN_SHAVIAN_DIR)/ShavianShavian.css
-	@echo "Building Shavian-Shavian dictionary (GB)..."
-	@cd $(DICT_SHAVIAN_SHAVIAN_DIR) && $(MAKE) DIALECT=gb
+$(DICT_SHAVIAN_SHAVIAN_GB): build/shavian-shavian-gb.xml
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-shavian DIALECT=gb
 
 # Explicit rules for US dictionaries
-$(DICT_SHAVIAN_ENGLISH_US): build/shavian-english-us.xml $(DICT_SHAVIAN_ENGLISH_DIR)/ShavianEnglish.css $(DICT_SHAVIAN_ENGLISH_DIR)/ShavianEnglish.plist
-	@echo "Building Shavian-English dictionary (US)..."
-	@cd $(DICT_SHAVIAN_ENGLISH_DIR) && $(MAKE) DIALECT=us
+$(DICT_SHAVIAN_ENGLISH_US): build/shavian-english-us.xml
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-english DIALECT=us
 
-$(DICT_ENGLISH_SHAVIAN_US): build/english-shavian-us.xml $(DICT_ENGLISH_SHAVIAN_DIR)/EnglishShavian.css
-	@echo "Building English-Shavian dictionary (US)..."
-	@cd $(DICT_ENGLISH_SHAVIAN_DIR) && $(MAKE) DIALECT=us
+$(DICT_ENGLISH_SHAVIAN_US): build/english-shavian-us.xml
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=english-shavian DIALECT=us
 
-$(DICT_SHAVIAN_SHAVIAN_US): build/shavian-shavian-us.xml $(DICT_SHAVIAN_SHAVIAN_DIR)/ShavianShavian.css
-	@echo "Building Shavian-Shavian dictionary (US)..."
-	@cd $(DICT_SHAVIAN_SHAVIAN_DIR) && $(MAKE) DIALECT=us
+$(DICT_SHAVIAN_SHAVIAN_US): build/shavian-shavian-us.xml
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-shavian DIALECT=us
 
 ###########################################
 # Spell checker building
@@ -196,57 +185,84 @@ $(DICT_SHAVIAN_SHAVIAN_US): build/shavian-shavian-us.xml $(DICT_SHAVIAN_SHAVIAN_
 
 HUNSPELL_GB = build/shaw-gb.dic
 HUNSPELL_US = build/shaw-us.dic
-SPELLSERVER_BUNDLE = build/ShavianSpellServer.service
+SPELLSERVER_BUNDLE = build/Shaw-Spell.service
+SPELLSERVER_MARKER = build/.spellserver-built
+INSTALLER_MARKER = build/.installer-built
+UNINSTALLER_MARKER = build/.uninstaller-built
+DMG_FILE = build/ShawSpellInstaller.dmg
 
-$(HUNSPELL_GB) $(HUNSPELL_US): $(READLEX_PATH) src/spellserver/generate_spellcheck.py
+$(HUNSPELL_GB) $(HUNSPELL_US): $(READLEX_PATH) src/server/generate_spellcheck.py
 	@echo "Building Hunspell dictionaries..."
 	@mkdir -p build
-	src/spellserver/generate_spellcheck.py
+	src/server/generate_spellcheck.py
 
-$(SPELLSERVER_BUNDLE): src/spellserver/*.m src/spellserver/*.h src/spellserver/Makefile
+$(SPELLSERVER_MARKER): src/server/*.swift src/server/*.h src/server/Makefile src/server/Info.plist
 	@echo "Building spell server..."
-	@cd src/spellserver && $(MAKE)
+	@cd src/server && $(MAKE)
 
 spellcheck: $(HUNSPELL_GB) $(HUNSPELL_US)
 	@echo "Hunspell dictionaries built successfully!"
 
-spellserver: $(SPELLSERVER_BUNDLE)
+spellserver: $(SPELLSERVER_MARKER)
 	@echo "Spell server built successfully!"
 
 test:
 	@echo "Building test programs..."
-	@cd src/spellserver && $(MAKE) test
+	@cd src/server && $(MAKE) test
 	@echo "Test programs built successfully in build/test/"
 
-installer: $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_ENGLISH_SHAVIAN_GB) $(DICT_SHAVIAN_SHAVIAN_GB) \
-           $(DICT_SHAVIAN_ENGLISH_US) $(DICT_ENGLISH_SHAVIAN_US) $(DICT_SHAVIAN_SHAVIAN_US) \
-           spellcheck spellserver
+$(INSTALLER_MARKER): $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_ENGLISH_SHAVIAN_GB) $(DICT_SHAVIAN_SHAVIAN_GB) \
+                     $(DICT_SHAVIAN_ENGLISH_US) $(DICT_ENGLISH_SHAVIAN_US) $(DICT_SHAVIAN_SHAVIAN_US) \
+                     $(HUNSPELL_GB) $(HUNSPELL_US) $(SPELLSERVER_MARKER) \
+                     src/installer/src/*.swift src/installer/src/Info.plist src/installer/resources/*.html
 	@echo "Building installer app..."
 	@cd src/installer && $(MAKE)
-	@echo "Installer app built successfully at: build/Install Shaw Spell.app"
 
-uninstaller-app:
+$(UNINSTALLER_MARKER): src/uninstaller/src/*.swift src/uninstaller/src/Info.plist src/uninstaller/Makefile
 	@echo "Building uninstaller app..."
 	@cd src/uninstaller && $(MAKE)
-	@echo "Uninstaller app built successfully at: build/Uninstall Shaw Spell.app"
 
-dmg: installer uninstaller-app
+$(DMG_FILE): $(INSTALLER_MARKER) $(UNINSTALLER_MARKER) src/installer/dmg-template/DS_Store_template
 	@echo "Creating installer DMG..."
 	@rm -rf build/dmg_staging
 	@mkdir -p build/dmg_staging
-	@cp -R "build/Install Shaw Spell.app" build/dmg_staging/
-	@cp -R "build/Uninstall Shaw Spell.app" build/dmg_staging/
-	@rm -f build/ShawSpellInstaller.dmg
-	@hdiutil create -volname "Shaw Spell Installer" -srcfolder build/dmg_staging -ov -format UDZO build/ShawSpellInstaller.dmg
-	@rm -rf build/dmg_staging
+	@cp -R "build/Install Shaw-Spell.app" build/dmg_staging/
+	@cp -R "build/Uninstall Shaw-Spell.app" build/dmg_staging/
+	@rm -f build/ShawSpellInstaller-temp.dmg build/ShawSpellInstaller.dmg
+	@echo "Creating temporary read-write DMG..."
+	@hdiutil create -volname "Shaw-Spell Installer" -srcfolder build/dmg_staging -ov -format UDRW build/ShawSpellInstaller-temp.dmg
+	@echo "Mounting temporary DMG..."
+	@mkdir -p build/dmg_mount
+	@hdiutil attach build/ShawSpellInstaller-temp.dmg -mountpoint build/dmg_mount -nobrowse
+	@if [ -f src/installer/dmg-template/DS_Store_template ]; then \
+		echo "Copying layout template..."; \
+		cp src/installer/dmg-template/DS_Store_template "build/dmg_mount/.DS_Store"; \
+	fi
+	@echo "Unmounting temporary DMG..."
+	@hdiutil detach build/dmg_mount
+	@rmdir build/dmg_mount
+	@echo "Converting to compressed read-only DMG..."
+	@hdiutil convert build/ShawSpellInstaller-temp.dmg -format UDZO -o build/ShawSpellInstaller.dmg
+	@rm build/ShawSpellInstaller-temp.dmg
 	@echo "DMG created at: build/ShawSpellInstaller.dmg"
+	@echo "Staging directory preserved at: build/dmg_staging/"
+
+# Convenience targets
+installer: $(INSTALLER_MARKER)
+	@echo "Installer app built successfully at: build/Install Shaw-Spell.app"
+
+uninstaller-app: $(UNINSTALLER_MARKER)
+	@echo "Uninstaller app built successfully at: build/Uninstall Shaw-Spell.app"
+
+dmg: $(DMG_FILE)
 
 ###########################################
 # High-level targets
 ###########################################
 
-all: $(DICT_SHAVIAN_ENGLISH) $(DICT_ENGLISH_SHAVIAN) $(DICT_SHAVIAN_SHAVIAN) spellcheck spellserver
-	@echo "All components ($(DIALECT)) built successfully!"
+all: $(DMG_FILE)
+	@echo "All components built successfully!"
+	@echo "DMG installer ready at: $(DMG_FILE)"
 
 transliterations: data/definitions-shavian-gb.json data/definitions-shavian-us.json
 	@echo "Transliterated definition caches built successfully!"
@@ -272,7 +288,7 @@ install: all
 	@cp build/shaw-gb.* ~/Library/Spelling/ 2>/dev/null || true
 	@cp build/shaw-us.* ~/Library/Spelling/ 2>/dev/null || true
 	@echo "Installing spell server..."
-	@cd src/spellserver && $(MAKE) install
+	@cd src/server && $(MAKE) install
 	@echo ""
 	@echo "Installation complete!"
 	@echo "  - Dictionary.app: Please restart Dictionary.app"

@@ -1,10 +1,10 @@
-# Shaw Spell Installer
+# Shaw-Spell Installer
 
-Native macOS installer application for Shaw Spell - Shavian Dictionaries & Spell Checker.
+Native macOS installer application for Shaw-Spell - Shavian Dictionaries & Spell Checker.
 
 ## Overview
 
-This is a graphical installer app that provides a user-friendly way to install Shaw Spell on macOS. It offers options for:
+This is a graphical installer app that provides a user-friendly way to install Shaw-Spell on macOS. It offers options for:
 
 - **Dialect selection**: British English (GB), American English (US), or both
 - **Installation scope**: User-only or system-wide (requires admin password)
@@ -22,7 +22,7 @@ make dmg          # Build the installer app and create DMG
 This will:
 1. Create the app icon from the project SVG icon
 2. Compile the Objective-C source files
-3. Build the application bundle at `build/Install Shaw Spell.app`
+3. Build the application bundle at `build/Install Shaw-Spell.app`
 4. Code sign the app (if signing identity is available)
 5. (For `make dmg`) Package into a DMG at `build/ShawSpellInstaller.dmg`
 
@@ -31,7 +31,7 @@ This will:
 From the project root:
 
 ```bash
-open "build/Install Shaw Spell.app"
+open "build/Install Shaw-Spell.app"
 ```
 
 ## Requirements

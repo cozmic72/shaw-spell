@@ -1,4 +1,4 @@
-Shaw Spell - Shavian Dictionaries & Spell Checker for macOS
+Shaw-Spell - Shavian Dictionaries & Spell Checker for macOS
 ============================================================
 
 Comprehensive bilingual dictionaries and spell checker for translating
@@ -118,17 +118,17 @@ To clean build artifacts:
 GRAPHICAL INSTALLER
 ===================
 
-Shaw Spell includes a native macOS installer app for easy installation.
+Shaw-Spell includes a native macOS installer app for easy installation.
 
 To build the installer:
 
     make installer
 
-This creates "Install Shaw Spell.app" in installer/build/
+This creates "Install Shaw-Spell.app" in installer/build/
 
 To run the installer:
 
-    open "installer/build/Install Shaw Spell.app"
+    open "installer/build/Install Shaw-Spell.app"
 
 The installer provides:
 - Graphical interface with installation options
@@ -247,7 +247,7 @@ Requirements:
 - Shavian dictionary at ~/Library/Spelling/shaw.dic (build with: ./build.sh spellcheck install)
 
 After installation, log out and log back in, then configure in:
-System Settings > Keyboard > Text Input > Edit... (look for "ShawDict")
+System Settings > Keyboard > Text Input > Edit... (look for "Shaw-Spell")
 
 See src/spellserver/README.md for full documentation.
 

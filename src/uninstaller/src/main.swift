@@ -1,6 +1,6 @@
 //
 //  main.swift
-//  Shaw Spell Uninstaller
+//  Shaw-Spell Uninstaller
 //
 //  Entry point for the uninstaller application.
 //

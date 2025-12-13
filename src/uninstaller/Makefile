@@ -1,10 +1,10 @@
-# Makefile for Shaw Spell Uninstaller
+# Makefile for Shaw-Spell Uninstaller
 #
-# Builds a native macOS uninstaller application for Shaw Spell
+# Builds a native macOS uninstaller application for Shaw-Spell
 
 # Configuration
-APP_NAME = Uninstall Shaw Spell
-BUNDLE_NAME = Uninstall Shaw Spell.app
+APP_NAME = Uninstall Shaw-Spell
+BUNDLE_NAME = Uninstall Shaw-Spell.app
 EXECUTABLE_NAME = ShawSpellUninstaller
 BUNDLE_IDENTIFIER = io.joro.shaw-spell.uninstaller
 CODESIGN_IDENTITY = Jonathan Ross
@@ -24,12 +24,17 @@ CONTENTS_DIR = $(BUNDLE_DIR)/Contents
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
 
-# Icon (shared with installer)
-ICON_FILE = $(BUILD_DIR)/installer/AppIcon.icns
+# Icon (uninstaller-specific)
+ICON_FILE = $(BUILD_DIR)/uninstaller/AppIcon.icns
 
-.PHONY: all clean icon
+.PHONY: clean icon
 
-all: $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE)
+# Use marker file to avoid directory timestamp issues
+BUNDLE_MARKER = $(BUILD_DIR)/.uninstaller-built
+
+all: $(BUNDLE_MARKER)
+
+$(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist
 	@echo "Building application bundle..."
 	@mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
 	@cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(MACOS_DIR)/"
@@ -38,6 +43,7 @@ all: $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE)
 	@cp "$(ICON_FILE)" "$(RESOURCES_DIR)/"
 	@echo "Code signing application..."
 	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" "$(BUNDLE_DIR)" 2>/dev/null || echo "Warning: Code signing failed (not critical for testing)"
+	@touch $(BUNDLE_MARKER)
 	@echo ""
 	@echo "Uninstaller app created at: $(BUNDLE_DIR)"
 	@echo "You can run it with: open \"$(BUNDLE_DIR)\""
@@ -49,14 +55,13 @@ $(BUILD_DIR)/$(EXECUTABLE_NAME): $(SWIFT_SOURCES) | $(BUILD_DIR)
 $(BUILD_DIR):
 	@mkdir -p "$(BUILD_DIR)"
 
-# Icon is built by installer
-$(ICON_FILE):
-	@echo "Building icon (from installer)..."
-	@cd ../installer && $(MAKE) icon
+$(ICON_FILE): src/resources/icon.svg create-icon.sh
+	@echo "Creating uninstaller icon..."
+	@./create-icon.sh
 
 icon: $(ICON_FILE)
 
 clean:
 	@echo "Cleaning uninstaller artifacts..."
-	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/$(EXECUTABLE_NAME)"
+	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(BUNDLE_MARKER)"
 	@echo "Clean complete"

@@ -1,6 +1,6 @@
 //
 //  main.swift
-//  Shaw Spell Installer
+//  Shaw-Spell Installer
 //
 //  Entry point for the installer application.
 //

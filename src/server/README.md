@@ -56,8 +56,8 @@ After installation:
 
 1. Open **System Settings** > **Keyboard** > **Text Input**
 2. Click **Edit...** next to "Spelling"
-3. Look for **ShawDict** spell checkers in the list
-4. Enable the variant you want (e.g., "ShawDict - English (US)")
+3. Look for **Shaw-Spell** spell checkers in the list
+4. Enable the variant you want (e.g., "British English (Shaw-Spell)")
 
 Test in any native app (TextEdit, Pages, Mail):
 - Type some Shavian text: 𐑖𐑱𐑝𐑾𐑯

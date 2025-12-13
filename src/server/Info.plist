@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>ShavianSpellServer</string>
 	<key>CFBundleIdentifier</key>
-	<string>io.joro.shaw-spell.spellserver</string>
+	<string>io.joro.Shaw-Spell</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -24,7 +24,7 @@
 	<array>
 		<dict>
 			<key>NSSpellChecker</key>
-			<string>ShawDict</string>
+			<string>Shaw-Spell</string>
 			<key>NSLanguages</key>
 			<array>
 				<string>English</string>

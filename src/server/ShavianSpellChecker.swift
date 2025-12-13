@@ -8,7 +8,7 @@
 import Foundation
 import os.log
 
-private let logger = OSLog(subsystem: "io.joro.shaw-spell.spellserver", category: "SpellChecker")
+private let logger = OSLog(subsystem: "io.joro.Shaw-Spell", category: "SpellChecker")
 
 // Shavian Unicode range: U+10450 to U+1047F
 private let shavianStart: UInt32 = 0x10450

@@ -7,27 +7,69 @@ d|entry {
 
 /* Headword (English text) */
 h1 {
-	font-size: 200%;
+	font-size: 250%;
 	font-weight: bold;
 	margin-top: 0.5em;
 	margin-bottom: 0.3em;
 }
 
-/* Translation list */
-ul {
-	margin-left: 1em;
-	padding-left: 1em;
+/* Forms section - Shavian spellings with IPA */
+.forms {
+	margin: 0.5em 0;
+	padding: 0.5em;
+	background-color: #f5f5f5;
+	border-radius: 4px;
 }
 
-li {
+.forms p {
 	margin: 0.2em 0;
 }
 
-/* Shavian translation */
-b {
-	color: #0066cc;
-	font-weight: 600;
+.forms b {
 	font-size: 120%;
+}
+
+.ipa {
+	color: #666;
+	font-family: "Doulos SIL", "Charis SIL", serif;
+}
+
+.variant {
+	color: #888;
+	font-size: 90%;
+	font-style: italic;
+}
+
+/* Definitions section (transliterated to Shavian) */
+.definitions {
+	margin-top: 1em;
+}
+
+.definition {
+	margin: 0.8em 0;
+}
+
+.definition p {
+	margin: 0.3em 0;
+	line-height: 1.6;
+	font-size: 110%;
+}
+
+.definition i {
+	color: #0066cc;
+}
+
+/* Examples list */
+.examples {
+	margin: 0.5em 0 0.5em 2em;
+	padding-left: 0;
+	list-style-type: circle;
+}
+
+.examples li {
+	margin: 0.3em 0;
+	color: #555;
+	font-style: italic;
 }
 
 /* Dark mode support */
@@ -36,7 +78,23 @@ b {
 		color: white;
 	}
 
-	b {
+	.forms {
+		background-color: #2a2a2a;
+	}
+
+	.ipa {
+		color: #aaa;
+	}
+
+	.variant {
+		color: #999;
+	}
+
+	.definition i {
 		color: #66b3ff;
+	}
+
+	.examples li {
+		color: #bbb;
 	}
 }

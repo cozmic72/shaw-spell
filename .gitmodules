@@ -1,0 +1,3 @@
+[submodule "external/english-wordnet"]
+	path = external/english-wordnet
+	url = https://github.com/globalwordnet/english-wordnet.git

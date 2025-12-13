@@ -8,7 +8,7 @@
 import Cocoa
 import WebKit
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     var window: NSWindow!
     var contentView: WKWebView!
     var buttonContainer: NSView!
@@ -28,6 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Create WebView for content
         contentView = WKWebView(frame: NSRect(x: 20, y: 60, width: 660, height: 470))
+        contentView.navigationDelegate = self
         mainContentView.addSubview(contentView)
 
         // Create button container
@@ -291,5 +292,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Go back to welcome page
         showWelcomePage()
+    }
+
+    // MARK: - WKNavigationDelegate
+
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        // Allow initial page loads and loadHTMLString calls
+        if navigationAction.navigationType == .other {
+            decisionHandler(.allow)
+            return
+        }
+
+        // For link clicks, open in default browser
+        if navigationAction.navigationType == .linkActivated {
+            if let url = navigationAction.request.url {
+                NSWorkspace.shared.open(url)
+            }
+            decisionHandler(.cancel)
+            return
+        }
+
+        decisionHandler(.allow)
     }
 }

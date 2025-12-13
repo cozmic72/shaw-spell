@@ -6,15 +6,15 @@
 	<string>io.joro.Shaw-Spell</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>__HOME__/Library/Services/ShavianSpellServer.service/Contents/MacOS/ShavianSpellServer</string>
+		<string>__HOME__/Library/Services/Shaw-Spell.service/Contents/MacOS/Shaw-Spell</string>
 	</array>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>KeepAlive</key>
 	<true/>
 	<key>StandardErrorPath</key>
-	<string>__HOME__/Library/Logs/ShavianSpellServer.log</string>
+	<string>__HOME__/Library/Logs/Shaw-Spell.log</string>
 	<key>StandardOutPath</key>
-	<string>__HOME__/Library/Logs/ShavianSpellServer.log</string>
+	<string>__HOME__/Library/Logs/Shaw-Spell.log</string>
 </dict>
 </plist>

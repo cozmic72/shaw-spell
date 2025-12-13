@@ -227,7 +227,7 @@ Native macOS Spell-Checking (NSSpellServer)
 For system-wide spell-checking in native macOS apps (TextEdit, Pages, Mail, etc.),
 use our NSSpellServer service implementation.
 
-Location: src/spellserver/
+Location: src/server/
 Files: main.m, ShavianSpellChecker.{h,m}, Info.plist, Makefile, README.md
 
 This service registers as an English spell checker that intelligently handles
@@ -239,7 +239,7 @@ Supports all English variants: en_US, en_GB, en_AU, en_CA, en_NZ
 
 To build and install:
 
-    cd src/spellserver
+    cd src/server
     make install
 
 Requirements:
@@ -249,7 +249,7 @@ Requirements:
 After installation, log out and log back in, then configure in:
 System Settings > Keyboard > Text Input > Edit... (look for "Shaw-Spell")
 
-See src/spellserver/README.md for full documentation.
+See src/server/README.md for full documentation.
 
 PERFORMANCE
 ===========

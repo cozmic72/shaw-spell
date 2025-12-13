@@ -36,7 +36,7 @@ Currently, all variants use the same Shavian dictionary which contains words fro
 make
 ```
 
-This compiles the service and creates `build/ShavianSpellServer.service`.
+This compiles the service and creates `build/Shaw-Spell.service`.
 
 ## Installing
 
@@ -144,8 +144,8 @@ make install
 
 Check Console.app for NSSpellServer logs:
 ```
-ShavianSpellServer: Registered en_US spell checker
-ShavianSpellServer: Loaded Hunspell dictionary from ...
+Shaw-Spell: Registered en_US spell checker
+Shaw-Spell: Loaded Hunspell dictionary from ...
 ```
 
 ## License

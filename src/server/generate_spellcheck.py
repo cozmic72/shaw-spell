@@ -124,6 +124,14 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb')
 
     # Write .aff file with word character configuration
     print(f"Writing {output_aff}...")
+
+    # Load replacement rules from external file
+    replacements_file = Path(__file__).parent / 'hunspell-replacements.txt'
+    replacement_rules = ""
+    if replacements_file.exists():
+        with open(replacements_file, 'r', encoding='utf-8') as rep_file:
+            replacement_rules = rep_file.read().strip() + "\n\n"
+
     with open(output_aff, 'w', encoding='utf-8') as f:
         f.write("# Hunspell affix file for Shavian script\n")
         f.write(f"# Configuration for {dialect_name}\n\n")
@@ -131,6 +139,11 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb')
         f.write("TRY 𐑐𐑑𐑒𐑓𐑔𐑕𐑖𐑗𐑘𐑙𐑚𐑛𐑜𐑝𐑞𐑟𐑠𐑡𐑢𐑣𐑤𐑥𐑦𐑧𐑨𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿\n\n")
         f.write("# Word characters include Shavian letters, hyphen, and namer dot\n")
         f.write("WORDCHARS 𐑐𐑑𐑒𐑓𐑔𐑕𐑖𐑗𐑘𐑙𐑚𐑛𐑜𐑝𐑞𐑟𐑠𐑡𐑢𐑣𐑤𐑥𐑦𐑧𐑨𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿-·\n\n")
+
+        # Include replacement rules from external file
+        if replacement_rules:
+            f.write(replacement_rules)
+
         f.write("# No affixes defined yet - all words are in .dic file\n")
 
     print("Hunspell files generated successfully!")

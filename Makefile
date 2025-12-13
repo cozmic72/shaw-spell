@@ -280,9 +280,9 @@ shavian-shavian: $(DICT_SHAVIAN_SHAVIAN)
 
 install: all
 	@echo "Installing dictionaries ($(DIALECT)) to ~/Library/Dictionaries..."
-	@cd $(DICT_SHAVIAN_ENGLISH_DIR) && $(MAKE) DIALECT=$(DIALECT) install
-	@cd $(DICT_ENGLISH_SHAVIAN_DIR) && $(MAKE) DIALECT=$(DIALECT) install
-	@cd $(DICT_SHAVIAN_SHAVIAN_DIR) && $(MAKE) DIALECT=$(DIALECT) install
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-english DIALECT=$(DIALECT) install
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=english-shavian DIALECT=$(DIALECT) install
+	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-shavian DIALECT=$(DIALECT) install
 	@echo "Installing Hunspell dictionaries to ~/Library/Spelling..."
 	@mkdir -p ~/Library/Spelling
 	@cp build/shaw-gb.* ~/Library/Spelling/ 2>/dev/null || true

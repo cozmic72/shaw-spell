@@ -23,6 +23,3 @@ build-cache/
 *.swp
 *.swo
 *~
-
-# Generated plist files (built from .plist.template)
-src/dictionaries/*/[!.]*.plist

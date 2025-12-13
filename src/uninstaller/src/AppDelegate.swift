@@ -122,13 +122,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let homeDir = NSHomeDirectory()
 
-        // Check user dictionaries
+        // Check dictionaries
         let userDictDir = (homeDir as NSString).appendingPathComponent("Library/Dictionaries")
         if let dictFiles = try? FileManager.default.contentsOfDirectory(atPath: userDictDir) {
-            let shavianDicts = dictFiles.filter { $0.contains("Shavian") || $0.contains("shavian") }
+            let shavianDicts = dictFiles.filter { $0.contains("Shavian") || $0.contains("shavian") || $0.contains("Shaw") || $0.contains("shaw") }
             if !shavianDicts.isEmpty {
                 foundAnything = true
-                output += "User Dictionaries:\n"
+                output += "Dictionaries:\n"
                 for dict in shavianDicts.sorted() {
                     output += "  • \(dict)\n"
                 }
@@ -136,26 +136,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Check system dictionaries
-        if let dictFiles = try? FileManager.default.contentsOfDirectory(atPath: "/Library/Dictionaries") {
-            let shavianDicts = dictFiles.filter { $0.contains("Shavian") || $0.contains("shavian") }
-            if !shavianDicts.isEmpty {
-                foundAnything = true
-                output += "System Dictionaries (requires admin):\n"
-                for dict in shavianDicts.sorted() {
-                    output += "  • \(dict)\n"
-                }
-                output += "\n"
-            }
-        }
-
-        // Check user spelling
+        // Check Hunspell dictionaries
         let userSpellingDir = (homeDir as NSString).appendingPathComponent("Library/Spelling")
         if let spellingFiles = try? FileManager.default.contentsOfDirectory(atPath: userSpellingDir) {
             let shawFiles = spellingFiles.filter { $0.hasPrefix("shaw-") }
             if !shawFiles.isEmpty {
                 foundAnything = true
-                output += "User Hunspell Dictionaries:\n"
+                output += "Hunspell Dictionaries:\n"
                 for file in shawFiles.sorted() {
                     output += "  • \(file)\n"
                 }
@@ -163,40 +150,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Check system spelling
-        if let spellingFiles = try? FileManager.default.contentsOfDirectory(atPath: "/Library/Spelling") {
-            let shawFiles = spellingFiles.filter { $0.hasPrefix("shaw-") }
-            if !shawFiles.isEmpty {
-                foundAnything = true
-                output += "System Hunspell Dictionaries (requires admin):\n"
-                for file in shawFiles.sorted() {
-                    output += "  • \(file)\n"
-                }
-                output += "\n"
-            }
-        }
-
-        // Check user spell server
-        let userServicePath = (homeDir as NSString).appendingPathComponent("Library/Services/ShavianSpellServer.service")
+        // Check spell server
+        let userServicePath = (homeDir as NSString).appendingPathComponent("Library/Services/Shaw-Spell.service")
         if FileManager.default.fileExists(atPath: userServicePath) {
             foundAnything = true
-            output += "User Spell Server:\n"
-            output += "  • ShavianSpellServer.service\n\n"
-        }
-
-        // Check system spell server
-        if FileManager.default.fileExists(atPath: "/Library/Services/ShavianSpellServer.service") {
-            foundAnything = true
-            output += "System Spell Server (requires admin):\n"
-            output += "  • ShavianSpellServer.service\n\n"
+            output += "Spell Server:\n"
+            output += "  • Shaw-Spell.service\n\n"
         }
 
         // Check LaunchAgent
-        let launchAgentPath = (homeDir as NSString).appendingPathComponent("Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist")
+        let launchAgentPath = (homeDir as NSString).appendingPathComponent("Library/LaunchAgents/io.joro.Shaw-Spell.plist")
         if FileManager.default.fileExists(atPath: launchAgentPath) {
             foundAnything = true
             output += "LaunchAgent:\n"
-            output += "  • io.joro.shaw-spell.spellserver.plist\n\n"
+            output += "  • io.joro.Shaw-Spell.plist\n\n"
         }
 
         if !foundAnything {
@@ -247,50 +214,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Stop LaunchAgent
         script += """
         echo 'Stopping spell server...'
-        launchctl unload "\(homeDir)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist" 2>/dev/null || true
-        rm -f "\(homeDir)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist"
+        launchctl unload "\(homeDir)/Library/LaunchAgents/io.joro.Shaw-Spell.plist" 2>/dev/null || true
+        rm -f "\(homeDir)/Library/LaunchAgents/io.joro.Shaw-Spell.plist"
         launchctl unload "\(homeDir)/Library/LaunchAgents/org.shavian.spellserver.plist" 2>/dev/null || true
         rm -f "\(homeDir)/Library/LaunchAgents/org.shavian.spellserver.plist"
 
         """
 
-        // Remove user components
+        // Remove components
         script += """
-        echo 'Removing user dictionaries...'
+        echo 'Removing dictionaries...'
         rm -rf "\(homeDir)/Library/Dictionaries/"*Shavian* 2>/dev/null || true
         rm -rf "\(homeDir)/Library/Dictionaries/"*shavian* 2>/dev/null || true
+        rm -rf "\(homeDir)/Library/Dictionaries/"*Shaw* 2>/dev/null || true
+        rm -rf "\(homeDir)/Library/Dictionaries/"*shaw* 2>/dev/null || true
         touch "\(homeDir)/Library/Dictionaries"
 
-        echo 'Removing user Hunspell dictionaries...'
+        echo 'Removing Hunspell dictionaries...'
         rm -f "\(homeDir)/Library/Spelling/shaw-"* 2>/dev/null || true
 
-        echo 'Removing user spell server...'
-        rm -rf "\(homeDir)/Library/Services/ShavianSpellServer.service" 2>/dev/null || true
+        echo 'Removing spell server...'
+        rm -rf "\(homeDir)/Library/Services/Shaw-Spell.service" 2>/dev/null || true
 
         """
-
-        // Check if we need to remove system-wide components
-        var needsSudo = false
-        if FileManager.default.fileExists(atPath: "/Library/Dictionaries") ||
-           FileManager.default.fileExists(atPath: "/Library/Spelling") ||
-           FileManager.default.fileExists(atPath: "/Library/Services/ShavianSpellServer.service") {
-            needsSudo = true
-        }
-
-        if needsSudo {
-            script += """
-            echo 'Removing system dictionaries...'
-            sudo rm -rf /Library/Dictionaries/*Shavian* 2>/dev/null || true
-            sudo rm -rf /Library/Dictionaries/*shavian* 2>/dev/null || true
-
-            echo 'Removing system Hunspell dictionaries...'
-            sudo rm -f /Library/Spelling/shaw-* 2>/dev/null || true
-
-            echo 'Removing system spell server...'
-            sudo rm -rf /Library/Services/ShavianSpellServer.service 2>/dev/null || true
-
-            """
-        }
 
         // Update services
         script += """
@@ -316,39 +262,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         chmod(scriptPath, 0o755)
 
         // Execute uninstallation script
-        if needsSudo {
-            // Use AppleScript for sudo
-            let appleScript = NSAppleScript(source: "do shell script \"/bin/bash \(scriptPath)\" with administrator privileges")
-            var errorDict: NSDictionary?
-            appleScript?.executeAndReturnError(&errorDict)
+        let task = Process()
+        task.launchPath = "/bin/bash"
+        task.arguments = [scriptPath]
 
-            if errorDict != nil {
-                DispatchQueue.main.async { [weak self] in
-                    self?.showError("Uninstallation cancelled or failed.")
-                }
-                return
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = pipe
+
+        task.launch()
+        task.waitUntilExit()
+
+        if task.terminationStatus != 0 {
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+
+            DispatchQueue.main.async { [weak self] in
+                self?.showError("Uninstallation failed:\n\(output)")
             }
-        } else {
-            let task = Process()
-            task.launchPath = "/bin/bash"
-            task.arguments = [scriptPath]
-
-            let pipe = Pipe()
-            task.standardOutput = pipe
-            task.standardError = pipe
-
-            task.launch()
-            task.waitUntilExit()
-
-            if task.terminationStatus != 0 {
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                let output = String(data: data, encoding: .utf8) ?? ""
-
-                DispatchQueue.main.async { [weak self] in
-                    self?.showError("Uninstallation failed:\n\(output)")
-                }
-                return
-            }
+            return
         }
 
         // Success!
@@ -366,7 +298,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Shaw-Spell has been removed from your system.
 
             Optional cleanup:
-            • Log file: ~/Library/Logs/ShavianSpellServer.log
+            • Log file: ~/Library/Logs/Shaw-Spell.log
             • Preference: defaults delete ShavianDialect
 
             Please restart Dictionary.app if it's running.

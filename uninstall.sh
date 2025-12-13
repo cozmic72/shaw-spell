@@ -27,10 +27,10 @@ fi
 if ls "$HOME/Library/Spelling/shaw-"* 2>/dev/null | grep -q .; then
     USER_SPELLING_INSTALLED=true
 fi
-if [ -d "$HOME/Library/Services/ShavianSpellServer.service" ]; then
+if [ -d "$HOME/Library/Services/Shaw-Spell.service" ]; then
     USER_SERVICE_INSTALLED=true
 fi
-if [ -f "$HOME/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist" ]; then
+if [ -f "$HOME/Library/LaunchAgents/io.joro.Shaw-Spell.plist" ]; then
     LAUNCH_AGENT_INSTALLED=true
 fi
 
@@ -41,7 +41,7 @@ fi
 if ls /Library/Spelling/shaw-* 2>/dev/null | grep -q .; then
     SYSTEM_SPELLING_INSTALLED=true
 fi
-if [ -d /Library/Services/ShavianSpellServer.service ]; then
+if [ -d /Library/Services/Shaw-Spell.service ]; then
     SYSTEM_SERVICE_INSTALLED=true
 fi
 
@@ -71,17 +71,17 @@ fi
 
 if [ "$USER_SERVICE_INSTALLED" = true ]; then
     echo "  User Spell Server:"
-    echo "    - $HOME/Library/Services/ShavianSpellServer.service"
+    echo "    - $HOME/Library/Services/Shaw-Spell.service"
 fi
 
 if [ "$SYSTEM_SERVICE_INSTALLED" = true ]; then
     echo "  System Spell Server (requires admin):"
-    echo "    - /Library/Services/ShavianSpellServer.service"
+    echo "    - /Library/Services/Shaw-Spell.service"
 fi
 
 if [ "$LAUNCH_AGENT_INSTALLED" = true ]; then
     echo "  LaunchAgent:"
-    echo "    - $HOME/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist"
+    echo "    - $HOME/Library/LaunchAgents/io.joro.Shaw-Spell.plist"
 fi
 
 # Check if anything is installed
@@ -113,8 +113,8 @@ echo ""
 # Stop and remove LaunchAgent
 if [ "$LAUNCH_AGENT_INSTALLED" = true ]; then
     echo "Stopping spell server..."
-    launchctl unload "$HOME/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist" 2>/dev/null || true
-    rm -f "$HOME/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist"
+    launchctl unload "$HOME/Library/LaunchAgents/io.joro.Shaw-Spell.plist" 2>/dev/null || true
+    rm -f "$HOME/Library/LaunchAgents/io.joro.Shaw-Spell.plist"
     # Also remove old plist if it exists
     launchctl unload "$HOME/Library/LaunchAgents/org.shavian.spellserver.plist" 2>/dev/null || true
     rm -f "$HOME/Library/LaunchAgents/org.shavian.spellserver.plist"
@@ -135,7 +135,7 @@ fi
 
 if [ "$USER_SERVICE_INSTALLED" = true ]; then
     echo "Removing user spell server..."
-    rm -rf "$HOME/Library/Services/ShavianSpellServer.service"
+    rm -rf "$HOME/Library/Services/Shaw-Spell.service"
 fi
 
 # Remove system components (requires sudo)
@@ -163,7 +163,7 @@ if [ "$NEED_SUDO" = true ]; then
 
     if [ "$SYSTEM_SERVICE_INSTALLED" = true ]; then
         echo "Removing system spell server..."
-        sudo rm -rf /Library/Services/ShavianSpellServer.service
+        sudo rm -rf /Library/Services/Shaw-Spell.service
     fi
 fi
 
@@ -175,7 +175,7 @@ echo ""
 echo "Uninstallation complete!"
 echo ""
 echo "Note: You may want to also remove:"
-echo "  - Log file: $HOME/Library/Logs/ShavianSpellServer.log"
+echo "  - Log file: $HOME/Library/Logs/Shaw-Spell.log"
 echo "  - User preference: defaults delete ShavianDialect"
 echo ""
 echo "Please restart Dictionary.app if it's running."

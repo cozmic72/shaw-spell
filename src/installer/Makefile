@@ -53,8 +53,8 @@ $(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist re
 	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-us/Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
 	@cp "$(BUILD_DIR)/shaw-gb.dic" "$(BUILD_DIR)/shaw-gb.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
 	@cp "$(BUILD_DIR)/shaw-us.dic" "$(BUILD_DIR)/shaw-us.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/ShavianSpellServer.service" "$(RESOURCES_DIR)/" 2>/dev/null || true
-	@cp "../../src/spellserver/io.joro.shaw-spell.spellserver.plist" "$(RESOURCES_DIR)/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/Shaw-Spell.service" "$(RESOURCES_DIR)/" 2>/dev/null || true
+	@cp "../../src/server/io.joro.Shaw-Spell.plist" "$(RESOURCES_DIR)/" 2>/dev/null || true
 	@echo "Code signing application..."
 	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" "$(BUNDLE_DIR)" 2>/dev/null || echo "Warning: Code signing failed (not critical for testing)"
 	@touch $(BUNDLE_MARKER)

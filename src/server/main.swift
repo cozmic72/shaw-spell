@@ -29,10 +29,10 @@ autoreleasepool {
     var registered = false
     for lang in languages {
         if server.registerLanguage(lang, byVendor: "Shaw-Spell") {
-            NSLog("ShavianSpellServer: Registered \(lang) spell checker")
+            NSLog("Shaw-Spell: Registered \(lang) spell checker")
             registered = true
         } else {
-            NSLog("ShavianSpellServer: Failed to register \(lang) spell checker")
+            NSLog("Shaw-Spell: Failed to register \(lang) spell checker")
         }
     }
 
@@ -41,13 +41,13 @@ autoreleasepool {
         server.delegate = delegate
 
         // Run the spell server (this blocks)
-        NSLog("ShavianSpellServer: Starting service...")
+        NSLog("Shaw-Spell: Starting service...")
         server.run()
 
-        NSLog("ShavianSpellServer: Service stopped")
+        NSLog("Shaw-Spell: Service stopped")
         exit(0)
     } else {
-        NSLog("ShavianSpellServer: Failed to register any spell checkers")
+        NSLog("Shaw-Spell: Failed to register any spell checkers")
         exit(1)
     }
 }

@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleIdentifier</key>
-	<string>{{BUNDLE_ID}}</string>
+	<string>$BUNDLE_ID$</string>
 	<key>CFBundleName</key>
-	<string>{{BUNDLE_NAME}}</string>
+	<string>$BUNDLE_NAME$</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>DCSDictionaryCopyright</key>
-	<string>{{DESCRIPTION}}</string>
+	<string>$DESCRIPTION$</string>
 	<key>DCSDictionaryManufacturerName</key>
 	<string>Shaw-Spell</string>
 	<key>DCSDictionaryFrontMatterReferenceID</key>

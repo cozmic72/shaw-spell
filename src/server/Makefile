@@ -4,7 +4,7 @@
 # with support for both Latin and Shavian scripts.
 
 # Configuration
-SERVICE_NAME = ShavianSpellServer
+SERVICE_NAME = Shaw-Spell
 BUNDLE_NAME = $(SERVICE_NAME).service
 INSTALL_DIR = $(HOME)/Library/Services
 CODESIGN_IDENTITY = Jonathan Ross
@@ -38,7 +38,7 @@ BUNDLE_DIR = $(BUILD_DIR)/$(BUNDLE_NAME)
 CONTENTS_DIR = $(BUNDLE_DIR)/Contents
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
-OBJECTS_DIR = $(BUILD_DIR)/spellserver-objects
+OBJECTS_DIR = $(BUILD_DIR)/server-objects
 TEST_DIR = $(BUILD_DIR)/test
 
 # Test programs
@@ -122,20 +122,19 @@ install: all
 	@echo "2. In System Settings > Keyboard > Text Input > Edit..."
 	@echo "3. Look for 'Shaw-Spell' spell checkers in the list"
 	@echo ""
-	@echo "Logs: $(HOME)/Library/Logs/ShavianSpellServer.log"
+	@echo "Logs: $(HOME)/Library/Logs/Shaw-Spell.log"
 
 uninstall:
 	@echo "Uninstalling from $(INSTALL_DIR)..."
 	@echo "Stopping LaunchAgent..."
 	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.Shaw-Spell.plist 2>/dev/null || true
 	@rm -f $(HOME)/Library/LaunchAgents/io.joro.Shaw-Spell.plist
-	@rm -f $(HOME)/Library/LaunchAgents/org.shavian.spellserver.plist
 	@rm -rf $(INSTALL_DIR)/$(BUNDLE_NAME)
 	@/System/Library/CoreServices/pbs -update
 	@echo "Uninstallation complete!"
 	@echo ""
 	@echo "Note: You may want to remove the log file:"
-	@echo "  rm $(HOME)/Library/Logs/ShavianSpellServer.log"
+	@echo "  rm $(HOME)/Library/Logs/Shaw-Spell.log"
 
 # Check for Hunspell
 check-hunspell:

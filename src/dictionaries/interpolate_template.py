@@ -2,15 +2,16 @@
 """
 Template interpolation script for dictionary files.
 
-Replaces placeholders like {{KEY}} with values provided as arguments.
-Special handling for {{DESCRIPTION}} which reads from a file.
+Replaces placeholders like $KEY$ with values provided as arguments.
+If a value refers to an existing file, reads the file contents.
 
 Usage:
   interpolate_template.py <template> <output> KEY=value KEY=value ...
-  interpolate_template.py <template> <output> DESCRIPTION=<file> KEY=value ...
+  interpolate_template.py <template> <output> DESCRIPTION=file.html KEY=value ...
 """
 
 import sys
+import os.path
 
 def interpolate_template(template_path, output_path, substitutions):
     """Read template, interpolate placeholders, and write output."""
@@ -21,7 +22,7 @@ def interpolate_template(template_path, output_path, substitutions):
 
     # Perform substitutions
     for key, value in substitutions.items():
-        placeholder = '{{' + key + '}}'
+        placeholder = '$' + key + '$'
         content = content.replace(placeholder, value)
 
     # Write output
@@ -45,13 +46,13 @@ if __name__ == '__main__':
 
         key, value = arg.split('=', 1)
 
-        # Special handling: if key is DESCRIPTION and value looks like a file path, read it
-        if key == 'DESCRIPTION' and '/' in value:
+        # Smart file detection: if value is a path to an existing file, read it
+        if os.path.isfile(value):
             try:
                 with open(value, 'r', encoding='utf-8') as f:
                     value = f.read()
-            except FileNotFoundError:
-                print(f"Error: Description file '{value}' not found.", file=sys.stderr)
+            except Exception as e:
+                print(f"Error reading file '{value}': {e}", file=sys.stderr)
                 sys.exit(1)
 
         substitutions[key] = value

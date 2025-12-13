@@ -1,0 +1,30 @@
+# Common spelling error corrections for Shavian
+# REP table: defines common misspellings and their corrections
+# Format: REP <wrong> <correct>
+#
+# Vowel substitutions are the most common errors in Shavian.
+# Each pair goes both ways (wrong→correct and correct→wrong).
+
+REP 14
+REP 𐑦 𐑰  # kit ↔ fleece (short vs long i)
+REP 𐑰 𐑦
+REP 𐑧 𐑱  # dress ↔ face (short e vs long a)
+REP 𐑱 𐑧
+REP 𐑨 𐑭  # trap ↔ palm/bath (short vs long a)
+REP 𐑭 𐑨
+REP 𐑩 𐑳  # comma ↔ strut (schwa vs short u)
+REP 𐑳 𐑩
+REP 𐑪 𐑷  # lot ↔ thought (short o vs long aw)
+REP 𐑷 𐑪
+REP 𐑫 𐑵  # foot ↔ goose (short vs long u)
+REP 𐑵 𐑫
+REP 𐑬 𐑶  # price ↔ choice (different diphthongs)
+REP 𐑶 𐑬
+REP 𐑣 𐑙
+REP 𐑙 𐑙
+REP 𐑔 𐑞
+REP 𐑞 𐑔
+REP 𐑑 𐑛
+REP 𐑛 𐑑
+REP 𐑕 𐑟
+REP 𐑟 𐑕

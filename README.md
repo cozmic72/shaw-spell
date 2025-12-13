@@ -79,7 +79,7 @@ make DIALECT=gb shavian-shavian
 
 # Build spell checker only
 make spellcheck
-make spellserver
+make server
 
 # Build installer
 make installer
@@ -98,7 +98,7 @@ make clean
 
 - `build/dictionaries/` - Dictionary bundles for Dictionary.app
 - `build/shaw-{gb,us}.{dic,aff}` - Hunspell spell checking dictionaries
-- `build/ShavianSpellServer.service` - Spell checking service
+- `build/Shaw-Spell.service` - Spell checking service
 - `build/Install Shaw-Spell.app` - Graphical installer
 - `build/Uninstall Shaw-Spell.app` - Graphical uninstaller
 - `build/ShawSpellInstaller.dmg` - Distribution package
@@ -215,9 +215,15 @@ This is a personal project, but suggestions and bug reports are welcome.
 
 ## License
 
-- **Dictionary content**: See external/readlex and Open English WordNet licenses
-- **Build scripts and source code**: Created for this project
-- **Open English WordNet**: CC-BY 4.0
+Shaw-Spell is licensed under the **MIT License**.
+
+This project bundles several open-source components with different licenses:
+- **Readlex** (Shavian word data): MIT License
+- **Open English WordNet** (definitions): CC BY 4.0
+- **Princeton WordNet 3.0**: WordNet License
+- **Hunspell** (spell checking library): Tri-licensed GPL-2.0/LGPL-2.1/MPL-1.1 (used under LGPL-2.1)
+
+See [LICENSE.md](LICENSE.md) for complete license information and attribution requirements.
 
 ## About
 

@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>ShavianSpellServer</string>
+	<string>Shaw-Spell</string>
 	<key>CFBundleIdentifier</key>
 	<string>io.joro.Shaw-Spell</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>ShavianSpellServer</string>
+	<string>Shaw-Spell</string>
 	<key>CFBundlePackageType</key>
 	<string>BNDL</string>
 	<key>CFBundleShortVersionString</key>

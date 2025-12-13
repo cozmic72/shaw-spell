@@ -32,7 +32,7 @@ endif
 DICT_NAME		=	$(DISPLAY_NAME)-$(DIALECT)
 DICT_SRC_PATH		=	../../build/$(DICT_TYPE)-$(DIALECT).xml
 CSS_PATH		=	dictionary.css
-PLIST_PATH		=	$(DICT_TYPE)-$(DIALECT).plist
+PLIST_PATH		=	../../build/dictionaries/$(DICT_TYPE)-$(DIALECT).plist
 PLIST_TEMPLATE		=	dictionary.plist.template
 DESCRIPTION_FILE	=	dictionary-description.html
 
@@ -63,6 +63,7 @@ all: $(DICT_OUTPUT)
 # Generate plist from shared template
 $(PLIST_PATH): $(PLIST_TEMPLATE) $(DESCRIPTION_FILE)
 	@echo "Generating $@ from shared template..."
+	@mkdir -p $(dir $@)
 	@./interpolate_template.py $(PLIST_TEMPLATE) $@ \
 		BUNDLE_ID=$(BUNDLE_ID) \
 		BUNDLE_NAME="$(BUNDLE_NAME)" \

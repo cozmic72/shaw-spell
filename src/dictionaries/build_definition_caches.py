@@ -270,8 +270,8 @@ def main():
 
     # Paths
     script_dir = Path(__file__).parent
-    project_dir = script_dir.parent
-    readlex_path = project_dir / '../shavian-info/readlex/readlex.json'
+    project_dir = script_dir.parent.parent
+    readlex_path = project_dir / 'external/readlex/readlex.json'
     wordnet_path = project_dir / 'build/wordnet-definitions.json'
     data_dir = project_dir / 'data'
 

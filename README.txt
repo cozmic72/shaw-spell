@@ -1,8 +1,9 @@
-Shavian Dictionaries for macOS
-===============================
+Shaw Spell - Shavian Dictionaries & Spell Checker for macOS
+============================================================
 
-Comprehensive bilingual dictionaries for translating between English and
-Shavian script for macOS, with full definitions from Open English WordNet.
+Comprehensive bilingual dictionaries and spell checker for translating
+between English and Shavian script on macOS, with full definitions from
+Open English WordNet.
 
 FEATURES
 ========
@@ -42,8 +43,9 @@ PROJECT STRUCTURE
   - shavian-english/            - Shavian → English build files
   - english-shavian/            - English → Shavian build files
   - shavian-shavian/            - Shavian → Shavian build files
-- external/                     - External resources
-  - english-wordnet/            - Open English WordNet (git submodule)
+- external/                     - External resources (git submodules)
+  - readlex/                    - Shavian word mappings
+  - english-wordnet/            - Open English WordNet source
   - english-wordnet-2024.xml    - WordNet 2024 XML file
 - build.sh                      - Master build and install script
 
@@ -53,15 +55,34 @@ REQUIREMENTS
 - Apple Dictionary Development Kit installed at:
   /Library/Developer/Dictionary Development Kit
 - Python 3
+- Python packages: PyYAML
 - shave tool (for Shavian transliteration) - must be in PATH
 - macOS
 - Git (for submodules)
 
+Install Python dependencies:
+    pip3 install -r requirements.txt
+
+SETUP
+=====
+
+After cloning the repository, initialize the submodules:
+
+    git submodule update --init --recursive
+
+This will download:
+- readlex: Shavian word mappings
+- english-wordnet: Open English WordNet 2024 source (YAML files)
+
+The WordNet XML file will be generated from the YAML sources during the build.
+
 DATA SOURCES
 ============
 
-- Shavian spellings: ../shavian-info/readlex/readlex.json (~56K entries)
+- Shavian spellings: external/readlex/readlex.json (~56K entries)
 - Definitions: Open English WordNet 2024 (161,705 words, 120,630 synsets)
+  - Source: https://github.com/globalwordnet/english-wordnet
+  - Generated from YAML sources to XML, then parsed to JSON
 - Transliteration: shave tool with WSD module
 
 BUILDING
@@ -69,40 +90,77 @@ BUILDING
 
 Quick start:
 
-    ./build.sh
+    make
+
+This will show all available build targets. To build everything:
+
+    make DIALECT=gb all    # British English (default)
+    make DIALECT=us all    # American English
 
 This will:
-1. Generate XML files from readlex and WordNet
-2. Transliterate definitions to Shavian (batch process)
-3. Build all three dictionary bundles
-4. Place .dictionary bundles in dictionaries/*/objects/
+1. Generate WordNet XML from YAML sources (if needed)
+2. Parse WordNet definitions to JSON
+3. Generate transliterated Shavian definition caches
+4. Generate dictionary XML files from readlex and WordNet
+5. Build all three dictionary bundles and spell checker
 
 To build and install:
 
-    ./build.sh install
+    make install
 
 This installs to ~/Library/Dictionaries/ and makes them available in
 Dictionary.app (restart Dictionary.app to use them).
 
 To clean build artifacts:
 
-    ./build.sh clean
+    make clean
+
+GRAPHICAL INSTALLER
+===================
+
+Shaw Spell includes a native macOS installer app for easy installation.
+
+To build the installer:
+
+    make installer
+
+This creates "Install Shaw Spell.app" in installer/build/
+
+To run the installer:
+
+    open "installer/build/Install Shaw Spell.app"
+
+The installer provides:
+- Graphical interface with installation options
+- Choice of British English, American English, or both
+- User or system-wide installation
+- Automatic setup of dictionaries, spell-checking, and spell server
+- Post-installation instructions
+
+See installer/README.md for more details.
 
 MANUAL BUILDING
 ===============
 
-Step-by-step process:
+The Makefile handles all dependencies automatically. For manual control:
 
-1. Parse WordNet (one-time setup):
+1. Generate WordNet XML (if not present):
+   cd external/english-wordnet && python3 scripts/from_yaml.py
+   mv external/english-wordnet/wn.xml build/english-wordnet-2024.xml
+
+2. Parse WordNet to JSON:
    ./src/parse_wordnet.py
 
-2. Generate dictionary XML files:
-   ./src/generate_dictionaries.py
+3. Generate transliteration caches:
+   make transliterations
 
-3. Build individual dictionaries:
-   cd dictionaries/shavian-english && make && make install
-   cd dictionaries/english-shavian && make && make install
-   cd dictionaries/shavian-shavian && make && make install
+4. Build individual dictionaries:
+   make DIALECT=gb shavian-english
+   make DIALECT=gb english-shavian
+   make DIALECT=gb shavian-shavian
+
+5. Install dictionaries:
+   make DIALECT=gb install
 
 DICTIONARY DETAILS
 ==================
@@ -216,18 +274,19 @@ DEVELOPMENT
 ===========
 
 The dictionaries are generated from:
-1. readlex.json - Shavian/English word mappings with IPA
+1. external/readlex/readlex.json - Shavian/English word mappings with IPA
 2. Open English WordNet - Comprehensive English definitions
 3. shave tool - English to Shavian transliteration
 
 Git submodules:
+- external/readlex - Shavian word mappings (https://github.com/Shavian-info/readlex)
 - external/english-wordnet - Open English WordNet source (optional, we use XML)
 
 LICENSE
 =======
 
 Dictionary content:
-- readlex data: (from ../shavian-info)
+- readlex data: https://github.com/Shavian-info/readlex
 - Open English WordNet: CC-BY 4.0
 
 Build scripts and configuration: Created for this project

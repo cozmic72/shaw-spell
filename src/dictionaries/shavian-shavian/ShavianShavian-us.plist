@@ -5,9 +5,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleIdentifier</key>
-	<string>io.joro.shaw-dict.shavian-english-gb</string>
+	<string>io.joro.shaw-spell.shavian-shavian-us</string>
 	<key>CFBundleName</key>
-	<string>Shavian-English</string>
+	<string>Shavian (US)</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>DCSDictionaryCopyright</key>

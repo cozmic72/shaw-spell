@@ -11,7 +11,8 @@ CODESIGN_IDENTITY = Jonathan Ross
 
 # Source files
 SOURCES = main.m ShavianSpellChecker.m
-OBJECTS = $(SOURCES:.m=.o)
+OBJECT_NAMES = $(SOURCES:.m=.o)
+OBJECTS = $(addprefix $(OBJECTS_DIR)/,$(OBJECT_NAMES))
 
 # Compiler and linker flags
 CC = clang
@@ -32,12 +33,13 @@ endif
 INCLUDES = -I$(HUNSPELL_INCLUDE)
 LDFLAGS = -L$(HUNSPELL_LIB)
 
-# Build directory structure
-BUILD_DIR = build
+# Build directory structure (use top-level build directory)
+BUILD_DIR = ../../build
 BUNDLE_DIR = $(BUILD_DIR)/$(BUNDLE_NAME)
 CONTENTS_DIR = $(BUNDLE_DIR)/Contents
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
+OBJECTS_DIR = $(BUILD_DIR)/spellserver-objects
 
 .PHONY: all clean install uninstall
 
@@ -58,20 +60,23 @@ all: $(BUILD_DIR)/$(SERVICE_NAME)
 	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" $(BUNDLE_DIR)
 	@echo "Service bundle created at $(BUNDLE_DIR)"
 
-$(BUILD_DIR)/$(SERVICE_NAME): $(OBJECTS) | $(BUILD_DIR)
+$(BUILD_DIR)/$(SERVICE_NAME): $(OBJECTS) | $(BUILD_DIR) $(OBJECTS_DIR)
 	@echo "Linking $(SERVICE_NAME)..."
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(FRAMEWORKS) $(LIBS)
 
-%.o: %.m
+$(OBJECTS_DIR)/%.o: %.m | $(OBJECTS_DIR)
 	@echo "Compiling $<..."
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
+$(OBJECTS_DIR):
+	@mkdir -p $(OBJECTS_DIR)
+
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -rf $(BUILD_DIR) $(OBJECTS)
+	@rm -rf $(BUNDLE_DIR) $(OBJECTS_DIR)
 
 install: all
 	@echo "Installing to $(INSTALL_DIR)..."
@@ -80,10 +85,10 @@ install: all
 	@echo "Installing LaunchAgent..."
 	@mkdir -p $(HOME)/Library/LaunchAgents
 	@mkdir -p $(HOME)/Library/Logs
-	@sed "s|__HOME__|$(HOME)|g" io.joro.shaw-dict.spellserver.plist > $(HOME)/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist
+	@sed "s|__HOME__|$(HOME)|g" io.joro.shaw-spell.spellserver.plist > $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist
 	@echo "Loading LaunchAgent..."
-	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist 2>/dev/null || true
-	@launchctl load $(HOME)/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist
+	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist 2>/dev/null || true
+	@launchctl load $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist
 	@echo "Updating services..."
 	@/System/Library/CoreServices/pbs -update
 	@echo ""
@@ -100,8 +105,8 @@ install: all
 uninstall:
 	@echo "Uninstalling from $(INSTALL_DIR)..."
 	@echo "Stopping LaunchAgent..."
-	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist 2>/dev/null || true
-	@rm -f $(HOME)/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist
+	@launchctl unload $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist 2>/dev/null || true
+	@rm -f $(HOME)/Library/LaunchAgents/io.joro.shaw-spell.spellserver.plist
 	@rm -f $(HOME)/Library/LaunchAgents/org.shavian.spellserver.plist
 	@rm -rf $(INSTALL_DIR)/$(BUNDLE_NAME)
 	@/System/Library/CoreServices/pbs -update

@@ -1,14 +1,14 @@
 #
-# Makefile for English-Shavian Dictionary
+# Makefile for Shavian-English Dictionary
 #
 
 ###########################
 
 DIALECT			?=	gb
-DICT_NAME		=	English-Shavian-$(DIALECT)
-DICT_SRC_PATH		=	../../build/english-shavian-$(DIALECT).xml
-CSS_PATH		=	EnglishShavian.css
-PLIST_PATH		=	$(if $(filter us,$(DIALECT)),EnglishShavian-us.plist,EnglishShavian.plist)
+DICT_NAME		=	Shavian-English-$(DIALECT)
+DICT_SRC_PATH		=	../../../build/shavian-english-$(DIALECT).xml
+CSS_PATH		=	ShavianEnglish.css
+PLIST_PATH		=	ShavianEnglish.plist
 
 DICT_BUILD_OPTS		=
 # Suppress adding supplementary key.
@@ -21,7 +21,7 @@ DICT_BUILD_TOOL_BIN	=	"$(DICT_BUILD_TOOL_DIR)/bin"
 
 ###########################
 
-DICT_DEV_KIT_OBJ_DIR	=	./objects-$(DIALECT)
+DICT_DEV_KIT_OBJ_DIR	=	../../../build/dictionaries
 export	DICT_DEV_KIT_OBJ_DIR
 
 DESTINATION_FOLDER	=	~/Library/Dictionaries
@@ -42,4 +42,4 @@ install:
 	echo "To test the new dictionary, try Dictionary.app."
 
 clean:
-	$(RM) -rf $(DICT_DEV_KIT_OBJ_DIR)
+	@echo "Dictionary objects are in build/dictionaries/ (cleaned by top-level Makefile)"

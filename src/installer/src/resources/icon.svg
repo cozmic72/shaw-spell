@@ -14,12 +14,12 @@
   <rect x="32" y="32" width="448" height="448" rx="80" ry="80"
         fill="url(#blueGradient)" filter="url(#shadow)"/>
 
-  <!-- Shavian letters: 𐑖𐑛 (Shaw Dict) -->
+  <!-- Shavian letters: 𐑖𐑕 (Shaw Spell) -->
   <text x="256" y="380"
         font-family="'Noto Sans Shavian', 'BRShawAI', sans-serif"
         font-size="280"
         font-weight="600"
         fill="white"
         text-anchor="middle"
-        style="letter-spacing: -10px;">𐑖𐑛</text>
+        style="letter-spacing: -10px;">𐑖𐑕</text>
 </svg>

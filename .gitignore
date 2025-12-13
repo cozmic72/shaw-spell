@@ -1,14 +1,5 @@
-# Dictionary build artifacts
-dictionaries/*/objects/
-dictionaries/*/objects-gb/
-dictionaries/*/objects-us/
-
-# Build directory (XML files are large, but can be regenerated)
-build/*.xml
-build/*.dic
-build/*.aff
-build/*.dmg
-build/dmg_staging/
+# Build directory (all build artifacts)
+build/
 
 # macOS
 .DS_Store
@@ -31,6 +22,3 @@ build-cache/
 *.swp
 *.swo
 *~
-
-# Keep data directory - it contains cached transliterations
-# !data/

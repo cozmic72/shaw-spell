@@ -5,36 +5,30 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>ShavianSpellServer</string>
+	<string>ShawSpellInstaller</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>io.joro.shaw-dict.spellserver</string>
+	<string>io.joro.shaw-spell.installer</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>ShavianSpellServer</string>
+	<string>Install Shaw Spell</string>
 	<key>CFBundlePackageType</key>
-	<string>BNDL</string>
+	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.13</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2025. All rights reserved.</string>
-	<key>NSServices</key>
-	<array>
-		<dict>
-			<key>NSSpellChecker</key>
-			<string>ShawDict</string>
-			<key>NSLanguages</key>
-			<array>
-				<string>English</string>
-				<string>en_US</string>
-				<string>en_GB</string>
-				<string>en_AU</string>
-				<string>en_CA</string>
-				<string>en_NZ</string>
-			</array>
-		</dict>
-	</array>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
 </dict>
 </plist>

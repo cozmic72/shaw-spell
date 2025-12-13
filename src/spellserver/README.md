@@ -150,4 +150,4 @@ ShavianSpellServer: Loaded Hunspell dictionary from ...
 
 ## License
 
-Part of the shaw-dict project. See main project LICENSE for details.
+Part of the shaw-spell project. See main project LICENSE for details.

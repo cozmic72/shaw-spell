@@ -1,0 +1,2 @@
+# Python dependencies for Shaw Spell build system
+PyYAML>=6.0

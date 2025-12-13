@@ -18,15 +18,33 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        // Initialize Hunspell with Shavian dictionary
-        NSString *shawDicPath = [@"~/Library/Spelling/shaw.dic" stringByExpandingTildeInPath];
-        NSString *shawAffPath = [@"~/Library/Spelling/shaw.aff" stringByExpandingTildeInPath];
+        // Determine which Shavian dialect dictionary to load
+        // Check for SHAVIAN_DIALECT environment variable or user defaults
+        NSString *dialect = [[NSProcessInfo processInfo] environment][@"SHAVIAN_DIALECT"];
+        if (!dialect) {
+            dialect = [[NSUserDefaults standardUserDefaults] stringForKey:@"ShavianDialect"];
+        }
+        if (!dialect) {
+            dialect = @"gb";  // Default to British
+        }
+
+        NSString *spellingDir = [@"~/Library/Spelling" stringByExpandingTildeInPath];
+
+        // Try dialect-specific dictionary first (shaw-gb.dic or shaw-us.dic)
+        NSString *shawDicPath = [spellingDir stringByAppendingPathComponent:[NSString stringWithFormat:@"shaw-%@.dic", dialect]];
+        NSString *shawAffPath = [spellingDir stringByAppendingPathComponent:[NSString stringWithFormat:@"shaw-%@.aff", dialect]];
+
+        // Fall back to generic shaw.dic if dialect-specific not found
+        if (![[NSFileManager defaultManager] fileExistsAtPath:shawDicPath]) {
+            shawDicPath = [spellingDir stringByAppendingPathComponent:@"shaw.dic"];
+            shawAffPath = [spellingDir stringByAppendingPathComponent:@"shaw.aff"];
+        }
 
         if ([[NSFileManager defaultManager] fileExistsAtPath:shawDicPath] &&
             [[NSFileManager defaultManager] fileExistsAtPath:shawAffPath]) {
             _shavianHandle = Hunspell_create([shawAffPath UTF8String], [shawDicPath UTF8String]);
             if (_shavianHandle) {
-                NSLog(@"ShavianSpellChecker: Loaded Shavian dictionary from %@", shawDicPath);
+                NSLog(@"ShavianSpellChecker: Loaded Shavian dictionary (%@) from %@", dialect, shawDicPath);
             } else {
                 NSLog(@"ShavianSpellChecker: Failed to load Shavian dictionary");
             }
@@ -104,6 +122,14 @@
     }
     // Shavian letters (𐑐-𐑿)
     if (codepoint >= SHAVIAN_START && codepoint <= SHAVIAN_END) {
+        return YES;
+    }
+    // Hyphen (part of compound words like colour-bar)
+    if (codepoint == 0x002D) {  // HYPHEN-MINUS
+        return YES;
+    }
+    // Namer dot (· U+00B7) - marks proper nouns in Shavian
+    if (codepoint == 0x00B7) {  // MIDDLE DOT
         return YES;
     }
     return NO;

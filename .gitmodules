@@ -1,3 +1,6 @@
 [submodule "external/english-wordnet"]
 	path = external/english-wordnet
 	url = https://github.com/globalwordnet/english-wordnet.git
+[submodule "external/readlex"]
+	path = external/readlex
+	url = https://github.com/Shavian-info/readlex.git

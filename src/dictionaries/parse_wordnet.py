@@ -90,15 +90,14 @@ def main():
     """Main function."""
     # Paths
     script_dir = Path(__file__).parent
-    project_dir = script_dir.parent
-    wordnet_xml_path = project_dir / 'external/english-wordnet-2024.xml'
+    project_dir = script_dir.parent.parent
+    wordnet_xml_path = project_dir / 'build/english-wordnet-2024.xml'
     output_path = project_dir / 'build/wordnet-definitions.json'
 
     if not wordnet_xml_path.exists():
         print(f"Error: WordNet XML file not found: {wordnet_xml_path}")
-        print("Please download it first with:")
-        print("  curl -L -o external/english-wordnet-2024.xml.gz https://en-word.net/static/english-wordnet-2024.xml.gz")
-        print("  gunzip external/english-wordnet-2024.xml.gz")
+        print("This file is generated automatically by the Makefile.")
+        print("Run: make to build all dependencies")
         return 1
 
     # Parse WordNet XML

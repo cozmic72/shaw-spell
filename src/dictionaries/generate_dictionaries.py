@@ -35,6 +35,21 @@ def normalize_to_us_spelling(word):
 
     return _normalize_word_part(word)
 
+
+def normalize_to_gb_spelling(word):
+    """
+    Normalize US spellings to GB equivalents (reverse of normalize_to_us_spelling).
+    Returns the normalized (GB) spelling.
+    Handles hyphenated compounds by normalizing each part.
+    """
+    # Handle hyphenated words by normalizing each part
+    if '-' in word:
+        parts = word.split('-')
+        normalized_parts = [_normalize_us_to_gb_part(part) for part in parts]
+        return '-'.join(normalized_parts)
+
+    return _normalize_us_to_gb_part(word)
+
 def _normalize_word_part(word):
     """
     Normalize a single word (or word part) from GB to US spelling.
@@ -75,6 +90,63 @@ def _normalize_word_part(word):
         base = word_lower[:-4]
         if base in ('def', 'off', 'lic', 'pret'):
             normalized = base + 'ense'
+            if word[0].isupper():
+                return normalized.capitalize()
+            return normalized
+
+    # No transformation needed
+    return word
+
+
+def _normalize_us_to_gb_part(word):
+    """
+    Normalize a single word (or word part) from US to GB spelling.
+    Reverse of _normalize_word_part.
+
+    Note: This is kept simple as most readlex data is already in GB (RRP) form.
+    We primarily just need to handle the common -or/-our pattern.
+    """
+    word_lower = word.lower()
+
+    # Common US -> GB transformations
+    # -or (US) -> -our (GB): color -> colour
+    if word_lower.endswith('or'):
+        # Exclude words that shouldn't get -our (door, floor, etc.)
+        if not word_lower.endswith(('oor', 'ior', 'eor')):
+            base = word_lower[:-2]
+            # Only apply to common -our words
+            if base in ('col', 'fav', 'flav', 'harb', 'hon', 'hum', 'lab',
+                        'neighb', 'rum', 'sav', 'val', 'vig', 'behavi', 'endeav', 'splend'):
+                normalized = base + 'our'
+                if word[0].isupper():
+                    return normalized.capitalize()
+                return normalized
+
+    # -er (US) -> -re (GB): center -> centre, meter -> metre
+    if word_lower.endswith('ter'):
+        base = word_lower[:-2]
+        # Common -re words in GB
+        if base in ('cen', 'thea', 'me', 'li', 'ti', 'lus', 'spec'):
+            normalized = base + 're'
+            if word[0].isupper():
+                return normalized.capitalize()
+            return normalized
+
+    # -og (US) -> -ogue (GB): dialog -> dialogue, catalog -> catalogue
+    if word_lower.endswith('log'):
+        base = word_lower[:-2]
+        # Common -ogue words
+        if base in ('dialo', 'catalo', 'analo', 'monolo'):
+            normalized = base + 'ogue'
+            if word[0].isupper():
+                return normalized.capitalize()
+            return normalized
+
+    # -ense (US) -> -ence (GB): defense -> defence, license -> licence
+    if word_lower.endswith('ense'):
+        base = word_lower[:-4]
+        if base in ('def', 'off', 'lic', 'pret'):
+            normalized = base + 'ence'
             if word[0].isupper():
                 return normalized.capitalize()
             return normalized
@@ -173,6 +245,59 @@ def extract_lemma_from_key(key):
     return None
 
 
+def is_proper_noun(pos_code):
+    """
+    Check if a POS tag indicates a proper noun.
+
+    Args:
+        pos_code: CLAWS POS tag (e.g., 'NP0', 'NN1', etc.)
+
+    Returns:
+        True if the POS tag indicates a proper noun
+    """
+    if not pos_code:
+        return False
+
+    # CLAWS tag NP0 = proper noun
+    # Also check for combined tags like 'NP0+NN1'
+    return 'NP0' in pos_code
+
+
+def capitalize_if_proper_noun(text, pos_code):
+    """
+    Capitalize text if it's a proper noun.
+
+    Args:
+        text: The text to potentially capitalize (Latin/English)
+        pos_code: CLAWS POS tag
+
+    Returns:
+        Capitalized text if proper noun, otherwise original text
+    """
+    if is_proper_noun(pos_code):
+        return text.capitalize()
+    return text
+
+
+def add_namer_dot_if_proper_noun(text, pos_code):
+    """
+    Add namer dot (·) prefix if text is a proper noun.
+
+    Args:
+        text: The Shavian text to potentially prefix
+        pos_code: CLAWS POS tag
+
+    Returns:
+        Text with namer dot prefix if proper noun, otherwise original text
+    """
+    namer_dot = '·'  # U+00B7 MIDDLE DOT
+
+    if is_proper_noun(pos_code):
+        if not text.startswith(namer_dot):
+            return namer_dot + text
+    return text
+
+
 def process_readlex_with_lemmas(readlex_data):
     """
     Process readlex data to include lemma information.
@@ -201,8 +326,7 @@ def variant_to_label(var_code):
     """Convert variant codes to readable labels."""
     variant_map = {
         'RRP': 'RP',  # Received Pronunciation (British)
-        'GA': 'Gen-Am',
-        'AU': 'Gen-Au',
+        'GenAm': 'Gen-Am',
         'GB': 'GB'
     }
     return variant_map.get(var_code, var_code)
@@ -466,7 +590,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
     shavian_lookup = build_shavian_lookup(readlex_data) if config['translate_labels'] else None
 
     # Determine preferred variant
-    preferred_var = 'RRP' if dialect == 'gb' else 'GA'
+    preferred_var = 'RRP' if dialect == 'gb' else 'GenAm'
 
     # Collect all forms for each lemma
     lemma_entries = defaultdict(lambda: {'forms': [], 'definitions': []})
@@ -641,7 +765,21 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 lemma_forms_indices = set()
                 for form in lemma_data['forms']:
                     form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
-                    lemma_forms_indices.add(form_index)
+
+                    # Apply proper noun formatting to index values
+                    if config['index_key'] == 'shaw':
+                        # Add namer dot version for proper nouns
+                        if is_proper_noun(form['pos']):
+                            # Add both with and without namer dot for flexibility
+                            lemma_forms_indices.add(form_index)
+                            lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
+                        else:
+                            lemma_forms_indices.add(form_index)
+                    else:
+                        # For Latin, add both lowercase and capitalized versions for proper nouns
+                        lemma_forms_indices.add(form_index)  # lowercase version
+                        if is_proper_noun(form['pos']):
+                            lemma_forms_indices.add(form_index.capitalize())
 
                 # Write entry for this group
                 entry_id = f"{config['index_key']}_{index_word}_{group_idx}"
@@ -651,7 +789,22 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 for form_index in sorted(lemma_forms_indices):
                     f.write(f'    <d:index d:value="{escape(form_index)}"/>\n')
 
-                f.write(f'    <h1>{escape(index_word)}</h1>\n')
+                # Apply proper noun formatting to h1 title based on first lemma form's POS
+                lemma_forms = [f for f in lemma_data['forms'] if f['is_lemma']]
+                first_pos = lemma_forms[0]['pos'] if lemma_forms else ''
+
+                # Determine which text to display in h1 based on dictionary type
+                h1_display_key = 'shaw' if config['index_key'] == 'shaw' else 'latn'
+                h1_text = index_word
+
+                if h1_display_key == 'shaw':
+                    # Apply namer dot for proper nouns in Shavian
+                    h1_text = add_namer_dot_if_proper_noun(h1_text, first_pos)
+                else:
+                    # Apply capitalization for proper nouns in Latin
+                    h1_text = capitalize_if_proper_noun(h1_text, first_pos)
+
+                f.write(f'    <h1>{escape(h1_text)}</h1>\n')
 
                 # Check if we need to show variants
                 unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
@@ -716,26 +869,48 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     if home_forms:
                         home_form = home_forms[0]
 
+                        # Apply proper noun formatting to displayed text
+                        home_display_text = home_form[display_key]
+                        if display_key == 'shaw':
+                            home_display_text = add_namer_dot_if_proper_noun(home_display_text, home_form['pos'])
+                        else:
+                            home_display_text = capitalize_if_proper_noun(home_display_text, home_form['pos'])
+
                         # Display the main text
-                        f.write(escape(home_form[display_key]))
+                        f.write(escape(home_display_text))
                         f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
 
                         # Check for alternate forms
                         if alt_forms:
                             alt_form = alt_forms[0]
+
+                            # Apply proper noun formatting to alternate form
+                            alt_display_text = alt_form[display_key]
+                            if display_key == 'shaw':
+                                alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
+                            else:
+                                alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
+
                             # Check if pronunciation is the same
                             if home_form['ipa'] == alt_form['ipa']:
                                 # Same pronunciation - just show alternate spelling (colour vs color)
-                                f.write(f' <span class="variant">({escape(alt_form[display_key])}, {alt_dialect})</span>')
+                                f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect})</span>')
                             else:
                                 # Different pronunciation - show alternate with its IPA
-                                f.write(f' <span class="variant">({escape(alt_form[display_key])}, {alt_dialect} /{alt_form["ipa"]}/)</span>')
+                                f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect} /{alt_form["ipa"]}/)</span>')
 
                     elif alt_forms:
                         # Only alt form available
                         alt_form = alt_forms[0]
 
-                        f.write(escape(alt_form[display_key]))
+                        # Apply proper noun formatting
+                        alt_display_text = alt_form[display_key]
+                        if display_key == 'shaw':
+                            alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
+                        else:
+                            alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
+
+                        f.write(escape(alt_display_text))
                         f.write(f' <span class="ipa">/{alt_form["ipa"]}/</span>')
                         f.write(f' <span class="variant">({alt_dialect})</span>')
 
@@ -802,8 +977,8 @@ def main():
 
     # Paths
     script_dir = Path(__file__).parent
-    project_dir = script_dir.parent
-    readlex_path = project_dir / '../shavian-info/readlex/readlex.json'
+    project_dir = script_dir.parent.parent
+    readlex_path = project_dir / 'external/readlex/readlex.json'
     wordnet_path = project_dir / 'build/wordnet-definitions.json'
     shavian_defs_path = project_dir / f'data/definitions-shavian-{dialect}.json'
     build_dir = project_dir / 'build'

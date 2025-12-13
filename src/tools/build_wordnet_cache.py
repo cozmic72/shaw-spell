@@ -31,9 +31,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'dictionaries'))
 from wordnet_dialect import load_wordnet_dialect_data
 
 
-def parse_all_yaml_files(yaml_dir: Path) -> Dict[str, Dict]:
+def parse_all_yaml_files(yaml_dir: Path, overrides_path: Path = None) -> Dict[str, Dict]:
     """
     Parse all WordNet YAML files and merge entries by lemma.
+    Optionally load overrides file last to override/extend entries.
 
     Returns:
         Dict mapping lemma → {pos → data}
@@ -41,7 +42,13 @@ def parse_all_yaml_files(yaml_dir: Path) -> Dict[str, Dict]:
     print("Parsing WordNet YAML files...")
 
     yaml_files = sorted(yaml_dir.glob('*.yaml'))
-    print(f"Found {len(yaml_files)} YAML files to process")
+
+    # Add overrides file to the end if it exists
+    if overrides_path and overrides_path.exists():
+        yaml_files.append(overrides_path)
+        print(f"Found {len(yaml_files)-1} WordNet YAML files + 1 overrides file")
+    else:
+        print(f"Found {len(yaml_files)} YAML files to process")
 
     lemma_data = defaultdict(lambda: defaultdict(lambda: {
         'forms': set(),
@@ -96,6 +103,10 @@ def parse_all_yaml_files(yaml_dir: Path) -> Dict[str, Dict]:
                                     'id': sense.get('id', ''),
                                     'synset': sense.get('synset', '')
                                 }
+
+                                # Include custom definition if present (from overrides)
+                                if 'definition' in sense:
+                                    sense_entry['definition'] = sense['definition']
 
                                 # Include derivation info if present
                                 if 'derivation' in sense:
@@ -205,17 +216,30 @@ def merge_comprehensive_cache(
                 'senses': data['senses']
             }
 
-            # Add definitions that match this POS
+            # Collect definitions from multiple sources
+            all_defs = []
+
+            # 1. Add definitions from existing cache that match this POS
             if lemma_defs:
-                # Filter definitions by POS if possible
                 matching_defs = [
                     d for d in lemma_defs
                     if matches_pos(d.get('pos', ''), pos)
                 ]
                 if matching_defs:
-                    pos_entry['definitions'] = matching_defs
+                    all_defs.extend(matching_defs)
                 elif not pos_entries:  # First POS, add all definitions
-                    pos_entry['definitions'] = lemma_defs
+                    all_defs.extend(lemma_defs)
+
+            # 2. Extract definitions from senses (from overrides)
+            for sense in data['senses']:
+                if 'definition' in sense:
+                    all_defs.append({
+                        'definition': sense['definition'],
+                        'pos': pos
+                    })
+
+            if all_defs:
+                pos_entry['definitions'] = all_defs
 
             pos_entries[pos] = pos_entry
 
@@ -323,6 +347,7 @@ def main():
     project_dir = Path(__file__).parent.parent.parent
     yaml_dir = project_dir / 'external/english-wordnet/src/yaml'
     definitions_path = project_dir / 'build/wordnet-definitions.json'
+    overrides_path = project_dir / 'data/wordnet-overrides.yaml'
 
     # Validate inputs
     if not yaml_dir.exists():
@@ -334,11 +359,12 @@ def main():
     print("BUILDING COMPREHENSIVE WORDNET CACHE")
     print("="*60)
     print(f"YAML source: {yaml_dir}")
+    print(f"Overrides: {overrides_path}")
     print(f"Output: {args.output}")
     print()
 
-    # Step 1: Parse YAML files
-    lemma_data = parse_all_yaml_files(yaml_dir)
+    # Step 1: Parse YAML files (includes overrides if present)
+    lemma_data = parse_all_yaml_files(yaml_dir, overrides_path)
 
     # Step 2: Load dialect data from YAML
     dialect_data = load_wordnet_dialect_data(yaml_dir)

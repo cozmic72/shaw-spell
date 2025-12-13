@@ -1,0 +1,18 @@
+# WordNet Override Definitions
+#
+# This file contains custom definitions that override or extend WordNet entries.
+# Format matches the WordNet YAML format: {lemma: {pos: data}}
+#
+# When building the comprehensive cache, these entries will be merged with
+# WordNet data, with overrides taking precedence.
+
+Shavian:
+  n:
+    pronunciation:
+    - value: ˈʃeɪvɪən
+    sense:
+    # Existing senses from WordNet will be preserved
+    # Adding new sense for the Shavian alphabet
+    - id: 'shavian%1:10:01::'
+      synset: 99999999-n  # Custom synset ID
+      definition: a phonemic alphabet for the English language designed by Kingsley Read and commissioned by George Bernard Shaw, using 48 characters to represent the sounds of English

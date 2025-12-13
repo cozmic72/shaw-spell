@@ -47,7 +47,6 @@ The repository includes pre-built caches for faster builds. To regenerate them:
 
 ```bash
 # Regenerate transliteration caches (requires shave tool)
-make clean-cache
 make transliterations
 
 # Regenerate comprehensive WordNet cache (~2 minutes)

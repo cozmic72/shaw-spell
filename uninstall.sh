@@ -115,9 +115,6 @@ if [ "$LAUNCH_AGENT_INSTALLED" = true ]; then
     echo "Stopping spell server..."
     launchctl unload "$HOME/Library/LaunchAgents/io.joro.Shaw-Spell.plist" 2>/dev/null || true
     rm -f "$HOME/Library/LaunchAgents/io.joro.Shaw-Spell.plist"
-    # Also remove old plist if it exists
-    launchctl unload "$HOME/Library/LaunchAgents/org.shavian.spellserver.plist" 2>/dev/null || true
-    rm -f "$HOME/Library/LaunchAgents/org.shavian.spellserver.plist"
 fi
 
 # Remove user components

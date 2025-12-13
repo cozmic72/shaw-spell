@@ -10,7 +10,7 @@ Creates dialect-specific dictionaries:
 Supports:
   - Proper nouns with namer dot (·) prefix
   - Hyphenated compounds
-  - Dialect-specific word filtering
+  - Dialect-specific word filtering using WordNet cache
 
 Install to ~/Library/Spelling/ for macOS spell-checking.
 """
@@ -39,35 +39,48 @@ def is_proper_noun(pos):
     return pos.startswith('NNP') or pos == 'PROPN'
 
 
-def should_include_word(entry, preferred_dialect):
+def should_include_word(lemma, preferred_dialect, wordnet_cache):
     """
-    Determine if a word should be included in the dialect-specific dictionary.
+    Determine if a word should be included in the dialect-specific dictionary
+    using WordNet cache for authoritative dialect information.
+
+    Symmetric logic:
+      - US dictionary: include words with US variants OR words with no dialect marker
+      - GB dictionary: include words with GB variants OR words with no dialect marker
 
     Args:
-        entry: readlex entry with 'var' field (RRP for British, GenAm for American)
+        lemma: Latin lemma (base form of the word)
         preferred_dialect: 'gb' or 'us'
+        wordnet_cache: WordNet comprehensive cache
 
     Returns:
         True if word should be included
     """
-    var = entry.get('var', '')
+    if not wordnet_cache or lemma.lower() not in wordnet_cache:
+        # Not in WordNet cache - include in both dictionaries (common word)
+        return True
 
-    if preferred_dialect == 'gb':
-        # GB dictionary: include RRP (British), unmarked words, and dialect-neutral words
-        # Exclude only GenAm-specific words
-        return var not in ('GenAm',)
-    elif preferred_dialect == 'us':
-        # US dictionary: include GenAm (American), unmarked words, and dialect-neutral words
-        # Most words are RRP, so we include RRP words as fallback for US dictionary
-        # Only exclude RRP-specific variants if a GenAm alternative exists
-        # For now, include everything except specific RRP-only variants
-        return True  # Include all words in US dictionary for maximum coverage
+    entry = wordnet_cache[lemma.lower()]
+    variants = entry.get('variants', {})
 
-    # Default: include everything
-    return True
+    # Check if this word has variants for the preferred dialect
+    target_dialect = 'US' if preferred_dialect == 'us' else 'GB'
+
+    if target_dialect in variants:
+        # Word has variants in target dialect - include it
+        return True
+
+    # Word doesn't have variants for this dialect
+    # Include it if it has NO dialect-specific variants at all (i.e., it's common to both)
+    if not variants:
+        return True
+
+    # Word has variants, but not for this dialect - exclude it
+    # (This means it's specific to the other dialect)
+    return False
 
 
-def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb'):
+def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb', wordnet_cache=None):
     """
     Generate simple Hunspell dictionary (all word forms as separate entries).
 
@@ -79,8 +92,9 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb')
         output_dic: Output path for .dic file
         output_aff: Output path for .aff file
         dialect: 'gb' or 'us' to filter words by dialect
+        wordnet_cache: WordNet comprehensive cache for dialect filtering
     """
-    dialect_name = "British (GB/RRP)" if dialect == 'gb' else "American (US/GA)"
+    dialect_name = "British (GB)" if dialect == 'gb' else "American (US)"
     print(f"Generating Hunspell spell-check files for {dialect_name}...")
     print("Using simple word list approach (no affix compression)")
 
@@ -89,11 +103,16 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb')
     namer_dot = '·'  # U+00B7 MIDDLE DOT
 
     for key, entries in readlex_data.items():
-        for entry in entries:
-            # Filter by dialect
-            if not should_include_word(entry, dialect):
-                continue
+        # Extract lemma from key for dialect filtering
+        lemma = extract_lemma_from_key(key)
+        if not lemma:
+            continue
 
+        # Check if this lemma should be included in this dialect
+        if not should_include_word(lemma, dialect, wordnet_cache):
+            continue
+
+        for entry in entries:
             shaw = entry.get('Shaw', '')
             if not shaw:
                 continue
@@ -151,7 +170,7 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb')
     print(f"  - {output_aff} (basic configuration)")
 
 
-def generate_with_affixes(readlex_data, output_dic, output_aff, dialect='gb'):
+def generate_with_affixes(readlex_data, output_dic, output_aff, dialect='gb', wordnet_cache=None):
     """
     Generate Hunspell dictionary with affix rules.
 
@@ -162,7 +181,7 @@ def generate_with_affixes(readlex_data, output_dic, output_aff, dialect='gb'):
     """
     print("Advanced affix generation not yet implemented.")
     print("Falling back to simple word list...")
-    generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect)
+    generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect, wordnet_cache)
 
 
 def main():
@@ -179,6 +198,7 @@ def main():
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent.parent
     readlex_path = project_dir / 'external/readlex/readlex.json'
+    wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     build_dir = project_dir / 'build'
 
     # Ensure build directory exists
@@ -189,6 +209,17 @@ def main():
     with open(readlex_path, 'r', encoding='utf-8') as f:
         readlex_data = json.load(f)
     print(f"Loaded {len(readlex_data)} readlex entries\n")
+
+    # Load WordNet comprehensive cache (required for dialect filtering)
+    wordnet_cache = {}
+    if wordnet_cache_path.exists():
+        print("Loading comprehensive WordNet cache...")
+        with open(wordnet_cache_path, 'r', encoding='utf-8') as f:
+            wordnet_cache = json.load(f)
+        print(f"Loaded cache with {len(wordnet_cache)} lemmas\n")
+    else:
+        print(f"WARNING: Comprehensive cache not found at {wordnet_cache_path}")
+        print("Dialect filtering will not work properly. Run 'make wordnet-cache' first.\n")
 
     # Generate spell-check files for requested dialects
     dialects_to_generate = []
@@ -202,9 +233,9 @@ def main():
         aff_path = build_dir / f'io.joro.shaw-spell.shavian-{dialect}.aff'
 
         if args.with_affixes:
-            generate_with_affixes(readlex_data, dic_path, aff_path, dialect)
+            generate_with_affixes(readlex_data, dic_path, aff_path, dialect, wordnet_cache)
         else:
-            generate_simple_wordlist(readlex_data, dic_path, aff_path, dialect)
+            generate_simple_wordlist(readlex_data, dic_path, aff_path, dialect, wordnet_cache)
         print()  # Blank line between dialects
 
     print("All spell-check files ready!")

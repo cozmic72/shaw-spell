@@ -1,7 +1,7 @@
 # Makefile for Shaw-Spell
 # Provides incremental builds for dictionaries and spell checker
 
-.PHONY: all clean clean-cache clean-all install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache
+.PHONY: all clean install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache
 .PHONY: shavian-english-gb shavian-english-us english-shavian-gb english-shavian-us shavian-shavian-gb shavian-shavian-us
 .DEFAULT_GOAL := help
 
@@ -10,8 +10,6 @@ VERSION = 1.0-beta
 export VERSION
 
 READLEX_PATH = external/readlex/readlex.json
-WORDNET_XML = build/english-wordnet-2024.xml
-WORDNET_PATH = build/wordnet-definitions.json
 WORDNET_CACHE = data/wordnet-comprehensive.json
 
 # Load signing configuration if it exists
@@ -39,9 +37,6 @@ DICT_SHAVIAN_SHAVIAN_US = build/dictionaries/Shaw-Spell-Shavian-us.dictionary
 # Dictionary source directories
 DICT_DIR = src/dictionaries
 
-# Determine which dictionaries need the cache
-CACHE_DEPS = $(READLEX_PATH) $(WORDNET_PATH) $(CACHE_SCRIPT)
-
 ###########################################
 # Help
 ###########################################
@@ -60,91 +55,86 @@ help:
 	@echo "  uninstaller-app     Build uninstaller app only"
 	@echo "  dmg                 Build DMG (without notarization)"
 	@echo "  spellcheck          Build all Hunspell dictionaries"
-	@echo "  wordnet-cache       Build comprehensive WordNet cache (expensive)"
+	@echo ""
+	@echo "Cache regeneration (explicit only, commits to git):"
+	@echo "  wordnet-cache       Rebuild comprehensive WordNet cache (~2 min)"
+	@echo "  transliterations    Rebuild Shavian caches (requires shave tool)"
 	@echo ""
 	@echo "Cleanup targets:"
-	@echo "  clean               Remove build artifacts"
-	@echo "  clean-cache         Remove definition caches"
-	@echo "  clean-all           Remove all build artifacts and caches"
+	@echo "  clean               Remove build/ artifacts (preserves data/ caches)"
 	@echo "  uninstall           Remove installed components"
-
-###########################################
-# WordNet XML generation and parsing
-###########################################
-
-# Generate WordNet XML from YAML sources in submodule
-$(WORDNET_XML): external/english-wordnet/src/yaml/*.yaml
-	@echo "Generating WordNet XML from YAML sources..."
-	@mkdir -p build
-	@python3 -c "import yaml" || (echo "Error: PyYAML not installed. Install with: pip3 install -r requirements.txt" && exit 1)
-	@cd external/english-wordnet && python3 scripts/from_yaml.py
-	@mv external/english-wordnet/wn.xml $(WORDNET_XML)
-	@echo "WordNet XML generated: $(WORDNET_XML)"
-
-# Parse WordNet XML to JSON format for dictionary generation
-$(WORDNET_PATH): $(WORDNET_XML) src/dictionaries/parse_wordnet.py
-	@echo "Parsing WordNet definitions..."
-	@mkdir -p build
-	src/dictionaries/parse_wordnet.py
 
 ###########################################
 # Cache generation
 ###########################################
 
-# Explicit rules for both dialects (no pattern rule to avoid conflicts)
-data/definitions-shavian-gb.json: $(CACHE_DEPS)
-	@echo "Building Shavian definition cache (GB)..."
-	@mkdir -p data
-	$(CACHE_SCRIPT) --gb
-
-data/definitions-shavian-us.json: $(CACHE_DEPS)
-	@echo "Building Shavian definition cache (US)..."
-	@mkdir -p data
-	$(CACHE_SCRIPT) --us
-
-# Comprehensive WordNet cache (expensive preprocessing, separate from 'all')
-$(WORDNET_CACHE): $(WORDNET_XML) src/tools/build_wordnet_cache.py src/dictionaries/wordnet_dialect.py
-	@echo "Building comprehensive WordNet cache..."
+# Comprehensive WordNet cache (auto-builds if missing, ~2 min)
+$(WORDNET_CACHE): src/tools/build_wordnet_cache.py src/dictionaries/wordnet_dialect.py external/english-wordnet/src/yaml/*.yaml
+	@echo "Building comprehensive WordNet cache from YAML..."
 	@echo "This is expensive preprocessing (~2 minutes)."
 	@mkdir -p data
 	src/tools/build_wordnet_cache.py
+	@echo "✓ WordNet cache generated: $(WORDNET_CACHE)"
+	@echo "  Note: This file is large and not committed to git."
 
-# Target to explicitly build the WordNet cache (not part of 'all')
-wordnet-cache: $(WORDNET_CACHE)
-	@echo "WordNet comprehensive cache built successfully!"
+# Transliteration caches (auto-build if missing, requires shave tool)
+data/definitions-shavian-gb.json: $(CACHE_SCRIPT) $(READLEX_PATH)
+	@echo "Building Shavian definition cache (GB)..."
+	@echo "This requires the shave tool."
+	@mkdir -p data
+	$(CACHE_SCRIPT) --gb
+
+data/definitions-shavian-us.json: $(CACHE_SCRIPT) $(READLEX_PATH)
+	@echo "Building Shavian definition cache (US)..."
+	@echo "This requires the shave tool."
+	@mkdir -p data
+	$(CACHE_SCRIPT) --us
+
+# Phony targets to explicitly regenerate caches
+wordnet-cache:
+	@echo "Rebuilding comprehensive WordNet cache..."
+	@rm -f $(WORDNET_CACHE)
+	@$(MAKE) $(WORDNET_CACHE)
+
+transliterations:
+	@echo "Rebuilding Shavian transliteration caches..."
+	@mkdir -p data
+	$(CACHE_SCRIPT) --gb
+	$(CACHE_SCRIPT) --us
+	@echo "✓ Transliteration caches rebuilt"
 
 ###########################################
 # XML generation
 ###########################################
 
 # Explicit rules for GB XML files
-build/shavian-english-gb.xml: $(READLEX_PATH) $(WORDNET_PATH) $(DICT_SCRIPT)
+build/shavian-english-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE)
 	@echo "Generating Shavian-English XML (GB)..."
 	@mkdir -p build
 	$(DICT_SCRIPT) --gb --dict shavian-english
 
-build/english-shavian-gb.xml: data/definitions-shavian-gb.json $(READLEX_PATH) $(DICT_SCRIPT)
+build/english-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json
 	@echo "Generating English-Shavian XML (GB)..."
 	@mkdir -p build
 	$(DICT_SCRIPT) --gb --dict english-shavian
 
-build/shavian-shavian-gb.xml: data/definitions-shavian-gb.json $(READLEX_PATH) $(DICT_SCRIPT)
+build/shavian-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json
 	@echo "Generating Shavian-Shavian XML (GB)..."
 	@mkdir -p build
 	$(DICT_SCRIPT) --gb --dict shavian-shavian
 
 # Explicit rules for US XML files
-build/shavian-english-us.xml: $(READLEX_PATH) $(WORDNET_PATH) $(DICT_SCRIPT)
+build/shavian-english-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE)
 	@echo "Generating Shavian-English XML (US)..."
 	@mkdir -p build
 	$(DICT_SCRIPT) --us --dict shavian-english
 
-build/english-shavian-us.xml: data/definitions-shavian-us.json $(READLEX_PATH) $(DICT_SCRIPT)
+build/english-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json
 	@echo "Generating English-Shavian XML (US)..."
 	@mkdir -p build
 	$(DICT_SCRIPT) --us --dict english-shavian
 
-build/shavian-shavian-us.xml: data/definitions-shavian-us.json $(READLEX_PATH) $(DICT_SCRIPT)
+build/shavian-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json
 	@echo "Generating Shavian-Shavian XML (US)..."
 	@mkdir -p build
 	$(DICT_SCRIPT) --us --dict shavian-shavian
@@ -194,12 +184,12 @@ $(HUNSPELL_GB) $(HUNSPELL_US): $(READLEX_PATH) src/server/generate_spellcheck.py
 	src/server/generate_spellcheck.py
 
 # Latin Hunspell dictionaries (generated from WordNet)
-$(HUNSPELL_EN_GB): $(WORDNET_CACHE) src/dictionaries/generate_hunspell.py
+$(HUNSPELL_EN_GB): src/dictionaries/generate_hunspell.py $(WORDNET_CACHE)
 	@echo "Generating English (GB) Hunspell dictionary from WordNet..."
 	@mkdir -p build
 	src/dictionaries/generate_hunspell.py --dialect gb
 
-$(HUNSPELL_EN_US): $(WORDNET_CACHE) src/dictionaries/generate_hunspell.py
+$(HUNSPELL_EN_US): src/dictionaries/generate_hunspell.py $(WORDNET_CACHE)
 	@echo "Generating English (US) Hunspell dictionary from WordNet..."
 	@mkdir -p build
 	src/dictionaries/generate_hunspell.py --dialect us
@@ -234,10 +224,12 @@ $(DMG_FILE): $(INSTALLER_MARKER) $(UNINSTALLER_MARKER) src/installer/dmg-templat
 	@cp -R "build/Uninstall Shaw-Spell.app" build/dmg_staging/
 	@rm -f build/Shaw-Spell-temp.dmg $(DMG_FILE)
 	@echo "Creating temporary read-write DMG..."
-	@hdiutil create -volname "Shaw-Spell $(VERSION)" -srcfolder build/dmg_staging -ov -format UDRW build/Shaw-Spell-temp.dmg
+	@hdiutil create -volname "Shaw-Spell-$(VERSION)" -srcfolder build/dmg_staging -ov -format UDRW build/Shaw-Spell-temp.dmg
+	@echo "Ensuring no auto-mounted volumes..."
+	@hdiutil detach "/Volumes/Shaw-Spell-$(VERSION)" 2>/dev/null || true
 	@echo "Mounting temporary DMG..."
 	@mkdir -p build/dmg_mount
-	@hdiutil attach build/Shaw-Spell-temp.dmg -mountpoint build/dmg_mount -nobrowse
+	@hdiutil attach build/Shaw-Spell-temp.dmg -mountpoint build/dmg_mount -nobrowse -noverify -noautoopen
 	@if [ -f src/installer/dmg-template/DS_Store_template ]; then \
 		echo "Copying layout template..."; \
 		cp src/installer/dmg-template/DS_Store_template "build/dmg_mount/.DS_Store"; \
@@ -305,11 +297,6 @@ all: $(DMG_FILE)
 	@echo "All components built successfully!"
 	@echo "DMG installer ready at: $(DMG_FILE)"
 
-transliterations: data/definitions-shavian-gb.json data/definitions-shavian-us.json
-	@echo "Transliterated definition caches built successfully!"
-	@echo "  GB: data/definitions-shavian-gb.json"
-	@echo "  US: data/definitions-shavian-us.json"
-
 # Convenience targets (build both dialects)
 shavian-english: $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_SHAVIAN_ENGLISH_US)
 	@echo "Shavian-English dictionaries (GB & US) built successfully!"
@@ -369,27 +356,9 @@ uninstall:
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@# Preserve expensive-to-generate files
-	@if [ -f "$(WORDNET_XML)" ]; then \
-		cp "$(WORDNET_XML)" /tmp/wordnet-xml-backup.xml; \
-	fi
 	@rm -rf build/
-	@if [ -f /tmp/wordnet-xml-backup.xml ]; then \
-		mkdir -p build && mv /tmp/wordnet-xml-backup.xml "$(WORDNET_XML)"; \
-	fi
 	@cd src/installer && $(MAKE) clean 2>/dev/null || true
 	@cd src/uninstaller && $(MAKE) clean 2>/dev/null || true
 	@echo "Clean complete"
-
-clean-cache:
-	@echo "Cleaning definition caches and expensive generated files..."
-	@rm -f data/definitions-shavian-gb.json
-	@rm -f data/definitions-shavian-us.json
-	@rm -f data/definitions-shavian.json
-	@rm -f build/wordnet-definitions.json
-	@rm -f "$(WORDNET_XML)"
-	@rm -f "$(WORDNET_CACHE)"
-	@echo "Cache clean complete"
-
-clean-all: clean clean-cache
-	@echo "Complete clean finished"
+	@echo "Note: Pre-built caches in data/ are preserved."
+	@echo "      To regenerate caches, run: make wordnet-cache or make transliterations"

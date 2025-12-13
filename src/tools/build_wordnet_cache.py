@@ -188,9 +188,10 @@ def merge_comprehensive_cache(
             elif 'AU' in dialects:
                 primary_dialect = 'AU'
 
-        # Get variants (sorted for deterministic output)
+        # Get variants as lists (sorted for deterministic output)
         variants_raw = dialect_data.get_all_variants(lemma)
-        variants = {k: variants_raw[k] for k in sorted(variants_raw.keys())}
+        # Sort both the dialect keys and the variant lists within each dialect
+        variants = {k: sorted(variants_raw[k]) for k in sorted(variants_raw.keys())}
 
         # Get definitions for this lemma
         lemma_defs = definitions.get(lemma.lower(), [])
@@ -321,17 +322,12 @@ def main():
     # Paths
     project_dir = Path(__file__).parent.parent.parent
     yaml_dir = project_dir / 'external/english-wordnet/src/yaml'
-    wordnet_xml_path = project_dir / 'external/english-wordnet-2024.xml'
     definitions_path = project_dir / 'build/wordnet-definitions.json'
 
     # Validate inputs
     if not yaml_dir.exists():
         print(f"ERROR: YAML directory not found: {yaml_dir}")
-        print("Please ensure external/english-wordnet is cloned")
-        sys.exit(1)
-
-    if not wordnet_xml_path.exists():
-        print(f"ERROR: WordNet XML not found: {wordnet_xml_path}")
+        print("Please ensure external/english-wordnet submodule is initialized")
         sys.exit(1)
 
     print("="*60)
@@ -344,9 +340,8 @@ def main():
     # Step 1: Parse YAML files
     lemma_data = parse_all_yaml_files(yaml_dir)
 
-    # Step 2: Load dialect data
-    print("\nLoading dialect data from XML...")
-    dialect_data = load_wordnet_dialect_data(wordnet_xml_path)
+    # Step 2: Load dialect data from YAML
+    dialect_data = load_wordnet_dialect_data(yaml_dir)
 
     # Step 3: Load existing definitions
     definitions = load_existing_definitions(definitions_path)

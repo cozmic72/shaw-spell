@@ -216,8 +216,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         echo 'Stopping spell server...'
         launchctl unload "\(homeDir)/Library/LaunchAgents/io.joro.Shaw-Spell.plist" 2>/dev/null || true
         rm -f "\(homeDir)/Library/LaunchAgents/io.joro.Shaw-Spell.plist"
-        launchctl unload "\(homeDir)/Library/LaunchAgents/org.shavian.spellserver.plist" 2>/dev/null || true
-        rm -f "\(homeDir)/Library/LaunchAgents/org.shavian.spellserver.plist"
 
         """
 

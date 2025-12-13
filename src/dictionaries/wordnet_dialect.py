@@ -3,10 +3,10 @@
 WordNet dialect information extractor.
 
 Extracts authoritative dialect markers (American, British, Canadian, Australian)
-from Open English WordNet XML files, replacing heuristic-based dialect detection.
+from Open English WordNet YAML files, replacing heuristic-based dialect detection.
 """
 
-import xml.etree.ElementTree as ET
+import yaml
 from pathlib import Path
 from collections import defaultdict
 from typing import Dict, Set, Optional, List
@@ -19,13 +19,13 @@ class WordNetDialectData:
     Structure:
         word_dialects: word → set of dialects ('US', 'GB', 'CA', 'AU')
         word_synsets: word → set of synsets
-        synset_variants: synset → {dialect → word}
+        synset_variants: synset → {dialect → list of words}
     """
 
     def __init__(self):
         self.word_dialects: Dict[str, Set[str]] = defaultdict(set)
         self.word_synsets: Dict[str, Set[str]] = defaultdict(set)
-        self.synset_variants: Dict[str, Dict[str, str]] = defaultdict(dict)
+        self.synset_variants: Dict[str, Dict[str, List[str]]] = defaultdict(lambda: defaultdict(list))
 
     def add_entry(self, word: str, synset: str, dialects: Set[str]):
         """Add a word entry with its synset and dialects."""
@@ -37,49 +37,53 @@ class WordNetDialectData:
         # Record word → synsets
         self.word_synsets[word_lower].add(synset)
 
-        # Record synset → {dialect → word}
+        # Record synset → {dialect → list of words}
         for dialect in dialects:
-            self.synset_variants[synset][dialect] = word_lower
+            if word_lower not in self.synset_variants[synset][dialect]:
+                self.synset_variants[synset][dialect].append(word_lower)
 
     def get_dialects(self, word: str) -> Set[str]:
         """Get all dialects for a word (e.g., {'US'}, {'GB', 'CA', 'AU'})."""
         return self.word_dialects.get(word.lower(), set())
 
-    def get_variant_for_dialect(self, word: str, target_dialect: str) -> Optional[str]:
+    def get_variant_for_dialect(self, word: str, target_dialect: str) -> Optional[List[str]]:
         """
-        Get the spelling variant of a word for a target dialect.
+        Get the spelling variants of a word for a target dialect.
 
         For example:
-            get_variant_for_dialect('color', 'GB') → 'colour'
-            get_variant_for_dialect('colour', 'US') → 'color'
+            get_variant_for_dialect('color', 'GB') → ['colour']
+            get_variant_for_dialect('colour', 'US') → ['color']
 
-        Returns None if no variant exists for the target dialect.
+        Returns None if no variant exists for the target dialect, or an empty list
+        if only the same word exists.
         """
         word_lower = word.lower()
 
-        # Get synsets for this word
-        synsets = self.word_synsets.get(word_lower, set())
+        # Get synsets for this word (sorted for deterministic iteration)
+        synsets = sorted(self.word_synsets.get(word_lower, set()))
 
-        # For each synset, check if there's a variant for the target dialect
+        # Collect all variants for the target dialect
+        all_variants = []
         for synset in synsets:
             if synset in self.synset_variants:
-                variants = self.synset_variants[synset]
-                if target_dialect in variants:
-                    variant = variants[target_dialect]
-                    # Don't return the same word
-                    if variant != word_lower:
-                        return variant
+                variants_dict = self.synset_variants[synset]
+                if target_dialect in variants_dict:
+                    # Add variants that aren't the same as the input word
+                    for variant in variants_dict[target_dialect]:
+                        if variant != word_lower and variant not in all_variants:
+                            all_variants.append(variant)
 
-        return None
+        return all_variants if all_variants else None
 
-    def get_all_variants(self, word: str) -> Dict[str, str]:
+    def get_all_variants(self, word: str) -> Dict[str, List[str]]:
         """
         Get all spelling variants of a word across all dialects.
 
-        Returns: dict mapping dialect → word (e.g., {'US': 'color', 'GB': 'colour'})
+        Returns: dict mapping dialect → list of words
+                 (e.g., {'US': ['color'], 'GB': ['colour', 'coloure']})
         """
         word_lower = word.lower()
-        all_variants = {}
+        all_variants: Dict[str, List[str]] = defaultdict(list)
 
         # Get synsets for this word (sorted for deterministic iteration)
         synsets = sorted(self.word_synsets.get(word_lower, set()))
@@ -87,23 +91,27 @@ class WordNetDialectData:
         # Collect all variants from all synsets
         for synset in synsets:
             if synset in self.synset_variants:
-                all_variants.update(self.synset_variants[synset])
+                for dialect, variants_list in self.synset_variants[synset].items():
+                    for variant in variants_list:
+                        if variant not in all_variants[dialect]:
+                            all_variants[dialect].append(variant)
 
-        return all_variants
+        return dict(all_variants)
 
 
-def load_wordnet_dialect_data(wordnet_xml_path: Path) -> WordNetDialectData:
+def load_wordnet_dialect_data(wordnet_yaml_dir: Path) -> WordNetDialectData:
     """
-    Load dialect information from WordNet XML file.
+    Load dialect information from WordNet YAML files.
 
-    Extracts words with dialect markers like:
-        <SenseRelation relType="exemplifies" target="oewn-american_spelling__1.10.01.."/>
-        <SenseRelation relType="exemplifies" target="oewn-british_spelling__1.10.01.."/>
+    Extracts words with dialect markers in the 'exemplifies' field:
+        exemplifies:
+          - 'american_spelling%1:10:01::'
+          - 'british_spelling%1:10:01::'
 
     Returns:
         WordNetDialectData object with dialect lookups
     """
-    print("Loading WordNet dialect data...")
+    print("Loading WordNet dialect data from YAML...")
 
     data = WordNetDialectData()
 
@@ -115,43 +123,59 @@ def load_wordnet_dialect_data(wordnet_xml_path: Path) -> WordNetDialectData:
         'australian_spelling': 'AU'
     }
 
-    # Parse XML
-    tree = ET.parse(wordnet_xml_path)
-    root = tree.getroot()
+    # Find all entries-*.yaml files (where lemmas with dialect info are stored)
+    yaml_files = sorted(wordnet_yaml_dir.glob('entries-*.yaml'))
 
-    # Find all LexicalEntry elements
-    for entry in root.findall('.//LexicalEntry'):
-        lemma_elem = entry.find('Lemma')
-        if lemma_elem is None:
+    files_processed = 0
+    for yaml_file in yaml_files:
+        files_processed += 1
+
+        with open(yaml_file, 'r', encoding='utf-8') as f:
+            entries = yaml.safe_load(f)
+
+        if not entries:
             continue
 
-        word = lemma_elem.get('writtenForm')
-        if not word:
-            continue
-
-        # Check all senses for dialect markers
-        for sense in entry.findall('.//Sense'):
-            synset = sense.get('synset')
-            if not synset:
+        # Each YAML file contains: {lemma: {pos: data}}
+        for lemma, pos_dict in entries.items():
+            if not isinstance(pos_dict, dict):
                 continue
 
-            # Find dialect markers in sense relations
-            dialects = set()
-            for sense_rel in sense.findall('SenseRelation'):
-                rel_type = sense_rel.get('relType')
-                target = sense_rel.get('target', '')
+            for pos, pos_data in pos_dict.items():
+                if not isinstance(pos_data, dict):
+                    continue
 
-                if rel_type == 'exemplifies':
-                    # Extract dialect from target like "oewn-american_spelling__1.10.01.."
-                    for marker, code in dialect_markers.items():
-                        if marker in target:
-                            dialects.add(code)
+                # Check all senses for dialect markers
+                senses = pos_data.get('sense', [])
+                if not isinstance(senses, list):
+                    continue
 
-            # If this sense has dialect markers, record it
-            if dialects:
-                data.add_entry(word, synset, dialects)
+                for sense in senses:
+                    if not isinstance(sense, dict):
+                        continue
 
-    print(f"Loaded dialect data for {len(data.word_dialects)} words")
+                    synset = sense.get('synset')
+                    if not synset:
+                        continue
+
+                    # Find dialect markers in 'exemplifies' field
+                    exemplifies = sense.get('exemplifies', [])
+                    if not exemplifies:
+                        continue
+
+                    dialects = set()
+                    for exemplify in exemplifies:
+                        # Extract dialect from strings like 'american_spelling%1:10:01::'
+                        for marker, code in dialect_markers.items():
+                            if marker in exemplify:
+                                dialects.add(code)
+
+                    # If this sense has dialect markers, record it
+                    if dialects:
+                        data.add_entry(lemma, synset, dialects)
+
+    print(f"Loaded dialect data from {files_processed} YAML files")
+    print(f"  - Total words: {len(data.word_dialects)}")
     print(f"  - US words: {sum(1 for d in data.word_dialects.values() if 'US' in d)}")
     print(f"  - GB words: {sum(1 for d in data.word_dialects.values() if 'GB' in d)}")
     print(f"  - Variant pairs: {len(data.synset_variants)}")
@@ -161,16 +185,16 @@ def load_wordnet_dialect_data(wordnet_xml_path: Path) -> WordNetDialectData:
 
 # Global cache for loaded dialect data
 _dialect_data_cache: Optional[WordNetDialectData] = None
-_cached_wordnet_path: Optional[Path] = None
+_cached_yaml_dir: Optional[Path] = None
 
 
-def get_dialect_data(wordnet_xml_path: Path) -> WordNetDialectData:
+def get_dialect_data(wordnet_yaml_dir: Path) -> WordNetDialectData:
     """Get dialect data, using cache if already loaded."""
-    global _dialect_data_cache, _cached_wordnet_path
+    global _dialect_data_cache, _cached_yaml_dir
 
-    if _dialect_data_cache is None or _cached_wordnet_path != wordnet_xml_path:
-        _dialect_data_cache = load_wordnet_dialect_data(wordnet_xml_path)
-        _cached_wordnet_path = wordnet_xml_path
+    if _dialect_data_cache is None or _cached_yaml_dir != wordnet_yaml_dir:
+        _dialect_data_cache = load_wordnet_dialect_data(wordnet_yaml_dir)
+        _cached_yaml_dir = wordnet_yaml_dir
 
     return _dialect_data_cache
 
@@ -180,12 +204,15 @@ def normalize_to_us_spelling_wordnet(word: str, dialect_data: WordNetDialectData
     Normalize word to US spelling using WordNet dialect data.
 
     Falls back to original word if no US variant exists.
+    If multiple US variants exist, returns the first one.
     """
-    # Check if word has a US variant
-    us_variant = dialect_data.get_variant_for_dialect(word, 'US')
-    if us_variant:
+    # Check if word has US variants
+    us_variants = dialect_data.get_variant_for_dialect(word, 'US')
+    if us_variants:
+        # Pick first variant
+        us_variant = us_variants[0]
         # Preserve original casing
-        if word[0].isupper():
+        if word and word[0].isupper():
             return us_variant.capitalize()
         return us_variant
 
@@ -198,12 +225,15 @@ def normalize_to_gb_spelling_wordnet(word: str, dialect_data: WordNetDialectData
     Normalize word to GB spelling using WordNet dialect data.
 
     Falls back to original word if no GB variant exists.
+    If multiple GB variants exist, returns the first one.
     """
-    # Check if word has a GB variant
-    gb_variant = dialect_data.get_variant_for_dialect(word, 'GB')
-    if gb_variant:
+    # Check if word has GB variants
+    gb_variants = dialect_data.get_variant_for_dialect(word, 'GB')
+    if gb_variants:
+        # Pick first variant
+        gb_variant = gb_variants[0]
         # Preserve original casing
-        if word[0].isupper():
+        if word and word[0].isupper():
             return gb_variant.capitalize()
         return gb_variant
 
@@ -243,17 +273,17 @@ if __name__ == '__main__':
     import sys
 
     if len(sys.argv) > 1:
-        wordnet_path = Path(sys.argv[1])
+        yaml_dir = Path(sys.argv[1])
     else:
         # Default path
-        wordnet_path = Path(__file__).parent.parent.parent / 'external/english-wordnet-2024.xml'
+        yaml_dir = Path(__file__).parent.parent.parent / 'external/english-wordnet/src/yaml'
 
-    if not wordnet_path.exists():
-        print(f"ERROR: WordNet XML not found at {wordnet_path}")
+    if not yaml_dir.exists():
+        print(f"ERROR: WordNet YAML directory not found at {yaml_dir}")
         sys.exit(1)
 
     # Load data
-    data = load_wordnet_dialect_data(wordnet_path)
+    data = load_wordnet_dialect_data(yaml_dir)
 
     # Test examples
     print("\n=== Testing dialect detection ===")

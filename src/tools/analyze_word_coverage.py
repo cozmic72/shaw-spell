@@ -13,7 +13,7 @@ Usage:
 """
 
 import json
-import xml.etree.ElementTree as ET
+import yaml
 import argparse
 import sys
 from pathlib import Path
@@ -41,27 +41,25 @@ def load_readlex_words(readlex_path):
 
     return words
 
-def load_wordnet_words(wordnet_path):
-    """Load all lemmas from Open English WordNet."""
-    try:
-        tree = ET.parse(wordnet_path)
-    except FileNotFoundError:
-        print(f"Error: WordNet file not found at {wordnet_path}", file=sys.stderr)
-        sys.exit(1)
-    except ET.ParseError as e:
-        print(f"Error parsing WordNet XML: {e}", file=sys.stderr)
+def load_wordnet_words(wordnet_yaml_dir):
+    """Load all lemmas from Open English WordNet YAML files."""
+    if not wordnet_yaml_dir.exists():
+        print(f"Error: WordNet YAML directory not found at {wordnet_yaml_dir}", file=sys.stderr)
         sys.exit(1)
 
-    root = tree.getroot()
     words = set()
 
-    # Find all Lemma elements
-    for lemma in root.findall('.//Lemma'):
-        written_form = lemma.get('writtenForm')
-        if written_form:
-            # Handle XML entities like &apos;
-            word = written_form.replace('&apos;', "'")
-            words.add(word.lower())
+    # Load all entries-*.yaml files
+    yaml_files = sorted(wordnet_yaml_dir.glob('entries-*.yaml'))
+
+    for yaml_file in yaml_files:
+        with open(yaml_file, 'r', encoding='utf-8') as f:
+            entries = yaml.safe_load(f)
+
+        if entries:
+            # Each YAML file contains: {lemma: {pos: data}}
+            for lemma in entries.keys():
+                words.add(lemma.lower())
 
     return words
 
@@ -249,7 +247,7 @@ Examples:
     repo_root = script_dir.parent.parent
 
     readlex_path = repo_root / 'external' / 'readlex' / 'readlex.json'
-    wordnet_path = repo_root / 'external' / 'english-wordnet-2024.xml'
+    wordnet_yaml_dir = repo_root / 'external' / 'english-wordnet' / 'src' / 'yaml'
     hunspell_gb_path = repo_root / 'external' / 'hunspell-en' / 'en_GB (Marco Pinto) (-ise -ize) (2025+)' / 'en_GB.dic'
     hunspell_us_path = repo_root / 'external' / 'hunspell-en' / 'en_US (Kevin Atkinson)' / 'en_US.dic'
 
@@ -257,12 +255,12 @@ Examples:
     if not args.json and not args.csv:
         print("Loading datasets...", file=sys.stderr)
         print(f"  - ReadLex from {readlex_path.relative_to(repo_root)}", file=sys.stderr)
-        print(f"  - WordNet from {wordnet_path.relative_to(repo_root)}", file=sys.stderr)
+        print(f"  - WordNet from {wordnet_yaml_dir.relative_to(repo_root)}", file=sys.stderr)
         print(f"  - Hunspell GB from {hunspell_gb_path.relative_to(repo_root)}", file=sys.stderr)
         print(f"  - Hunspell US from {hunspell_us_path.relative_to(repo_root)}", file=sys.stderr)
 
     readlex = load_readlex_words(readlex_path)
-    wordnet = load_wordnet_words(wordnet_path)
+    wordnet = load_wordnet_words(wordnet_yaml_dir)
     hunspell_gb = load_hunspell_words(hunspell_gb_path)
     hunspell_us = load_hunspell_words(hunspell_us_path)
 

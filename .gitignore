@@ -1,5 +1,6 @@
 # Build directory (all build artifacts)
 build/
+data/wordnet-comprehensive.json
 *.o
 
 # Signing configuration (personal certificates)

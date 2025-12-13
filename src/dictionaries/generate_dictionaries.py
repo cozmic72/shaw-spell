@@ -19,317 +19,111 @@ import sys
 from pathlib import Path
 from html import escape
 from collections import defaultdict
-from wordnet_dialect import (
-    get_dialect_data,
-    normalize_to_us_spelling_wordnet,
-    normalize_to_gb_spelling_wordnet,
-    detect_spelling_variant_wordnet
-)
+# Dialect detection now uses comprehensive cache only
 
 
-def normalize_to_us_spelling(word):
+def normalize_to_us_with_cache(word, wordnet_cache):
     """
-    Normalize GB spellings to US equivalents for grouping purposes.
-    Returns the normalized (US) spelling.
+    Normalize word to US spelling using comprehensive WordNet cache.
+    Returns US spelling if available in cache, otherwise returns word unchanged.
     Handles hyphenated compounds by normalizing each part.
-
-    NOTE: This is a FALLBACK function. The primary dialect normalization
-    uses WordNet data (normalize_to_us_spelling_wordnet). This heuristic
-    is only used for words not found in WordNet.
     """
     # Handle hyphenated words by normalizing each part
     if '-' in word:
         parts = word.split('-')
-        normalized_parts = [_normalize_word_part(part) for part in parts]
+        normalized_parts = [normalize_to_us_with_cache(part, wordnet_cache) for part in parts]
         return '-'.join(normalized_parts)
 
-    return _normalize_word_part(word)
+    # Return unchanged if no cache or word not in cache
+    if not wordnet_cache or word.lower() not in wordnet_cache:
+        return word
+
+    # Get US variants from cache
+    entry = wordnet_cache[word.lower()]
+    variants = entry.get('variants', {})
+    us_variants = variants.get('US', [])
+
+    if us_variants:
+        # Pick first variant and preserve original casing
+        us_variant = us_variants[0]
+        if word and word[0].isupper():
+            return us_variant.capitalize()
+        return us_variant
+
+    return word
 
 
-def normalize_to_gb_spelling(word):
+def normalize_to_gb_with_cache(word, wordnet_cache):
     """
-    Normalize US spellings to GB equivalents (reverse of normalize_to_us_spelling).
-    Returns the normalized (GB) spelling.
+    Normalize word to GB spelling using comprehensive WordNet cache.
+    Returns GB spelling if available in cache, otherwise returns word unchanged.
     Handles hyphenated compounds by normalizing each part.
-
-    NOTE: This is a FALLBACK function. The primary dialect normalization
-    uses WordNet data (normalize_to_gb_spelling_wordnet). This heuristic
-    is only used for words not found in WordNet.
     """
     # Handle hyphenated words by normalizing each part
     if '-' in word:
         parts = word.split('-')
-        normalized_parts = [_normalize_us_to_gb_part(part) for part in parts]
+        normalized_parts = [normalize_to_gb_with_cache(part, wordnet_cache) for part in parts]
         return '-'.join(normalized_parts)
 
-    return _normalize_us_to_gb_part(word)
+    # Return unchanged if no cache or word not in cache
+    if not wordnet_cache or word.lower() not in wordnet_cache:
+        return word
 
-def _normalize_word_part(word):
-    """
-    Normalize a single word (or word part) from GB to US spelling.
-    """
-    word_lower = word.lower()
+    # Get GB variants from cache
+    entry = wordnet_cache[word.lower()]
+    variants = entry.get('variants', {})
+    gb_variants = variants.get('GB', [])
 
-    # Common GB -> US transformations
-    # -our (GB) -> -or (US): colour -> color
-    if word_lower.endswith('our'):
-        if not word_lower.endswith(('pour', 'sour', 'tour', 'four', 'your')):
-            base = word_lower[:-3]
-            normalized = base + 'or'
-            # Preserve original casing
-            if word[0].isupper():
-                return normalized.capitalize()
-            return normalized
+    if gb_variants:
+        # Pick first variant and preserve original casing
+        gb_variant = gb_variants[0]
+        if word and word[0].isupper():
+            return gb_variant.capitalize()
+        return gb_variant
 
-    # -re (GB) -> -er (US): centre -> center
-    if word_lower.endswith('re'):
-        if not word_lower.endswith(('are', 'ere', 'ire', 'ore', 'ure', 'acre', 'ogre')):
-            base = word_lower[:-2]
-            if len(base) >= 2:
-                normalized = base + 'er'
-                if word[0].isupper():
-                    return normalized.capitalize()
-                return normalized
-
-    # -ogue (GB) -> -og (US): dialogue -> dialog
-    if word_lower.endswith('ogue'):
-        base = word_lower[:-3]
-        normalized = base + 'og'
-        if word[0].isupper():
-            return normalized.capitalize()
-        return normalized
-
-    # -ence (GB) -> -ense (US): defence -> defense
-    if word_lower.endswith('ence'):
-        base = word_lower[:-4]
-        if base in ('def', 'off', 'lic', 'pret'):
-            normalized = base + 'ense'
-            if word[0].isupper():
-                return normalized.capitalize()
-            return normalized
-
-    # No transformation needed
     return word
 
 
-def _normalize_us_to_gb_part(word):
+def detect_spelling_variant_with_cache(word, wordnet_cache):
     """
-    Normalize a single word (or word part) from US to GB spelling.
-    Reverse of _normalize_word_part.
+    Detect word dialect using comprehensive WordNet cache.
+    Returns 'US', 'GB', 'CA', 'AU', or None if not in cache.
+    """
+    # Return None if no cache or word not in cache
+    if not wordnet_cache or word.lower() not in wordnet_cache:
+        return None
 
-    Note: This is kept simple as most readlex data is already in GB (RRP) form.
-    We primarily just need to handle the common -or/-our pattern.
+    # Get dialect from cache
+    entry = wordnet_cache[word.lower()]
+    return entry.get('dialect')
+
+
+def get_all_spelling_variants(word, dialect, wordnet_cache):
     """
+    Get all spelling variants for a word in a specific dialect.
+
+    Args:
+        word: The word to look up
+        dialect: Target dialect code ('GB' or 'US')
+        wordnet_cache: Comprehensive WordNet cache
+
+    Returns:
+        List of variant spellings (excluding the input word), or empty list if none
+
+    Example:
+        get_all_spelling_variants('color', 'GB', cache) → ['colour']
+        get_all_spelling_variants('honour', 'GB', cache) → ['honor'] (if multiple GB variants exist)
+    """
+    if not wordnet_cache or word.lower() not in wordnet_cache:
+        return []
+
+    entry = wordnet_cache[word.lower()]
+    variants = entry.get('variants', {})
+    dialect_variants = variants.get(dialect, [])
+
+    # Return variants that aren't the same as the input word
     word_lower = word.lower()
-
-    # Common US -> GB transformations
-    # -or (US) -> -our (GB): color -> colour
-    if word_lower.endswith('or'):
-        # Exclude words that shouldn't get -our (door, floor, etc.)
-        if not word_lower.endswith(('oor', 'ior', 'eor')):
-            base = word_lower[:-2]
-            # Only apply to common -our words
-            if base in ('col', 'fav', 'flav', 'harb', 'hon', 'hum', 'lab',
-                        'neighb', 'rum', 'sav', 'val', 'vig', 'behavi', 'endeav', 'splend'):
-                normalized = base + 'our'
-                if word[0].isupper():
-                    return normalized.capitalize()
-                return normalized
-
-    # -er (US) -> -re (GB): center -> centre, meter -> metre
-    if word_lower.endswith('ter'):
-        base = word_lower[:-2]
-        # Common -re words in GB
-        if base in ('cen', 'thea', 'me', 'li', 'ti', 'lus', 'spec'):
-            normalized = base + 're'
-            if word[0].isupper():
-                return normalized.capitalize()
-            return normalized
-
-    # -og (US) -> -ogue (GB): dialog -> dialogue, catalog -> catalogue
-    if word_lower.endswith('log'):
-        base = word_lower[:-2]
-        # Common -ogue words
-        if base in ('dialo', 'catalo', 'analo', 'monolo'):
-            normalized = base + 'ogue'
-            if word[0].isupper():
-                return normalized.capitalize()
-            return normalized
-
-    # -ense (US) -> -ence (GB): defense -> defence, license -> licence
-    if word_lower.endswith('ense'):
-        base = word_lower[:-4]
-        if base in ('def', 'off', 'lic', 'pret'):
-            normalized = base + 'ence'
-            if word[0].isupper():
-                return normalized.capitalize()
-            return normalized
-
-    # No transformation needed
-    return word
-
-def detect_spelling_variant(word):
-    """
-    Detect if a word uses US or GB spelling based on common patterns.
-    Returns 'US', 'GB', or None if indeterminate.
-
-    Note: Australian English generally follows British spelling patterns,
-    so words detected as 'GB' likely apply to Australian as well.
-
-    NOTE: This is a FALLBACK function. The primary dialect detection
-    uses WordNet data (detect_spelling_variant_wordnet). This heuristic
-    is only used for words not found in WordNet.
-    """
-    word_lower = word.lower()
-
-    # Try checking inflected forms by stripping common suffixes
-    # and checking the root word
-    inflection_suffixes = [
-        ('ing', ''),      # coloring -> color
-        ('ed', ''),       # colored -> color
-        ('s', ''),        # colors -> color
-        ('es', ''),       # defenses -> defense
-        ('er', ''),       # colorer -> color
-        ('est', ''),      # colorest -> color
-        ('ly', ''),       # colorly -> color
-        ('ness', ''),     # colorness -> color
-    ]
-
-    for suffix, _ in inflection_suffixes:
-        if word_lower.endswith(suffix) and len(word_lower) > len(suffix) + 2:
-            root = word_lower[:-len(suffix)]
-            # Try root word first
-            root_variant = _check_spelling_patterns(root)
-            if root_variant:
-                return root_variant
-            # For -ed, also try with trailing 'e' (travelled -> travel)
-            if suffix == 'ed' and len(root) > 2:
-                root_variant = _check_spelling_patterns(root + 'e')
-                if root_variant:
-                    return root_variant
-
-    # Check the word itself
-    return _check_spelling_patterns(word_lower)
-
-
-def _check_spelling_patterns(word_lower):
-    """Check a word against US/GB spelling patterns."""
-    # -our (GB) vs -or (US): colour/color, honour/honor, favour/favor
-    if word_lower.endswith('our') and len(word_lower) > 3:
-        # Check it's not a word that naturally ends in -our
-        if not word_lower.endswith(('pour', 'sour', 'tour', 'four', 'your')):
-            return 'GB'
-
-    # Check for -or endings that likely have -our variant
-    if word_lower.endswith('or') and len(word_lower) > 3:
-        # Common -our words in base form
-        our_words = ['col', 'hon', 'fav', 'flav', 'harb', 'hum', 'lab', 'neighb',
-                     'rum', 'sav', 'vap', 'vig', 'splend', 'arb', 'clam']
-        if any(word_lower[:-2].endswith(base) for base in our_words):
-            return 'US'
-
-    # -re (GB) vs -er (US): centre/center, theatre/theater, metre/meter
-    if word_lower.endswith('tre') or word_lower.endswith('bre') or word_lower.endswith('pre'):
-        if len(word_lower) > 4:
-            return 'GB'
-    if word_lower.endswith('ter') or word_lower.endswith('ber') or word_lower.endswith('per'):
-        # Check if it's a -re word
-        re_words = ['cen', 'thea', 'me', 'li', 'ti', 'lus', 'spec', 'som']
-        if any(word_lower[:-3].endswith(base) for base in re_words):
-            return 'US'
-
-    # -ogue (GB) vs -og (US): catalogue/catalog, dialogue/dialog
-    if word_lower.endswith('ogue'):
-        return 'GB'
-    if word_lower.endswith(('alog', 'ilog')) and not word_lower.endswith('olog'):
-        return 'US'
-
-    # -ence (GB) vs -ense (US): defence/defense, licence/license, offence/offense
-    if word_lower.endswith('fence') or word_lower.endswith('tence'):
-        if word_lower.startswith(('def', 'off')) or 'lic' in word_lower or 'pret' in word_lower:
-            return 'GB'
-    if word_lower.endswith('fense') or word_lower.endswith('tense'):
-        if word_lower.startswith(('def', 'off')) or 'lic' in word_lower or 'pret' in word_lower:
-            return 'US'
-
-    return None
-
-
-def normalize_to_us_with_fallback(word, dialect_data=None, wordnet_cache=None):
-    """
-    Normalize word to US spelling, using comprehensive cache if available, falling back to heuristics.
-
-    Handles hyphenated words by normalizing each part.
-    """
-    if '-' in word:
-        parts = word.split('-')
-        normalized_parts = [normalize_to_us_with_fallback(part, dialect_data, wordnet_cache) for part in parts]
-        return '-'.join(normalized_parts)
-
-    # Try comprehensive cache first (most authoritative)
-    if wordnet_cache and word.lower() in wordnet_cache:
-        entry = wordnet_cache[word.lower()]
-        variants = entry.get('variants', {})
-        if variants and 'US' in variants:
-            return variants['US']
-
-    # Try WordNet dialect data (fallback)
-    if dialect_data:
-        wordnet_result = normalize_to_us_spelling_wordnet(word, dialect_data)
-        if wordnet_result != word:
-            return wordnet_result
-
-    # Fall back to heuristics
-    return normalize_to_us_spelling(word)
-
-
-def normalize_to_gb_with_fallback(word, dialect_data=None, wordnet_cache=None):
-    """
-    Normalize word to GB spelling, using comprehensive cache if available, falling back to heuristics.
-
-    Handles hyphenated words by normalizing each part.
-    """
-    if '-' in word:
-        parts = word.split('-')
-        normalized_parts = [normalize_to_gb_with_fallback(part, dialect_data, wordnet_cache) for part in parts]
-        return '-'.join(normalized_parts)
-
-    # Try comprehensive cache first (most authoritative)
-    if wordnet_cache and word.lower() in wordnet_cache:
-        entry = wordnet_cache[word.lower()]
-        variants = entry.get('variants', {})
-        if variants and 'GB' in variants:
-            return variants['GB']
-
-    # Try WordNet dialect data (fallback)
-    if dialect_data:
-        wordnet_result = normalize_to_gb_spelling_wordnet(word, dialect_data)
-        if wordnet_result != word:
-            return wordnet_result
-
-    # Fall back to heuristics
-    return normalize_to_gb_spelling(word)
-
-
-def detect_spelling_variant_with_fallback(word, dialect_data=None, wordnet_cache=None):
-    """
-    Detect word dialect, using comprehensive cache if available, falling back to heuristics.
-    """
-    # Try comprehensive cache first (most authoritative)
-    if wordnet_cache and word.lower() in wordnet_cache:
-        entry = wordnet_cache[word.lower()]
-        dialect = entry.get('dialect')
-        if dialect:
-            return dialect
-
-    # Try WordNet dialect data (fallback)
-    if dialect_data:
-        wordnet_result = detect_spelling_variant_wordnet(word, dialect_data)
-        if wordnet_result:
-            return wordnet_result
-
-    # Fall back to heuristics
-    return detect_spelling_variant(word)
+    return [v for v in dialect_variants if v != word_lower]
 
 
 def extract_lemma_from_key(key):
@@ -685,7 +479,7 @@ def create_xml_footer():
     return '</d:dictionary>\n'
 
 
-def generate_dictionary(readlex_data, definitions, output_path, dict_type, dialect='gb', dialect_data=None, wordnet_cache=None):
+def generate_dictionary(readlex_data, definitions, output_path, dict_type, dialect='gb', wordnet_cache=None):
     """
     Generate a dictionary with unified structure.
 
@@ -695,8 +489,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         output_path: Output XML file path
         dict_type: 'shaw-eng', 'eng-shaw', or 'shaw-shaw'
         dialect: 'gb' or 'us' (for preferred variant)
-        dialect_data: WordNet dialect data (optional, for authoritative dialect detection)
-        wordnet_cache: Comprehensive WordNet cache (optional, preferred for dialect detection)
+        wordnet_cache: Comprehensive WordNet cache (required for dialect detection)
     """
     # Configuration based on dictionary type
     config = {
@@ -747,7 +540,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         lemma = data['lemma']
         # Normalize GB -> US spelling for grouping (colour -> color)
         # This merges US/GB spelling variants into one entry
-        normalized_lemma = normalize_to_us_with_fallback(lemma, dialect_data, wordnet_cache)
+        normalized_lemma = normalize_to_us_with_cache(lemma, wordnet_cache)
 
         # Get definitions using normalized lemma (prefer US definitions)
         if config['use_shavian_cache']:
@@ -781,7 +574,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             var = entry.get('var', '')
 
             # Detect spelling variant using comprehensive cache (with heuristic fallback)
-            detected_variant = detect_spelling_variant_with_fallback(latn, dialect_data, wordnet_cache)
+            detected_variant = detect_spelling_variant_with_cache(latn, wordnet_cache)
 
             # Check if this is a lemma form (matches either original or normalized lemma)
             is_lemma_form = (latn_lower == lemma or latn_lower == normalized_lemma.lower())
@@ -978,7 +771,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 for form in lemma_data['forms']:
                     # ALL dictionaries: Group by normalized English spelling
                     # This merges colour/color and also groups due /djuː/ with due /duː/
-                    base_word = normalize_to_us_with_fallback(form['latn'], dialect_data, wordnet_cache)
+                    base_word = normalize_to_us_with_cache(form['latn'], wordnet_cache)
                     key = (base_word, form['is_lemma'])
                     word_groups[key].append(form)
 
@@ -1035,6 +828,16 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         # Display the main text
                         f.write(escape(home_display_text))
                         f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
+
+                        # Check for additional spelling variants in the same dialect from WordNet cache
+                        # (e.g., if GB cache has both 'honour' and 'honor', show both)
+                        # Use the actual Latin form being displayed, not the normalized base_word
+                        displayed_latn = home_form.get('latn', '').lower()
+                        if displayed_latn:
+                            additional_variants = get_all_spelling_variants(displayed_latn, home_dialect, wordnet_cache)
+                            if additional_variants:
+                                variants_text = ', '.join(additional_variants)
+                                f.write(f' <span class="variant">(also: {escape(variants_text)})</span>')
 
                         # Check for alternate forms
                         if alt_forms:
@@ -1159,7 +962,6 @@ def main():
     project_dir = script_dir.parent.parent
     readlex_path = project_dir / 'external/readlex/readlex.json'
     wordnet_path = project_dir / 'build/wordnet-definitions.json'
-    wordnet_xml_path = project_dir / 'external/english-wordnet-2024.xml'
     wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     shavian_defs_path = project_dir / f'data/definitions-shavian-{dialect}.json'
     build_dir = project_dir / 'build'
@@ -1188,12 +990,7 @@ def main():
         print(f"\nNote: WordNet definitions not found at {wordnet_path}")
         print("Will use comprehensive cache if available")
 
-    # Load WordNet dialect data
-    print("\nLoading WordNet dialect data...")
-    dialect_data = get_dialect_data(wordnet_xml_path)
-    print()
-
-    # Load comprehensive WordNet cache (optional, for improved dialect detection)
+    # Load comprehensive WordNet cache (required for dialect detection)
     wordnet_cache = {}
     if wordnet_cache_path.exists():
         print("\nLoading comprehensive WordNet cache...")
@@ -1201,8 +998,9 @@ def main():
             wordnet_cache = json.load(f)
         print(f"Loaded cache with {len(wordnet_cache)} lemmas")
     else:
-        print(f"\nNote: Comprehensive cache not found at {wordnet_cache_path}")
-        print("Falling back to WordNet XML dialect data and heuristics")
+        print(f"\nERROR: Comprehensive cache not found at {wordnet_cache_path}")
+        print("Please run 'make wordnet-cache' first")
+        sys.exit(1)
     print()
 
     # Load Shavian definition cache (if needed)
@@ -1226,15 +1024,15 @@ def main():
 
     # Generate requested dictionaries
     if 'shavian-english' in dictionaries:
-        generate_dictionary(readlex_data, wordnet_defs, shavian_english_path, 'shaw-eng', dialect, dialect_data, wordnet_cache)
+        generate_dictionary(readlex_data, wordnet_defs, shavian_english_path, 'shaw-eng', dialect, wordnet_cache)
         print()
 
     if 'english-shavian' in dictionaries:
-        generate_dictionary(readlex_data, shavian_def_cache, english_shavian_path, 'eng-shaw', dialect, dialect_data, wordnet_cache)
+        generate_dictionary(readlex_data, shavian_def_cache, english_shavian_path, 'eng-shaw', dialect, wordnet_cache)
         print()
 
     if 'shavian-shavian' in dictionaries:
-        generate_dictionary(readlex_data, shavian_def_cache, shavian_shavian_path, 'shaw-shaw', dialect, dialect_data, wordnet_cache)
+        generate_dictionary(readlex_data, shavian_def_cache, shavian_shavian_path, 'shaw-shaw', dialect, wordnet_cache)
         print()
 
     print(f"Dictionary generation complete ({dialect.upper()})!")

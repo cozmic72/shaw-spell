@@ -7,6 +7,15 @@
 # WordNet data, with overrides taking precedence.
 
 Shavian:
+  a:
+    pronunciation:
+    - value: ˈʃeɪvɪən
+    sense:
+    # Existing senses from WordNet will be preserved
+    # Adding new sense for the Shavian alphabet/script
+    - id: 'shavian%3:01:01::'
+      synset: 99999998-a  # Custom synset ID
+      definition: relating to or written in the Shavian alphabet
   n:
     pronunciation:
     - value: ˈʃeɪvɪən

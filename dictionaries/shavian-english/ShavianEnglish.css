@@ -1,0 +1,41 @@
+@charset "UTF-8";
+@namespace d url(http://www.apple.com/DTDs/DictionaryService-1.0.rng);
+
+/* Dictionary entry styling */
+d|entry {
+}
+
+/* Headword (Shavian text) */
+h1 {
+	font-size: 200%;
+	font-weight: bold;
+	margin-top: 0.5em;
+	margin-bottom: 0.3em;
+}
+
+/* Translation list */
+ul {
+	margin-left: 1em;
+	padding-left: 1em;
+}
+
+li {
+	margin: 0.2em 0;
+}
+
+/* English translation */
+b {
+	color: #0066cc;
+	font-weight: 600;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+	body {
+		color: white;
+	}
+
+	b {
+		color: #66b3ff;
+	}
+}

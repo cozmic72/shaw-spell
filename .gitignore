@@ -1,0 +1,24 @@
+# Dictionary build artifacts
+dictionaries/*/objects/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build-cache/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

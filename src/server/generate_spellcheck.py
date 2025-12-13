@@ -198,8 +198,8 @@ def main():
         dialects_to_generate = [args.dialect]
 
     for dialect in dialects_to_generate:
-        dic_path = build_dir / f'shaw-{dialect}.dic'
-        aff_path = build_dir / f'shaw-{dialect}.aff'
+        dic_path = build_dir / f'io.joro.shaw-spell.shavian-{dialect}.dic'
+        aff_path = build_dir / f'io.joro.shaw-spell.shavian-{dialect}.aff'
 
         if args.with_affixes:
             generate_with_affixes(readlex_data, dic_path, aff_path, dialect)
@@ -208,9 +208,9 @@ def main():
         print()  # Blank line between dialects
 
     print("All spell-check files ready!")
-    print(f"To install GB: cp {build_dir}/shaw-gb.* ~/Library/Spelling/")
-    print(f"To install US: cp {build_dir}/shaw-us.* ~/Library/Spelling/")
-    print("Or run: ./build.sh spellcheck install")
+    print(f"To install GB: cp {build_dir}/io.joro.shaw-spell.shavian-gb.* ~/Library/Spelling/")
+    print(f"To install US: cp {build_dir}/io.joro.shaw-spell.shavian-us.* ~/Library/Spelling/")
+    print("Or run: make spellcheck install")
 
 
 if __name__ == '__main__':

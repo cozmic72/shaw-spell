@@ -32,15 +32,9 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
 
         let spellingDir = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling")
 
-        // Try dialect-specific dictionary first (shaw-gb.dic or shaw-us.dic)
-        var shawDicPath = (spellingDir as NSString).appendingPathComponent("shaw-\(dialect!).dic")
-        var shawAffPath = (spellingDir as NSString).appendingPathComponent("shaw-\(dialect!).aff")
-
-        // Fall back to generic shaw.dic if dialect-specific not found
-        if !FileManager.default.fileExists(atPath: shawDicPath) {
-            shawDicPath = (spellingDir as NSString).appendingPathComponent("shaw.dic")
-            shawAffPath = (spellingDir as NSString).appendingPathComponent("shaw.aff")
-        }
+        // Load dialect-specific dictionary
+        let shawDicPath = (spellingDir as NSString).appendingPathComponent("io.joro.shaw-spell.shavian-\(dialect!).dic")
+        let shawAffPath = (spellingDir as NSString).appendingPathComponent("io.joro.shaw-spell.shavian-\(dialect!).aff")
 
         if FileManager.default.fileExists(atPath: shawDicPath) &&
            FileManager.default.fileExists(atPath: shawAffPath) {
@@ -56,8 +50,8 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         }
 
         // Initialize Hunspell with English dictionary
-        let enDicPath = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling/en_GB.dic")
-        let enAffPath = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling/en_GB.aff")
+        let enDicPath = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling/io.joro.shaw-spell.en_GB.dic")
+        let enAffPath = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling/io.joro.shaw-spell.en_GB.aff")
 
         if FileManager.default.fileExists(atPath: enDicPath) &&
            FileManager.default.fileExists(atPath: enAffPath) {

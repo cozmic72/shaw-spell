@@ -21,17 +21,17 @@ XML_ENGLISH_SHAVIAN = build/english-shavian-$(DIALECT).xml
 XML_SHAVIAN_SHAVIAN = build/shavian-shavian-$(DIALECT).xml
 
 # Dictionary bundles (current dialect)
-DICT_SHAVIAN_ENGLISH = build/dictionaries/Shavian-English-$(DIALECT).dictionary
-DICT_ENGLISH_SHAVIAN = build/dictionaries/English-Shavian-$(DIALECT).dictionary
-DICT_SHAVIAN_SHAVIAN = build/dictionaries/Shavian-$(DIALECT).dictionary
+DICT_SHAVIAN_ENGLISH = build/dictionaries/Shaw-Spell-Shavian-English-$(DIALECT).dictionary
+DICT_ENGLISH_SHAVIAN = build/dictionaries/Shaw-Spell-English-Shavian-$(DIALECT).dictionary
+DICT_SHAVIAN_SHAVIAN = build/dictionaries/Shaw-Spell-Shavian-$(DIALECT).dictionary
 
 # Dictionary bundles (both dialects for installer)
-DICT_SHAVIAN_ENGLISH_GB = build/dictionaries/Shavian-English-gb.dictionary
-DICT_ENGLISH_SHAVIAN_GB = build/dictionaries/English-Shavian-gb.dictionary
-DICT_SHAVIAN_SHAVIAN_GB = build/dictionaries/Shavian-gb.dictionary
-DICT_SHAVIAN_ENGLISH_US = build/dictionaries/Shavian-English-us.dictionary
-DICT_ENGLISH_SHAVIAN_US = build/dictionaries/English-Shavian-us.dictionary
-DICT_SHAVIAN_SHAVIAN_US = build/dictionaries/Shavian-us.dictionary
+DICT_SHAVIAN_ENGLISH_GB = build/dictionaries/Shaw-Spell-Shavian-English-gb.dictionary
+DICT_ENGLISH_SHAVIAN_GB = build/dictionaries/Shaw-Spell-English-Shavian-gb.dictionary
+DICT_SHAVIAN_SHAVIAN_GB = build/dictionaries/Shaw-Spell-Shavian-gb.dictionary
+DICT_SHAVIAN_ENGLISH_US = build/dictionaries/Shaw-Spell-Shavian-English-us.dictionary
+DICT_ENGLISH_SHAVIAN_US = build/dictionaries/Shaw-Spell-English-Shavian-us.dictionary
+DICT_SHAVIAN_SHAVIAN_US = build/dictionaries/Shaw-Spell-Shavian-us.dictionary
 
 # Dictionary source directories
 DICT_DIR = src/dictionaries
@@ -183,8 +183,10 @@ $(DICT_SHAVIAN_SHAVIAN_US): build/shavian-shavian-us.xml
 # Spell checker building
 ###########################################
 
-HUNSPELL_GB = build/shaw-gb.dic
-HUNSPELL_US = build/shaw-us.dic
+HUNSPELL_GB = build/io.joro.shaw-spell.shavian-gb.dic
+HUNSPELL_US = build/io.joro.shaw-spell.shavian-us.dic
+HUNSPELL_EN_GB_SRC = external/hunspell-en/en_GB (Marco Pinto) (-ise -ize) (2025+)
+HUNSPELL_EN_US_SRC = external/hunspell-en/en_US (Kevin Atkinson)
 SPELLSERVER_BUNDLE = build/Shaw-Spell.service
 SPELLSERVER_MARKER = build/.spellserver-built
 INSTALLER_MARKER = build/.installer-built
@@ -195,6 +197,11 @@ $(HUNSPELL_GB) $(HUNSPELL_US): $(READLEX_PATH) src/server/generate_spellcheck.py
 	@echo "Building Hunspell dictionaries..."
 	@mkdir -p build
 	src/server/generate_spellcheck.py
+	@echo "Copying English dictionaries..."
+	@cp "$(HUNSPELL_EN_GB_SRC)/en_GB.dic" build/io.joro.shaw-spell.en_GB.dic
+	@cp "$(HUNSPELL_EN_GB_SRC)/en_GB.aff" build/io.joro.shaw-spell.en_GB.aff
+	@cp "$(HUNSPELL_EN_US_SRC)/en_US.dic" build/io.joro.shaw-spell.en_US.dic
+	@cp "$(HUNSPELL_EN_US_SRC)/en_US.aff" build/io.joro.shaw-spell.en_US.aff
 
 $(SPELLSERVER_MARKER): src/server/*.swift src/server/*.h src/server/Makefile src/server/Info.plist
 	@echo "Building spell server..."
@@ -285,8 +292,10 @@ install: all
 	@cd $(DICT_DIR) && $(MAKE) DICT_TYPE=shavian-shavian DIALECT=$(DIALECT) install
 	@echo "Installing Hunspell dictionaries to ~/Library/Spelling..."
 	@mkdir -p ~/Library/Spelling
-	@cp build/shaw-gb.* ~/Library/Spelling/ 2>/dev/null || true
-	@cp build/shaw-us.* ~/Library/Spelling/ 2>/dev/null || true
+	@cp build/io.joro.shaw-spell.shavian-gb.* ~/Library/Spelling/ 2>/dev/null || true
+	@cp build/io.joro.shaw-spell.shavian-us.* ~/Library/Spelling/ 2>/dev/null || true
+	@cp build/io.joro.shaw-spell.en_GB.* ~/Library/Spelling/ 2>/dev/null || true
+	@cp build/io.joro.shaw-spell.en_US.* ~/Library/Spelling/ 2>/dev/null || true
 	@echo "Installing spell server..."
 	@cd src/server && $(MAKE) install
 	@echo ""

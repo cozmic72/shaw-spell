@@ -16,7 +16,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Create the main window
-        let windowRect = NSRect(x: 0, y: 0, width: 700, height: 580)
+        let windowRect = NSRect(x: 0, y: 0, width: 700, height: 640)
         window = NSWindow(contentRect: windowRect,
                          styleMask: [.titled, .closable, .miniaturizable],
                          backing: .buffered,
@@ -27,8 +27,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         guard let mainContentView = window.contentView else { return }
 
         // Create WebView for content
-        contentView = WKWebView(frame: NSRect(x: 20, y: 60, width: 660, height: 470))
+        contentView = WKWebView(frame: NSRect(x: 20, y: 60, width: 660, height: 530))
         contentView.navigationDelegate = self
+
+        // Add rounded corners to content view
+        contentView.wantsLayer = true
+        contentView.layer?.cornerRadius = 8
+        contentView.layer?.masksToBounds = true
+
         mainContentView.addSubview(contentView)
 
         // Create button container
@@ -194,18 +200,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         // Install both GB and US dictionaries
         script += """
         echo 'Installing dictionaries...'
-        cp -R "$RESOURCES_DIR/dictionaries/Shavian-English-gb.dictionary" "$DICT_DIR/" 2>/dev/null || true
-        cp -R "$RESOURCES_DIR/dictionaries/English-Shavian-gb.dictionary" "$DICT_DIR/" 2>/dev/null || true
-        cp -R "$RESOURCES_DIR/dictionaries/Shavian-gb.dictionary" "$DICT_DIR/" 2>/dev/null || true
-        cp -R "$RESOURCES_DIR/dictionaries/Shavian-English-us.dictionary" "$DICT_DIR/" 2>/dev/null || true
-        cp -R "$RESOURCES_DIR/dictionaries/English-Shavian-us.dictionary" "$DICT_DIR/" 2>/dev/null || true
-        cp -R "$RESOURCES_DIR/dictionaries/Shavian-us.dictionary" "$DICT_DIR/" 2>/dev/null || true
+        cp -R "$RESOURCES_DIR/dictionaries/Shaw-Spell-Shavian-English-gb.dictionary" "$DICT_DIR/" 2>/dev/null || true
+        cp -R "$RESOURCES_DIR/dictionaries/Shaw-Spell-English-Shavian-gb.dictionary" "$DICT_DIR/" 2>/dev/null || true
+        cp -R "$RESOURCES_DIR/dictionaries/Shaw-Spell-Shavian-gb.dictionary" "$DICT_DIR/" 2>/dev/null || true
+        cp -R "$RESOURCES_DIR/dictionaries/Shaw-Spell-Shavian-English-us.dictionary" "$DICT_DIR/" 2>/dev/null || true
+        cp -R "$RESOURCES_DIR/dictionaries/Shaw-Spell-English-Shavian-us.dictionary" "$DICT_DIR/" 2>/dev/null || true
+        cp -R "$RESOURCES_DIR/dictionaries/Shaw-Spell-Shavian-us.dictionary" "$DICT_DIR/" 2>/dev/null || true
 
         echo 'Installing spell checking dictionaries...'
-        cp "$RESOURCES_DIR/hunspell/shaw-gb.dic" "$SPELLING_DIR/" 2>/dev/null || true
-        cp "$RESOURCES_DIR/hunspell/shaw-gb.aff" "$SPELLING_DIR/" 2>/dev/null || true
-        cp "$RESOURCES_DIR/hunspell/shaw-us.dic" "$SPELLING_DIR/" 2>/dev/null || true
-        cp "$RESOURCES_DIR/hunspell/shaw-us.aff" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.shavian-gb.dic" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.shavian-gb.aff" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.shavian-us.dic" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.shavian-us.aff" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.en_GB.dic" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.en_GB.aff" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.en_US.dic" "$SPELLING_DIR/" 2>/dev/null || true
+        cp "$RESOURCES_DIR/hunspell/io.joro.shaw-spell.en_US.aff" "$SPELLING_DIR/" 2>/dev/null || true
 
         """
 

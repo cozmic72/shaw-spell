@@ -45,14 +45,16 @@ $(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist re
 	@echo "Bundling dictionaries and components for installation..."
 	@mkdir -p "$(RESOURCES_DIR)/dictionaries"
 	@mkdir -p "$(RESOURCES_DIR)/hunspell"
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-gb/Shavian-English-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-gb/English-Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-gb/Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-us/Shavian-English-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-us/English-Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-us/Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp "$(BUILD_DIR)/shaw-gb.dic" "$(BUILD_DIR)/shaw-gb.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
-	@cp "$(BUILD_DIR)/shaw-us.dic" "$(BUILD_DIR)/shaw-us.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-gb/Shaw-Spell-Shavian-English-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-gb/Shaw-Spell-English-Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-gb/Shaw-Spell-Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-us/Shaw-Spell-Shavian-English-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-us/Shaw-Spell-English-Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-us/Shaw-Spell-Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
+	@cp "$(BUILD_DIR)/io.joro.shaw-spell.shavian-gb.dic" "$(BUILD_DIR)/io.joro.shaw-spell.shavian-gb.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
+	@cp "$(BUILD_DIR)/io.joro.shaw-spell.shavian-us.dic" "$(BUILD_DIR)/io.joro.shaw-spell.shavian-us.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
+	@cp "$(BUILD_DIR)/io.joro.shaw-spell.en_GB.dic" "$(BUILD_DIR)/io.joro.shaw-spell.en_GB.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
+	@cp "$(BUILD_DIR)/io.joro.shaw-spell.en_US.dic" "$(BUILD_DIR)/io.joro.shaw-spell.en_US.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
 	@cp -R "$(BUILD_DIR)/Shaw-Spell.service" "$(RESOURCES_DIR)/" 2>/dev/null || true
 	@cp "../../src/server/io.joro.Shaw-Spell.plist" "$(RESOURCES_DIR)/" 2>/dev/null || true
 	@echo "Code signing application..."

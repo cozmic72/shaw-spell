@@ -29,7 +29,7 @@ ifeq ($(DICT_TYPE),shavian-shavian)
 endif
 
 # Paths and names
-DICT_NAME		=	$(DISPLAY_NAME)-$(DIALECT)
+DICT_NAME		=	Shaw-Spell-$(DISPLAY_NAME)-$(DIALECT)
 DICT_SRC_PATH		=	../../build/$(DICT_TYPE)-$(DIALECT).xml
 CSS_PATH		=	dictionary.css
 PLIST_PATH		=	../../build/dictionaries/$(DICT_TYPE)-$(DIALECT).plist
@@ -70,7 +70,7 @@ $(PLIST_PATH): $(PLIST_TEMPLATE) $(DESCRIPTION_FILE)
 		DESCRIPTION=$(DESCRIPTION_FILE)
 
 # Build dictionary
-$(DICT_OUTPUT): $(DICT_SRC_PATH) $(CSS_PATH) $(PLIST_PATH)
+$(DICT_OUTPUT): $(DICT_SRC_PATH) $(CSS_PATH) $(PLIST_PATH) $(DESCRIPTION_FILE)
 	@echo "Building $(DICT_NAME) dictionary..."
 	"$(DICT_BUILD_TOOL_BIN)/build_dict.sh" $(DICT_BUILD_OPTS) $(DICT_NAME) $(DICT_SRC_PATH) $(CSS_PATH) $(PLIST_PATH)
 	@echo "Done building $(DICT_NAME)."

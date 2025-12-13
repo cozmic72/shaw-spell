@@ -131,6 +131,27 @@ Full license texts:
 
 ---
 
+### 4. English Hunspell Dictionaries
+
+British and American English spell-checking dictionaries: https://github.com/marcoagpinto/aoo-mozilla-en-dict
+
+**en_GB (British English)**
+- **License**: LGPL
+- **Copyright**: Marco A.G. Pinto
+- **Source**: https://github.com/marcoagpinto/aoo-mozilla-en-dict
+
+**en_US (American English)**
+- **License**: BSD/MIT-Like
+- **Copyright**: Kevin Atkinson
+- **Source**: https://github.com/marcoagpinto/aoo-mozilla-en-dict
+
+These dictionaries are bundled with Shaw-Spell to provide comprehensive spell-checking
+for mixed Shavian/English text. The en_GB dictionary is maintained by Marco A.G. Pinto
+and released under LGPL. The en_US dictionary is maintained by Kevin Atkinson and uses
+a BSD/MIT-like license.
+
+---
+
 ## Summary
 
 | Component | License | Usage |
@@ -140,6 +161,8 @@ Full license texts:
 | Open English WordNet | CC BY 4.0 | Dictionary definitions |
 | Princeton WordNet 3.0 | WordNet License | Source for Open English WordNet |
 | Hunspell | GPL-2/LGPL-2.1/MPL-1.1 | Spell checking library (used under LGPL-2.1) |
+| en_GB dictionary | LGPL | British English spell-checking (Marco A.G. Pinto) |
+| en_US dictionary | BSD/MIT-Like | American English spell-checking (Kevin Atkinson) |
 
 ---
 

@@ -139,7 +139,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Check Hunspell dictionaries
         let userSpellingDir = (homeDir as NSString).appendingPathComponent("Library/Spelling")
         if let spellingFiles = try? FileManager.default.contentsOfDirectory(atPath: userSpellingDir) {
-            let shawFiles = spellingFiles.filter { $0.hasPrefix("shaw-") }
+            let shawFiles = spellingFiles.filter { $0.hasPrefix("io.joro.shaw-spell.") }
             if !shawFiles.isEmpty {
                 foundAnything = true
                 output += "Hunspell Dictionaries:\n"
@@ -231,7 +231,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         touch "\(homeDir)/Library/Dictionaries"
 
         echo 'Removing Hunspell dictionaries...'
-        rm -f "\(homeDir)/Library/Spelling/shaw-"* 2>/dev/null || true
+        rm -f "\(homeDir)/Library/Spelling/io.joro.shaw-spell."* 2>/dev/null || true
 
         echo 'Removing spell server...'
         rm -rf "\(homeDir)/Library/Services/Shaw-Spell.service" 2>/dev/null || true

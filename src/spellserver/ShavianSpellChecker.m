@@ -4,132 +4,201 @@
 
 #import "ShavianSpellChecker.h"
 #import <AppKit/AppKit.h>
-#import "hunspell/hunspell.h"
+#import "hunspell.h"
 
 // Shavian Unicode range: U+10450 to U+1047F
 #define SHAVIAN_START 0x10450
 #define SHAVIAN_END   0x1047F
 
 @implementation ShavianSpellChecker {
-    Hunhandle *_hunspellHandle;
-    NSSpellChecker *_systemChecker;
+    Hunhandle *_shavianHandle;
+    Hunhandle *_englishHandle;
 }
 
 - (instancetype)init {
     self = [super init];
     if (self) {
-        // Initialize Hunspell with our Shavian dictionary
-        NSString *dicPath = [@"~/Library/Spelling/shaw.dic" stringByExpandingTildeInPath];
-        NSString *affPath = [@"~/Library/Spelling/shaw.aff" stringByExpandingTildeInPath];
+        // Initialize Hunspell with Shavian dictionary
+        NSString *shawDicPath = [@"~/Library/Spelling/shaw.dic" stringByExpandingTildeInPath];
+        NSString *shawAffPath = [@"~/Library/Spelling/shaw.aff" stringByExpandingTildeInPath];
 
-        if ([[NSFileManager defaultManager] fileExistsAtPath:dicPath] &&
-            [[NSFileManager defaultManager] fileExistsAtPath:affPath]) {
-            _hunspellHandle = Hunspell_create([affPath UTF8String], [dicPath UTF8String]);
-            if (_hunspellHandle) {
-                NSLog(@"ShavianSpellChecker: Loaded Hunspell dictionary from %@", dicPath);
+        if ([[NSFileManager defaultManager] fileExistsAtPath:shawDicPath] &&
+            [[NSFileManager defaultManager] fileExistsAtPath:shawAffPath]) {
+            _shavianHandle = Hunspell_create([shawAffPath UTF8String], [shawDicPath UTF8String]);
+            if (_shavianHandle) {
+                NSLog(@"ShavianSpellChecker: Loaded Shavian dictionary from %@", shawDicPath);
             } else {
-                NSLog(@"ShavianSpellChecker: Failed to load Hunspell dictionary");
+                NSLog(@"ShavianSpellChecker: Failed to load Shavian dictionary");
             }
         } else {
-            NSLog(@"ShavianSpellChecker: Dictionary files not found at %@", dicPath);
+            NSLog(@"ShavianSpellChecker: Shavian dictionary files not found at %@", shawDicPath);
         }
 
-        // Get system spell checker for delegating Latin text
-        _systemChecker = [NSSpellChecker sharedSpellChecker];
+        // Initialize Hunspell with English dictionary
+        NSString *enDicPath = [@"~/Library/Spelling/en_GB.dic" stringByExpandingTildeInPath];
+        NSString *enAffPath = [@"~/Library/Spelling/en_GB.aff" stringByExpandingTildeInPath];
+
+        if ([[NSFileManager defaultManager] fileExistsAtPath:enDicPath] &&
+            [[NSFileManager defaultManager] fileExistsAtPath:enAffPath]) {
+            _englishHandle = Hunspell_create([enAffPath UTF8String], [enDicPath UTF8String]);
+            if (_englishHandle) {
+                NSLog(@"ShavianSpellChecker: Loaded English dictionary from %@", enDicPath);
+            } else {
+                NSLog(@"ShavianSpellChecker: Failed to load English dictionary");
+            }
+        } else {
+            NSLog(@"ShavianSpellChecker: English dictionary files not found at %@", enDicPath);
+        }
+
         NSLog(@"ShavianSpellChecker: Initialized");
     }
     return self;
 }
 
 - (void)dealloc {
-    if (_hunspellHandle) {
-        Hunspell_destroy(_hunspellHandle);
+    if (_shavianHandle) {
+        Hunspell_destroy(_shavianHandle);
+    }
+    if (_englishHandle) {
+        Hunspell_destroy(_englishHandle);
     }
 }
 
 #pragma mark - Script Detection
 
-- (BOOL)isShavianCharacter:(unichar)character {
-    return (character >= SHAVIAN_START && character <= SHAVIAN_END);
-}
-
 - (BOOL)containsShavianScript:(NSString *)string {
+    // Shavian is in the supplementary plane (U+10450-1047F)
+    // We need to check UTF-32 codepoints, not 16-bit unichars
     __block BOOL hasShavian = NO;
+
     [string enumerateSubstringsInRange:NSMakeRange(0, string.length)
                                options:NSStringEnumerationByComposedCharacterSequences
-                            usingBlock:^(NSString *substring, NSRange range, NSRange enclosingRange, BOOL *stop) {
-        UTF32Char character = [substring characterAtIndex:0];
-        if ([self isShavianCharacter:character]) {
+                            usingBlock:^(NSString *substring, NSRange subRange __unused, NSRange enclosingRange __unused, BOOL *stop) {
+        // Get the Unicode scalar value (UTF-32)
+        UTF32Char codepoint;
+        [substring getBytes:&codepoint
+                  maxLength:sizeof(codepoint)
+                 usedLength:NULL
+                   encoding:NSUTF32LittleEndianStringEncoding
+                    options:0
+                      range:NSMakeRange(0, substring.length)
+             remainingRange:NULL];
+
+        // Check if it's in the Shavian range
+        if (codepoint >= SHAVIAN_START && codepoint <= SHAVIAN_END) {
             hasShavian = YES;
             *stop = YES;
         }
     }];
+
     return hasShavian;
 }
 
-#pragma mark - Word Extraction
+#pragma mark - Word Boundary Detection
 
-- (NSArray<NSValue *> *)wordRangesInString:(NSString *)string {
-    NSMutableArray *ranges = [NSMutableArray array];
-    NSRange searchRange = NSMakeRange(0, string.length);
+- (BOOL)isShavianOrLatinLetter:(UTF32Char)codepoint {
+    // Latin letters (a-z, A-Z)
+    if ((codepoint >= 0x0041 && codepoint <= 0x005A) ||  // A-Z
+        (codepoint >= 0x0061 && codepoint <= 0x007A)) {  // a-z
+        return YES;
+    }
+    // Shavian letters (𐑐-𐑿)
+    if (codepoint >= SHAVIAN_START && codepoint <= SHAVIAN_END) {
+        return YES;
+    }
+    return NO;
+}
 
-    while (searchRange.location < string.length) {
-        NSRange wordRange = [string rangeOfCharacterFromSet:[NSCharacterSet letterCharacterSet]
-                                                     options:0
-                                                       range:searchRange];
-        if (wordRange.location == NSNotFound) {
+- (NSRange)findNextWordInString:(NSString *)string startingAt:(NSUInteger)start {
+    NSLog(@"ShavianSpellChecker: findNextWord starting at %lu in string length %lu",
+          (unsigned long)start, (unsigned long)string.length);
+
+    if (start >= string.length) {
+        return NSMakeRange(NSNotFound, 0);
+    }
+
+    // Manual word boundary detection for Shavian text
+    // NSLinguisticTagger doesn't recognize Shavian as letters
+    NSUInteger pos = start;
+    NSUInteger wordStart = NSNotFound;
+
+    // Skip non-letters to find word start
+    while (pos < string.length) {
+        NSRange range = [string rangeOfComposedCharacterSequenceAtIndex:pos];
+        NSString *character = [string substringWithRange:range];
+
+        UTF32Char codepoint = 0;
+        [character getBytes:&codepoint
+                  maxLength:sizeof(codepoint)
+                 usedLength:NULL
+                   encoding:NSUTF32LittleEndianStringEncoding
+                    options:0
+                      range:NSMakeRange(0, character.length)
+             remainingRange:NULL];
+
+        NSLog(@"ShavianSpellChecker: Checking character at pos %lu, codepoint=0x%X, isLetter=%d",
+              (unsigned long)pos, codepoint, [self isShavianOrLatinLetter:codepoint]);
+
+        if ([self isShavianOrLatinLetter:codepoint]) {
+            wordStart = pos;
+            NSLog(@"ShavianSpellChecker: Found word start at %lu", (unsigned long)pos);
             break;
         }
 
-        // Extend to full word
-        NSRange fullWordRange = wordRange;
-        while (fullWordRange.location > 0) {
-            unichar prev = [string characterAtIndex:fullWordRange.location - 1];
-            if (![[NSCharacterSet letterCharacterSet] characterIsMember:prev]) {
-                break;
-            }
-            fullWordRange.location--;
-            fullWordRange.length++;
-        }
-
-        while (NSMaxRange(fullWordRange) < string.length) {
-            unichar next = [string characterAtIndex:NSMaxRange(fullWordRange)];
-            if (![[NSCharacterSet letterCharacterSet] characterIsMember:next]) {
-                break;
-            }
-            fullWordRange.length++;
-        }
-
-        [ranges addObject:[NSValue valueWithRange:fullWordRange]];
-
-        searchRange.location = NSMaxRange(fullWordRange);
-        searchRange.length = string.length - searchRange.location;
+        pos = NSMaxRange(range);
     }
 
-    return ranges;
+    if (wordStart == NSNotFound) {
+        NSLog(@"ShavianSpellChecker: No word found");
+        return NSMakeRange(NSNotFound, 0);
+    }
+
+    // Find word end
+    pos = wordStart;
+    NSUInteger wordEnd = wordStart;
+
+    while (pos < string.length) {
+        NSRange range = [string rangeOfComposedCharacterSequenceAtIndex:pos];
+        NSString *character = [string substringWithRange:range];
+
+        UTF32Char codepoint = 0;
+        [character getBytes:&codepoint
+                  maxLength:sizeof(codepoint)
+                 usedLength:NULL
+                   encoding:NSUTF32LittleEndianStringEncoding
+                    options:0
+                      range:NSMakeRange(0, character.length)
+             remainingRange:NULL];
+
+        if (![self isShavianOrLatinLetter:codepoint]) {
+            break;
+        }
+
+        wordEnd = NSMaxRange(range);
+        pos = wordEnd;
+    }
+
+    NSRange result = NSMakeRange(wordStart, wordEnd - wordStart);
+    NSLog(@"ShavianSpellChecker: Found word at range (%lu, %lu): %@",
+          (unsigned long)result.location, (unsigned long)result.length,
+          [string substringWithRange:result]);
+    return result;
 }
 
 #pragma mark - Spell Checking
 
-- (BOOL)checkShavianWord:(NSString *)word {
-    if (!_hunspellHandle) {
-        return YES; // No dictionary loaded, assume correct
+- (BOOL)checkWord:(NSString *)word {
+    // Determine which dictionary to use based on script
+    BOOL isShavian = [self containsShavianScript:word];
+    Hunhandle *handle = isShavian ? _shavianHandle : _englishHandle;
+
+    if (!handle) {
+        return YES; // No dictionary loaded for this script, assume correct
     }
 
     const char *utf8Word = [word UTF8String];
-    int result = Hunspell_spell(_hunspellHandle, utf8Word);
+    int result = Hunspell_spell(handle, utf8Word);
     return result != 0; // Non-zero means correctly spelled
-}
-
-- (BOOL)checkLatinWord:(NSString *)word language:(NSString *)language {
-    // Delegate to system spell checker
-    NSRange misspelledRange = [_systemChecker checkSpellingOfString:word
-                                                         startingAt:0
-                                                           language:language
-                                                               wrap:NO
-                                             inSpellDocumentWithTag:0
-                                                          wordCount:NULL];
-    return misspelledRange.location == NSNotFound;
 }
 
 #pragma mark - NSSpellServerDelegate
@@ -140,72 +209,85 @@
                    wordCount:(NSInteger *)wordCount
                    countOnly:(BOOL)countOnly {
 
-    // Get all word ranges
-    NSArray<NSValue *> *wordRanges = [self wordRangesInString:stringToCheck];
+    NSLog(@"ShavianSpellChecker: findMisspelledWord called for language=%@, countOnly=%d, string length=%lu",
+          language, countOnly, (unsigned long)stringToCheck.length);
+
+    // Iterate through all words, checking both Shavian and Latin
+    NSUInteger position = 0;
+    NSInteger count = 0;
+
+    while (position < stringToCheck.length) {
+        NSRange wordRange = [self findNextWordInString:stringToCheck startingAt:position];
+
+        if (wordRange.location == NSNotFound) {
+            break; // No more words
+        }
+
+        count++;
+
+        if (!countOnly) {
+            NSString *word = [stringToCheck substringWithRange:wordRange];
+            BOOL isShavian = [self containsShavianScript:word];
+
+            NSLog(@"ShavianSpellChecker: Checking %@ word: %@",
+                  isShavian ? @"Shavian" : @"Latin", word);
+
+            if (![self checkWord:word]) {
+                // Found misspelled word
+                NSLog(@"ShavianSpellChecker: MISSPELLED: %@", word);
+                if (wordCount) {
+                    *wordCount = count;
+                }
+                return wordRange;
+            } else {
+                NSLog(@"ShavianSpellChecker: Word is correct");
+            }
+        }
+
+        // Move to next word
+        position = NSMaxRange(wordRange);
+    }
 
     if (wordCount) {
-        *wordCount = wordRanges.count;
+        *wordCount = count;
     }
 
-    if (countOnly) {
-        return NSMakeRange(NSNotFound, 0);
-    }
-
-    // Check each word
-    for (NSValue *rangeValue in wordRanges) {
-        NSRange wordRange = [rangeValue rangeValue];
-        NSString *word = [stringToCheck substringWithRange:wordRange];
-
-        BOOL isCorrect;
-        if ([self containsShavianScript:word]) {
-            // Shavian word - use Hunspell
-            isCorrect = [self checkShavianWord:word];
-        } else {
-            // Latin word - delegate to system
-            isCorrect = [self checkLatinWord:word language:language];
-        }
-
-        if (!isCorrect) {
-            return wordRange; // Return first misspelled word
-        }
-    }
-
-    return NSMakeRange(NSNotFound, 0); // No misspelled words
+    return NSMakeRange(NSNotFound, 0); // No misspelled words found
 }
 
 - (NSArray<NSString *> *)spellServer:(NSSpellServer *)sender
             suggestGuessesForWord:(NSString *)word
                        inLanguage:(NSString *)language {
 
-    if ([self containsShavianScript:word]) {
-        // Shavian word - use Hunspell suggestions
-        if (!_hunspellHandle) {
-            return @[];
-        }
+    NSLog(@"ShavianSpellChecker: suggestGuesses called for word: %@", word);
 
-        char **suggestions = NULL;
-        int count = Hunspell_suggest(_hunspellHandle, &suggestions, [word UTF8String]);
+    // Determine which dictionary to use based on script
+    BOOL isShavian = [self containsShavianScript:word];
+    Hunhandle *handle = isShavian ? _shavianHandle : _englishHandle;
 
-        NSMutableArray *results = [NSMutableArray array];
-        for (int i = 0; i < count && i < 10; i++) { // Limit to 10 suggestions
-            NSString *suggestion = [NSString stringWithUTF8String:suggestions[i]];
-            if (suggestion) {
-                [results addObject:suggestion];
-            }
-        }
-
-        // Free Hunspell suggestions
-        Hunspell_free_list(_hunspellHandle, &suggestions, count);
-
-        return results;
-    } else {
-        // Latin word - delegate to system
-        NSArray *guesses = [_systemChecker guessesForWordRange:NSMakeRange(0, word.length)
-                                                       inString:word
-                                                       language:language
-                                         inSpellDocumentWithTag:0];
-        return guesses ?: @[];
+    if (!handle) {
+        NSLog(@"ShavianSpellChecker: No dictionary loaded for this script");
+        return @[];
     }
+
+    NSLog(@"ShavianSpellChecker: Getting suggestions from %@ dictionary", isShavian ? @"Shavian" : @"English");
+
+    char **suggestions = NULL;
+    int count = Hunspell_suggest(handle, &suggestions, [word UTF8String]);
+
+    NSMutableArray *results = [NSMutableArray array];
+    for (int i = 0; i < count && i < 10; i++) { // Limit to 10 suggestions
+        NSString *suggestion = [NSString stringWithUTF8String:suggestions[i]];
+        if (suggestion) {
+            [results addObject:suggestion];
+        }
+    }
+
+    // Free Hunspell suggestions
+    Hunspell_free_list(handle, &suggestions, count);
+
+    NSLog(@"ShavianSpellChecker: Returning %lu suggestions", (unsigned long)results.count);
+    return results;
 }
 
 @end

@@ -6,10 +6,10 @@ NSSpellServer service providing native macOS spell-checking for English with Sha
 
 This service registers as an English spell checker that handles **both Latin and Shavian orthography**:
 
-- **Shavian text** (𐑐-𐑿): Checked against Hunspell dictionary (75K+ words)
-- **Latin text** (a-z): Delegated to system English spell checker
+- **Shavian text** (𐑐-𐑿): Checked against Shavian Hunspell dictionary (75K+ words)
+- **Latin text** (a-z): Checked against English Hunspell dictionary (en_GB)
 
-Users don't need to switch languages—the service automatically detects the script and routes accordingly.
+Users don't need to switch languages—the service automatically detects the script and routes to the appropriate dictionary.
 
 ## Regional Variants
 
@@ -27,7 +27,8 @@ Currently, all variants use the same Shavian dictionary which contains words fro
 
 - macOS 10.10+
 - Hunspell library (`brew install hunspell`)
-- Shavian Hunspell dictionary installed at `~/Library/Spelling/shaw.dic`
+- Shavian Hunspell dictionary installed at `~/Library/Spelling/shaw.{dic,aff}`
+- English Hunspell dictionary installed at `~/Library/Spelling/en_GB.{dic,aff}`
 
 ## Building
 
@@ -75,9 +76,11 @@ make uninstall
 
 1. **main.m**: Creates NSSpellServer and registers for all English variants
 2. **ShavianSpellChecker**: Implements NSSpellServerDelegate
+   - Loads two Hunspell dictionaries: Shavian and English
    - Detects script (Shavian vs Latin) using Unicode ranges
    - Routes Shavian text to Hunspell (`shaw.dic`)
-   - Routes Latin text to system NSSpellChecker
+   - Routes Latin text to Hunspell (`en_GB.dic`)
+3. **Custom word boundary detection**: Manual implementation since NSLinguisticTagger doesn't recognize Shavian as letters
 
 ### Script Detection
 
@@ -92,8 +95,10 @@ This allows mixed-script documents to work seamlessly.
 ### Suggestions
 
 When providing spelling suggestions:
-- **Shavian words**: Hunspell provides up to 10 suggestions from dictionary
-- **Latin words**: System checker provides suggestions
+- **Shavian words**: Hunspell provides up to 10 suggestions from Shavian dictionary
+- **Latin words**: Hunspell provides up to 10 suggestions from English dictionary
+
+Both use the same Hunspell suggestion algorithm for consistency.
 
 ## Future Enhancements
 

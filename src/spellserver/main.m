@@ -12,7 +12,7 @@
 #import <Foundation/Foundation.h>
 #import "ShavianSpellChecker.h"
 
-int main(int argc, const char *argv[]) {
+int main(int argc __unused, const char *argv[] __unused) {
     @autoreleasepool {
         NSSpellServer *server = [[NSSpellServer alloc] init];
         ShavianSpellChecker *delegate = [[ShavianSpellChecker alloc] init];

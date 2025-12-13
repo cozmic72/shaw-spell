@@ -1,0 +1,9 @@
+# Build artifacts
+*.o
+build/
+*.dSYM/
+
+# Test binaries
+test_direct
+test_spell
+test_textview

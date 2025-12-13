@@ -18,13 +18,16 @@ CFLAGS = -Wall -Wextra -O2 -fobjc-arc
 FRAMEWORKS = -framework Foundation -framework AppKit
 LIBS = -lhunspell-1.7
 
-# Hunspell include path (via Homebrew)
+# Hunspell paths (via Homebrew)
 HUNSPELL_INCLUDE = /opt/homebrew/include/hunspell
+HUNSPELL_LIB = /opt/homebrew/lib
 ifeq ($(wildcard $(HUNSPELL_INCLUDE)),)
     HUNSPELL_INCLUDE = /usr/local/include/hunspell
+    HUNSPELL_LIB = /usr/local/lib
 endif
 
 INCLUDES = -I$(HUNSPELL_INCLUDE)
+LDFLAGS = -L$(HUNSPELL_LIB)
 
 # Build directory structure
 BUILD_DIR = build
@@ -44,7 +47,7 @@ all: $(BUILD_DIR)/$(SERVICE_NAME)
 
 $(BUILD_DIR)/$(SERVICE_NAME): $(OBJECTS) | $(BUILD_DIR)
 	@echo "Linking $(SERVICE_NAME)..."
-	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(FRAMEWORKS) $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(FRAMEWORKS) $(LIBS)
 
 %.o: %.m
 	@echo "Compiling $<..."

@@ -54,23 +54,28 @@ def batch_transliterate_to_shavian(texts):
         )
 
         # Send all HTML and get output
-        output_html, _ = proc.communicate(input=html_input, timeout=600)  # 10 minute timeout
+        # Timeout scales with batch size: ~1 second per 100 texts
+        timeout_seconds = max(60, len(texts) // 50)
+        print(f"Waiting for shave (timeout: {timeout_seconds}s)...")
+        output_html, _ = proc.communicate(input=html_input, timeout=timeout_seconds)
 
         print("Parsing transliteration results...")
 
         # Extract transliterated texts from output
         transliterated = []
+        search_pos = 0  # Track position in output to avoid re-finding earlier divs
         for i in range(len(texts)):
             start_tag = f'<div id="t{i}">'
             end_tag = '</div>'
 
-            start_idx = output_html.find(start_tag)
+            start_idx = output_html.find(start_tag, search_pos)
             if start_idx != -1:
                 start_idx += len(start_tag)
                 end_idx = output_html.find(end_tag, start_idx)
                 if end_idx != -1:
                     transliterated_text = output_html[start_idx:end_idx]
                     transliterated.append(transliterated_text)
+                    search_pos = end_idx + len(end_tag)  # Move search position forward
                 else:
                     transliterated.append(texts[i])
             else:
@@ -173,8 +178,17 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, forc
 
     print(f"Total texts to transliterate: {len(all_texts_to_transliterate)}")
 
-    # Transliterate all texts
-    transliterated_texts = batch_transliterate_to_shavian(all_texts_to_transliterate)
+    # Transliterate in batches to avoid timeout
+    BATCH_SIZE = 5000  # Process 5000 texts at a time
+    transliterated_texts = []
+
+    for i in range(0, len(all_texts_to_transliterate), BATCH_SIZE):
+        batch = all_texts_to_transliterate[i:i+BATCH_SIZE]
+        batch_num = (i // BATCH_SIZE) + 1
+        total_batches = (len(all_texts_to_transliterate) + BATCH_SIZE - 1) // BATCH_SIZE
+        print(f"\nTransliterating batch {batch_num}/{total_batches} ({len(batch)} texts)...")
+        transliterated_batch = batch_transliterate_to_shavian(batch)
+        transliterated_texts.extend(transliterated_batch)
 
     # Map transliterations back to lemmas
     print("Building lemma cache...")

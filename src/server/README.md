@@ -7,7 +7,7 @@ NSSpellServer service providing native macOS spell-checking for English with Sha
 This service registers as an English spell checker that handles **both Latin and Shavian orthography**:
 
 - **Shavian text** (𐑐-𐑿): Checked against Shavian Hunspell dictionary (75K+ words)
-- **Latin text** (a-z): Checked against English Hunspell dictionary (en_GB)
+- **Latin text** (a-z): Checked against English Hunspell dictionary (164K+ words from WordNet)
 
 Users don't need to switch languages—the service automatically detects the script and routes to the appropriate dictionary.
 
@@ -28,7 +28,7 @@ Currently, all variants use the same Shavian dictionary which contains words fro
 - macOS 10.10+
 - Hunspell library (`brew install hunspell`)
 - Shavian Hunspell dictionary installed at `~/Library/Spelling/shaw.{dic,aff}`
-- English Hunspell dictionary installed at `~/Library/Spelling/en_GB.{dic,aff}`
+- English Hunspell dictionary (GB or US) at `~/Library/Spelling/io.joro.shaw-spell.en_GB.{dic,aff}` or `en_US`
 
 ## Building
 
@@ -76,10 +76,10 @@ make uninstall
 
 1. **main.m**: Creates NSSpellServer and registers for all English variants
 2. **ShavianSpellChecker**: Implements NSSpellServerDelegate
-   - Loads two Hunspell dictionaries: Shavian and English
+   - Loads two Hunspell dictionaries: Shavian and English (generated from WordNet)
    - Detects script (Shavian vs Latin) using Unicode ranges
    - Routes Shavian text to Hunspell (`shaw.dic`)
-   - Routes Latin text to Hunspell (`en_GB.dic`)
+   - Routes Latin text to Hunspell (`io.joro.shaw-spell.en_GB.dic` or `en_US.dic`)
 3. **Custom word boundary detection**: Manual implementation since NSLinguisticTagger doesn't recognize Shavian as letters
 
 ### Script Detection

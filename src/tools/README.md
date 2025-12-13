@@ -10,8 +10,8 @@ Analyzes word coverage across the different dictionary sources used in Shaw-Spel
 
 **Purpose**: Understand the overlap and unique contributions of each source:
 - ReadLex (Shavian pronunciation data)
-- Open English WordNet (word definitions)
-- Hunspell dictionaries (spell checking)
+- Open English WordNet (word definitions and spell-checking word lists)
+- Hunspell dictionaries (generated from WordNet for spell checking)
 
 **Usage**:
 ```bash

@@ -64,10 +64,14 @@ all: $(DICT_OUTPUT)
 $(PLIST_PATH): $(PLIST_TEMPLATE) $(DESCRIPTION_FILE)
 	@echo "Generating $@ from shared template..."
 	@mkdir -p $(dir $@)
+	@# First interpolate description with VERSION
+	@./interpolate_template.py $(DESCRIPTION_FILE) $(DESCRIPTION_FILE).tmp VERSION="$(VERSION)"
+	@# Then generate plist with interpolated description
 	@./interpolate_template.py $(PLIST_TEMPLATE) $@ \
 		BUNDLE_ID=$(BUNDLE_ID) \
 		BUNDLE_NAME="$(BUNDLE_NAME)" \
-		DESCRIPTION=$(DESCRIPTION_FILE)
+		DESCRIPTION=$(DESCRIPTION_FILE).tmp
+	@rm -f $(DESCRIPTION_FILE).tmp
 
 # Build dictionary
 $(DICT_OUTPUT): $(DICT_SRC_PATH) $(CSS_PATH) $(PLIST_PATH) $(DESCRIPTION_FILE)

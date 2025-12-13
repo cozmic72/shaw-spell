@@ -4,6 +4,3 @@
 [submodule "external/readlex"]
 	path = external/readlex
 	url = https://github.com/Shavian-info/readlex.git
-[submodule "external/hunspell-en"]
-	path = external/hunspell-en
-	url = https://github.com/marcoagpinto/aoo-mozilla-en-dict.git

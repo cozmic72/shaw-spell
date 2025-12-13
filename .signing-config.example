@@ -1,0 +1,20 @@
+# Signing Configuration for Shaw-Spell
+#
+# Copy this file to .signing-config and fill in your details.
+# .signing-config is gitignored and will not be committed.
+#
+# If .signing-config doesn't exist, all code signing will be skipped.
+
+# Your Developer ID Application certificate
+# Find this with: security find-identity -v -p codesigning
+CODESIGN_IDENTITY=Developer ID Application: Your Name (TEAMID)
+
+# Your Apple Developer Team ID (for notarization)
+TEAM_ID=TEAMID
+
+# Your Apple ID email (for notarization)
+APPLE_ID=your@email.com
+
+# App-specific password from https://appleid.apple.com (for notarization)
+# IMPORTANT: Never commit this file with real passwords!
+NOTARY_PASSWORD=xxxx-xxxx-xxxx-xxxx

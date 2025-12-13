@@ -1,1 +1,0 @@
-- Let the user do all the building and testing.

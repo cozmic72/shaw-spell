@@ -7,7 +7,11 @@
 SERVICE_NAME = Shaw-Spell
 BUNDLE_NAME = $(SERVICE_NAME).service
 INSTALL_DIR = $(HOME)/Library/Services
-CODESIGN_IDENTITY = Jonathan Ross
+
+# Code signing configuration
+REPO_ROOT = ../..
+ENTITLEMENTS = Shaw-Spell.entitlements
+include $(REPO_ROOT)/src/signing.mk
 
 # Source files
 SWIFT_SOURCES = main.swift ShavianSpellChecker.swift
@@ -64,9 +68,9 @@ $(BUNDLE_MARKER): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
 	@echo "Updating library paths..."
 	@install_name_tool -change $(HUNSPELL_DYLIB_SRC) @executable_path/../Frameworks/libhunspell-1.7.0.dylib $(MACOS_DIR)/$(SERVICE_NAME)
 	@install_name_tool -id @executable_path/../Frameworks/libhunspell-1.7.0.dylib $(CONTENTS_DIR)/Frameworks/libhunspell-1.7.0.dylib
-	@echo "Code signing service bundle with '$(CODESIGN_IDENTITY)'..."
-	@codesign --force --sign "$(CODESIGN_IDENTITY)" $(CONTENTS_DIR)/Frameworks/libhunspell-1.7.0.dylib
-	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" $(BUNDLE_DIR)
+	$(call SIGN_LIBRARY,$(CONTENTS_DIR)/Frameworks/libhunspell-1.7.0.dylib)
+	$(call SIGN_LIBRARY,$(MACOS_DIR)/$(SERVICE_NAME))
+	$(call SIGN_BUNDLE,$(BUNDLE_DIR),$(ENTITLEMENTS))
 	@touch $(BUNDLE_MARKER)
 	@echo "Service bundle created at $(BUNDLE_DIR)"
 

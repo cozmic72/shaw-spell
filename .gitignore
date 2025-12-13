@@ -2,6 +2,9 @@
 build/
 *.o
 
+# Signing configuration (personal certificates)
+.signing-config
+
 # macOS
 .DS_Store
 

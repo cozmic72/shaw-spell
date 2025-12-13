@@ -19,6 +19,12 @@ import sys
 from pathlib import Path
 from html import escape
 from collections import defaultdict
+from wordnet_dialect import (
+    get_dialect_data,
+    normalize_to_us_spelling_wordnet,
+    normalize_to_gb_spelling_wordnet,
+    detect_spelling_variant_wordnet
+)
 
 
 def normalize_to_us_spelling(word):
@@ -26,6 +32,10 @@ def normalize_to_us_spelling(word):
     Normalize GB spellings to US equivalents for grouping purposes.
     Returns the normalized (US) spelling.
     Handles hyphenated compounds by normalizing each part.
+
+    NOTE: This is a FALLBACK function. The primary dialect normalization
+    uses WordNet data (normalize_to_us_spelling_wordnet). This heuristic
+    is only used for words not found in WordNet.
     """
     # Handle hyphenated words by normalizing each part
     if '-' in word:
@@ -41,6 +51,10 @@ def normalize_to_gb_spelling(word):
     Normalize US spellings to GB equivalents (reverse of normalize_to_us_spelling).
     Returns the normalized (GB) spelling.
     Handles hyphenated compounds by normalizing each part.
+
+    NOTE: This is a FALLBACK function. The primary dialect normalization
+    uses WordNet data (normalize_to_gb_spelling_wordnet). This heuristic
+    is only used for words not found in WordNet.
     """
     # Handle hyphenated words by normalizing each part
     if '-' in word:
@@ -161,6 +175,10 @@ def detect_spelling_variant(word):
 
     Note: Australian English generally follows British spelling patterns,
     so words detected as 'GB' likely apply to Australian as well.
+
+    NOTE: This is a FALLBACK function. The primary dialect detection
+    uses WordNet data (detect_spelling_variant_wordnet). This heuristic
+    is only used for words not found in WordNet.
     """
     word_lower = word.lower()
 
@@ -235,6 +253,83 @@ def _check_spelling_patterns(word_lower):
             return 'US'
 
     return None
+
+
+def normalize_to_us_with_fallback(word, dialect_data=None, wordnet_cache=None):
+    """
+    Normalize word to US spelling, using comprehensive cache if available, falling back to heuristics.
+
+    Handles hyphenated words by normalizing each part.
+    """
+    if '-' in word:
+        parts = word.split('-')
+        normalized_parts = [normalize_to_us_with_fallback(part, dialect_data, wordnet_cache) for part in parts]
+        return '-'.join(normalized_parts)
+
+    # Try comprehensive cache first (most authoritative)
+    if wordnet_cache and word.lower() in wordnet_cache:
+        entry = wordnet_cache[word.lower()]
+        variants = entry.get('variants', {})
+        if variants and 'US' in variants:
+            return variants['US']
+
+    # Try WordNet dialect data (fallback)
+    if dialect_data:
+        wordnet_result = normalize_to_us_spelling_wordnet(word, dialect_data)
+        if wordnet_result != word:
+            return wordnet_result
+
+    # Fall back to heuristics
+    return normalize_to_us_spelling(word)
+
+
+def normalize_to_gb_with_fallback(word, dialect_data=None, wordnet_cache=None):
+    """
+    Normalize word to GB spelling, using comprehensive cache if available, falling back to heuristics.
+
+    Handles hyphenated words by normalizing each part.
+    """
+    if '-' in word:
+        parts = word.split('-')
+        normalized_parts = [normalize_to_gb_with_fallback(part, dialect_data, wordnet_cache) for part in parts]
+        return '-'.join(normalized_parts)
+
+    # Try comprehensive cache first (most authoritative)
+    if wordnet_cache and word.lower() in wordnet_cache:
+        entry = wordnet_cache[word.lower()]
+        variants = entry.get('variants', {})
+        if variants and 'GB' in variants:
+            return variants['GB']
+
+    # Try WordNet dialect data (fallback)
+    if dialect_data:
+        wordnet_result = normalize_to_gb_spelling_wordnet(word, dialect_data)
+        if wordnet_result != word:
+            return wordnet_result
+
+    # Fall back to heuristics
+    return normalize_to_gb_spelling(word)
+
+
+def detect_spelling_variant_with_fallback(word, dialect_data=None, wordnet_cache=None):
+    """
+    Detect word dialect, using comprehensive cache if available, falling back to heuristics.
+    """
+    # Try comprehensive cache first (most authoritative)
+    if wordnet_cache and word.lower() in wordnet_cache:
+        entry = wordnet_cache[word.lower()]
+        dialect = entry.get('dialect')
+        if dialect:
+            return dialect
+
+    # Try WordNet dialect data (fallback)
+    if dialect_data:
+        wordnet_result = detect_spelling_variant_wordnet(word, dialect_data)
+        if wordnet_result:
+            return wordnet_result
+
+    # Fall back to heuristics
+    return detect_spelling_variant(word)
 
 
 def extract_lemma_from_key(key):
@@ -373,6 +468,57 @@ def translate_to_shavian(text, shavian_lookup):
             translated_words.append(word)
 
     return ' '.join(translated_words) if translated_words else text
+
+
+def get_irregular_forms(lemma, wordnet_cache):
+    """
+    Extract irregular forms for a lemma from the comprehensive cache.
+
+    Args:
+        lemma: The lemma to look up (normalized to lowercase)
+        wordnet_cache: The comprehensive WordNet cache
+
+    Returns:
+        Dict mapping POS to list of irregular forms, e.g., {'v': ['woke', 'woken'], 'a': ['better', 'best']}
+    """
+    if not wordnet_cache or lemma.lower() not in wordnet_cache:
+        return {}
+
+    entry = wordnet_cache[lemma.lower()]
+    irregular_forms = {}
+
+    for pos, pos_data in entry.get('pos_entries', {}).items():
+        forms = pos_data.get('forms', [])
+        if forms:
+            irregular_forms[pos] = forms
+
+    return irregular_forms
+
+
+def get_definitions_from_cache(lemma, wordnet_cache):
+    """
+    Extract definitions for a lemma from the comprehensive cache.
+
+    Args:
+        lemma: The lemma to look up (normalized to lowercase)
+        wordnet_cache: The comprehensive WordNet cache
+
+    Returns:
+        List of definition dicts compatible with wordnet-definitions.json format:
+        [{'definition': str, 'pos': str, 'examples': [str, ...]}, ...]
+    """
+    if not wordnet_cache or lemma.lower() not in wordnet_cache:
+        return []
+
+    entry = wordnet_cache[lemma.lower()]
+    all_definitions = []
+
+    # Extract definitions from all POS entries
+    for pos, pos_data in entry.get('pos_entries', {}).items():
+        definitions = pos_data.get('definitions', [])
+        all_definitions.extend(definitions)
+
+    return all_definitions
 
 
 def pos_to_readable(pos_code):
@@ -539,7 +685,7 @@ def create_xml_footer():
     return '</d:dictionary>\n'
 
 
-def generate_dictionary(readlex_data, definitions, output_path, dict_type, dialect='gb'):
+def generate_dictionary(readlex_data, definitions, output_path, dict_type, dialect='gb', dialect_data=None, wordnet_cache=None):
     """
     Generate a dictionary with unified structure.
 
@@ -549,6 +695,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         output_path: Output XML file path
         dict_type: 'shaw-eng', 'eng-shaw', or 'shaw-shaw'
         dialect: 'gb' or 'us' (for preferred variant)
+        dialect_data: WordNet dialect data (optional, for authoritative dialect detection)
+        wordnet_cache: Comprehensive WordNet cache (optional, preferred for dialect detection)
     """
     # Configuration based on dictionary type
     config = {
@@ -599,7 +747,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         lemma = data['lemma']
         # Normalize GB -> US spelling for grouping (colour -> color)
         # This merges US/GB spelling variants into one entry
-        normalized_lemma = normalize_to_us_spelling(lemma)
+        normalized_lemma = normalize_to_us_with_fallback(lemma, dialect_data, wordnet_cache)
 
         # Get definitions using normalized lemma (prefer US definitions)
         if config['use_shavian_cache']:
@@ -609,11 +757,19 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             for trans_def in lemma_defs_raw:
                 lemma_defs.append({
                     'definition': trans_def['transliterated_definition'],
-                    'pos': trans_def['transliterated_pos'] if dict_type == 'shaw-shaw' else trans_def['pos'],
+                    'pos': trans_def['transliterated_pos'] if dict_type in ('shaw-shaw', 'eng-shaw') else trans_def['pos'],
                     'examples': trans_def['transliterated_examples']
                 })
         else:
-            lemma_defs = definitions.get(normalized_lemma, [])
+            # Try comprehensive cache first, then fall back to definitions dict
+            if wordnet_cache:
+                lemma_defs = get_definitions_from_cache(normalized_lemma, wordnet_cache)
+            else:
+                lemma_defs = []
+
+            # Fall back to passed definitions if cache didn't have any
+            if not lemma_defs:
+                lemma_defs = definitions.get(normalized_lemma, [])
 
         # Process each form
         for entry in data['entries']:
@@ -624,8 +780,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             ipa = entry.get('ipa', '')
             var = entry.get('var', '')
 
-            # Detect spelling variant using heuristics
-            detected_variant = detect_spelling_variant(latn)
+            # Detect spelling variant using comprehensive cache (with heuristic fallback)
+            detected_variant = detect_spelling_variant_with_fallback(latn, dialect_data, wordnet_cache)
 
             # Check if this is a lemma form (matches either original or normalized lemma)
             is_lemma_form = (latn_lower == lemma or latn_lower == normalized_lemma.lower())
@@ -822,7 +978,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 for form in lemma_data['forms']:
                     # ALL dictionaries: Group by normalized English spelling
                     # This merges colour/color and also groups due /djuː/ with due /duː/
-                    base_word = normalize_to_us_spelling(form['latn'])
+                    base_word = normalize_to_us_with_fallback(form['latn'], dialect_data, wordnet_cache)
                     key = (base_word, form['is_lemma'])
                     word_groups[key].append(form)
 
@@ -918,13 +1074,37 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
                 f.write('    </div>\n')
 
+                # Irregular forms (if any)
+                # Get the first lemma form to determine which lemma to look up
+                if lemma_forms:
+                    first_lemma_latn = lemma_forms[0]['latn']
+                    irregular_forms = get_irregular_forms(first_lemma_latn, wordnet_cache)
+
+                    if irregular_forms:
+                        f.write('    <div class="irregular-forms">\n')
+                        for pos, forms in irregular_forms.items():
+                            # Map WordNet POS to readable forms
+                            pos_readable_map = {'n': 'noun', 'v': 'verb', 'a': 'adjective', 'r': 'adverb', 's': 'adjective'}
+                            pos_label = pos_readable_map.get(pos, pos)
+
+                            # Translate forms list if needed
+                            if config['translate_labels']:
+                                forms_display = ', '.join([translate_to_shavian(form, shavian_lookup) for form in forms])
+                                label_text = translate_to_shavian(f'Irregular {pos_label} forms', shavian_lookup)
+                            else:
+                                forms_display = ', '.join(forms)
+                                label_text = f'Irregular {pos_label} forms'
+
+                            f.write(f'      <p><i>{escape(label_text)}:</i> {escape(forms_display)}</p>\n')
+                        f.write('    </div>\n')
+
                 # Definitions for this lemma
                 if lemma_data['definitions']:
                     pos_groups = group_definitions_by_pos(lemma_data['definitions'][:20])
                     f.write('    <div class="definitions">\n')
                     for pos, pos_defs in pos_groups:
                         f.write(f'      <div class="pos-group">\n')
-                        f.write(f'        <h3><i>({escape(pos)})</i></h3>\n')
+                        f.write(f'        <h3><i>{escape(pos)}</i></h3>\n')
                         for i, def_data in enumerate(pos_defs[:5], 1):
                             f.write(f'        <p><b>{i}.</b> {escape(def_data["definition"])}</p>\n')
                         f.write('      </div>\n')
@@ -944,7 +1124,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             # Flush every 1000 entries
             if written_entries % 1000 == 0:
                 f.flush()
-                print(f"  Writing: {written_entries} entries")
 
         f.write(create_xml_footer())
         f.flush()
@@ -980,6 +1159,8 @@ def main():
     project_dir = script_dir.parent.parent
     readlex_path = project_dir / 'external/readlex/readlex.json'
     wordnet_path = project_dir / 'build/wordnet-definitions.json'
+    wordnet_xml_path = project_dir / 'external/english-wordnet-2024.xml'
+    wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     shavian_defs_path = project_dir / f'data/definitions-shavian-{dialect}.json'
     build_dir = project_dir / 'build'
 
@@ -996,11 +1177,33 @@ def main():
         readlex_raw = json.load(f)
     print(f"Loaded {len(readlex_raw)} readlex entries")
 
-    # Load WordNet definitions
-    print("\nLoading WordNet definitions...")
-    with open(wordnet_path, 'r', encoding='utf-8') as f:
-        wordnet_defs = json.load(f)
-    print(f"Loaded definitions for {len(wordnet_defs)} words")
+    # Load WordNet definitions (will be replaced by cache if available)
+    wordnet_defs = {}
+    if wordnet_path.exists():
+        print("\nLoading WordNet definitions...")
+        with open(wordnet_path, 'r', encoding='utf-8') as f:
+            wordnet_defs = json.load(f)
+        print(f"Loaded definitions for {len(wordnet_defs)} words")
+    else:
+        print(f"\nNote: WordNet definitions not found at {wordnet_path}")
+        print("Will use comprehensive cache if available")
+
+    # Load WordNet dialect data
+    print("\nLoading WordNet dialect data...")
+    dialect_data = get_dialect_data(wordnet_xml_path)
+    print()
+
+    # Load comprehensive WordNet cache (optional, for improved dialect detection)
+    wordnet_cache = {}
+    if wordnet_cache_path.exists():
+        print("\nLoading comprehensive WordNet cache...")
+        with open(wordnet_cache_path, 'r', encoding='utf-8') as f:
+            wordnet_cache = json.load(f)
+        print(f"Loaded cache with {len(wordnet_cache)} lemmas")
+    else:
+        print(f"\nNote: Comprehensive cache not found at {wordnet_cache_path}")
+        print("Falling back to WordNet XML dialect data and heuristics")
+    print()
 
     # Load Shavian definition cache (if needed)
     shavian_def_cache = {}
@@ -1023,15 +1226,15 @@ def main():
 
     # Generate requested dictionaries
     if 'shavian-english' in dictionaries:
-        generate_dictionary(readlex_data, wordnet_defs, shavian_english_path, 'shaw-eng', dialect)
+        generate_dictionary(readlex_data, wordnet_defs, shavian_english_path, 'shaw-eng', dialect, dialect_data, wordnet_cache)
         print()
 
     if 'english-shavian' in dictionaries:
-        generate_dictionary(readlex_data, shavian_def_cache, english_shavian_path, 'eng-shaw', dialect)
+        generate_dictionary(readlex_data, shavian_def_cache, english_shavian_path, 'eng-shaw', dialect, dialect_data, wordnet_cache)
         print()
 
     if 'shavian-shavian' in dictionaries:
-        generate_dictionary(readlex_data, shavian_def_cache, shavian_shavian_path, 'shaw-shaw', dialect)
+        generate_dictionary(readlex_data, shavian_def_cache, shavian_shavian_path, 'shaw-shaw', dialect, dialect_data, wordnet_cache)
         print()
 
     print(f"Dictionary generation complete ({dialect.upper()})!")

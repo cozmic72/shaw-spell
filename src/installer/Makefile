@@ -7,7 +7,11 @@ APP_NAME = Install Shaw-Spell
 BUNDLE_NAME = Install Shaw-Spell.app
 EXECUTABLE_NAME = ShawSpellInstaller
 BUNDLE_IDENTIFIER = io.joro.shaw-spell.installer
-CODESIGN_IDENTITY = Jonathan Ross
+
+# Code signing configuration
+REPO_ROOT = ../..
+ENTITLEMENTS = Installer.entitlements
+include $(REPO_ROOT)/src/signing.mk
 
 # Source files
 SWIFT_SOURCES = src/main.swift src/AppDelegate.swift
@@ -41,7 +45,10 @@ $(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist re
 	@cp src/Info.plist "$(CONTENTS_DIR)/"
 	@echo "Copying resources..."
 	@cp "$(ICON_FILE)" "$(RESOURCES_DIR)/"
-	@cp resources/* "$(RESOURCES_DIR)/" 2>/dev/null || true
+	@echo "Interpolating HTML resources with version $(VERSION)..."
+	@for html in resources/*.html; do \
+		../../src/dictionaries/interpolate_template.py "$$html" "$(RESOURCES_DIR)/$$(basename $$html)" VERSION="$(VERSION)"; \
+	done
 	@echo "Bundling dictionaries and components for installation..."
 	@mkdir -p "$(RESOURCES_DIR)/dictionaries"
 	@mkdir -p "$(RESOURCES_DIR)/hunspell"
@@ -57,8 +64,7 @@ $(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist re
 	@cp "$(BUILD_DIR)/io.joro.shaw-spell.en_US.dic" "$(BUILD_DIR)/io.joro.shaw-spell.en_US.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
 	@cp -R "$(BUILD_DIR)/Shaw-Spell.service" "$(RESOURCES_DIR)/" 2>/dev/null || true
 	@cp "../../src/server/io.joro.Shaw-Spell.plist" "$(RESOURCES_DIR)/" 2>/dev/null || true
-	@echo "Code signing application..."
-	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" "$(BUNDLE_DIR)" 2>/dev/null || echo "Warning: Code signing failed (not critical for testing)"
+	$(call SIGN_BUNDLE,$(BUNDLE_DIR),$(ENTITLEMENTS))
 	@touch $(BUNDLE_MARKER)
 	@echo ""
 	@echo "Installer app created at: $(BUNDLE_DIR)"

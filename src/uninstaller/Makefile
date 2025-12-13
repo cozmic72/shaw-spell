@@ -7,7 +7,11 @@ APP_NAME = Uninstall Shaw-Spell
 BUNDLE_NAME = Uninstall Shaw-Spell.app
 EXECUTABLE_NAME = ShawSpellUninstaller
 BUNDLE_IDENTIFIER = io.joro.shaw-spell.uninstaller
-CODESIGN_IDENTITY = Jonathan Ross
+
+# Code signing configuration
+REPO_ROOT = ../..
+ENTITLEMENTS = Uninstaller.entitlements
+include $(REPO_ROOT)/src/signing.mk
 
 # Source files
 SWIFT_SOURCES = src/main.swift src/AppDelegate.swift
@@ -41,8 +45,7 @@ $(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist
 	@cp src/Info.plist "$(CONTENTS_DIR)/"
 	@echo "Copying icon..."
 	@cp "$(ICON_FILE)" "$(RESOURCES_DIR)/"
-	@echo "Code signing application..."
-	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" "$(BUNDLE_DIR)" 2>/dev/null || echo "Warning: Code signing failed (not critical for testing)"
+	$(call SIGN_BUNDLE,$(BUNDLE_DIR),$(ENTITLEMENTS))
 	@touch $(BUNDLE_MARKER)
 	@echo ""
 	@echo "Uninstaller app created at: $(BUNDLE_DIR)"

@@ -10,13 +10,12 @@ INSTALL_DIR = $(HOME)/Library/Services
 CODESIGN_IDENTITY = Jonathan Ross
 
 # Source files
-SOURCES = main.m ShavianSpellChecker.m
-OBJECT_NAMES = $(SOURCES:.m=.o)
-OBJECTS = $(addprefix $(OBJECTS_DIR)/,$(OBJECT_NAMES))
+SWIFT_SOURCES = main.swift ShavianSpellChecker.swift
+BRIDGE_HEADER = HunspellBridge.h
 
 # Compiler and linker flags
-CC = clang
-CFLAGS = -Wall -Wextra -O2 -fobjc-arc
+SWIFTC = swiftc
+SWIFT_FLAGS = -O -whole-module-optimization -warnings-as-errors -import-objc-header $(BRIDGE_HEADER)
 FRAMEWORKS = -framework Foundation -framework AppKit
 LIBS = -lhunspell-1.7
 
@@ -40,10 +39,20 @@ CONTENTS_DIR = $(BUNDLE_DIR)/Contents
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
 OBJECTS_DIR = $(BUILD_DIR)/spellserver-objects
+TEST_DIR = $(BUILD_DIR)/test
 
-.PHONY: all clean install uninstall
+# Test programs
+TEST_SOURCES = test_direct.m test_spell.m test_textview.m
+TEST_PROGRAMS = $(addprefix $(TEST_DIR)/,$(TEST_SOURCES:.m=))
 
-all: $(BUILD_DIR)/$(SERVICE_NAME)
+.PHONY: clean install uninstall test
+
+# Use marker file to avoid directory timestamp issues
+BUNDLE_MARKER = $(BUILD_DIR)/.spellserver-built
+
+all: $(BUNDLE_MARKER)
+
+$(BUNDLE_MARKER): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
 	@echo "Building service bundle..."
 	@mkdir -p $(MACOS_DIR) $(RESOURCES_DIR)
 	@cp $(BUILD_DIR)/$(SERVICE_NAME) $(MACOS_DIR)/
@@ -58,25 +67,38 @@ all: $(BUILD_DIR)/$(SERVICE_NAME)
 	@echo "Code signing service bundle with '$(CODESIGN_IDENTITY)'..."
 	@codesign --force --sign "$(CODESIGN_IDENTITY)" $(CONTENTS_DIR)/Frameworks/libhunspell-1.7.0.dylib
 	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" $(BUNDLE_DIR)
+	@touch $(BUNDLE_MARKER)
 	@echo "Service bundle created at $(BUNDLE_DIR)"
 
-$(BUILD_DIR)/$(SERVICE_NAME): $(OBJECTS) | $(BUILD_DIR) $(OBJECTS_DIR)
-	@echo "Linking $(SERVICE_NAME)..."
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(FRAMEWORKS) $(LIBS)
-
-$(OBJECTS_DIR)/%.o: %.m | $(OBJECTS_DIR)
-	@echo "Compiling $<..."
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+$(BUILD_DIR)/$(SERVICE_NAME): $(SWIFT_SOURCES) $(BRIDGE_HEADER) | $(BUILD_DIR)
+	@echo "Compiling and linking $(SERVICE_NAME) with Swift..."
+	$(SWIFTC) $(SWIFT_FLAGS) $(INCLUDES) $(LDFLAGS) $(FRAMEWORKS) $(LIBS) -o $@ $(SWIFT_SOURCES)
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-$(OBJECTS_DIR):
-	@mkdir -p $(OBJECTS_DIR)
+$(TEST_DIR):
+	@mkdir -p $(TEST_DIR)
+
+# Test targets
+test: $(TEST_PROGRAMS)
+	@echo "Test programs built in $(TEST_DIR)"
+
+$(TEST_DIR)/test_direct: test_direct.m ShavianSpellChecker.m | $(TEST_DIR)
+	@echo "Building test_direct..."
+	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(FRAMEWORKS) $(LIBS)
+
+$(TEST_DIR)/test_spell: test_spell.m ShavianSpellChecker.m | $(TEST_DIR)
+	@echo "Building test_spell..."
+	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(FRAMEWORKS) $(LIBS)
+
+$(TEST_DIR)/test_textview: test_textview.m ShavianSpellChecker.m | $(TEST_DIR)
+	@echo "Building test_textview..."
+	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(FRAMEWORKS) $(LIBS)
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -rf $(BUNDLE_DIR) $(OBJECTS_DIR)
+	@rm -rf $(BUNDLE_DIR) $(BUILD_DIR)/$(SERVICE_NAME) $(TEST_DIR) $(BUNDLE_MARKER)
 
 install: all
 	@echo "Installing to $(INSTALL_DIR)..."

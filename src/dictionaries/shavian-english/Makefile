@@ -21,7 +21,7 @@ DICT_BUILD_TOOL_BIN	=	"$(DICT_BUILD_TOOL_DIR)/bin"
 
 ###########################
 
-DICT_DEV_KIT_OBJ_DIR	=	../../../build/dictionaries
+DICT_DEV_KIT_OBJ_DIR	=	../../../build/dictionaries/shavian-english-$(DIALECT)
 export	DICT_DEV_KIT_OBJ_DIR
 
 DESTINATION_FOLDER	=	~/Library/Dictionaries

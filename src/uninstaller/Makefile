@@ -1,12 +1,12 @@
-# Makefile for Shaw Spell Installer
+# Makefile for Shaw Spell Uninstaller
 #
-# Builds a native macOS installer application for Shaw Spell
+# Builds a native macOS uninstaller application for Shaw Spell
 
 # Configuration
-APP_NAME = Install Shaw Spell
-BUNDLE_NAME = Install Shaw Spell.app
-EXECUTABLE_NAME = ShawSpellInstaller
-BUNDLE_IDENTIFIER = io.joro.shaw-spell.installer
+APP_NAME = Uninstall Shaw Spell
+BUNDLE_NAME = Uninstall Shaw Spell.app
+EXECUTABLE_NAME = ShawSpellUninstaller
+BUNDLE_IDENTIFIER = io.joro.shaw-spell.uninstaller
 CODESIGN_IDENTITY = Jonathan Ross
 
 # Source files
@@ -15,7 +15,7 @@ SWIFT_SOURCES = src/main.swift src/AppDelegate.swift
 # Compiler and linker flags
 SWIFTC = swiftc
 SWIFT_FLAGS = -O -warnings-as-errors
-FRAMEWORKS = -framework Cocoa -framework WebKit
+FRAMEWORKS = -framework Cocoa
 
 # Build directory - use top-level build/
 BUILD_DIR = ../../build
@@ -24,23 +24,22 @@ CONTENTS_DIR = $(BUNDLE_DIR)/Contents
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
 
-# Icon (generated in build dir)
+# Icon (shared with installer)
 ICON_FILE = $(BUILD_DIR)/installer/AppIcon.icns
 
-.PHONY: all clean install icon
+.PHONY: all clean icon
 
 all: $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE)
 	@echo "Building application bundle..."
 	@mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
 	@cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(MACOS_DIR)/"
 	@cp src/Info.plist "$(CONTENTS_DIR)/"
-	@echo "Copying resources..."
+	@echo "Copying icon..."
 	@cp "$(ICON_FILE)" "$(RESOURCES_DIR)/"
-	@cp resources/installation-info.html "$(RESOURCES_DIR)/"
 	@echo "Code signing application..."
 	@codesign --force --deep --sign "$(CODESIGN_IDENTITY)" "$(BUNDLE_DIR)" 2>/dev/null || echo "Warning: Code signing failed (not critical for testing)"
 	@echo ""
-	@echo "Installer app created at: $(BUNDLE_DIR)"
+	@echo "Uninstaller app created at: $(BUNDLE_DIR)"
 	@echo "You can run it with: open \"$(BUNDLE_DIR)\""
 
 $(BUILD_DIR)/$(EXECUTABLE_NAME): $(SWIFT_SOURCES) | $(BUILD_DIR)
@@ -50,17 +49,14 @@ $(BUILD_DIR)/$(EXECUTABLE_NAME): $(SWIFT_SOURCES) | $(BUILD_DIR)
 $(BUILD_DIR):
 	@mkdir -p "$(BUILD_DIR)"
 
-$(ICON_FILE): src/resources/icon.svg create-icon.sh
-	@echo "Creating app icon..."
-	@./create-icon.sh
+# Icon is built by installer
+$(ICON_FILE):
+	@echo "Building icon (from installer)..."
+	@cd ../installer && $(MAKE) icon
 
 icon: $(ICON_FILE)
 
 clean:
-	@echo "Cleaning installer artifacts..."
-	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/installer" "$(BUILD_DIR)/$(EXECUTABLE_NAME)"
+	@echo "Cleaning uninstaller artifacts..."
+	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/$(EXECUTABLE_NAME)"
 	@echo "Clean complete"
-
-install:
-	@echo "The installer app is meant to be distributed, not installed itself."
-	@echo "To use it, run: open \"$(BUNDLE_DIR)\""

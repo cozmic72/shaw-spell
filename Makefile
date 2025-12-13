@@ -1,7 +1,7 @@
 # Makefile for Shaw Spell
 # Provides incremental builds for dictionaries and spell checker
 
-.PHONY: all clean clean-cache clean-all install help spellcheck spellserver installer dmg transliterations shavian-english english-shavian shavian-shavian
+.PHONY: all clean clean-cache clean-all install uninstall help spellcheck spellserver installer uninstaller-app dmg transliterations shavian-english english-shavian shavian-shavian test
 .DEFAULT_GOAL := help
 
 # Configuration
@@ -56,9 +56,12 @@ help:
 	@echo "  shavian-shavian     Build Shavian-Shavian dictionary"
 	@echo "  spellcheck          Build Hunspell dictionaries (GB & US)"
 	@echo "  spellserver         Build NSSpellServer service"
+	@echo "  test                Build test programs"
 	@echo "  installer           Build graphical installer app"
+	@echo "  uninstaller-app     Build graphical uninstaller app"
 	@echo "  dmg                 Create installer DMG for distribution"
 	@echo "  install             Install all components"
+	@echo "  uninstall           Remove all installed components"
 	@echo "  clean               Remove build artifacts"
 	@echo "  clean-cache         Remove definition caches"
 	@echo "  clean-all           Remove all build artifacts and caches"
@@ -97,13 +100,7 @@ $(WORDNET_PATH): $(WORDNET_XML) src/dictionaries/parse_wordnet.py
 # Cache generation
 ###########################################
 
-# Current dialect rule
-$(CACHE_FILE): $(CACHE_DEPS)
-	@echo "Building Shavian definition cache ($(DIALECT))..."
-	@mkdir -p data
-	$(CACHE_SCRIPT) --$(DIALECT)
-
-# Explicit rules for both dialects
+# Explicit rules for both dialects (no pattern rule to avoid conflicts)
 data/definitions-shavian-gb.json: $(CACHE_DEPS)
 	@echo "Building Shavian definition cache (GB)..."
 	@mkdir -p data
@@ -117,22 +114,6 @@ data/definitions-shavian-us.json: $(CACHE_DEPS)
 ###########################################
 # XML generation
 ###########################################
-
-# Current dialect rules
-$(XML_SHAVIAN_ENGLISH): $(READLEX_PATH) $(WORDNET_PATH) $(DICT_SCRIPT)
-	@echo "Generating Shavian-English XML ($(DIALECT))..."
-	@mkdir -p build
-	$(DICT_SCRIPT) --$(DIALECT) --dict shavian-english
-
-$(XML_ENGLISH_SHAVIAN): $(CACHE_FILE) $(READLEX_PATH) $(DICT_SCRIPT)
-	@echo "Generating English-Shavian XML ($(DIALECT))..."
-	@mkdir -p build
-	$(DICT_SCRIPT) --$(DIALECT) --dict english-shavian
-
-$(XML_SHAVIAN_SHAVIAN): $(CACHE_FILE) $(READLEX_PATH) $(DICT_SCRIPT)
-	@echo "Generating Shavian-Shavian XML ($(DIALECT))..."
-	@mkdir -p build
-	$(DICT_SCRIPT) --$(DIALECT) --dict shavian-shavian
 
 # Explicit rules for GB XML files
 build/shavian-english-gb.xml: $(READLEX_PATH) $(WORDNET_PATH) $(DICT_SCRIPT)
@@ -232,6 +213,11 @@ spellcheck: $(HUNSPELL_GB) $(HUNSPELL_US)
 spellserver: $(SPELLSERVER_BUNDLE)
 	@echo "Spell server built successfully!"
 
+test:
+	@echo "Building test programs..."
+	@cd src/spellserver && $(MAKE) test
+	@echo "Test programs built successfully in build/test/"
+
 installer: $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_ENGLISH_SHAVIAN_GB) $(DICT_SHAVIAN_SHAVIAN_GB) \
            $(DICT_SHAVIAN_ENGLISH_US) $(DICT_ENGLISH_SHAVIAN_US) $(DICT_SHAVIAN_SHAVIAN_US) \
            spellcheck spellserver
@@ -239,11 +225,17 @@ installer: $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_ENGLISH_SHAVIAN_GB) $(DICT_SHAVIAN_
 	@cd src/installer && $(MAKE)
 	@echo "Installer app built successfully at: build/Install Shaw Spell.app"
 
-dmg: installer
+uninstaller-app:
+	@echo "Building uninstaller app..."
+	@cd src/uninstaller && $(MAKE)
+	@echo "Uninstaller app built successfully at: build/Uninstall Shaw Spell.app"
+
+dmg: installer uninstaller-app
 	@echo "Creating installer DMG..."
 	@rm -rf build/dmg_staging
 	@mkdir -p build/dmg_staging
 	@cp -R "build/Install Shaw Spell.app" build/dmg_staging/
+	@cp -R "build/Uninstall Shaw Spell.app" build/dmg_staging/
 	@rm -f build/ShawSpellInstaller.dmg
 	@hdiutil create -volname "Shaw Spell Installer" -srcfolder build/dmg_staging -ov -format UDZO build/ShawSpellInstaller.dmg
 	@rm -rf build/dmg_staging
@@ -286,6 +278,9 @@ install: all
 	@echo "  - Dictionary.app: Please restart Dictionary.app"
 	@echo "  - Spell Server: Running via LaunchAgent"
 
+uninstall:
+	@./uninstall.sh
+
 ###########################################
 # Cleaning
 ###########################################
@@ -294,6 +289,7 @@ clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf build/
 	@cd src/installer && $(MAKE) clean 2>/dev/null || true
+	@cd src/uninstaller && $(MAKE) clean 2>/dev/null || true
 	@echo "Clean complete"
 
 clean-cache:

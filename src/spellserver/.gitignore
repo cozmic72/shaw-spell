@@ -1,9 +1,2 @@
-# Build artifacts
-*.o
-build/
+# dSYM debugging info
 *.dSYM/
-
-# Test binaries
-test_direct
-test_spell
-test_textview

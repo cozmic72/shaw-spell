@@ -20,14 +20,26 @@ mkdir -p "$BUILD_DIR"
 # Copy dictionaries
 echo "Copying dictionaries..."
 mkdir -p "$STAGING_DIR/Dictionaries"
-if [ -d "dictionaries/shavian-english/objects/Shavian-English.dictionary" ]; then
-    cp -R "dictionaries/shavian-english/objects/Shavian-English.dictionary" "$STAGING_DIR/Dictionaries/"
+# Shavian-English (both GB and US)
+if [ -d "dictionaries/shavian-english/objects-gb/Shavian-English-gb.dictionary" ]; then
+    cp -R "dictionaries/shavian-english/objects-gb/Shavian-English-gb.dictionary" "$STAGING_DIR/Dictionaries/"
 fi
-if [ -d "dictionaries/english-shavian/objects/English-Shavian.dictionary" ]; then
-    cp -R "dictionaries/english-shavian/objects/English-Shavian.dictionary" "$STAGING_DIR/Dictionaries/"
+if [ -d "dictionaries/shavian-english/objects-us/Shavian-English-us.dictionary" ]; then
+    cp -R "dictionaries/shavian-english/objects-us/Shavian-English-us.dictionary" "$STAGING_DIR/Dictionaries/"
 fi
-if [ -d "dictionaries/shavian-shavian/objects/Shavian-Shavian.dictionary" ]; then
-    cp -R "dictionaries/shavian-shavian/objects/Shavian-Shavian.dictionary" "$STAGING_DIR/Dictionaries/"
+# English-Shavian (both GB and US)
+if [ -d "dictionaries/english-shavian/objects-gb/English-Shavian-gb.dictionary" ]; then
+    cp -R "dictionaries/english-shavian/objects-gb/English-Shavian-gb.dictionary" "$STAGING_DIR/Dictionaries/"
+fi
+if [ -d "dictionaries/english-shavian/objects-us/English-Shavian-us.dictionary" ]; then
+    cp -R "dictionaries/english-shavian/objects-us/English-Shavian-us.dictionary" "$STAGING_DIR/Dictionaries/"
+fi
+# Shavian (both GB and US)
+if [ -d "dictionaries/shavian-shavian/objects-gb/Shavian-gb.dictionary" ]; then
+    cp -R "dictionaries/shavian-shavian/objects-gb/Shavian-gb.dictionary" "$STAGING_DIR/Dictionaries/"
+fi
+if [ -d "dictionaries/shavian-shavian/objects-us/Shavian-us.dictionary" ]; then
+    cp -R "dictionaries/shavian-shavian/objects-us/Shavian-us.dictionary" "$STAGING_DIR/Dictionaries/"
 fi
 
 # Copy spell server
@@ -35,6 +47,7 @@ echo "Copying spell server..."
 if [ -f "src/spellserver/build/ShavianSpellServer.service/Contents/MacOS/ShavianSpellServer" ]; then
     mkdir -p "$STAGING_DIR/Spell Server"
     cp -R "src/spellserver/build/ShavianSpellServer.service" "$STAGING_DIR/Spell Server/"
+    cp "src/spellserver/io.joro.shaw-dict.spellserver.plist" "$STAGING_DIR/Spell Server/"
 fi
 
 # Copy Hunspell dictionaries
@@ -87,6 +100,17 @@ if [ -d "$SCRIPT_DIR/Spell Server/ShavianSpellServer.service" ]; then
     cp -R "$SCRIPT_DIR/Spell Server/ShavianSpellServer.service" "$HOME/Library/Services/"
     /System/Library/CoreServices/pbs -update 2>/dev/null || true
     echo "  ✓ Spell server installed"
+
+    # Install LaunchAgent
+    if [ -f "$SCRIPT_DIR/Spell Server/io.joro.shaw-dict.spellserver.plist" ]; then
+        echo "Installing LaunchAgent..."
+        mkdir -p "$HOME/Library/LaunchAgents"
+        mkdir -p "$HOME/Library/Logs"
+        sed "s|__HOME__|$HOME|g" "$SCRIPT_DIR/Spell Server/io.joro.shaw-dict.spellserver.plist" > "$HOME/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist"
+        launchctl unload "$HOME/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist" 2>/dev/null || true
+        launchctl load "$HOME/Library/LaunchAgents/io.joro.shaw-dict.spellserver.plist"
+        echo "  ✓ LaunchAgent installed and started"
+    fi
 fi
 
 echo ""
@@ -97,16 +121,20 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "1. DICTIONARIES"
-echo "   - Open Dictionary.app"
-echo "   - Preferences > enable 'Shavian-English', 'English-Shavian', 'Shavian-Shavian'"
+echo "   - Restart Dictionary.app (or run: killall Dictionary)"
+echo "   - Dictionary > Preferences > enable dictionaries:"
+echo "     • Shavian-English (GB) and/or Shavian-English (US)"
+echo "     • English-Shavian (GB) and/or English-Shavian (US)"
+echo "     • Shavian (GB) and/or Shavian (US)"
 echo ""
 echo "2. SPELL CHECKING"
+echo "   - The spell server is now running automatically"
 echo "   - System Settings > Keyboard > Text Input > Edit (next to 'Spelling')"
-echo "   - Select 'British English (ShawDict)' or your preferred variant"
-echo "   - Log out and log back in (or restart)"
+echo "   - Select 'ShawDict' in the spelling options"
+echo "   - Restart any apps to use the new spell checker"
 echo ""
 echo "3. TEST"
-echo "   - Open Dictionary.app and search for '𐑖𐑱𐑝𐑾𐑯'"
+echo "   - Open Dictionary.app and search for '𐑖𐑱𐑝𐑾𐑯' or 'hello'"
 echo "   - Open Pages/Notes and type Shavian text to test spell checking"
 echo ""
 echo "Press any key to exit..."
@@ -123,10 +151,18 @@ A comprehensive Shavian alphabet dictionary suite for macOS.
 
 CONTENTS:
 
-• Three bilingual dictionaries (Shavian-English, English-Shavian, Shavian-Shavian)
+• Six bilingual dictionaries:
+  - Shavian-English (GB): Look up English words from Shavian (British)
+  - Shavian-English (US): Look up English words from Shavian (American)
+  - English-Shavian (GB): British English to Shavian with definitions
+  - English-Shavian (US): American English to Shavian with definitions
+  - Shavian (GB): British pronunciation Shavian definitions
+  - Shavian (US): American pronunciation Shavian definitions
+
+  Features:
   - 75,000+ word entries with IPA transcriptions
-  - WordNet definitions with examples
-  - Regional variant labels (RP, Gen-Am, Gen-Au)
+  - Open English WordNet 2024 definitions
+  - Regional variants (RP, Gen-Am, Gen-Au)
 
 • Spell-checking service
   - Native NSSpellServer integration

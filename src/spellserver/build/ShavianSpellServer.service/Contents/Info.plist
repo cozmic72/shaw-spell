@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>ShavianSpellServer</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.shawdict.spellserver</string>
+	<string>io.joro.shaw-dict.spellserver</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

@@ -4,10 +4,11 @@
 
 ###########################
 
-DICT_NAME		=	"English-Shavian"
-DICT_SRC_PATH		=	../../build/english-shavian.xml
+DIALECT			?=	gb
+DICT_NAME		=	English-Shavian-$(DIALECT)
+DICT_SRC_PATH		=	../../build/english-shavian-$(DIALECT).xml
 CSS_PATH		=	EnglishShavian.css
-PLIST_PATH		=	EnglishShavian.plist
+PLIST_PATH		=	$(if $(filter us,$(DIALECT)),EnglishShavian-us.plist,EnglishShavian.plist)
 
 DICT_BUILD_OPTS		=
 # Suppress adding supplementary key.
@@ -20,7 +21,7 @@ DICT_BUILD_TOOL_BIN	=	"$(DICT_BUILD_TOOL_DIR)/bin"
 
 ###########################
 
-DICT_DEV_KIT_OBJ_DIR	=	./objects
+DICT_DEV_KIT_OBJ_DIR	=	./objects-$(DIALECT)
 export	DICT_DEV_KIT_OBJ_DIR
 
 DESTINATION_FOLDER	=	~/Library/Dictionaries

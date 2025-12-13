@@ -4,10 +4,11 @@
 
 ###########################
 
-DICT_NAME		=	"Shavian-Shavian"
-DICT_SRC_PATH		=	../../build/shavian-shavian.xml
+DIALECT			?=	gb
+DICT_NAME		=	Shavian-$(DIALECT)
+DICT_SRC_PATH		=	../../build/shavian-shavian-$(DIALECT).xml
 CSS_PATH		=	ShavianShavian.css
-PLIST_PATH		=	ShavianShavian.plist
+PLIST_PATH		=	$(if $(filter us,$(DIALECT)),ShavianShavian-us.plist,ShavianShavian.plist)
 
 DICT_BUILD_OPTS		=
 # Suppress adding supplementary key.
@@ -20,7 +21,7 @@ DICT_BUILD_TOOL_BIN	=	"$(DICT_BUILD_TOOL_DIR)/bin"
 
 ###########################
 
-DICT_DEV_KIT_OBJ_DIR	=	./objects
+DICT_DEV_KIT_OBJ_DIR	=	./objects-$(DIALECT)
 export	DICT_DEV_KIT_OBJ_DIR
 
 DESTINATION_FOLDER	=	~/Library/Dictionaries

@@ -64,6 +64,49 @@ def variant_to_label(var_code):
     return variant_map.get(var_code, var_code)
 
 
+def build_shavian_lookup(readlex_data):
+    """
+    Build a lookup table for English → Shavian translations.
+    Returns dict mapping lowercase English words to their Shavian spellings.
+    """
+    lookup = {}
+    for key, data in readlex_data.items():
+        for entry in data['entries']:
+            latn = entry['Latn'].lower()
+            shaw = entry['Shaw']
+            # Use first occurrence (usually the most common variant)
+            if latn not in lookup:
+                lookup[latn] = shaw
+    return lookup
+
+
+def translate_to_shavian(text, shavian_lookup):
+    """
+    Translate English text to Shavian using lookup table.
+    Falls back to original text if translation not found.
+    """
+    if not text:
+        return text
+
+    # Try direct lookup
+    text_lower = text.lower()
+    if text_lower in shavian_lookup:
+        return shavian_lookup[text_lower]
+
+    # For phrases like "plural of", translate word by word
+    words = text.split()
+    translated_words = []
+    for word in words:
+        word_lower = word.lower()
+        if word_lower in shavian_lookup:
+            translated_words.append(shavian_lookup[word_lower])
+        else:
+            # Keep original word if not found (e.g., lemma references)
+            translated_words.append(word)
+
+    return ' '.join(translated_words) if translated_words else text
+
+
 def pos_to_readable(pos_code):
     """Convert CLAWS POS tags to readable forms."""
     if '+' in pos_code:
@@ -98,45 +141,101 @@ def pos_to_readable(pos_code):
     return pos_map.get(pos_code, pos_code)
 
 
-def pos_to_grammatical_form(pos_code, lemma):
-    """Convert POS tag to grammatical form description (e.g., 'plural of choose')."""
+def pos_to_grammatical_form(pos_code, lemma, lemma_ipa='', shavian_lookup=None):
+    """Convert POS tag to grammatical form description (e.g., 'plural of choose /tʃuːz/')."""
+    # Build lemma reference with IPA if available
+    lemma_ref = lemma
+    if lemma_ipa:
+        lemma_ref = f'{lemma} <span class="ipa">/{escape(lemma_ipa)}/</span>'
+
+    # Helper to translate if Shavian lookup is provided
+    def t(text):
+        return translate_to_shavian(text, shavian_lookup) if shavian_lookup else text
+
     # Verbs
     if pos_code == 'VVI':
-        return 'infinitive'
+        return t('infinitive')
     elif pos_code == 'VVB':
-        return 'base form'
+        return t('base form')
     elif pos_code == 'VVZ':
-        return f'3rd person singular of {lemma}'
+        return f'{t("3rd person singular of")} {lemma_ref}'
     elif pos_code == 'VVD':
-        return f'past tense of {lemma}'
+        return f'{t("past tense of")} {lemma_ref}'
     elif pos_code == 'VVN':
-        return f'past participle of {lemma}'
+        return f'{t("past participle of")} {lemma_ref}'
     elif pos_code == 'VVG':
-        return f'present participle of {lemma}'
+        return f'{t("present participle of")} {lemma_ref}'
     # Be verb
     elif pos_code in ('VBB', 'VBD', 'VBG', 'VBI', 'VBN', 'VBZ'):
-        return 'form of be'
+        return f'{t("form of")} {t("be")}'
     # Do verb
     elif pos_code in ('VDB', 'VDD', 'VDG', 'VDI', 'VDN', 'VDZ'):
-        return 'form of do'
+        return f'{t("form of")} {t("do")}'
     # Have verb
     elif pos_code in ('VHB', 'VHD', 'VHG', 'VHI', 'VHN', 'VHZ'):
-        return 'form of have'
+        return f'{t("form of")} {t("have")}'
     # Nouns
     elif pos_code == 'NN1':
-        return 'singular'
+        return t('singular')
     elif pos_code == 'NN2':
-        return f'plural of {lemma}'
+        return f'{t("plural of")} {lemma_ref}'
     # Adjectives
     elif pos_code == 'AJ0':
-        return 'base form'
+        return t('base form')
     elif pos_code == 'AJC':
-        return f'comparative of {lemma}'
+        return f'{t("comparative of")} {lemma_ref}'
     elif pos_code == 'AJS':
-        return f'superlative of {lemma}'
+        return f'{t("superlative of")} {lemma_ref}'
     # Default: return empty string (no label)
     else:
         return ''
+
+
+def format_word_entry(main_text, ipa, pos_code, lemma, lemma_ipa, var_code, show_variants, shavian_lookup=None):
+    """
+    Format a word entry with consistent styling across all dictionaries.
+
+    Args:
+        main_text: The main word to display (Latin, Shavian, or None for IPA-only)
+        ipa: IPA transcription for this form
+        pos_code: Part of speech code
+        lemma: The lemma for this form
+        lemma_ipa: IPA transcription of the lemma
+        var_code: Variant code (RRP, GA, AU, etc.)
+        show_variants: Whether to show variant labels
+        shavian_lookup: Optional dict for translating labels to Shavian
+
+    Returns:
+        HTML string for the word entry
+    """
+    html = []
+    html.append('      <div class="word-entry">\n')
+
+    # Main word: "translation /ipa/" or just "/ipa/" if no translation
+    main_parts = []
+    if main_text:
+        main_parts.append(escape(main_text))
+    if ipa:
+        main_parts.append(f' <span class="ipa">/{escape(ipa)}/</span>')
+
+    html.append(f'        <div class="word-main">{"".join(main_parts)}</div>\n')
+
+    # Grammatical label below
+    gram_form = pos_to_grammatical_form(pos_code, lemma, lemma_ipa, shavian_lookup) if pos_code else ''
+    if gram_form or (show_variants and var_code):
+        label_parts = []
+        if gram_form:
+            label_parts.append(gram_form)
+        if show_variants and var_code:
+            var_label = variant_to_label(var_code)
+            if label_parts:
+                label_parts.append(f' <span class="variant">({escape(var_label)})</span>')
+            else:
+                label_parts.append(f'<span class="variant">({escape(var_label)})</span>')
+        html.append(f'        <div class="word-label">{"".join(label_parts)}</div>\n')
+
+    html.append('      </div>\n')
+    return ''.join(html)
 
 
 def create_xml_header(dict_name, from_lang, to_lang):
@@ -144,6 +243,24 @@ def create_xml_header(dict_name, from_lang, to_lang):
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <d:dictionary xmlns="http://www.w3.org/1999/xhtml" xmlns:d="http://www.apple.com/DTDs/DictionaryService-1.0.rdf">
 <!-- {dict_name}: {from_lang} to {to_lang} -->
+'''
+
+
+def create_front_matter():
+    """Create front matter entry with dictionary description."""
+    # Load description from HTML snippet file
+    description_path = Path(__file__).parent / 'dictionary-description.html'
+    try:
+        with open(description_path, 'r', encoding='utf-8') as f:
+            description_html = f.read().strip()
+    except FileNotFoundError:
+        description_html = '<p>Shavian dictionary for macOS.</p>'
+
+    return f'''  <d:entry id="front_back_matter" d:title="About This Dictionary">
+    <h1>About This Dictionary</h1>
+    {description_html}
+  </d:entry>
+
 '''
 
 
@@ -155,6 +272,8 @@ def create_xml_footer():
 def generate_shavian_to_english(readlex_data, wordnet_defs, output_path):
     """Generate Shavian → English dictionary with definitions."""
     print("Generating Shavian → English dictionary...")
+
+    # No Shavian lookup needed for this dictionary (English labels)
 
     # Collect entries by Shavian word, grouped by lemma
     # Structure: {shaw: {lemma: {'forms': [...], 'definitions': [...]}}}
@@ -191,7 +310,8 @@ def generate_shavian_to_english(readlex_data, wordnet_defs, output_path):
 
     # Write XML
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(create_xml_header('Shavian-English', 'Shavian', 'English'))
+        f.write(create_xml_header('Shavian–English', 'Shavian', 'English'))
+        f.write(create_front_matter())
         f.flush()
 
         total = len(shavian_entries)
@@ -209,9 +329,17 @@ def generate_shavian_to_english(readlex_data, wordnet_defs, output_path):
                 if lemma_idx > 0:
                     f.write('    <hr/>\n')
 
-                # Get lemma IPA by finding the form that matches the lemma
-                lemma_ipa = next((form['ipa'] for form in lemma_data['forms']
-                                 if form['latn'].lower() == lemma and form['ipa']), '')
+                # Get lemma IPA by looking up the lemma in readlex_data
+                lemma_ipa = ''
+                for key, data in readlex_data.items():
+                    if data['lemma'] == lemma:
+                        # Find an entry where the latn matches the lemma
+                        for entry in data['entries']:
+                            if entry['Latn'].lower() == lemma and entry.get('ipa'):
+                                lemma_ipa = entry['ipa']
+                                break
+                        if lemma_ipa:
+                            break
 
                 # Check if we need to show variants (only if multiple different variants exist)
                 unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
@@ -220,31 +348,15 @@ def generate_shavian_to_english(readlex_data, wordnet_defs, output_path):
                 # Forms for this lemma
                 f.write('    <div class="forms">\n')
                 for form in lemma_data['forms']:
-                    # Main word (large)
-                    f.write(f'      <div class="word-entry">\n')
-                    f.write(f'        <div class="word-main">{escape(form["latn"])}</div>\n')
-
-                    # Grammatical label (grey, below the word)
-                    if form['pos']:
-                        gram_form = pos_to_grammatical_form(form['pos'], lemma)
-                        if gram_form:
-                            # Build the label: "plural of lemma /lemma-ipa/ (variant)"
-                            label_parts = [gram_form]
-                            if lemma_ipa:
-                                label_parts.append(f' <span class="ipa">/{escape(lemma_ipa)}/</span>')
-                            if show_variants and form['var']:
-                                var_label = variant_to_label(form['var'])
-                                label_parts.append(f' <span class="variant">({escape(var_label)})</span>')
-                            f.write(f'        <div class="word-label">{"".join(label_parts)}</div>\n')
-                        elif form['ipa']:
-                            # No grammatical form, just show IPA if different from lemma
-                            if form['ipa'] != lemma_ipa:
-                                label_parts = [f'<span class="ipa">/{escape(form["ipa"])}/</span>']
-                                if show_variants and form['var']:
-                                    var_label = variant_to_label(form['var'])
-                                    label_parts.append(f' <span class="variant">({escape(var_label)})</span>')
-                                f.write(f'        <div class="word-label">{"".join(label_parts)}</div>\n')
-                    f.write(f'      </div>\n')
+                    f.write(format_word_entry(
+                        main_text=form['latn'],
+                        ipa=form['ipa'],
+                        pos_code=form['pos'],
+                        lemma=lemma,
+                        lemma_ipa=lemma_ipa,
+                        var_code=form['var'],
+                        show_variants=show_variants
+                    ))
                 f.write('    </div>\n')
 
                 # Definitions for this lemma
@@ -252,12 +364,7 @@ def generate_shavian_to_english(readlex_data, wordnet_defs, output_path):
                     f.write('    <div class="definitions">\n')
                     for i, def_data in enumerate(lemma_data['definitions'][:5], 1):  # Limit to 5 definitions
                         f.write(f'      <div class="definition">\n')
-                        f.write(f'        <p><b>{i}.</b>  <i>({escape(def_data["pos"])})</i> {escape(def_data["definition"])}</p>\n')
-                        if def_data.get('examples'):
-                            f.write('        <ul class="examples">\n')
-                            for ex in def_data['examples'][:2]:
-                                f.write(f'          <li>{escape(ex)}</li>\n')
-                            f.write('        </ul>\n')
+                        f.write(f'        <p><b>{i}. </b><i>({escape(def_data["pos"])})</i> {escape(def_data["definition"])}</p>\n')
                         f.write('      </div>\n')
                     f.write('    </div>\n')
                 else:
@@ -279,9 +386,16 @@ def generate_shavian_to_english(readlex_data, wordnet_defs, output_path):
     print(f"Generated {len(shavian_entries)} Shavian entries → {output_path}")
 
 
-def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
+def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path, dialect='gb'):
     """Generate English → Shavian dictionary with transliterated definitions."""
-    print("Generating English → Shavian dictionary...")
+    print(f"Generating English → Shavian dictionary ({dialect.upper()})...")
+
+    # Build Shavian lookup for translating grammatical labels
+    shavian_lookup = build_shavian_lookup(readlex_data)
+
+    # Determine preferred variant code based on dialect
+    preferred_var = 'RRP' if dialect == 'gb' else 'GA'
+    dialect_label = 'GB' if dialect == 'gb' else 'US'
 
     # Collect entries by English word, grouped by lemma
     # Structure: {latn: {lemma: {'forms': [...], 'definitions': [...]}}}
@@ -295,6 +409,10 @@ def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
         lemma_trans = shavian_def_cache.get(lemma, [])
 
         # Group by English spelling (case-insensitive)
+        # Separate preferred dialect forms from others
+        preferred_forms = []
+        other_forms = []
+
         for entry in entries:
             latn = entry['Latn']
             latn_lower = latn.lower()
@@ -303,7 +421,6 @@ def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
             ipa = entry.get('ipa', '')
             var = entry.get('var', '')
 
-            # Add form to this lemma group
             form_info = {
                 'shaw': shaw,
                 'latn': latn,
@@ -311,6 +428,18 @@ def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
                 'ipa': ipa,
                 'var': var
             }
+
+            # Prioritize preferred dialect
+            if var == preferred_var:
+                if form_info not in preferred_forms:
+                    preferred_forms.append(form_info)
+            else:
+                if form_info not in other_forms:
+                    other_forms.append(form_info)
+
+        # Add forms to entry: preferred first, then others
+        for form_info in preferred_forms + other_forms:
+            latn_lower = form_info['latn'].lower()
             if form_info not in english_entries[latn_lower][lemma]['forms']:
                 english_entries[latn_lower][lemma]['forms'].append(form_info)
 
@@ -328,7 +457,8 @@ def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
 
     # Write XML
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(create_xml_header('English-Shavian', 'English', 'Shavian'))
+        f.write(create_xml_header('English–Shavian', 'English', 'Shavian'))
+        f.write(create_front_matter())
         f.flush()
 
         total = len(english_entries)
@@ -346,9 +476,17 @@ def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
                 if lemma_idx > 0:
                     f.write('    <hr/>\n')
 
-                # Get lemma IPA by finding the form that matches the lemma
-                lemma_ipa = next((form['ipa'] for form in lemma_data['forms']
-                                 if form['latn'].lower() == lemma and form['ipa']), '')
+                # Get lemma IPA by looking up the lemma in readlex_data
+                lemma_ipa = ''
+                for key, data in readlex_data.items():
+                    if data['lemma'] == lemma:
+                        # Find an entry where the latn matches the lemma
+                        for entry in data['entries']:
+                            if entry['Latn'].lower() == lemma and entry.get('ipa'):
+                                lemma_ipa = entry['ipa']
+                                break
+                        if lemma_ipa:
+                            break
 
                 # Check if we need to show variants (only if multiple different variants exist)
                 unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
@@ -357,44 +495,26 @@ def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
                 # Forms for this lemma
                 f.write('    <div class="forms">\n')
                 for form in lemma_data['forms']:
-                    # Main word (Shavian, large)
-                    f.write(f'      <div class="word-entry">\n')
-                    f.write(f'        <div class="word-main">{escape(form["shaw"])}</div>\n')
-
-                    # Grammatical label (grey, below the word)
-                    if form['pos']:
-                        gram_form = pos_to_grammatical_form(form['pos'], lemma)
-                        if gram_form:
-                            # Build the label: "plural of lemma /lemma-ipa/ (variant)"
-                            label_parts = [gram_form]
-                            if lemma_ipa:
-                                label_parts.append(f' <span class="ipa">/{escape(lemma_ipa)}/</span>')
-                            if show_variants and form['var']:
-                                var_label = variant_to_label(form['var'])
-                                label_parts.append(f' <span class="variant">({escape(var_label)})</span>')
-                            f.write(f'        <div class="word-label">{"".join(label_parts)}</div>\n')
-                        elif form['ipa']:
-                            # No grammatical form, just show IPA if different from lemma
-                            if form['ipa'] != lemma_ipa:
-                                label_parts = [f'<span class="ipa">/{escape(form["ipa"])}/</span>']
-                                if show_variants and form['var']:
-                                    var_label = variant_to_label(form['var'])
-                                    label_parts.append(f' <span class="variant">({escape(var_label)})</span>')
-                                f.write(f'        <div class="word-label">{"".join(label_parts)}</div>\n')
-                    f.write(f'      </div>\n')
+                    f.write(format_word_entry(
+                        main_text=form['shaw'],
+                        ipa=form['ipa'],
+                        pos_code=form['pos'],
+                        lemma=lemma,
+                        lemma_ipa=lemma_ipa,
+                        var_code=form['var'],
+                        show_variants=show_variants,
+                        shavian_lookup=shavian_lookup
+                    ))
                 f.write('    </div>\n')
 
                 # Definitions for this lemma (in Shavian)
                 if lemma_data['definitions']:
                     f.write('    <div class="definitions">\n')
                     for i, def_data in enumerate(lemma_data['definitions'][:5], 1):
+                        # Translate POS to Shavian
+                        pos_translated = translate_to_shavian(def_data["pos"], shavian_lookup)
                         f.write(f'      <div class="definition">\n')
-                        f.write(f'        <p><b>{i}.</b>  <i>({escape(def_data["pos"])})</i> {escape(def_data["definition"])}</p>\n')
-                        if def_data.get('examples'):
-                            f.write('        <ul class="examples">\n')
-                            for ex in def_data['examples'][:2]:
-                                f.write(f'          <li>{escape(ex)}</li>\n')
-                            f.write('        </ul>\n')
+                        f.write(f'        <p><b>{i}. </b><i>({escape(pos_translated)})</i> {escape(def_data["definition"])}</p>\n')
                         f.write('      </div>\n')
                     f.write('    </div>\n')
                 else:
@@ -416,9 +536,16 @@ def generate_english_to_shavian(readlex_data, shavian_def_cache, output_path):
     print(f"Generated {len(english_entries)} English entries → {output_path}")
 
 
-def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path):
+def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path, dialect='gb'):
     """Generate Shavian → Shavian dictionary (Shavian word with Shavian definitions)."""
-    print("Generating Shavian → Shavian dictionary...")
+    print(f"Generating Shavian → Shavian dictionary ({dialect.upper()})...")
+
+    # Build Shavian lookup for translating grammatical labels
+    shavian_lookup = build_shavian_lookup(readlex_data)
+
+    # Determine preferred variant code based on dialect
+    preferred_var = 'RRP' if dialect == 'gb' else 'GA'
+    dialect_label = 'GB' if dialect == 'gb' else 'US'
 
     # Collect entries by Shavian word, grouped by lemma
     # Structure: {shaw: {lemma: {'forms': [...], 'definitions': [...]}}}
@@ -432,6 +559,10 @@ def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path):
         lemma_trans = shavian_def_cache.get(lemma, [])
 
         # Group by Shavian spelling
+        # Separate preferred dialect forms from others
+        preferred_forms = []
+        other_forms = []
+
         for entry in entries:
             shaw = entry['Shaw']
             latn = entry['Latn']
@@ -439,7 +570,6 @@ def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path):
             ipa = entry.get('ipa', '')
             var = entry.get('var', '')
 
-            # Add form to this lemma group
             form_info = {
                 'shaw': shaw,
                 'latn': latn,
@@ -447,6 +577,18 @@ def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path):
                 'ipa': ipa,
                 'var': var
             }
+
+            # Prioritize preferred dialect
+            if var == preferred_var:
+                if form_info not in preferred_forms:
+                    preferred_forms.append(form_info)
+            else:
+                if form_info not in other_forms:
+                    other_forms.append(form_info)
+
+        # Add forms to entry: preferred first, then others
+        for form_info in preferred_forms + other_forms:
+            shaw = form_info['shaw']
             if form_info not in shavian_entries[shaw][lemma]['forms']:
                 shavian_entries[shaw][lemma]['forms'].append(form_info)
 
@@ -464,7 +606,8 @@ def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path):
 
     # Write XML
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(create_xml_header('Shavian-Shavian', 'Shavian', 'Shavian'))
+        f.write(create_xml_header('Shavian', 'Shavian', 'Shavian'))
+        f.write(create_front_matter())
         f.flush()
 
         total = len(shavian_entries)
@@ -482,9 +625,17 @@ def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path):
                 if lemma_idx > 0:
                     f.write('    <hr/>\n')
 
-                # Get lemma IPA by finding the form that matches the lemma
-                lemma_ipa = next((form['ipa'] for form in lemma_data['forms']
-                                 if form['latn'].lower() == lemma and form['ipa']), '')
+                # Get lemma IPA by looking up the lemma in readlex_data
+                lemma_ipa = ''
+                for key, data in readlex_data.items():
+                    if data['lemma'] == lemma:
+                        # Find an entry where the latn matches the lemma
+                        for entry in data['entries']:
+                            if entry['Latn'].lower() == lemma and entry.get('ipa'):
+                                lemma_ipa = entry['ipa']
+                                break
+                        if lemma_ipa:
+                            break
 
                 # Check if we need to show variants (only if multiple different variants exist)
                 unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
@@ -495,42 +646,25 @@ def generate_shavian_to_shavian(readlex_data, shavian_def_cache, output_path):
                     f.write('    <div class="forms">\n')
                     for form in lemma_data['forms']:
                         if form['ipa']:
-                            # Show IPA as the main element
-                            f.write(f'      <div class="word-entry">\n')
-                            f.write(f'        <div class="word-main"><span class="ipa">/{escape(form["ipa"])}/</span></div>\n')
-
-                            # Grammatical label (grey, below the IPA)
-                            if form['pos']:
-                                gram_form = pos_to_grammatical_form(form['pos'], lemma)
-                                if gram_form:
-                                    # Build the label: "plural of lemma (variant)"
-                                    label_parts = [gram_form]
-                                    if show_variants and form['var']:
-                                        var_label = variant_to_label(form['var'])
-                                        label_parts.append(f' <span class="variant">({escape(var_label)})</span>')
-                                    f.write(f'        <div class="word-label">{"".join(label_parts)}</div>\n')
-                                elif show_variants and form['var']:
-                                    # Just show variant
-                                    var_label = variant_to_label(form['var'])
-                                    f.write(f'        <div class="word-label"><span class="variant">({escape(var_label)})</span></div>\n')
-                            elif show_variants and form['var']:
-                                # Just show variant
-                                var_label = variant_to_label(form['var'])
-                                f.write(f'        <div class="word-label"><span class="variant">({escape(var_label)})</span></div>\n')
-                            f.write(f'      </div>\n')
+                            f.write(format_word_entry(
+                                main_text=None,  # No translation in Shavian-Shavian
+                                ipa=form['ipa'],
+                                pos_code=form['pos'],
+                                lemma=lemma,
+                                lemma_ipa=lemma_ipa,
+                                var_code=form['var'],
+                                show_variants=show_variants,
+                                shavian_lookup=shavian_lookup
+                            ))
                     f.write('    </div>\n')
 
                 # Definitions for this lemma (all in Shavian)
                 if lemma_data['definitions']:
                     f.write('    <div class="definitions">\n')
                     for i, def_data in enumerate(lemma_data['definitions'][:5], 1):
+                        # POS is already transliterated in cache for sha-sha
                         f.write(f'      <div class="definition">\n')
-                        f.write(f'        <p><b>{i}.</b>  <i>({escape(def_data["pos"])})</i> {escape(def_data["definition"])}</p>\n')
-                        if def_data.get('examples'):
-                            f.write('        <ul class="examples">\n')
-                            for ex in def_data['examples'][:2]:
-                                f.write(f'          <li>{escape(ex)}</li>\n')
-                            f.write('        </ul>\n')
+                        f.write(f'        <p><b>{i}. </b><i>({escape(def_data["pos"])})</i> {escape(def_data["definition"])}</p>\n')
                         f.write('      </div>\n')
                     f.write('    </div>\n')
                 else:
@@ -564,6 +698,13 @@ def main():
         else:
             i += 1
 
+    # Parse dialect argument
+    dialect = 'gb'  # default
+    if '--dialect=us' in sys.argv or '--us' in sys.argv:
+        dialect = 'us'
+    elif '--dialect=gb' in sys.argv or '--gb' in sys.argv:
+        dialect = 'gb'
+
     # Default to all dictionaries if none specified
     if not dictionaries:
         dictionaries = ['shavian-english', 'english-shavian', 'shavian-shavian']
@@ -573,12 +714,12 @@ def main():
     project_dir = script_dir.parent
     readlex_path = project_dir / '../shavian-info/readlex/readlex.json'
     wordnet_path = project_dir / 'build/wordnet-definitions.json'
-    shavian_defs_path = project_dir / 'data/definitions-shavian.json'
+    shavian_defs_path = project_dir / f'data/definitions-shavian-{dialect}.json'
     build_dir = project_dir / 'build'
 
-    shavian_english_path = build_dir / 'shavian-english.xml'
-    english_shavian_path = build_dir / 'english-shavian.xml'
-    shavian_shavian_path = build_dir / 'shavian-shavian.xml'
+    shavian_english_path = build_dir / f'shavian-english-{dialect}.xml'
+    english_shavian_path = build_dir / f'english-shavian-{dialect}.xml'
+    shavian_shavian_path = build_dir / f'shavian-shavian-{dialect}.xml'
 
     # Ensure directories exist
     build_dir.mkdir(exist_ok=True)
@@ -620,16 +761,16 @@ def main():
         print()
 
     if 'english-shavian' in dictionaries:
-        generate_english_to_shavian(readlex_data, shavian_def_cache, english_shavian_path)
+        generate_english_to_shavian(readlex_data, shavian_def_cache, english_shavian_path, dialect)
         print()
 
     if 'shavian-shavian' in dictionaries:
-        generate_shavian_to_shavian(readlex_data, shavian_def_cache, shavian_shavian_path)
+        generate_shavian_to_shavian(readlex_data, shavian_def_cache, shavian_shavian_path, dialect)
         print()
 
-    print("Dictionary generation complete!")
+    print(f"Dictionary generation complete ({dialect.upper()})!")
     for dict_name in dictionaries:
-        dict_path = build_dir / f"{dict_name}.xml"
+        dict_path = build_dir / f"{dict_name}-{dialect}.xml"
         print(f"  - {dict_path}")
 
 

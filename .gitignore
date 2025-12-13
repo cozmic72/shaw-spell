@@ -1,10 +1,14 @@
 # Dictionary build artifacts
 dictionaries/*/objects/
+dictionaries/*/objects-gb/
+dictionaries/*/objects-us/
 
 # Build directory (XML files are large, but can be regenerated)
 build/*.xml
 build/*.dic
 build/*.aff
+build/*.dmg
+build/dmg_staging/
 
 # macOS
 .DS_Store

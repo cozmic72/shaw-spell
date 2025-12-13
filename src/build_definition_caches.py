@@ -17,22 +17,50 @@ from pathlib import Path
 from html import escape
 
 
-def batch_transliterate_to_shavian(texts):
+def format_for_transliteration(text):
+    """
+    Format text for transliteration - capitalize and add period if needed.
+    This helps shave work faster by providing proper sentence boundaries.
+    """
+    if not text or len(text) < 2:
+        return text
+
+    # Capitalize first letter
+    formatted = text[0].upper() + text[1:]
+
+    # Add period if not already there and text looks like a sentence
+    if formatted and formatted[-1] not in '.!?;:':
+        formatted += '.'
+
+    return formatted
+
+
+def batch_transliterate_to_shavian(texts, dialect='gb'):
     """
     Batch transliterate texts to Shavian using shave tool.
+
+    Args:
+        texts: List of texts to transliterate
+        dialect: 'gb' for British English, 'us' for American English
+
     Returns a list of transliterated texts in the same order.
     """
     if not texts:
         return []
 
-    print(f"Transliterating {len(texts)} texts to Shavian...")
+    # Choose readlex flag based on dialect
+    readlex_flag = '--readlex-british' if dialect == 'gb' else '--readlex-american'
+
+    print(f"Transliterating {len(texts)} texts to Shavian ({dialect.upper()})...")
     print("Preparing HTML document...")
 
     try:
         # Build complete HTML document
         html_parts = ['<!DOCTYPE html><html><body>\n']
         for i, text in enumerate(texts):
-            div_html = f'<div id="t{i}">{escape(text)}</div>\n'
+            # Format text with capitalization and period for better WSD
+            formatted_text = format_for_transliteration(text)
+            div_html = f'<div id="t{i}">{escape(formatted_text)}</div>\n'
             html_parts.append(div_html)
 
             # Progress update while building
@@ -42,11 +70,11 @@ def batch_transliterate_to_shavian(texts):
         html_parts.append('</body></html>\n')
         html_input = ''.join(html_parts)
 
-        print(f"Sending {len(texts)} texts to shave tool...")
+        print(f"Sending {len(texts)} texts to shave tool with {readlex_flag}...")
 
-        # Run shave process
+        # Run shave process with dialect flag
         proc = subprocess.Popen(
-            ['shave'],
+            ['shave', readlex_flag],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=None,  # Let stderr pass through to terminal
@@ -54,10 +82,8 @@ def batch_transliterate_to_shavian(texts):
         )
 
         # Send all HTML and get output
-        # Timeout scales with batch size: ~1 second per 100 texts
-        timeout_seconds = max(60, len(texts) // 50)
-        print(f"Waiting for shave (timeout: {timeout_seconds}s)...")
-        output_html, _ = proc.communicate(input=html_input, timeout=timeout_seconds)
+        print(f"Waiting for shave...")
+        output_html, _ = proc.communicate(input=html_input)
 
         print("Parsing transliteration results...")
 
@@ -127,9 +153,17 @@ def process_readlex_with_lemmas(readlex_data):
     return processed
 
 
-def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, force=False):
+def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, dialect='gb', force=False, test_batch=False):
     """
     Build cache of Shavian transliterated definitions.
+
+    Args:
+        readlex_data: Processed readlex data with lemma information
+        wordnet_defs: WordNet definitions dictionary
+        output_path: Path to save the cache
+        dialect: 'gb' for British English, 'us' for American English
+        force: Force rebuild even if cache exists
+        test_batch: If True, only process first 10 lemmas for testing
 
     Cache structure:
     {
@@ -154,7 +188,7 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, forc
         print(f"Loaded existing cache with {len(cache)} lemmas")
         return cache
 
-    print("\nBuilding Shavian definition cache...")
+    print(f"\nBuilding Shavian definition cache ({dialect.upper()})...")
 
     # Find all unique lemmas with WordNet definitions
     lemmas_with_defs = set()
@@ -164,6 +198,10 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, forc
             lemmas_with_defs.add(lemma)
 
     print(f"Found {len(lemmas_with_defs)} lemmas with WordNet definitions")
+
+    if test_batch:
+        print("TEST BATCH MODE: Processing only first 10 lemmas")
+        lemmas_with_defs = set(sorted(lemmas_with_defs)[:10])
 
     # Collect all texts to transliterate
     all_texts_to_transliterate = []
@@ -178,17 +216,8 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, forc
 
     print(f"Total texts to transliterate: {len(all_texts_to_transliterate)}")
 
-    # Transliterate in batches to avoid timeout
-    BATCH_SIZE = 5000  # Process 5000 texts at a time
-    transliterated_texts = []
-
-    for i in range(0, len(all_texts_to_transliterate), BATCH_SIZE):
-        batch = all_texts_to_transliterate[i:i+BATCH_SIZE]
-        batch_num = (i // BATCH_SIZE) + 1
-        total_batches = (len(all_texts_to_transliterate) + BATCH_SIZE - 1) // BATCH_SIZE
-        print(f"\nTransliterating batch {batch_num}/{total_batches} ({len(batch)} texts)...")
-        transliterated_batch = batch_transliterate_to_shavian(batch)
-        transliterated_texts.extend(transliterated_batch)
+    # Transliterate all texts
+    transliterated_texts = batch_transliterate_to_shavian(all_texts_to_transliterate, dialect)
 
     # Map transliterations back to lemmas
     print("Building lemma cache...")
@@ -230,6 +259,14 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, forc
 def main():
     """Main function."""
     force = '--force' in sys.argv
+    test_batch = '--test-batch' in sys.argv
+
+    # Parse dialect argument
+    dialect = 'gb'  # default
+    if '--dialect=us' in sys.argv or '--us' in sys.argv:
+        dialect = 'us'
+    elif '--dialect=gb' in sys.argv or '--gb' in sys.argv:
+        dialect = 'gb'
 
     # Paths
     script_dir = Path(__file__).parent
@@ -238,7 +275,8 @@ def main():
     wordnet_path = project_dir / 'build/wordnet-definitions.json'
     data_dir = project_dir / 'data'
 
-    shavian_defs_path = data_dir / 'definitions-shavian.json'
+    # Output path includes dialect
+    shavian_defs_path = data_dir / f'definitions-shavian-{dialect}.json'
 
     # Ensure directories exist
     data_dir.mkdir(exist_ok=True)
@@ -259,13 +297,14 @@ def main():
 
     # Build Shavian definition cache
     shavian_cache = build_shavian_definition_cache(
-        readlex_data, wordnet_defs, shavian_defs_path, force=force
+        readlex_data, wordnet_defs, shavian_defs_path,
+        dialect=dialect, force=force, test_batch=test_batch
     )
 
     print("\n" + "="*60)
     print("Definition cache build complete!")
     print("="*60)
-    print(f"Shavian definitions: {shavian_defs_path}")
+    print(f"Shavian definitions ({dialect.upper()}): {shavian_defs_path}")
     print(f"  {len(shavian_cache)} lemmas cached")
     print("\nYou can now run ./build.sh to generate dictionaries (no transliteration needed)")
 

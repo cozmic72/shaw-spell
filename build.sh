@@ -46,10 +46,16 @@ show_help() {
     echo -e "    clean-all               Remove all build artifacts and caches\n"
     echo -e "    -h, --help             Show this help message\n"
     echo -e "${BOLD}OPTIONS:${NC}"
-    echo -e "    --rebuild-cache        Force rebuild of Shavian definition cache\n"
+    echo -e "    --rebuild-cache        Force rebuild of Shavian definition cache"
+    echo -e "    --gb                   Build British English (GB) variant (default)"
+    echo -e "    --us                   Build American English (US) variant\n"
     echo -e "${BOLD}EXAMPLES:${NC}"
-    echo -e "    # Build all dictionaries"
+    echo -e "    # Build all dictionaries (GB variant, default)"
     echo -e "    ./build.sh\n"
+    echo -e "    # Build US variant"
+    echo -e "    ./build.sh --us\n"
+    echo -e "    # Build and install GB variant"
+    echo -e "    ./build.sh --gb install\n"
     echo -e "    # Build and install only Shavian-English"
     echo -e "    ./build.sh shavian-english install\n"
     echo -e "    # Build specific dictionaries"
@@ -118,7 +124,9 @@ fi
 # Clean definition caches
 if [ "$1" = "clean-cache" ]; then
     echo_step "Cleaning definition caches..."
-    rm -f data/definitions-shavian.json
+    rm -f data/definitions-shavian-gb.json
+    rm -f data/definitions-shavian-us.json
+    rm -f data/definitions-shavian.json  # Old format
     rm -f data/transliterations.json  # Old cache format
     echo_success "Cache clean complete"
     echo "Run ./build.sh to rebuild caches"
@@ -132,6 +140,8 @@ if [ "$1" = "clean-all" ]; then
     rm -rf build/shaw.dic
     rm -rf build/shaw.aff
     rm -rf dictionaries/*/objects
+    rm -f data/definitions-shavian-gb.json
+    rm -f data/definitions-shavian-us.json
     rm -f data/definitions-shavian.json
     rm -f data/transliterations.json
     echo_success "Complete clean finished"
@@ -142,6 +152,7 @@ fi
 DICTIONARIES=()
 INSTALL_FLAG=""
 REBUILD_CACHE=""
+DIALECT="gb"  # Default to GB
 
 for arg in "$@"; do
     case "$arg" in
@@ -150,6 +161,12 @@ for arg in "$@"; do
             ;;
         --rebuild-cache)
             REBUILD_CACHE="--force"
+            ;;
+        --gb)
+            DIALECT="gb"
+            ;;
+        --us)
+            DIALECT="us"
             ;;
         shavian-english|english-shavian|shavian-shavian)
             DICTIONARIES+=("$arg")
@@ -178,36 +195,37 @@ for dict in "${DICTIONARIES[@]}"; do
 done
 
 if [ "$NEEDS_CACHE" = true ]; then
-    if [ ! -f "data/definitions-shavian.json" ] || [ -n "$REBUILD_CACHE" ]; then
-        echo_step "Building Shavian definition cache..."
-        ./src/build_definition_caches.py $REBUILD_CACHE
+    CACHE_FILE="data/definitions-shavian-${DIALECT}.json"
+    if [ ! -f "$CACHE_FILE" ] || [ -n "$REBUILD_CACHE" ]; then
+        echo_step "Building Shavian definition cache ($(echo $DIALECT | tr '[:lower:]' '[:upper:]'))..."
+        ./src/build_definition_caches.py --${DIALECT} $REBUILD_CACHE
         echo_success "Cache build complete"
         echo ""
     fi
 fi
 
 # Step 1: Generate XML files
-echo_step "Generating dictionary XML files..."
-./src/generate_dictionaries.py $DICT_ARGS
+echo_step "Generating dictionary XML files ($(echo $DIALECT | tr '[:lower:]' '[:upper:]'))..."
+./src/generate_dictionaries.py --${DIALECT} $DICT_ARGS
 echo_success "XML generation complete"
 
 # Step 2: Build each specified dictionary
 for dict in "${DICTIONARIES[@]}"; do
-    echo_step "Building $dict dictionary..."
+    echo_step "Building $dict dictionary ($(echo $DIALECT | tr '[:lower:]' '[:upper:]'))..."
     cd "dictionaries/$dict"
     make clean > /dev/null 2>&1 || true
-    make
+    make DIALECT=${DIALECT}
     echo_success "$dict dictionary built"
     cd "$SCRIPT_DIR"
 done
 
 # Step 3: Install if requested
 if [ -n "$INSTALL_FLAG" ]; then
-    echo_step "Installing dictionaries to ~/Library/Dictionaries..."
+    echo_step "Installing dictionaries to ~/Library/Dictionaries ($(echo $DIALECT | tr '[:lower:]' '[:upper:]'))..."
 
     for dict in "${DICTIONARIES[@]}"; do
         cd "dictionaries/$dict"
-        make install
+        make DIALECT=${DIALECT} install
         cd "$SCRIPT_DIR"
     done
 
@@ -222,9 +240,9 @@ if [ -n "$INSTALL_FLAG" ]; then
 else
     echo ""
     if [ ${#DICTIONARIES[@]} -eq 1 ]; then
-        echo "${DICTIONARIES[0]} dictionary built successfully!"
+        echo "${DICTIONARIES[0]} dictionary ($(echo $DIALECT | tr '[:lower:]' '[:upper:]')) built successfully!"
     else
-        echo "All ${#DICTIONARIES[@]} dictionaries built successfully!"
+        echo "All ${#DICTIONARIES[@]} dictionaries ($(echo $DIALECT | tr '[:lower:]' '[:upper:]')) built successfully!"
     fi
-    echo "To install, run: ./build.sh ${DICTIONARIES[@]} install"
+    echo "To install, run: ./build.sh --${DIALECT} ${DICTIONARIES[@]} install"
 fi

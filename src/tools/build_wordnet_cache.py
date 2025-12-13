@@ -347,7 +347,7 @@ def main():
     project_dir = Path(__file__).parent.parent.parent
     yaml_dir = project_dir / 'external/english-wordnet/src/yaml'
     definitions_path = project_dir / 'build/wordnet-definitions.json'
-    overrides_path = project_dir / 'data/wordnet-overrides.yaml'
+    overrides_path = project_dir / 'src/dictionaries/wordnet-overrides.yaml'
 
     # Validate inputs
     if not yaml_dir.exists():

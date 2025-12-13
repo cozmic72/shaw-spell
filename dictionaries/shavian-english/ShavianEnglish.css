@@ -27,29 +27,24 @@ hr {
 	border-radius: 4px;
 }
 
-/* Individual word entry */
-.word-entry {
+/* Lemma form (main entry) */
+.lemma-form {
+	font-size: 130%;
+	font-weight: bold;
 	margin: 0.5em 0;
 }
 
-/* Main word form (transliterated English) */
-.word-main {
-	font-size: 130%;
-	font-weight: bold;
-}
-
-/* Grammatical label (appears below word in grey) */
-.word-label {
-	font-size: 85%;
-	color: #888;
-	margin-top: 0.2em;
-	margin-left: 0.3em;
+/* Derived form (indented) */
+.derived-form {
+	font-size: 110%;
+	margin: 0.5em 0 0.5em 1.5em;
+	color: #555;
 }
 
 .ipa {
 	color: #666;
 	font-family: "Doulos SIL", "Charis SIL", serif;
-	margin-left: 0.5em;
+	margin-left: 0.75em;
 }
 
 .gramform {
@@ -63,6 +58,7 @@ hr {
 	color: #888;
 	font-size: 90%;
 	font-style: italic;
+	font-weight: normal;
 	margin-left: 0.5em;
 }
 
@@ -71,17 +67,21 @@ hr {
 	margin-top: 1em;
 }
 
-.definition {
-	margin: 0.8em 0;
+/* Part of speech group */
+.pos-group {
+	margin: 1em 0;
 }
 
-.definition p {
-	margin: 0.3em 0;
-	line-height: 1.6;
-}
-
-.definition i {
+.pos-group h3 {
+	font-size: 110%;
+	font-weight: bold;
 	color: #0066cc;
+	margin: 0.5em 0 0.3em 0;
+}
+
+.pos-group p {
+	margin: 0.3em 0 0.3em 1em;
+	line-height: 1.6;
 }
 
 /* Examples list */
@@ -111,8 +111,8 @@ hr {
 		background-color: #2a2a2a;
 	}
 
-	.word-label {
-		color: #999;
+	.derived-form {
+		color: #bbb;
 	}
 
 	.ipa {
@@ -127,7 +127,7 @@ hr {
 		color: #999;
 	}
 
-	.definition i {
+	.pos-group h3 {
 		color: #66b3ff;
 	}
 

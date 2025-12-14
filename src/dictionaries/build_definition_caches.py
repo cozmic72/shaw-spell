@@ -272,7 +272,7 @@ def main():
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent.parent
     readlex_path = project_dir / 'external/readlex/readlex.json'
-    wordnet_path = project_dir / 'build/wordnet-definitions.json'
+    wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     data_dir = project_dir / 'data'
 
     # Output path includes dialect
@@ -287,10 +287,21 @@ def main():
         readlex_raw = json.load(f)
     print(f"Loaded {len(readlex_raw)} readlex entries")
 
-    print("\nLoading WordNet definitions...")
-    with open(wordnet_path, 'r', encoding='utf-8') as f:
-        wordnet_defs = json.load(f)
-    print(f"Loaded definitions for {len(wordnet_defs)} words")
+    print("\nLoading WordNet comprehensive cache...")
+    with open(wordnet_cache_path, 'r', encoding='utf-8') as f:
+        wordnet_cache = json.load(f)
+    print(f"Loaded cache with {len(wordnet_cache)} lemmas")
+
+    # Extract definitions from comprehensive cache
+    wordnet_defs = {}
+    for lemma, entry in wordnet_cache.items():
+        all_defs = []
+        for pos_entry in entry.get('pos_entries', {}).values():
+            if 'definitions' in pos_entry:
+                all_defs.extend(pos_entry['definitions'])
+        if all_defs:
+            wordnet_defs[lemma] = all_defs
+    print(f"Extracted definitions for {len(wordnet_defs)} words")
 
     # Process readlex
     readlex_data = process_readlex_with_lemmas(readlex_raw)

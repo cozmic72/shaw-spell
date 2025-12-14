@@ -99,8 +99,8 @@ wordnet-cache:
 transliterations:
 	@echo "Rebuilding Shavian transliteration caches..."
 	@mkdir -p data
-	$(CACHE_SCRIPT) --gb
-	$(CACHE_SCRIPT) --us
+	$(CACHE_SCRIPT) --gb --force
+	$(CACHE_SCRIPT) --us --force
 	@echo "✓ Transliteration caches rebuilt"
 
 ###########################################

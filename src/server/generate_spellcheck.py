@@ -34,9 +34,9 @@ def is_proper_noun(pos):
     """Check if POS tag indicates a proper noun."""
     if not pos:
         return False
-    # WordNet POS tags: proper nouns typically marked as 'n' with capitalization
-    # or specific markers. We'll check for common proper noun indicators.
-    return pos.startswith('NNP') or pos == 'PROPN'
+    # Readlex uses NP0 for proper nouns
+    # Also check for compound tags like NP0+VBZ
+    return pos == 'NP0' or pos.startswith('NP0+')
 
 
 def should_include_word(lemma, preferred_dialect, wordnet_cache):
@@ -99,10 +99,10 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
     print("Using simple word list approach (no affix compression)")
 
     # Collect all unique Shavian words, filtering by dialect
-    # Track which words are proper nouns only vs. mixed usage
+    # Track which words have proper noun vs. non-proper noun senses
     shavian_words = set()
-    proper_noun_only = defaultdict(bool)  # shaw -> True if ALL entries are proper nouns
-    has_entries = defaultdict(bool)  # shaw -> True if we've seen this word
+    has_proper_sense = defaultdict(bool)  # shaw -> True if ANY entry is a proper noun
+    has_common_sense = defaultdict(bool)  # shaw -> True if ANY entry is NOT a proper noun
     namer_dot = '·'  # U+00B7 MIDDLE DOT
 
     # First pass: collect all words and track their POS patterns
@@ -123,27 +123,20 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
 
             pos = entry.get('pos', '')
 
-            # Track whether this word form has seen any entries yet
-            if not has_entries[shaw]:
-                # First time seeing this word - assume it's proper noun only
-                proper_noun_only[shaw] = is_proper_noun(pos)
-                has_entries[shaw] = True
+            # Track whether this word has proper noun and/or common senses
+            if is_proper_noun(pos):
+                has_proper_sense[shaw] = True
             else:
-                # Already seen this word - if this entry is NOT a proper noun,
-                # then the word has mixed usage
-                if not is_proper_noun(pos):
-                    proper_noun_only[shaw] = False
+                has_common_sense[shaw] = True
 
     # Second pass: add words based on their usage patterns
-    for shaw, is_only_proper in proper_noun_only.items():
-        if is_only_proper:
-            # Pure proper noun: add ONLY with namer dot
-            if not shaw.startswith(namer_dot):
-                shavian_words.add(namer_dot + shaw)
-        else:
-            # Mixed usage or common noun: add both forms
+    for shaw in set(has_proper_sense.keys()) | set(has_common_sense.keys()):
+        # Add plain form if word has any non-proper-noun senses
+        if has_common_sense[shaw]:
             shavian_words.add(shaw)
-            # Also add with namer dot for when used as proper noun
+
+        # Add namer-dot form if word has any proper noun senses
+        if has_proper_sense[shaw]:
             if not shaw.startswith(namer_dot):
                 shavian_words.add(namer_dot + shaw)
 

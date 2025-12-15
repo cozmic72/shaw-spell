@@ -31,6 +31,60 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'dictionaries'))
 from wordnet_dialect import load_wordnet_dialect_data
 
 
+def parse_synset_files(yaml_dir: Path) -> Dict[str, Dict]:
+    """
+    Parse synset YAML files to extract definitions.
+
+    Returns:
+        Dict mapping synset_id → {'definition': str, 'pos': str}
+    """
+    print("Parsing synset files for definitions...")
+
+    # Synset files: adj.all.yaml, adv.all.yaml, noun.*.yaml, verb.*.yaml
+    synset_files = []
+    for pattern in ['adj.*.yaml', 'adv.*.yaml', 'noun.*.yaml', 'verb.*.yaml']:
+        synset_files.extend(yaml_dir.glob(pattern))
+
+    synset_files = sorted(synset_files)
+    print(f"Found {len(synset_files)} synset files")
+
+    synsets = {}
+
+    for i, yaml_file in enumerate(synset_files, 1):
+        if i % 5 == 0:
+            print(f"  Processing synset file {i}/{len(synset_files)}: {yaml_file.name}")
+
+        try:
+            with open(yaml_file, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+
+            if not data:
+                continue
+
+            # Each synset file contains: {synset_id: synset_data}
+            for synset_id, synset_data in data.items():
+                if not isinstance(synset_data, dict):
+                    continue
+
+                # Extract definition (can be string or list)
+                definition = synset_data.get('definition')
+                if definition:
+                    if isinstance(definition, list):
+                        definition = ' '.join(definition)
+
+                    synsets[synset_id] = {
+                        'definition': definition,
+                        'pos': synset_data.get('partOfSpeech', '')
+                    }
+
+        except Exception as e:
+            print(f"Warning: Error parsing {yaml_file.name}: {e}")
+            continue
+
+    print(f"Loaded {len(synsets)} synset definitions")
+    return synsets
+
+
 def parse_all_yaml_files(yaml_dir: Path, overrides_path: Path = None) -> Dict[str, Dict]:
     """
     Parse all WordNet YAML files and merge entries by lemma.
@@ -153,7 +207,8 @@ def load_existing_definitions(definitions_path: Path) -> Dict[str, List[Dict]]:
 def merge_comprehensive_cache(
     lemma_data: Dict[str, Dict],
     dialect_data,
-    definitions: Dict[str, List[Dict]]
+    definitions: Dict[str, List[Dict]],
+    synsets: Dict[str, Dict]
 ) -> Dict[str, Dict]:
     """
     Merge all data sources into comprehensive cache.
@@ -235,6 +290,16 @@ def merge_comprehensive_cache(
                 if 'definition' in sense:
                     all_defs.append({
                         'definition': sense['definition'],
+                        'pos': pos
+                    })
+
+            # 3. Extract definitions from synsets based on synset IDs
+            for sense in data['senses']:
+                synset_id = sense.get('synset')
+                if synset_id and synset_id in synsets:
+                    synset_data = synsets[synset_id]
+                    all_defs.append({
+                        'definition': synset_data['definition'],
                         'pos': pos
                     })
 
@@ -363,22 +428,25 @@ def main():
     print(f"Output: {args.output}")
     print()
 
-    # Step 1: Parse YAML files (includes overrides if present)
+    # Step 1: Parse synset files for definitions
+    synsets = parse_synset_files(yaml_dir)
+
+    # Step 2: Parse entry files (includes overrides if present)
     lemma_data = parse_all_yaml_files(yaml_dir, overrides_path)
 
-    # Step 2: Load dialect data from YAML
+    # Step 3: Load dialect data from YAML
     dialect_data = load_wordnet_dialect_data(yaml_dir)
 
-    # Step 3: Load existing definitions
+    # Step 4: Load existing definitions (for backwards compatibility)
     definitions = load_existing_definitions(definitions_path)
 
-    # Step 4: Merge everything
-    cache = merge_comprehensive_cache(lemma_data, dialect_data, definitions)
+    # Step 5: Merge everything
+    cache = merge_comprehensive_cache(lemma_data, dialect_data, definitions, synsets)
 
-    # Step 5: Write cache
+    # Step 6: Write cache
     write_cache(cache, args.output)
 
-    # Step 6: Print statistics
+    # Step 7: Print statistics
     print_statistics(cache)
 
     print(f"\n✓ Cache successfully built: {args.output}")

@@ -1,0 +1,558 @@
+/* Shaw Dict - Web Dictionary Styles */
+/* Based on shaw-type styling with Inter-Alia fonts */
+
+@font-face {
+    font-family: 'Inter-Alia';
+    src: url('{{FONT_URL}}/InterAlia-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inter-Alia';
+    src: url('{{FONT_URL}}/InterAlia-Italic.otf') format('opentype');
+    font-weight: 400;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Inter-Alia';
+    src: url('{{FONT_URL}}/InterAlia-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inter-Alia';
+    src: url('{{FONT_URL}}/InterAlia-Bold.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inter-Alia';
+    src: url('{{FONT_URL}}/InterAlia-BoldItalic.otf') format('opentype');
+    font-weight: 700;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Ormin';
+    src: url('{{FONT_URL}}/Ormin-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter-Alia', sans-serif;
+    /* Enable OpenType features for ZWJ ligatures everywhere */
+    font-feature-settings: "calt" 1, "clig" 1, "liga" 1;
+    font-variant-ligatures: contextual common-ligatures;
+}
+
+body {
+    font-family: 'Inter-Alia', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 40px;
+    max-width: 800px;
+    width: 100%;
+    position: relative;
+    color: #333;
+}
+
+/* Default styling for semantic HTML elements */
+.container p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.container h2 {
+    color: #667eea;
+    font-size: 24px;
+    margin-bottom: 15px;
+    margin-top: 20px;
+}
+
+.container h3 {
+    color: #333;
+    font-size: 18px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.container ul,
+.container ol {
+    margin-left: 3em;
+    margin-bottom: 15px;
+}
+
+.container li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.container a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.container a:hover {
+    text-decoration: underline;
+}
+
+.container em {
+    font-style: italic;
+}
+
+.container strong {
+    font-weight: 700;
+}
+
+/* Header */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin: 0;
+    font-size: 36px;
+    font-weight: bold;
+    font-family: 'Ormin', 'Inter-Alia', sans-serif;
+    flex: 1;
+}
+
+/* Burger Menu */
+.burger-menu {
+    position: relative;
+}
+
+.burger-btn {
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #667eea;
+    transition: color 0.3s;
+    min-width: 40px;
+}
+
+.burger-btn:hover {
+    color: #5568d3;
+}
+
+.burger-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 150px;
+    z-index: 1000;
+    margin-top: 5px;
+}
+
+.burger-dropdown.show {
+    display: block;
+}
+
+.burger-dropdown a {
+    display: block;
+    padding: 12px 20px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.burger-dropdown a:hover {
+    background-color: #f0f0ff;
+}
+
+.burger-dropdown a:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.burger-dropdown a:last-child {
+    border-radius: 0 0 8px 8px;
+}
+
+/* Search Form */
+.search-form {
+    margin: 30px 0;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    justify-content: center;
+}
+
+.search-input {
+    flex: 1;
+    max-width: 240px;
+    padding: 15px 20px;
+    font-size: 20px;
+    font-family: 'Inter-Alia', sans-serif;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    transition: border-color 0.3s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.search-btn {
+    padding: 15px 30px;
+    font-size: 18px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.search-btn:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.search-hint {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+}
+
+.version-text {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Welcome section (top) */
+.welcome-top {
+    margin-bottom: 20px;
+    padding: 20px;
+    border-radius: 12px;
+    min-height: 100px;
+}
+
+/* Dictionary Entry Display */
+.entry-container {
+    margin-top: 40px;
+    padding: 3em 2em;
+    background: #f8f9fa;
+    border-radius: 12px;
+    min-height: 100px;
+}
+
+.entry-container > * {
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.entry-container.hidden {
+    display: none;
+}
+
+/* Clickable word spans */
+span.w {
+    cursor: pointer;
+}
+
+span.w:hover {
+    text-decoration: underline;
+    text-decoration-color: rgba(102, 126, 234, 0.5);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+.entry-container h1 {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 15px;
+    font-family: 'Inter-Alia', sans-serif;
+    text-align: left;
+}
+
+.entry-container .forms {
+    margin-bottom: 20px;
+}
+
+.entry-container .lemma-form {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.entry-container .derived-form {
+    font-size: 18px;
+    margin-bottom: 8px;
+    margin-left: 3em;
+}
+
+.entry-container .ipa {
+    color: #666;
+    font-style: italic;
+    margin-left: 1em;
+}
+
+.entry-container .variant {
+    color: #888;
+    font-size: 0.9em;
+    margin-left: 1em;
+}
+
+.entry-container .definitions {
+    margin-top: 15px;
+}
+
+.entry-container .pos-group {
+    margin-bottom: 15px;
+}
+
+.entry-container .pos-group h3 {
+    color: #667eea;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.entry-container .pos-group i {
+    font-style: italic;
+}
+
+.entry-container .definition-list {
+    margin: 0;
+    padding-left: 3em;
+}
+
+.entry-container .definition {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.entry-container .definitions p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.entry-container hr {
+    display: none;
+}
+
+.entry-container > h1:not(:first-child) {
+    margin-top: 40px;
+}
+
+.no-results {
+    text-align: center;
+    color: #666;
+    padding: 40px 20px;
+    font-size: 16px;
+}
+
+
+/* Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.show {
+    display: flex;
+}
+
+.modal {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 40px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.modal h3 {
+    color: #333;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.modal p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+}
+
+.modal ul {
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+.modal li {
+    margin-bottom: 0.5em;
+    line-height: 1.5;
+}
+
+.modal a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.modal a:hover {
+    text-decoration: underline;
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 28px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.3s;
+}
+
+.close-modal:hover {
+    color: #333;
+}
+
+/* Settings */
+.setting-group {
+    margin-bottom: 30px;
+}
+
+.setting-group h3 {
+    margin-top: 0;
+}
+
+.setting-group label {
+    display: block;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.setting-group label:hover {
+    background-color: #f0f0ff;
+}
+
+.setting-group input[type="radio"] {
+    margin-right: 10px;
+}
+
+.setting-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.btn-primary {
+    flex: 1;
+    padding: 12px 24px;
+    font-size: 16px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background: #5568d3;
+}
+
+.btn-secondary {
+    flex: 1;
+    padding: 12px 24px;
+    font-size: 16px;
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background: #d0d0d0;
+}
+
+/* Copyright */
+.copyright {
+    margin-top: 20px;
+    text-align: center;
+    color: white;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+
+    .search-input-group {
+        flex-direction: column;
+    }
+
+    .search-btn {
+        width: 100%;
+    }
+}

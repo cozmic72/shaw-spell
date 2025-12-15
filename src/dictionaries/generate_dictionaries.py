@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 from html import escape
 from collections import defaultdict
+from build_definition_caches import POS_TO_ENGLISH, POS_TO_SHAVIAN
 # Dialect detection now uses comprehensive cache only
 
 
@@ -887,8 +888,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         f.write('    <div class="irregular-forms">\n')
                         for pos, forms in irregular_forms.items():
                             # Map WordNet POS to readable forms
-                            pos_readable_map = {'n': 'noun', 'v': 'verb', 'a': 'adjective', 'r': 'adverb', 's': 'adjective'}
-                            pos_label = pos_readable_map.get(pos, pos)
+                            pos_label = POS_TO_ENGLISH.get(pos, pos)
 
                             # Translate forms list if needed
                             if config['translate_labels']:
@@ -908,8 +908,10 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     for pos, pos_defs in pos_groups:
                         f.write(f'      <div class="pos-group">\n')
                         f.write(f'        <h3><i>{escape(pos)}</i></h3>\n')
+                        f.write('        <ol class="definition-list">\n')
                         for i, def_data in enumerate(pos_defs[:5], 1):
-                            f.write(f'        <p><b>{i}.</b> {escape(def_data["definition"])}</p>\n')
+                            f.write(f'          <li class="definition">{escape(def_data["definition"])}</li>\n')
+                        f.write('        </ol>\n')
                         f.write('      </div>\n')
                     f.write('    </div>\n')
                 else:

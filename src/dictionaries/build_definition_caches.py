@@ -17,6 +17,25 @@ from pathlib import Path
 from html import escape
 
 
+# Static mapping for WordNet POS tags
+# These should NOT be transliterated via shave tool
+POS_TO_ENGLISH = {
+    'n': 'noun',
+    'v': 'verb',
+    'a': 'adjective',
+    'r': 'adverb',
+    's': 'adjective',  # satellite adjective
+}
+
+POS_TO_SHAVIAN = {
+    'n': '𐑯𐑬𐑯',
+    'v': '𐑝𐑻𐑚',
+    'a': '𐑨𐑡𐑩𐑒𐑑𐑦𐑝',
+    'r': '𐑨𐑛𐑝𐑻𐑚',
+    's': '𐑨𐑡𐑩𐑒𐑑𐑦𐑝',
+}
+
+
 def format_for_transliteration(text):
     """
     Format text for transliteration - capitalize and add period if needed.
@@ -211,7 +230,7 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, dial
     for lemma in lemma_list:
         for def_data in wordnet_defs[lemma]:
             all_texts_to_transliterate.append(def_data['definition'])
-            all_texts_to_transliterate.append(def_data['pos'])
+            # NOTE: POS tags are NOT transliterated - we use static POS_TRANSLATIONS mapping
             all_texts_to_transliterate.extend(def_data.get('examples', []))
 
     print(f"Total texts to transliterate: {len(all_texts_to_transliterate)}")
@@ -228,15 +247,19 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, dial
         lemma_defs = []
 
         for def_data in wordnet_defs[lemma]:
+            # Use static POS translation instead of transliterating
+            pos_code = def_data['pos']
+            transliterated_pos = POS_TO_SHAVIAN.get(pos_code, pos_code)
+
             transliterated_def = {
                 'definition': def_data['definition'],
                 'transliterated_definition': transliterated_texts[text_idx],
-                'pos': def_data['pos'],
-                'transliterated_pos': transliterated_texts[text_idx + 1],
+                'pos': pos_code,
+                'transliterated_pos': transliterated_pos,
                 'examples': def_data.get('examples', []),
                 'transliterated_examples': []
             }
-            text_idx += 2
+            text_idx += 1  # Only increment by 1 now (just the definition)
 
             # Add transliterated examples
             for ex in def_data.get('examples', []):

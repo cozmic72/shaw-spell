@@ -1,13 +1,17 @@
 # Makefile for Shaw-Spell
 # Provides incremental builds for dictionaries and spell checker
 
-.PHONY: all clean install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache
+.PHONY: all clean install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache site clean-site
 .PHONY: shavian-english-gb shavian-english-us english-shavian-gb english-shavian-us shavian-shavian-gb shavian-shavian-us
 .DEFAULT_GOAL := help
 
 # Configuration
 VERSION = 1.0-beta
 export VERSION
+
+# Font URL for web frontend (can be overridden for CDN hosting)
+FONT_URL ?= /fonts
+export FONT_URL
 
 READLEX_PATH = external/readlex/readlex.json
 WORDNET_CACHE = data/wordnet-comprehensive.json
@@ -55,6 +59,7 @@ help:
 	@echo "  uninstaller-app     Build uninstaller app only"
 	@echo "  dmg                 Build DMG (without notarization)"
 	@echo "  spellcheck          Build all Hunspell dictionaries"
+	@echo "  site                Build web dictionary frontend"
 	@echo ""
 	@echo "Cache regeneration (explicit only, commits to git):"
 	@echo "  wordnet-cache       Rebuild comprehensive WordNet cache (~2 min)"
@@ -293,9 +298,10 @@ staple: $(DMG_FILE)
 # High-level targets
 ###########################################
 
-all: $(DMG_FILE)
+all: $(DMG_FILE) site
 	@echo "All components built successfully!"
 	@echo "DMG installer ready at: $(DMG_FILE)"
+	@echo "Web frontend ready at: build/site/"
 
 # Convenience targets (build both dialects)
 shavian-english: $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_SHAVIAN_ENGLISH_US)
@@ -325,6 +331,43 @@ shavian-shavian-gb: $(DICT_SHAVIAN_SHAVIAN_GB)
 
 shavian-shavian-us: $(DICT_SHAVIAN_SHAVIAN_US)
 	@echo "Shavian-Shavian dictionary (US) built successfully!"
+
+###########################################
+# Web Frontend
+###########################################
+
+# Site data files (JSON indexes)
+SITE_DATA_FILES = build/site-data/english-shavian-gb-index.json \
+                  build/site-data/english-shavian-gb-entries.json \
+                  build/site-data/english-shavian-us-index.json \
+                  build/site-data/english-shavian-us-entries.json \
+                  build/site-data/shavian-english-gb-index.json \
+                  build/site-data/shavian-english-gb-entries.json \
+                  build/site-data/shavian-english-us-index.json \
+                  build/site-data/shavian-english-us-entries.json \
+                  build/site-data/shavian-shavian-gb-index.json \
+                  build/site-data/shavian-shavian-gb-entries.json \
+                  build/site-data/shavian-shavian-us-index.json \
+                  build/site-data/shavian-shavian-us-entries.json
+
+# Build site data (JSON indexes) from XML files
+$(SITE_DATA_FILES): build/english-shavian-gb.xml build/english-shavian-us.xml \
+                    build/shavian-english-gb.xml build/shavian-english-us.xml \
+                    build/shavian-shavian-gb.xml build/shavian-shavian-us.xml \
+                    src/site/build_site_index.py
+	@echo "Building web dictionary indexes..."
+	@mkdir -p build/site-data
+	src/site/build_site_index.py
+
+# Deploy site files to build/site (using index.cgi as representative target)
+build/site/index.cgi: $(SITE_DATA_FILES) $(shell find src/site -type f) Makefile src/fonts/*.otf
+	@echo "Deploying web frontend..."
+	src/site/deploy_site.py --version $(VERSION) --font-url $(FONT_URL)
+
+site: build/site/index.cgi
+	@echo "Web dictionary frontend built successfully!"
+	@echo "Location: build/site/"
+	@echo "To test: cd build/site && python3 -m http.server --cgi 8000"
 
 install: all
 	@echo "Installing dictionaries (GB & US) to ~/Library/Dictionaries..."
@@ -362,3 +405,8 @@ clean:
 	@echo "Clean complete"
 	@echo "Note: Pre-built caches in data/ are preserved."
 	@echo "      To regenerate caches, run: make wordnet-cache or make transliterations"
+
+clean-site:
+	@echo "Cleaning web frontend artifacts..."
+	@rm -rf build/site build/site-data
+	@echo "Site clean complete"

@@ -55,7 +55,7 @@
 
 body {
     font-family: 'Inter-Alia', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(to bottom, #667eea 0%, #9d4268 100%);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -229,7 +229,7 @@ h1 {
 .search-btn {
     padding: 15px 30px;
     font-size: 18px;
-    background: #667eea;
+    background: #5668ff;
     color: white;
     border: none;
     border-radius: 12px;
@@ -239,9 +239,9 @@ h1 {
 }
 
 .search-btn:hover {
-    background: #5568d3;
+    background: #4557e6;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(86, 104, 255, 0.4);
 }
 
 .search-hint {

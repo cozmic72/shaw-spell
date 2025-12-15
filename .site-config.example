@@ -1,0 +1,9 @@
+# Site deployment configuration
+# Copy this to .site-config and customize for your deployment
+
+# Font URL for production deployment
+# Use absolute URL for CDN hosting or relative path for local hosting
+FONT_URL = https://your-cdn.com/fonts
+
+# Or use a relative path if fonts are served from the same domain:
+# FONT_URL = /fonts

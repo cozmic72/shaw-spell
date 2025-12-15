@@ -1,16 +1,20 @@
 # Makefile for Shaw-Spell
 # Provides incremental builds for dictionaries and spell checker
 
-.PHONY: all clean install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache site clean-site
+.PHONY: all clean install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache site site-tarball clean-site
 .PHONY: shavian-english-gb shavian-english-us english-shavian-gb english-shavian-us shavian-shavian-gb shavian-shavian-us
 .DEFAULT_GOAL := help
 
 # Configuration
-VERSION = 1.0-beta
+VERSION := $(shell cat current-version | tr -d '\n')
 export VERSION
 
 # Font URL for web frontend (can be overridden for CDN hosting)
 FONT_URL ?= /fonts
+
+# Load site deployment configuration if it exists (for site-tarball)
+-include .site-config
+
 export FONT_URL
 
 READLEX_PATH = external/readlex/readlex.json
@@ -60,6 +64,7 @@ help:
 	@echo "  dmg                 Build DMG (without notarization)"
 	@echo "  spellcheck          Build all Hunspell dictionaries"
 	@echo "  site                Build web dictionary frontend"
+	@echo "  site-tarball        Build deployable tarball for Linux/web servers"
 	@echo ""
 	@echo "Cache regeneration (explicit only, commits to git):"
 	@echo "  wordnet-cache       Rebuild comprehensive WordNet cache (~2 min)"
@@ -368,6 +373,31 @@ site: build/site/index.cgi
 	@echo "Web dictionary frontend built successfully!"
 	@echo "Location: build/site/"
 	@echo "To test: cd build/site && python3 -m http.server --cgi 8000"
+
+site-tarball:
+	@if [ ! -f .site-config ]; then \
+		echo "Error: .site-config file not found"; \
+		echo ""; \
+		echo "Create .site-config from the example:"; \
+		echo "  cp .site-config.example .site-config"; \
+		echo "  # Edit .site-config with your production FONT_URL"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@echo "Building site with FONT_URL=$(FONT_URL)..."
+	@$(MAKE) site
+	@echo "Creating deployable site tarball..."
+	@cd build && tar czf shaw-spell-site-$(VERSION).tar.gz site/
+	@echo "✓ Tarball created: build/shaw-spell-site-$(VERSION).tar.gz"
+	@echo ""
+	@echo "To deploy on Linux:"
+	@echo "  1. Extract: tar xzf shaw-spell-site-$(VERSION).tar.gz"
+	@echo "  2. Configure web server to serve site/ directory with CGI support"
+	@echo "  3. Requires: Python 3 (standard library only)"
+	@echo ""
+	@echo "Configuration:"
+	@echo "  Font URL: $(FONT_URL)"
+	@echo "  Version:  $(VERSION)"
 
 install: all
 	@echo "Installing dictionaries (GB & US) to ~/Library/Dictionaries..."

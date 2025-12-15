@@ -1,0 +1,9 @@
+# Disable directory listing
+Options -Indexes
+
+# Enable CGI execution
+Options +ExecCGI
+AddHandler cgi-script .cgi
+
+# Set index file
+DirectoryIndex index.cgi

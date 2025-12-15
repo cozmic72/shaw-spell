@@ -187,6 +187,17 @@ INSTALLER_MARKER = build/.installer-built
 UNINSTALLER_MARKER = build/.uninstaller-built
 DMG_FILE = build/Shaw-Spell-$(VERSION).dmg
 
+# Icon files
+INSTALLER_ICON = build/installer/AppIcon.icns
+UNINSTALLER_ICON = build/uninstaller/AppIcon.icns
+DMG_ICON = build/installer/VolumeIcon.icns
+SITE_ICONS = build/site/favicon.png build/site/apple-touch-icon-180x180.png
+
+# Icon generation - all icons generated together from single script
+$(INSTALLER_ICON) $(UNINSTALLER_ICON) $(DMG_ICON) $(SITE_ICONS): src/tools/generate-icons.py src/fonts/Ormin-Regular.otf
+	@echo "Generating all icons..."
+	@python3 src/tools/generate-icons.py
+
 # Shavian Hunspell dictionaries
 $(HUNSPELL_GB) $(HUNSPELL_US): $(READLEX_PATH) src/server/generate_spellcheck.py
 	@echo "Building Shavian Hunspell dictionaries..."
@@ -217,16 +228,16 @@ spellserver: $(SPELLSERVER_MARKER)
 $(INSTALLER_MARKER): $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_ENGLISH_SHAVIAN_GB) $(DICT_SHAVIAN_SHAVIAN_GB) \
                      $(DICT_SHAVIAN_ENGLISH_US) $(DICT_ENGLISH_SHAVIAN_US) $(DICT_SHAVIAN_SHAVIAN_US) \
                      $(HUNSPELL_GB) $(HUNSPELL_US) $(HUNSPELL_EN_GB) $(HUNSPELL_EN_US) \
-                     $(SPELLSERVER_MARKER) \
+                     $(SPELLSERVER_MARKER) $(INSTALLER_ICON) \
                      src/installer/src/*.swift src/installer/src/Info.plist src/installer/resources/*.html
 	@echo "Building installer app..."
 	@cd src/installer && $(MAKE)
 
-$(UNINSTALLER_MARKER): src/uninstaller/src/*.swift src/uninstaller/src/Info.plist src/uninstaller/Makefile
+$(UNINSTALLER_MARKER): $(UNINSTALLER_ICON) src/uninstaller/src/*.swift src/uninstaller/src/Info.plist src/uninstaller/Makefile
 	@echo "Building uninstaller app..."
 	@cd src/uninstaller && $(MAKE)
 
-$(DMG_FILE): $(INSTALLER_MARKER) $(UNINSTALLER_MARKER) src/installer/dmg-template/DS_Store_template
+$(DMG_FILE): $(INSTALLER_MARKER) $(UNINSTALLER_MARKER) $(DMG_ICON) src/installer/dmg-template/DS_Store_template
 	@echo "Creating installer DMG..."
 	@rm -rf build/dmg_staging
 	@mkdir -p build/dmg_staging
@@ -244,12 +255,22 @@ $(DMG_FILE): $(INSTALLER_MARKER) $(UNINSTALLER_MARKER) src/installer/dmg-templat
 		echo "Copying layout template..."; \
 		cp src/installer/dmg-template/DS_Store_template "build/dmg_mount/.DS_Store"; \
 	fi
+	@echo "Setting volume icon..."
+	@cp $(DMG_ICON) "build/dmg_mount/.VolumeIcon.icns"
+	@SetFile -a C build/dmg_mount
 	@echo "Unmounting temporary DMG..."
 	@hdiutil detach build/dmg_mount
 	@rmdir build/dmg_mount
 	@echo "Converting to compressed read-only DMG..."
 	@hdiutil convert build/Shaw-Spell-temp.dmg -format UDZO -o $(DMG_FILE)
 	@rm build/Shaw-Spell-temp.dmg
+	@echo "Setting icon on final DMG..."
+	@cp $(DMG_ICON) build/.VolumeIcon.icns.tmp
+	@sips -i build/.VolumeIcon.icns.tmp >/dev/null
+	@DeRez -only icns build/.VolumeIcon.icns.tmp > build/.VolumeIcon.rsrc
+	@Rez -append build/.VolumeIcon.rsrc -o $(DMG_FILE)
+	@SetFile -a C $(DMG_FILE)
+	@rm build/.VolumeIcon.icns.tmp build/.VolumeIcon.rsrc
 	@echo "DMG created at: $(DMG_FILE)"
 	@echo "Staging directory preserved at: build/dmg_staging/"
 

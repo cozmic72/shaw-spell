@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5B7FFF;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3D5FE0;stop-opacity:1" />
+    <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E74C3C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C0392B;stop-opacity:1" />
     </linearGradient>
     <filter id="shadow">
       <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
@@ -12,11 +12,11 @@
 
   <!-- Background rounded square -->
   <rect x="32" y="32" width="448" height="448" rx="80" ry="80"
-        fill="url(#blueGradient)" filter="url(#shadow)"/>
+        fill="url(#redGradient)" filter="url(#shadow)"/>
 
   <!-- Shavian letters: 𐑖𐑕 (Shaw-Spell) -->
   <text x="256" y="380"
-        font-family="'Noto Sans Shavian', 'BRShawAI', sans-serif"
+        font-family="'Ormin', 'Noto Sans Shavian', 'BRShawAI', sans-serif"
         font-size="280"
         font-weight="600"
         fill="white"

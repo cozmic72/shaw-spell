@@ -127,6 +127,9 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shaw-Spell Dictionary{f' - {word}' if word else ''}</title>
     <meta name="description" content="Online Shavian-English dictionary. Look up words in both Shavian and Latin scripts.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="apple-touch-icon-192x192.png">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

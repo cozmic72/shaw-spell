@@ -58,11 +58,7 @@ $(BUILD_DIR)/$(EXECUTABLE_NAME): $(SWIFT_SOURCES) | $(BUILD_DIR)
 $(BUILD_DIR):
 	@mkdir -p "$(BUILD_DIR)"
 
-$(ICON_FILE): src/resources/icon.svg create-icon.sh
-	@echo "Creating uninstaller icon..."
-	@./create-icon.sh
-
-icon: $(ICON_FILE)
+# Icon is built by parent Makefile - no rule needed here
 
 clean:
 	@echo "Cleaning uninstaller artifacts..."

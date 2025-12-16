@@ -209,74 +209,79 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, dial
 
     print(f"\nBuilding Shavian definition cache ({dialect.upper()})...")
 
-    # Find all unique lemmas with WordNet definitions
-    lemmas_with_defs = set()
+    # Find all lemmas that exist in readlex
+    readlex_lemmas = set()
     for key, data in readlex_data.items():
-        lemma = data['lemma']
-        if lemma in wordnet_defs:
-            lemmas_with_defs.add(lemma)
+        readlex_lemmas.add(data['lemma'])
 
-    print(f"Found {len(lemmas_with_defs)} lemmas with WordNet definitions")
+    print(f"Found {len(readlex_lemmas)} unique lemmas in readlex")
+
+    # Find all (lemma, synset_id) pairs from WordNet where lemma is in readlex
+    synset_keys_with_defs = []
+    for (lemma, synset_id) in wordnet_defs.keys():
+        if lemma in readlex_lemmas:
+            synset_keys_with_defs.append((lemma, synset_id))
+
+    synset_keys_with_defs = sorted(synset_keys_with_defs)
+    print(f"Found {len(synset_keys_with_defs)} (lemma, synset) pairs with definitions")
 
     if test_batch:
-        print("TEST BATCH MODE: Processing only first 10 lemmas")
-        lemmas_with_defs = set(sorted(lemmas_with_defs)[:10])
+        print("TEST BATCH MODE: Processing only first 10 pairs")
+        synset_keys_with_defs = synset_keys_with_defs[:10]
 
     # Collect all texts to transliterate
     all_texts_to_transliterate = []
-    lemma_list = sorted(lemmas_with_defs)
 
     print("Collecting texts for transliteration...")
-    for lemma in lemma_list:
-        for def_data in wordnet_defs[lemma]:
-            all_texts_to_transliterate.append(def_data['definition'])
-            # NOTE: POS tags are NOT transliterated - we use static POS_TRANSLATIONS mapping
-            all_texts_to_transliterate.extend(def_data.get('examples', []))
+    for lemma_synset_key in synset_keys_with_defs:
+        def_data = wordnet_defs[lemma_synset_key]
+        all_texts_to_transliterate.append(def_data['definition'])
+        # NOTE: POS tags are NOT transliterated - we use static POS_TRANSLATIONS mapping
+        all_texts_to_transliterate.extend(def_data.get('examples', []))
 
     print(f"Total texts to transliterate: {len(all_texts_to_transliterate)}")
 
     # Transliterate all texts
     transliterated_texts = batch_transliterate_to_shavian(all_texts_to_transliterate, dialect)
 
-    # Map transliterations back to lemmas
-    print("Building lemma cache...")
-    lemma_cache = {}
+    # Map transliterations back to (lemma, synset_id) keys
+    print("Building synset-based cache...")
+    synset_cache = {}
     text_idx = 0
 
-    for lemma in lemma_list:
-        lemma_defs = []
+    for lemma_synset_key in synset_keys_with_defs:
+        def_data = wordnet_defs[lemma_synset_key]
 
-        for def_data in wordnet_defs[lemma]:
-            # Use static POS translation instead of transliterating
-            pos_code = def_data['pos']
-            transliterated_pos = POS_TO_SHAVIAN.get(pos_code, pos_code)
+        # Use static POS translation instead of transliterating
+        pos_code = def_data['pos']
+        transliterated_pos = POS_TO_SHAVIAN.get(pos_code, pos_code)
 
-            transliterated_def = {
-                'definition': def_data['definition'],
-                'transliterated_definition': transliterated_texts[text_idx],
-                'pos': pos_code,
-                'transliterated_pos': transliterated_pos,
-                'examples': def_data.get('examples', []),
-                'transliterated_examples': []
-            }
-            text_idx += 1  # Only increment by 1 now (just the definition)
+        transliterated_def = {
+            'definition': def_data['definition'],
+            'transliterated_definition': transliterated_texts[text_idx],
+            'pos': pos_code,
+            'transliterated_pos': transliterated_pos,
+            'examples': def_data.get('examples', []),
+            'transliterated_examples': []
+        }
+        text_idx += 1  # Only increment by 1 now (just the definition)
 
-            # Add transliterated examples
-            for ex in def_data.get('examples', []):
-                transliterated_def['transliterated_examples'].append(transliterated_texts[text_idx])
-                text_idx += 1
+        # Add transliterated examples
+        for ex in def_data.get('examples', []):
+            transliterated_def['transliterated_examples'].append(transliterated_texts[text_idx])
+            text_idx += 1
 
-            lemma_defs.append(transliterated_def)
-
-        lemma_cache[lemma] = lemma_defs
+        # Store as "lemma|synset_id" string for JSON compatibility
+        cache_key = f"{lemma_synset_key[0]}|{lemma_synset_key[1]}"
+        synset_cache[cache_key] = transliterated_def
 
     # Save cache
     print(f"Saving cache to {output_path}...")
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(lemma_cache, f, ensure_ascii=False, indent=2)
+        json.dump(synset_cache, f, ensure_ascii=False, indent=2)
 
-    print(f"Saved transliterations for {len(lemma_cache)} lemmas")
-    return lemma_cache
+    print(f"Saved transliterations for {len(synset_cache)} (lemma, synset) pairs")
+    return synset_cache
 
 
 def main():
@@ -315,16 +320,26 @@ def main():
         wordnet_cache = json.load(f)
     print(f"Loaded cache with {len(wordnet_cache)} lemmas")
 
-    # Extract definitions from comprehensive cache
+    # Extract definitions from comprehensive cache (from sense_variants)
+    # Group by (lemma, synset_id) to match dictionary generation
     wordnet_defs = {}
     for lemma, entry in wordnet_cache.items():
-        all_defs = []
-        for pos_entry in entry.get('pos_entries', {}).values():
-            if 'definitions' in pos_entry:
-                all_defs.extend(pos_entry['definitions'])
-        if all_defs:
-            wordnet_defs[lemma] = all_defs
-    print(f"Extracted definitions for {len(wordnet_defs)} words")
+        for pos, pos_entry in entry.get('pos_entries', {}).items():
+            for sense in pos_entry.get('sense_variants', []):
+                synset_id = sense.get('synset')
+                if not synset_id:
+                    continue
+
+                sense_defs = sense.get('definitions', [])
+                if sense_defs:
+                    # Key by (lemma, synset_id)
+                    key = (lemma, synset_id)
+                    # Take first definition for this synset
+                    wordnet_defs[key] = {
+                        'definition': sense_defs[0],
+                        'pos': pos
+                    }
+    print(f"Extracted definitions for {len(wordnet_defs)} (lemma, synset) pairs")
 
     # Process readlex
     readlex_data = process_readlex_with_lemmas(readlex_raw)
@@ -339,7 +354,7 @@ def main():
     print("Definition cache build complete!")
     print("="*60)
     print(f"Shavian definitions ({dialect.upper()}): {shavian_defs_path}")
-    print(f"  {len(shavian_cache)} lemmas cached")
+    print(f"  {len(shavian_cache)} (lemma, synset) pairs cached")
     print("\nYou can now run ./build.sh to generate dictionaries (no transliteration needed)")
 
 

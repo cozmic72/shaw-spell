@@ -142,8 +142,9 @@ def parse_all_yaml_files(yaml_dir: Path, overrides_path: Path = None) -> Dict[st
                         if isinstance(pron_list, list):
                             for pron in pron_list:
                                 if isinstance(pron, dict) and 'value' in pron:
-                                    # Simple pronunciation (no variety specified)
-                                    lemma_data[lemma][pos]['pronunciations']['default'] = pron['value']
+                                    # Pronunciation with variety (US/GB/etc)
+                                    variety = pron.get('variety', 'default')
+                                    lemma_data[lemma][pos]['pronunciations'][variety] = pron['value']
                                 elif isinstance(pron, str):
                                     lemma_data[lemma][pos]['pronunciations']['default'] = pron
                         elif isinstance(pron_list, str):
@@ -254,65 +255,71 @@ def merge_comprehensive_cache(
             elif 'AU' in dialects:
                 primary_dialect = 'AU'
 
-        # Get variants as lists (sorted for deterministic output)
-        variants_raw = dialect_data.get_all_variants(lemma)
-        # Sort both the dialect keys and the variant lists within each dialect
-        variants = {k: sorted(variants_raw[k]) for k in sorted(variants_raw.keys())}
-
         # Get definitions for this lemma
         lemma_defs = definitions.get(lemma.lower(), [])
 
         # Build pos_entries
         pos_entries = {}
         for pos, data in pos_dict.items():
-            pos_entry = {
-                'forms': data['forms'],
-                'pronunciations': data['pronunciations'],
-                'senses': data['senses']
-            }
-
-            # Collect definitions from multiple sources
-            all_defs = []
-
-            # 1. Add definitions from existing cache that match this POS
-            if lemma_defs:
-                matching_defs = [
-                    d for d in lemma_defs
-                    if matches_pos(d.get('pos', ''), pos)
-                ]
-                if matching_defs:
-                    all_defs.extend(matching_defs)
-                elif not pos_entries:  # First POS, add all definitions
-                    all_defs.extend(lemma_defs)
-
-            # 2. Extract definitions from senses (from overrides)
-            for sense in data['senses']:
-                if 'definition' in sense:
-                    all_defs.append({
-                        'definition': sense['definition'],
-                        'pos': pos
-                    })
-
-            # 3. Extract definitions from synsets based on synset IDs
+            # Build sense_variants: one entry per synset with variants and definitions
+            # ALWAYS create sense_variants array, even if empty - keep format consistent
+            sense_variants = []
             for sense in data['senses']:
                 synset_id = sense.get('synset')
-                if synset_id and synset_id in synsets:
-                    synset_data = synsets[synset_id]
-                    all_defs.append({
-                        'definition': synset_data['definition'],
-                        'pos': pos
-                    })
+                if not synset_id:
+                    continue
 
-            if all_defs:
-                pos_entry['definitions'] = all_defs
+                sense_entry = {
+                    'synset': synset_id
+                }
+
+                # Add forms and pronunciations to each sense
+                if data['forms']:
+                    sense_entry['forms'] = data['forms']
+                if data['pronunciations']:
+                    sense_entry['pronunciations'] = data['pronunciations']
+
+                # Get variants for this specific synset
+                if synset_id in dialect_data.synset_variants:
+                    synset_variants = dialect_data.synset_variants[synset_id]
+                    # Sort for deterministic output
+                    sense_entry['variants'] = {k: sorted(synset_variants[k]) for k in sorted(synset_variants.keys())}
+
+                # Get definition for this synset
+                sense_defs = []
+
+                # 1. From sense itself (overrides)
+                if 'definition' in sense:
+                    sense_defs.append(sense['definition'])
+
+                # 2. From synset definition
+                if synset_id in synsets:
+                    synset_data = synsets[synset_id]
+                    sense_defs.append(synset_data['definition'])
+
+                if sense_defs:
+                    sense_entry['definitions'] = sense_defs
+
+                # Include other sense metadata if present
+                if 'derivation' in sense:
+                    sense_entry['derivation'] = sense['derivation']
+                if 'pertainym' in sense:
+                    sense_entry['pertainym'] = sense['pertainym']
+
+                sense_variants.append(sense_entry)
+
+            # Create pos_entry with just sense_variants
+            pos_entry = {
+                'sense_variants': sense_variants
+            }
 
             pos_entries[pos] = pos_entry
 
         cache[lemma] = {
             'lemma': lemma,
             'pos_entries': pos_entries,
-            'dialect': primary_dialect,
-            'variants': variants
+            'dialect': primary_dialect
+            # Note: variants are stored per-POS inside pos_entries to maintain fidelity
         }
 
     print(f"Created comprehensive cache with {len(cache)} entries")

@@ -19,7 +19,7 @@ BRIDGE_HEADER = HunspellBridge.h
 
 # Compiler and linker flags
 SWIFTC = swiftc
-SWIFT_FLAGS = -O -whole-module-optimization -warnings-as-errors -import-objc-header $(BRIDGE_HEADER)
+SWIFT_FLAGS = -O -whole-module-optimization -warnings-as-errors -target arm64-apple-macos13.0 -import-objc-header $(BRIDGE_HEADER)
 FRAMEWORKS = -framework Foundation -framework AppKit
 LIBS = -lhunspell-1.7
 
@@ -51,28 +51,39 @@ TEST_PROGRAMS = $(addprefix $(TEST_DIR)/,$(TEST_SOURCES:.m=))
 
 .PHONY: clean install uninstall test
 
-# Use marker file to avoid directory timestamp issues
-BUNDLE_MARKER = $(BUILD_DIR)/.spellserver-built
+# Target is the actual executable inside the bundle
+all: $(MACOS_DIR)/$(SERVICE_NAME)
 
-all: $(BUNDLE_MARKER)
-
-$(BUNDLE_MARKER): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
-	@echo "Building service bundle..."
-	@mkdir -p $(MACOS_DIR) $(RESOURCES_DIR)
-	@cp $(BUILD_DIR)/$(SERVICE_NAME) $(MACOS_DIR)/
-	@cp Info.plist $(CONTENTS_DIR)/
-	@echo "Bundling Hunspell library..."
-	@mkdir -p $(CONTENTS_DIR)/Frameworks
-	@cp $(HUNSPELL_DYLIB_SRC) $(CONTENTS_DIR)/Frameworks/
-	@chmod +w $(CONTENTS_DIR)/Frameworks/libhunspell-1.7.0.dylib
-	@echo "Updating library paths..."
-	@install_name_tool -change $(HUNSPELL_DYLIB_SRC) @executable_path/../Frameworks/libhunspell-1.7.0.dylib $(MACOS_DIR)/$(SERVICE_NAME)
-	@install_name_tool -id @executable_path/../Frameworks/libhunspell-1.7.0.dylib $(CONTENTS_DIR)/Frameworks/libhunspell-1.7.0.dylib
-	$(call SIGN_LIBRARY,$(CONTENTS_DIR)/Frameworks/libhunspell-1.7.0.dylib)
-	$(call SIGN_LIBRARY,$(MACOS_DIR)/$(SERVICE_NAME))
-	$(call SIGN_BUNDLE,$(BUNDLE_DIR),$(ENTITLEMENTS))
-	@touch $(BUNDLE_MARKER)
-	@echo "Service bundle created at $(BUNDLE_DIR)"
+# Build the complete spell server bundle atomically
+$(MACOS_DIR)/$(SERVICE_NAME): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
+	@echo "Building spell server service bundle..."
+	@TEMP=$$(mktemp -d) && \
+	TEMP_BUNDLE="$$TEMP/$(BUNDLE_NAME)" && \
+	TEMP_CONTENTS="$$TEMP_BUNDLE/Contents" && \
+	TEMP_MACOS="$$TEMP_CONTENTS/MacOS" && \
+	TEMP_RESOURCES="$$TEMP_CONTENTS/Resources" && \
+	TEMP_FRAMEWORKS="$$TEMP_CONTENTS/Frameworks" && \
+	mkdir -p "$$TEMP_MACOS" "$$TEMP_RESOURCES" "$$TEMP_FRAMEWORKS" && \
+	echo "  Copying executable..." && \
+	cp "$(BUILD_DIR)/$(SERVICE_NAME)" "$$TEMP_MACOS/" && \
+	echo "  Copying Info.plist..." && \
+	cp Info.plist "$$TEMP_CONTENTS/" && \
+	echo "  Bundling Hunspell library..." && \
+	cp "$(HUNSPELL_DYLIB_SRC)" "$$TEMP_FRAMEWORKS/" && \
+	chmod +w "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
+	echo "  Updating library paths..." && \
+	install_name_tool -change "$(HUNSPELL_DYLIB_SRC)" @executable_path/../Frameworks/libhunspell-1.7.0.dylib "$$TEMP_MACOS/$(SERVICE_NAME)" && \
+	install_name_tool -id @executable_path/../Frameworks/libhunspell-1.7.0.dylib "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
+	echo "  Code signing..." && \
+	$(REPO_ROOT)/src/tools/sign-bundle.sh library "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
+	$(REPO_ROOT)/src/tools/sign-bundle.sh library "$$TEMP_MACOS/$(SERVICE_NAME)" && \
+	$(REPO_ROOT)/src/tools/sign-bundle.sh bundle "$$TEMP_BUNDLE" $(ENTITLEMENTS) && \
+	echo "  Moving to final location..." && \
+	rm -rf "$(BUNDLE_DIR)" && \
+	mv "$$TEMP_BUNDLE" "$(BUILD_DIR)/" && \
+	rm -rf "$$TEMP" && \
+	touch "$(MACOS_DIR)/$(SERVICE_NAME)" && \
+	echo "✓ Spell server service bundle created at $(BUNDLE_DIR)"
 
 $(BUILD_DIR)/$(SERVICE_NAME): $(SWIFT_SOURCES) $(BRIDGE_HEADER) | $(BUILD_DIR)
 	@echo "Compiling and linking $(SERVICE_NAME) with Swift..."
@@ -102,7 +113,7 @@ $(TEST_DIR)/test_textview: test_textview.m ShavianSpellChecker.m | $(TEST_DIR)
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -rf $(BUNDLE_DIR) $(BUILD_DIR)/$(SERVICE_NAME) $(TEST_DIR) $(BUNDLE_MARKER)
+	@rm -rf $(BUNDLE_DIR) $(BUILD_DIR)/$(SERVICE_NAME) $(TEST_DIR)
 
 install: all
 	@echo "Installing to $(INSTALL_DIR)..."

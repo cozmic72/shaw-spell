@@ -18,7 +18,7 @@ SWIFT_SOURCES = src/main.swift src/AppDelegate.swift
 
 # Compiler and linker flags
 SWIFTC = swiftc
-SWIFT_FLAGS = -O -warnings-as-errors
+SWIFT_FLAGS = -O -warnings-as-errors -target arm64-apple-macos13.0
 FRAMEWORKS = -framework Cocoa
 
 # Build directory - use top-level build/
@@ -28,39 +28,46 @@ CONTENTS_DIR = $(BUNDLE_DIR)/Contents
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
 
-# Icon (uninstaller-specific)
-ICON_FILE = $(BUILD_DIR)/uninstaller/AppIcon.icns
+# Icon (generated in centralized build/icons/ dir)
+ICON_FILE = $(BUILD_DIR)/icons/uninstaller-AppIcon.icns
 
-.PHONY: clean icon
+.PHONY: clean
 
-# Use marker file to avoid directory timestamp issues
-BUNDLE_MARKER = $(BUILD_DIR)/.uninstaller-built
+# Target is the actual executable inside the bundle
+all: $(MACOS_DIR)/$(EXECUTABLE_NAME)
 
-all: $(BUNDLE_MARKER)
-
-$(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist
-	@echo "Building application bundle..."
-	@mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
-	@cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(MACOS_DIR)/"
-	@cp src/Info.plist "$(CONTENTS_DIR)/"
-	@echo "Copying icon..."
-	@cp "$(ICON_FILE)" "$(RESOURCES_DIR)/"
-	$(call SIGN_BUNDLE,$(BUNDLE_DIR),$(ENTITLEMENTS))
-	@touch $(BUNDLE_MARKER)
-	@echo ""
-	@echo "Uninstaller app created at: $(BUNDLE_DIR)"
-	@echo "You can run it with: open \"$(BUNDLE_DIR)\""
+# Build the complete uninstaller app bundle atomically
+$(MACOS_DIR)/$(EXECUTABLE_NAME): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist
+	@echo "Building uninstaller app bundle..."
+	@TEMP=$$(mktemp -d) && \
+	TEMP_BUNDLE="$$TEMP/$(BUNDLE_NAME)" && \
+	TEMP_CONTENTS="$$TEMP_BUNDLE/Contents" && \
+	TEMP_MACOS="$$TEMP_CONTENTS/MacOS" && \
+	TEMP_RESOURCES="$$TEMP_CONTENTS/Resources" && \
+	mkdir -p "$$TEMP_MACOS" "$$TEMP_RESOURCES" && \
+	echo "  Copying executable..." && \
+	cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$$TEMP_MACOS/" && \
+	echo "  Copying Info.plist..." && \
+	cp src/Info.plist "$$TEMP_CONTENTS/" && \
+	echo "  Copying icon..." && \
+	cp "$(ICON_FILE)" "$$TEMP_RESOURCES/AppIcon.icns" && \
+	echo "  Code signing..." && \
+	$(REPO_ROOT)/src/tools/sign-bundle.sh bundle "$$TEMP_BUNDLE" $(ENTITLEMENTS) && \
+	echo "  Moving to final location..." && \
+	rm -rf "$(BUNDLE_DIR)" && \
+	mv "$$TEMP_BUNDLE" "$(BUILD_DIR)/" && \
+	rm -rf "$$TEMP" && \
+	touch "$(MACOS_DIR)/$(EXECUTABLE_NAME)" && \
+	echo "✓ Uninstaller app created at: $(BUNDLE_DIR)"
 
 $(BUILD_DIR)/$(EXECUTABLE_NAME): $(SWIFT_SOURCES) | $(BUILD_DIR)
-	@echo "Compiling and linking $(EXECUTABLE_NAME)..."
+	@echo "Compiling $(EXECUTABLE_NAME)..."
 	$(SWIFTC) $(SWIFT_FLAGS) $(FRAMEWORKS) -o $@ $(SWIFT_SOURCES)
 
 $(BUILD_DIR):
 	@mkdir -p "$(BUILD_DIR)"
 
-# Icon is built by parent Makefile - no rule needed here
-
 clean:
 	@echo "Cleaning uninstaller artifacts..."
-	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(BUNDLE_MARKER)"
+	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/$(EXECUTABLE_NAME)"
 	@echo "Clean complete"

@@ -18,7 +18,7 @@ SWIFT_SOURCES = src/main.swift src/AppDelegate.swift
 
 # Compiler and linker flags
 SWIFTC = swiftc
-SWIFT_FLAGS = -O -warnings-as-errors
+SWIFT_FLAGS = -O -warnings-as-errors -target arm64-apple-macos13.0
 FRAMEWORKS = -framework Cocoa -framework WebKit
 
 # Build directory - use top-level build/
@@ -28,60 +28,84 @@ CONTENTS_DIR = $(BUNDLE_DIR)/Contents
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
 
-# Icon (generated in build dir)
-ICON_FILE = $(BUILD_DIR)/installer/AppIcon.icns
+# Icon (generated in centralized build/icons/ dir)
+ICON_FILE = $(BUILD_DIR)/icons/installer-AppIcon.icns
 
-.PHONY: clean install icon
+# Actual artifacts this installer depends on
+DICT_BUNDLES = $(BUILD_DIR)/dictionaries/bundles/Shaw-Spell-Shavian-English-gb.dictionary \
+               $(BUILD_DIR)/dictionaries/bundles/Shaw-Spell-English-Shavian-gb.dictionary \
+               $(BUILD_DIR)/dictionaries/bundles/Shaw-Spell-Shavian-gb.dictionary \
+               $(BUILD_DIR)/dictionaries/bundles/Shaw-Spell-Shavian-English-us.dictionary \
+               $(BUILD_DIR)/dictionaries/bundles/Shaw-Spell-English-Shavian-us.dictionary \
+               $(BUILD_DIR)/dictionaries/bundles/Shaw-Spell-Shavian-us.dictionary
 
-# Use marker file to avoid directory timestamp issues
-BUNDLE_MARKER = $(BUILD_DIR)/.installer-built
+HUNSPELL_DIR = $(BUILD_DIR)/spellcheck/hunspell
 
-all: $(BUNDLE_MARKER)
+HUNSPELL_FILES = $(HUNSPELL_DIR)/io.joro.shaw-spell.shavian-gb.dic \
+                 $(HUNSPELL_DIR)/io.joro.shaw-spell.shavian-gb.aff \
+                 $(HUNSPELL_DIR)/io.joro.shaw-spell.shavian-us.dic \
+                 $(HUNSPELL_DIR)/io.joro.shaw-spell.shavian-us.aff \
+                 $(HUNSPELL_DIR)/io.joro.shaw-spell.en_GB.dic \
+                 $(HUNSPELL_DIR)/io.joro.shaw-spell.en_GB.aff \
+                 $(HUNSPELL_DIR)/io.joro.shaw-spell.en_US.dic \
+                 $(HUNSPELL_DIR)/io.joro.shaw-spell.en_US.aff
 
-$(BUNDLE_MARKER): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist resources/*
-	@echo "Building application bundle..."
-	@mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
-	@cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(MACOS_DIR)/"
-	@cp src/Info.plist "$(CONTENTS_DIR)/"
-	@echo "Copying resources..."
-	@cp "$(ICON_FILE)" "$(RESOURCES_DIR)/"
-	@echo "Interpolating HTML resources with version $(VERSION)..."
-	@for html in resources/*.html; do \
-		../../src/dictionaries/interpolate_template.py "$$html" "$(RESOURCES_DIR)/$$(basename $$html)" VERSION="$(VERSION)"; \
-	done
-	@echo "Bundling dictionaries and components for installation..."
-	@mkdir -p "$(RESOURCES_DIR)/dictionaries"
-	@mkdir -p "$(RESOURCES_DIR)/hunspell"
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-gb/Shaw-Spell-Shavian-English-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-gb/Shaw-Spell-English-Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-gb/Shaw-Spell-Shavian-gb.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-english-us/Shaw-Spell-Shavian-English-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/english-shavian-us/Shaw-Spell-English-Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/dictionaries/shavian-shavian-us/Shaw-Spell-Shavian-us.dictionary" "$(RESOURCES_DIR)/dictionaries/" 2>/dev/null || true
-	@cp "$(BUILD_DIR)/io.joro.shaw-spell.shavian-gb.dic" "$(BUILD_DIR)/io.joro.shaw-spell.shavian-gb.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
-	@cp "$(BUILD_DIR)/io.joro.shaw-spell.shavian-us.dic" "$(BUILD_DIR)/io.joro.shaw-spell.shavian-us.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
-	@cp "$(BUILD_DIR)/io.joro.shaw-spell.en_GB.dic" "$(BUILD_DIR)/io.joro.shaw-spell.en_GB.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
-	@cp "$(BUILD_DIR)/io.joro.shaw-spell.en_US.dic" "$(BUILD_DIR)/io.joro.shaw-spell.en_US.aff" "$(RESOURCES_DIR)/hunspell/" 2>/dev/null || true
-	@cp -R "$(BUILD_DIR)/Shaw-Spell.service" "$(RESOURCES_DIR)/" 2>/dev/null || true
-	@cp "../../src/server/io.joro.Shaw-Spell.plist" "$(RESOURCES_DIR)/" 2>/dev/null || true
-	$(call SIGN_BUNDLE,$(BUNDLE_DIR),$(ENTITLEMENTS))
-	@touch $(BUNDLE_MARKER)
-	@echo ""
-	@echo "Installer app created at: $(BUNDLE_DIR)"
-	@echo "You can run it with: open \"$(BUNDLE_DIR)\""
+SPELLSERVER_BUNDLE = $(BUILD_DIR)/Shaw-Spell.service/Contents/MacOS/Shaw-Spell
+
+.PHONY: clean install
+
+# Target is the actual executable inside the bundle
+all: $(MACOS_DIR)/$(EXECUTABLE_NAME)
+
+# Build the complete installer app bundle atomically
+$(MACOS_DIR)/$(EXECUTABLE_NAME): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) \
+                                  $(DICT_BUNDLES) $(HUNSPELL_FILES) $(SPELLSERVER_BUNDLE) \
+                                  src/Info.plist resources/*.html
+	@echo "Building installer app bundle..."
+	@TEMP=$$(mktemp -d) && \
+	TEMP_BUNDLE="$$TEMP/$(BUNDLE_NAME)" && \
+	TEMP_CONTENTS="$$TEMP_BUNDLE/Contents" && \
+	TEMP_MACOS="$$TEMP_CONTENTS/MacOS" && \
+	TEMP_RESOURCES="$$TEMP_CONTENTS/Resources" && \
+	mkdir -p "$$TEMP_MACOS" "$$TEMP_RESOURCES" && \
+	echo "  Copying executable..." && \
+	cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$$TEMP_MACOS/" && \
+	echo "  Copying Info.plist..." && \
+	cp src/Info.plist "$$TEMP_CONTENTS/" && \
+	echo "  Copying icon..." && \
+	cp "$(ICON_FILE)" "$$TEMP_RESOURCES/AppIcon.icns" && \
+	echo "  Interpolating HTML resources..." && \
+	for html in resources/*.html; do \
+		../../src/dictionaries/interpolate_template.py "$$html" "$$TEMP_RESOURCES/$$(basename $$html)" VERSION="$(VERSION)"; \
+	done && \
+	echo "  Bundling dictionaries..." && \
+	mkdir -p "$$TEMP_RESOURCES/dictionaries" && \
+	cp -R $(DICT_BUNDLES) "$$TEMP_RESOURCES/dictionaries/" && \
+	echo "  Bundling Hunspell files..." && \
+	mkdir -p "$$TEMP_RESOURCES/hunspell" && \
+	cp $(HUNSPELL_FILES) "$$TEMP_RESOURCES/hunspell/" && \
+	echo "  Bundling spell server..." && \
+	cp -R "$(BUILD_DIR)/Shaw-Spell.service" "$$TEMP_RESOURCES/" && \
+	cp "../../src/server/io.joro.Shaw-Spell.plist" "$$TEMP_RESOURCES/" && \
+	echo "  Code signing..." && \
+	$(REPO_ROOT)/src/tools/sign-bundle.sh bundle "$$TEMP_BUNDLE" $(ENTITLEMENTS) && \
+	echo "  Moving to final location..." && \
+	rm -rf "$(BUNDLE_DIR)" && \
+	mv "$$TEMP_BUNDLE" "$(BUILD_DIR)/" && \
+	rm -rf "$$TEMP" && \
+	touch "$(MACOS_DIR)/$(EXECUTABLE_NAME)" && \
+	echo "✓ Installer app created at: $(BUNDLE_DIR)"
 
 $(BUILD_DIR)/$(EXECUTABLE_NAME): $(SWIFT_SOURCES) | $(BUILD_DIR)
-	@echo "Compiling and linking $(EXECUTABLE_NAME)..."
+	@echo "Compiling $(EXECUTABLE_NAME)..."
 	$(SWIFTC) $(SWIFT_FLAGS) $(FRAMEWORKS) -o $@ $(SWIFT_SOURCES)
 
 $(BUILD_DIR):
 	@mkdir -p "$(BUILD_DIR)"
 
-# Icon is built by parent Makefile - no rule needed here
-
 clean:
 	@echo "Cleaning installer artifacts..."
-	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/installer" "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$(BUNDLE_MARKER)"
+	@rm -rf "$(BUNDLE_DIR)" "$(BUILD_DIR)/$(EXECUTABLE_NAME)"
 	@echo "Clean complete"
 
 install:

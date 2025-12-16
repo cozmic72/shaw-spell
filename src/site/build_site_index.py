@@ -16,6 +16,7 @@ from pathlib import Path
 import sys
 import html
 import re
+from copy import deepcopy
 
 # XML namespaces
 NS = {
@@ -24,23 +25,48 @@ NS = {
 }
 
 def strip_namespace(elem):
-    """Recursively strip namespace from element and all children."""
-    # Strip namespace from tag
-    if elem.tag.startswith('{'):
-        elem.tag = elem.tag.split('}', 1)[1]
+    """Recursively strip namespace from element and all children.
 
-    # Strip namespace from attributes
+    Optimized to process tag and attributes inline without separate split operations.
+    """
+    # Strip namespace from tag (find '}' once instead of using split)
+    tag = elem.tag
+    if tag.startswith('{'):
+        close_idx = tag.find('}')
+        if close_idx != -1:
+            elem.tag = tag[close_idx + 1:]
+
+    # Strip namespace from attributes (only if there are any)
     attribs = elem.attrib
     if attribs:
-        for name, value in list(attribs.items()):
+        # Build new dict to avoid modifying dict during iteration
+        new_attribs = {}
+        for name, value in attribs.items():
             if name.startswith('{'):
-                new_name = name.split('}', 1)[1]
-                del attribs[name]
-                attribs[new_name] = value
+                close_idx = name.find('}')
+                if close_idx != -1:
+                    new_attribs[name[close_idx + 1:]] = value
+                else:
+                    new_attribs[name] = value
+            else:
+                new_attribs[name] = value
+        elem.attrib.clear()
+        elem.attrib.update(new_attribs)
 
     # Recursively process children
     for child in elem:
         strip_namespace(child)
+
+
+# Compile word pattern once at module level for performance
+_WORD_PATTERN = re.compile(
+    r"\b[\w\u0400-\u04FF\u10450-\u1047F][\w\u0400-\u04FF\u10450-\u1047F\-']*\b",
+    re.UNICODE
+)
+
+# Cache these sets at module level
+_SKIP_CLASSES = frozenset({'ipa'})
+_FORCE_WRAP_CLASSES = frozenset({'definition', 'lemma-form', 'derived-form', 'variant'})
 
 
 def wrap_text_nodes_in_spans(elem, should_wrap=True):
@@ -56,25 +82,13 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
     # Determine which elements should have clickable words
     elem_class = elem.get('class', '')
 
-    # Never wrap these
-    skip_classes = {'ipa'}
-
-    # Always wrap these (even if parent said no)
-    force_wrap_classes = {'definition', 'lemma-form', 'derived-form', 'variant'}
-
     # Determine if we should wrap words in this element
-    if elem_class in skip_classes:
+    if elem_class in _SKIP_CLASSES:
         current_should_wrap = False
-    elif elem_class in force_wrap_classes:
+    elif elem_class in _FORCE_WRAP_CLASSES:
         current_should_wrap = True
     else:
         current_should_wrap = should_wrap
-
-    # Word pattern: letters, Shavian chars, hyphens, apostrophes
-    word_pattern = re.compile(
-        r"\b[\w\u0400-\u04FF\u10450-\u1047F][\w\u0400-\u04FF\u10450-\u1047F\-']*\b",
-        re.UNICODE
-    )
 
     def split_text_into_words(text):
         """Split text into alternating non-words and words."""
@@ -84,7 +98,7 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
         parts = []
         last_end = 0
 
-        for match in word_pattern.finditer(text):
+        for match in _WORD_PATTERN.finditer(text):
             # Add non-word text before this match
             if match.start() > last_end:
                 parts.append(('text', text[last_end:match.start()]))
@@ -133,7 +147,11 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
                         elem[insert_pos - 1].tail = (elem[insert_pos - 1].tail or '') + content
 
     # Process tail texts of existing children
+    # Build index map once to avoid O(n²) list(parent).index(child) calls
     if current_should_wrap:
+        # Create a mapping from child to index for O(1) lookups
+        child_to_index = {child: idx for idx, child in enumerate(existing_children)}
+
         for child in existing_children:
             if child.tail:
                 parts = split_text_into_words(child.tail)
@@ -148,7 +166,7 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
 
                     # Insert remaining parts after this child
                     parent = elem
-                    child_index = list(parent).index(child)
+                    child_index = child_to_index[child]
                     insert_pos = child_index + 1
                     for part_type, content in parts:
                         if part_type == 'word':
@@ -164,25 +182,27 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
 
 
 def extract_entry_html(entry_elem):
-    """Extract the HTML content of a dictionary entry (everything except the entry wrapper)."""
-    # Convert the entry element to string, excluding the <d:entry> wrapper
+    """Extract the HTML content of a dictionary entry (everything except the entry wrapper).
+
+    Optimized to skip copying for index elements and use faster serialization.
+    """
+    # Pre-allocate list size if we know it (most entries have few children)
     parts = []
 
     # Process all child elements
     for child in entry_elem:
+        # Skip index elements early (before copying) - they're for searching, not display
         if child.tag == '{http://www.apple.com/DTDs/DictionaryService-1.0.rdf}index':
-            # Skip index elements (they're for searching, not display)
             continue
 
         # Make a copy and strip namespaces
-        import copy
-        child_copy = copy.deepcopy(child)
+        child_copy = deepcopy(child)
         strip_namespace(child_copy)
 
         # Wrap words in clickable spans (process XML tree before serialization)
         wrap_text_nodes_in_spans(child_copy, should_wrap=False)
 
-        # Serialize the element to string
+        # Serialize the element to string (using 'html' method which is faster than 'xml')
         content = ET.tostring(child_copy, encoding='unicode', method='html')
 
         parts.append(content)
@@ -198,9 +218,10 @@ def build_index(xml_path, dict_type):
         dict_type: Type identifier (e.g., 'english-shavian-gb')
 
     Returns:
-        Tuple of (search_index, entry_cache)
+        Tuple of (search_index, entry_cache, entry_order)
         - search_index: dict mapping search terms to list of entry IDs
         - entry_cache: dict mapping entry IDs to HTML content
+        - entry_order: dict mapping entry IDs to document order number
     """
     print(f"Parsing {xml_path}...")
     tree = ET.parse(xml_path)
@@ -208,6 +229,7 @@ def build_index(xml_path, dict_type):
 
     search_index = {}
     entry_cache = {}
+    entry_order = {}  # Track document order
     entry_count = 0
 
     for entry in root.findall('d:entry', NS):
@@ -218,6 +240,9 @@ def build_index(xml_path, dict_type):
             continue
 
         entry_count += 1
+
+        # Track document order
+        entry_order[entry_id] = entry_count
 
         # Extract HTML content
         html_content = extract_entry_html(entry)
@@ -236,38 +261,55 @@ def build_index(xml_path, dict_type):
             index_values.append(title)
 
         # Add to search index (normalize for case-insensitive search)
+        # Use list to preserve order (we'll sort by document order later)
         for value in index_values:
             # Store both original and lowercase for exact and fuzzy matching
             for key in [value, value.lower()]:
                 if key not in search_index:
                     search_index[key] = []
-                if entry_id not in search_index[key]:
-                    search_index[key].append(entry_id)
+                search_index[key].append(entry_id)
 
         if entry_count % 10000 == 0:
             print(f"  Processed {entry_count} entries...")
 
     print(f"  Total: {entry_count} entries, {len(search_index)} index terms")
-    return search_index, entry_cache
+    return search_index, entry_cache, entry_order
 
 
 def main():
-    """Build indexes for all dictionary types."""
+    """Build indexes for dictionary types.
+
+    Can build all dictionaries or specific ones based on command-line args.
+    Usage: build_site_index.py [dict-type ...]
+    Example: build_site_index.py english-shavian-gb shavian-english-us
+    """
     project_root = Path(__file__).parent.parent.parent
     build_dir = project_root / 'build'
+    xml_dir = build_dir / 'dictionaries' / 'xml'
     output_dir = build_dir / 'site-data'
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Dictionary files to index
-    dict_files = [
-        ('english-shavian-gb', build_dir / 'english-shavian-gb.xml'),
-        ('english-shavian-us', build_dir / 'english-shavian-us.xml'),
-        ('shavian-english-gb', build_dir / 'shavian-english-gb.xml'),
-        ('shavian-english-us', build_dir / 'shavian-english-us.xml'),
-        ('shavian-shavian-gb', build_dir / 'shavian-shavian-gb.xml'),
-        ('shavian-shavian-us', build_dir / 'shavian-shavian-us.xml'),
+    # All available dictionary files
+    all_dict_files = [
+        ('english-shavian-gb', xml_dir / 'english-shavian-gb.xml'),
+        ('english-shavian-us', xml_dir / 'english-shavian-us.xml'),
+        ('shavian-english-gb', xml_dir / 'shavian-english-gb.xml'),
+        ('shavian-english-us', xml_dir / 'shavian-english-us.xml'),
+        ('shavian-shavian-gb', xml_dir / 'shavian-shavian-gb.xml'),
+        ('shavian-shavian-us', xml_dir / 'shavian-shavian-us.xml'),
     ]
+
+    # Filter based on command-line arguments
+    if len(sys.argv) > 1:
+        requested_dicts = set(sys.argv[1:])
+        dict_files = [(dt, path) for dt, path in all_dict_files if dt in requested_dicts]
+        if not dict_files:
+            print(f"Error: No valid dictionary types specified")
+            print(f"Available types: {', '.join(dt for dt, _ in all_dict_files)}")
+            return 1
+    else:
+        dict_files = all_dict_files
 
     print("Building dictionary indexes for web frontend...")
     print()
@@ -277,12 +319,27 @@ def main():
             print(f"Warning: {xml_path} not found, skipping")
             continue
 
-        search_index, entry_cache = build_index(xml_path, dict_type)
+        search_index, entry_cache, entry_order = build_index(xml_path, dict_type)
+
+        # Deduplicate and sort entry lists by document order
+        search_index_serializable = {}
+        for key, entry_ids in search_index.items():
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_ids = []
+            for eid in entry_ids:
+                if eid not in seen:
+                    seen.add(eid)
+                    unique_ids.append(eid)
+
+            # Sort by document order
+            sorted_ids = sorted(unique_ids, key=lambda eid: entry_order.get(eid, 0))
+            search_index_serializable[key] = sorted_ids
 
         # Save search index
         index_file = output_dir / f'{dict_type}-index.json'
         with open(index_file, 'w', encoding='utf-8') as f:
-            json.dump(search_index, f, ensure_ascii=False)
+            json.dump(search_index_serializable, f, ensure_ascii=False)
         print(f"  → {index_file} ({len(search_index)} terms)")
 
         # Save entry cache

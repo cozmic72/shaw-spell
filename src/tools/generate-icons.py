@@ -299,14 +299,14 @@ def generate_icns_from_function(font_path, output_dir, icon_function, icon_name,
 def generate_macos_app_icon(font_path, output_dir):
     """Generate macOS app icon (.icns)."""
     return generate_icns_from_function(
-        font_path, output_dir, create_app_icon, "macOS App Icon"
+        font_path, output_dir, create_app_icon, "macOS App Icon", "installer-AppIcon.icns"
     )
 
 
 def generate_uninstaller_icon(font_path, output_dir):
     """Generate uninstaller icon (.icns) with grey theme and prohibition symbol."""
     return generate_icns_from_function(
-        font_path, output_dir, create_uninstaller_icon, "Uninstaller Icon"
+        font_path, output_dir, create_uninstaller_icon, "Uninstaller Icon", "uninstaller-AppIcon.icns"
     )
 
 
@@ -323,21 +323,24 @@ def main():
     script_dir = Path(__file__).parent
     font_path = script_dir.parent / 'fonts' / 'Ormin-Regular.otf'
     build_dir = script_dir.parent.parent / 'build'
+    icons_dir = build_dir / 'icons'
 
     if not font_path.exists():
         print(f"Error: Font not found at {font_path}")
         return 1
 
     print(f"Generating all icons with Ormin font from {font_path.relative_to(script_dir.parent.parent)}")
+    print(f"Output directory: {icons_dir.relative_to(script_dir.parent.parent)}")
 
-    # Generate all icon types
-    generate_favicons(font_path, build_dir / 'site')
-    generate_apple_touch_icons(font_path, build_dir / 'site')
-    generate_macos_app_icon(font_path, build_dir / 'installer')
-    generate_uninstaller_icon(font_path, build_dir / 'uninstaller')
-    generate_dmg_icon(font_path, build_dir / 'installer')
+    # Generate all icon types to centralized icons directory
+    generate_favicons(font_path, icons_dir)
+    generate_apple_touch_icons(font_path, icons_dir)
+    generate_macos_app_icon(font_path, icons_dir)
+    generate_uninstaller_icon(font_path, icons_dir)
+    generate_dmg_icon(font_path, icons_dir)
 
     print("\n✓ All icons generated successfully!")
+    print(f"   Location: {icons_dir.relative_to(script_dir.parent.parent)}")
     return 0
 
 

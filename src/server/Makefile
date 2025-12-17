@@ -19,11 +19,24 @@ BRIDGE_HEADER = HunspellBridge.h
 
 # Compiler and linker flags
 SWIFTC = swiftc
-SWIFT_FLAGS = -O -whole-module-optimization -warnings-as-errors -target arm64-apple-macos13.0 -import-objc-header $(BRIDGE_HEADER)
+SWIFT_FLAGS = -O -whole-module-optimization -warnings-as-errors -import-objc-header $(BRIDGE_HEADER)
+SWIFT_FLAGS_ARM64 = $(SWIFT_FLAGS) -target arm64-apple-macos13.0
+SWIFT_FLAGS_X86_64 = $(SWIFT_FLAGS) -target x86_64-apple-macos13.0
 FRAMEWORKS = -framework Foundation -framework AppKit
 LIBS = -lhunspell-1.7
 
 # Hunspell paths (via Homebrew)
+# ARM64 paths (Apple Silicon)
+HUNSPELL_INCLUDE_ARM64 = /opt/homebrew/include/hunspell
+HUNSPELL_LIB_ARM64 = /opt/homebrew/lib
+HUNSPELL_DYLIB_ARM64 = /opt/homebrew/opt/hunspell/lib/libhunspell-1.7.0.dylib
+
+# x86_64 paths (Intel)
+HUNSPELL_INCLUDE_X86_64 = /usr/local/include/hunspell
+HUNSPELL_LIB_X86_64 = /usr/local/lib
+HUNSPELL_DYLIB_X86_64 = /usr/local/opt/hunspell/lib/libhunspell-1.7.0.dylib
+
+# Auto-detect current architecture for single-arch builds
 HUNSPELL_INCLUDE = /opt/homebrew/include/hunspell
 HUNSPELL_LIB = /opt/homebrew/lib
 HUNSPELL_DYLIB_SRC = /opt/homebrew/opt/hunspell/lib/libhunspell-1.7.0.dylib
@@ -33,6 +46,10 @@ ifeq ($(wildcard $(HUNSPELL_INCLUDE)),)
     HUNSPELL_DYLIB_SRC = /usr/local/opt/hunspell/lib/libhunspell-1.7.0.dylib
 endif
 
+INCLUDES_ARM64 = -I$(HUNSPELL_INCLUDE_ARM64)
+INCLUDES_X86_64 = -I$(HUNSPELL_INCLUDE_X86_64)
+LDFLAGS_ARM64 = -L$(HUNSPELL_LIB_ARM64)
+LDFLAGS_X86_64 = -L$(HUNSPELL_LIB_X86_64)
 INCLUDES = -I$(HUNSPELL_INCLUDE)
 LDFLAGS = -L$(HUNSPELL_LIB)
 
@@ -68,11 +85,12 @@ $(MACOS_DIR)/$(SERVICE_NAME): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
 	cp "$(BUILD_DIR)/$(SERVICE_NAME)" "$$TEMP_MACOS/" && \
 	echo "  Copying Info.plist..." && \
 	cp Info.plist "$$TEMP_CONTENTS/" && \
-	echo "  Bundling Hunspell library..." && \
-	cp "$(HUNSPELL_DYLIB_SRC)" "$$TEMP_FRAMEWORKS/" && \
+	echo "  Creating universal Hunspell library..." && \
+	lipo -create "$(HUNSPELL_DYLIB_ARM64)" "$(HUNSPELL_DYLIB_X86_64)" -output "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
 	chmod +w "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
 	echo "  Updating library paths..." && \
-	install_name_tool -change "$(HUNSPELL_DYLIB_SRC)" @executable_path/../Frameworks/libhunspell-1.7.0.dylib "$$TEMP_MACOS/$(SERVICE_NAME)" && \
+	install_name_tool -change "$(HUNSPELL_DYLIB_ARM64)" @executable_path/../Frameworks/libhunspell-1.7.0.dylib "$$TEMP_MACOS/$(SERVICE_NAME)" && \
+	install_name_tool -change "$(HUNSPELL_DYLIB_X86_64)" @executable_path/../Frameworks/libhunspell-1.7.0.dylib "$$TEMP_MACOS/$(SERVICE_NAME)" && \
 	install_name_tool -id @executable_path/../Frameworks/libhunspell-1.7.0.dylib "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
 	echo "  Code signing..." && \
 	$(REPO_ROOT)/src/tools/sign-bundle.sh library "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
@@ -85,9 +103,14 @@ $(MACOS_DIR)/$(SERVICE_NAME): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
 	touch "$(MACOS_DIR)/$(SERVICE_NAME)" && \
 	echo "✓ Spell server service bundle created at $(BUNDLE_DIR)"
 
-$(BUILD_DIR)/$(SERVICE_NAME): $(SWIFT_SOURCES) $(BRIDGE_HEADER) | $(BUILD_DIR)
-	@echo "Compiling and linking $(SERVICE_NAME) with Swift..."
-	$(SWIFTC) $(SWIFT_FLAGS) $(INCLUDES) $(LDFLAGS) $(FRAMEWORKS) $(LIBS) -o $@ $(SWIFT_SOURCES)
+$(BUILD_DIR)/$(SERVICE_NAME): $(SWIFT_SOURCES) $(BRIDGE_HEADER) $(HUNSPELL_DYLIB_ARM64) $(HUNSPELL_DYLIB_X86_64) | $(BUILD_DIR)
+	@echo "Compiling $(SERVICE_NAME) for arm64..."
+	$(SWIFTC) $(SWIFT_FLAGS_ARM64) $(INCLUDES_ARM64) $(LDFLAGS_ARM64) $(FRAMEWORKS) $(LIBS) -o $(BUILD_DIR)/$(SERVICE_NAME)-arm64 $(SWIFT_SOURCES)
+	@echo "Compiling $(SERVICE_NAME) for x86_64..."
+	$(SWIFTC) $(SWIFT_FLAGS_X86_64) $(INCLUDES_X86_64) $(LDFLAGS_X86_64) $(FRAMEWORKS) $(LIBS) -o $(BUILD_DIR)/$(SERVICE_NAME)-x86_64 $(SWIFT_SOURCES)
+	@echo "Creating universal binary..."
+	lipo -create $(BUILD_DIR)/$(SERVICE_NAME)-arm64 $(BUILD_DIR)/$(SERVICE_NAME)-x86_64 -output $@
+	@rm -f $(BUILD_DIR)/$(SERVICE_NAME)-arm64 $(BUILD_DIR)/$(SERVICE_NAME)-x86_64
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)

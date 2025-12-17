@@ -18,7 +18,9 @@ SWIFT_SOURCES = src/main.swift src/AppDelegate.swift
 
 # Compiler and linker flags
 SWIFTC = swiftc
-SWIFT_FLAGS = -O -warnings-as-errors -target arm64-apple-macos13.0
+SWIFT_FLAGS = -O -warnings-as-errors
+SWIFT_FLAGS_ARM64 = $(SWIFT_FLAGS) -target arm64-apple-macos13.0
+SWIFT_FLAGS_X86_64 = $(SWIFT_FLAGS) -target x86_64-apple-macos13.0
 FRAMEWORKS = -framework Cocoa -framework WebKit
 
 # Build directory - use top-level build/
@@ -97,8 +99,13 @@ $(MACOS_DIR)/$(EXECUTABLE_NAME): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) \
 	echo "✓ Installer app created at: $(BUNDLE_DIR)"
 
 $(BUILD_DIR)/$(EXECUTABLE_NAME): $(SWIFT_SOURCES) | $(BUILD_DIR)
-	@echo "Compiling $(EXECUTABLE_NAME)..."
-	$(SWIFTC) $(SWIFT_FLAGS) $(FRAMEWORKS) -o $@ $(SWIFT_SOURCES)
+	@echo "Compiling $(EXECUTABLE_NAME) for arm64..."
+	$(SWIFTC) $(SWIFT_FLAGS_ARM64) $(FRAMEWORKS) -o $(BUILD_DIR)/$(EXECUTABLE_NAME)-arm64 $(SWIFT_SOURCES)
+	@echo "Compiling $(EXECUTABLE_NAME) for x86_64..."
+	$(SWIFTC) $(SWIFT_FLAGS_X86_64) $(FRAMEWORKS) -o $(BUILD_DIR)/$(EXECUTABLE_NAME)-x86_64 $(SWIFT_SOURCES)
+	@echo "Creating universal binary..."
+	lipo -create $(BUILD_DIR)/$(EXECUTABLE_NAME)-arm64 $(BUILD_DIR)/$(EXECUTABLE_NAME)-x86_64 -output $@
+	@rm -f $(BUILD_DIR)/$(EXECUTABLE_NAME)-arm64 $(BUILD_DIR)/$(EXECUTABLE_NAME)-x86_64
 
 $(BUILD_DIR):
 	@mkdir -p "$(BUILD_DIR)"

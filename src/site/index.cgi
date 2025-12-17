@@ -136,7 +136,7 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
     <div class="container">
         <div class="header-bar">
             <div style="min-width: 40px;"></div>
-            <h1>Shaw-Spell</h1>
+            <h1>·𐑖𐑷-𐑕𐑐𐑧𐑤</h1>
             <div class="burger-menu">
                 <button class="burger-btn" onclick="toggleBurgerMenu()">☰</button>
                 <div class="burger-dropdown" id="burgerDropdown">
@@ -158,14 +158,11 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
                     id="searchInput"
                     class="search-input"
                     placeholder="Enter a word..."
-                    value="{word_value}"
+                    value=""
                     autocomplete="off"
                     autofocus
                 >
                 <button type="submit" class="search-btn">Search</button>
-            </div>
-            <div class="search-hint">
-                Search in English or Shavian
             </div>
         </form>
 

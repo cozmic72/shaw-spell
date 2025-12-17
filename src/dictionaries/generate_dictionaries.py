@@ -738,17 +738,18 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 first_pos = sorted(key_pos_set)[0]
                 synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache)
 
-            # Look up definition using (lemma, synset_id) key
+            # Look up definitions using (lemma, synset_id) key for ALL synsets
             lemma_defs = []
             if synsets:
-                cache_key = f"{lemma}|{synsets[0]}"
-                trans_def = definitions.get(cache_key)
-                if trans_def:
-                    lemma_defs.append({
-                        'definition': trans_def['transliterated_definition'],
-                        'pos': trans_def['transliterated_pos'] if dict_type in ('shaw-shaw', 'eng-shaw') else trans_def['pos'],
-                        'examples': trans_def['transliterated_examples']
-                    })
+                for synset_id in synsets:
+                    cache_key = f"{lemma}|{synset_id}"
+                    trans_def = definitions.get(cache_key)
+                    if trans_def:
+                        lemma_defs.append({
+                            'definition': trans_def['transliterated_definition'],
+                            'pos': trans_def['transliterated_pos'] if dict_type in ('shaw-shaw', 'eng-shaw') else trans_def['pos'],
+                            'examples': trans_def['transliterated_examples']
+                        })
         else:
             # For non-Shavian dictionaries, use old lemma-based lookup
             if wordnet_cache:

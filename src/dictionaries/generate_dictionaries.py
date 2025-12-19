@@ -191,6 +191,22 @@ def get_all_spelling_variants(word, dialect, wordnet_cache):
     return [v for v in dialect_variants if v != word_lower]
 
 
+def normalize_readlex_ipa(ipa):
+    """
+    Normalize Readlex IPA transcription.
+    Readlex uses 'R' to denote '(r)' (optional r in non-rhotic accents).
+
+    Args:
+        ipa: IPA transcription string from Readlex
+
+    Returns:
+        Normalized IPA string with R replaced by (r)
+    """
+    if not ipa:
+        return ipa
+    return ipa.replace('R', '(r)')
+
+
 def extract_lemma_from_key(key):
     """Extract lemma from readlex key format: {lemma}_{pos}_{shavian}"""
     parts = key.split('_')
@@ -794,7 +810,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             shaw = entry['Shaw']
             latn = entry['Latn']
             pos = entry.get('pos', '')
-            ipa = entry.get('ipa', '')
+            ipa = normalize_readlex_ipa(entry.get('ipa', ''))
             var = entry.get('var', '')
 
             # Detect spelling variant using comprehensive cache

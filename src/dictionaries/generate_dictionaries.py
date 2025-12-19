@@ -1249,7 +1249,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                     f.write(f' <span class="variant">({escape(home_display_text)} /{additional_form["ipa"]}/)</span>')
 
                         # Display alternate spellings (only if actually different)
-                        if alt_spellings:
+                        # For shaw-shaw dictionary, skip Latin alphabet variants
+                        if alt_spellings and dict_type != 'shaw-shaw':
                             for alt_spelling, alt_dialect, alt_ipa in alt_spellings:
                                 # Only show if spelling is different OR pronunciation is different
                                 spelling_differs = alt_spelling.lower() != home_form.get('latn', '').lower()

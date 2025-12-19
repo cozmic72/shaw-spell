@@ -532,6 +532,19 @@ span.w:hover {
     opacity: 0.8;
 }
 
+.copyright a {
+    color: white;
+    text-decoration: none;
+}
+
+.copyright a:visited {
+    color: white;
+}
+
+.copyright a:hover {
+    text-decoration: underline;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .container {

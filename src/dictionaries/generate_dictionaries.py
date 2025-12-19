@@ -1434,7 +1434,7 @@ def main():
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent.parent
     readlex_path = project_dir / 'external/readlex/readlex.json'
-    wordnet_path = project_dir / 'build/wordnet-definitions.json'
+    latin_defs_path = project_dir / f'data/definitions-latin-{dialect}.json'
     wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     shavian_defs_path = project_dir / f'data/definitions-shavian-{dialect}.json'
     build_dir = project_dir / 'build'
@@ -1453,15 +1453,16 @@ def main():
         readlex_raw = json.load(f)
     print(f"Loaded {len(readlex_raw)} readlex entries")
 
-    # Load WordNet definitions (will be replaced by cache if available)
-    wordnet_defs = {}
-    if wordnet_path.exists():
-        print("\nLoading WordNet definitions...")
-        with open(wordnet_path, 'r', encoding='utf-8') as f:
-            wordnet_defs = json.load(f)
-        print(f"Loaded definitions for {len(wordnet_defs)} words")
+    # Load dialect-specific Latin definitions for shavian-english dictionary
+    latin_defs = {}
+    if latin_defs_path.exists():
+        print(f"\nLoading {dialect.upper()} Latin definitions...")
+        with open(latin_defs_path, 'r', encoding='utf-8') as f:
+            latin_defs = json.load(f)
+        print(f"Loaded definitions for {len(latin_defs)} words")
     else:
-        print(f"\nNote: WordNet definitions not found at {wordnet_path}")
+        print(f"\nNote: Latin definitions not found at {latin_defs_path}")
+        print(f"Please run: ./src/tools/generate_dialect_definitions.py")
         print("Will use comprehensive cache if available")
 
     # Load comprehensive WordNet cache (required for dialect detection)
@@ -1498,7 +1499,7 @@ def main():
 
     # Generate requested dictionaries
     if 'shavian-english' in dictionaries:
-        generate_dictionary(readlex_data, wordnet_defs, shavian_english_path, 'shaw-eng', dialect, wordnet_cache)
+        generate_dictionary(readlex_data, latin_defs, shavian_english_path, 'shaw-eng', dialect, wordnet_cache)
         print()
 
     if 'english-shavian' in dictionaries:

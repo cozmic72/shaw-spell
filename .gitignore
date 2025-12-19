@@ -1,6 +1,8 @@
 # Build directory (all build artifacts)
 build/
 data/wordnet-comprehensive.json
+data/definitions-latin-us.json
+data/definitions-latin-gb.json
 *.o
 
 # Signing configuration (personal certificates)

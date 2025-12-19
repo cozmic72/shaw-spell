@@ -27,6 +27,12 @@ data/definitions-shavian-us.json: $(SRC_DICTIONARIES)/build_definition_caches.py
 	@mkdir -p data
 	$(RUN) $(SRC_DICTIONARIES)/build_definition_caches.py --us
 
+# Latin definition files with dialect-specific spelling (auto-build if missing)
+data/definitions-latin-gb.json data/definitions-latin-us.json: $(SRC_TOOLS)/generate_dialect_definitions.py $(WORDNET_CACHE) data/definitions-shavian-gb.json
+	@echo "Building dialect-specific Latin definitions (GB & US)..."
+	@mkdir -p data
+	$(RUN) $(SRC_TOOLS)/generate_dialect_definitions.py
+
 # Phony targets to explicitly regenerate caches
 .PHONY: wordnet-cache transliterations
 wordnet-cache:
@@ -57,7 +63,7 @@ transliterations: transliterations-gb transliterations-us
 DICT_SCRIPT := $(SRC_DICTIONARIES)/generate_dictionaries.py
 
 # GB dictionary XMLs
-$(BUILD_DICT_XML)/shavian-english-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-english-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-latin-gb.json | $(BUILD_DICT_XML)
 	@echo "Generating Shavian-English XML (GB)..."
 	$(RUN) $(DICT_SCRIPT) --gb --dict shavian-english
 
@@ -70,7 +76,7 @@ $(BUILD_DICT_XML)/shavian-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDN
 	$(RUN) $(DICT_SCRIPT) --gb --dict shavian-shavian
 
 # US dictionary XMLs
-$(BUILD_DICT_XML)/shavian-english-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-english-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-latin-us.json | $(BUILD_DICT_XML)
 	@echo "Generating Shavian-English XML (US)..."
 	$(RUN) $(DICT_SCRIPT) --us --dict shavian-english
 

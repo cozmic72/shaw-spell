@@ -175,7 +175,7 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
     </div>
 
     <div class="copyright">
-        @2025 joro.io · Shaw-Spell $VERSION$
+        @2025 <a href="https://joro.io">joro.io</a> · Shaw-Spell $VERSION$
     </div>
 
     <!-- Modals -->

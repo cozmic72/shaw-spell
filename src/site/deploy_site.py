@@ -73,8 +73,11 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
                 return content
         return default
 
+    # Load both Latin and Shavian versions
     welcome_top_content = load_and_escape_template('welcome-top.html', '<p>Welcome!</p>')
     welcome_bottom_content = load_and_escape_template('welcome-bottom.html', '')
+    welcome_top_shavian_content = load_and_escape_template('welcome-top-shavian.html', welcome_top_content)
+    welcome_bottom_shavian_content = load_and_escape_template('welcome-bottom-shavian.html', welcome_bottom_content)
 
     # Walk through site source directory
     for source_file in site_src.rglob('*'):
@@ -126,6 +129,8 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
                 content = content.replace('{{FONT_URL}}', font_url)
                 content = content.replace('{{WELCOME_TOP}}', welcome_top_content)
                 content = content.replace('{{WELCOME_BOTTOM}}', welcome_bottom_content)
+                content = content.replace('{{WELCOME_TOP_SHAVIAN}}', welcome_top_shavian_content)
+                content = content.replace('{{WELCOME_BOTTOM_SHAVIAN}}', welcome_bottom_shavian_content)
 
                 # Write to output
                 with open(dest_file, 'w', encoding='utf-8') as f:

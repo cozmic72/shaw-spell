@@ -99,8 +99,13 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
     """Generate the complete HTML page."""
     settings = settings or {'dialect': 'gb', 'shavianDefs': 'english'}
 
+    # Choose templates based on immersive mode
+    immersive = settings['shavianDefs'] == 'shavian'
+    welcome_top_template = '{{WELCOME_TOP_SHAVIAN}}' if immersive else '{{WELCOME_TOP}}'
+    welcome_bottom_template = '{{WELCOME_BOTTOM_SHAVIAN}}' if immersive else '{{WELCOME_BOTTOM}}'
+
     # Determine welcome top display
-    welcome_top = '<div class="welcome-top">{{WELCOME_TOP}}</div>' if not word else ''
+    welcome_top = f'<div class="welcome-top">{welcome_top_template}</div>' if not word else ''
 
     # Determine entry display
     if error:
@@ -108,7 +113,7 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
     elif entry_html:
         entry_section = f'<div class="entry-container">{entry_html}</div>'
     elif not word:
-        entry_section = '<div class="entry-container">{{WELCOME_BOTTOM}}</div>'
+        entry_section = f'<div class="entry-container">{welcome_bottom_template}</div>'
     else:
         entry_section = '<div class="entry-container hidden"></div>'
 

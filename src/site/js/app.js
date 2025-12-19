@@ -3,6 +3,36 @@
  * Minimal UI interactions - settings modal and burger menu
  */
 
+// Shavian UI strings for immersive mode
+const STRINGS = {
+    latin: {
+        settings_title: 'Settings',
+        dialect_heading: 'Dialect',
+        dialect_prompt: 'Select your preferred English dialect:',
+        dialect_gb: 'British English (GB)',
+        dialect_us: 'American English (US)',
+        shavian_defs_heading: 'Shavian Definitions',
+        shavian_defs_prompt: 'When looking up Shavian words, show definitions in:',
+        shavian_defs_english: 'English (with Shavian headword)',
+        shavian_defs_shavian: 'Shavian only (immersive mode)',
+        save_button: 'Save Settings',
+        cancel_button: 'Cancel'
+    },
+    shavian: {
+        settings_title: '𐑕𐑧𐑑𐑦𐑙𐑟',
+        dialect_heading: '𐑛𐑲𐑩𐑤𐑧𐑒𐑑',
+        dialect_prompt: '𐑕𐑩𐑤𐑧𐑒𐑑 𐑘𐑹 𐑐𐑮𐑦𐑓𐑻𐑛 𐑦𐑙𐑜𐑤𐑦𐑖 𐑛𐑲𐑩𐑤𐑧𐑒𐑑:',
+        dialect_gb: '𐑚𐑮𐑦𐑑𐑦𐑖 𐑦𐑙𐑜𐑤𐑦𐑖 (GB)',
+        dialect_us: '𐑧𐑥𐑧𐑮𐑦𐑒𐑩𐑯 𐑦𐑙𐑜𐑤𐑦𐑖 (US)',
+        shavian_defs_heading: '𐑖𐑱𐑚𐑾𐑯 𐑛𐑧𐑓𐑦𐑯𐑦𐑖𐑩𐑯𐑟',
+        shavian_defs_prompt: '𐑢𐑧𐑯 𐑤𐑫𐑒𐑦𐑙 𐑳𐑐 ·𐑖𐑱𐑝𐑾𐑯 𐑢𐑻𐑛𐑟, 𐑖𐑴 𐑛𐑧𐑓𐑦𐑯𐑦𐑖𐑩𐑯𐑟 𐑦𐑯:',
+        shavian_defs_english: '𐑦𐑙𐑜𐑤𐑦𐑖 (𐑢𐑦𐑞 ·𐑖𐑱𐑝𐑾𐑯 𐑣𐑧𐑛𐑢𐑻𐑛)',
+        shavian_defs_shavian: '𐑖𐑱𐑝𐑾𐑯 𐑴𐑯𐑤𐑦 (𐑦𐑥𐑻𐑕𐑦𐑝 𐑥𐑴𐑛)',
+        save_button: '𐑕𐑱𐑝 𐑕𐑧𐑑𐑦𐑙𐑟',
+        cancel_button: '𐑒𐑨𐑯𐑕𐑩𐑤'
+    }
+};
+
 // Burger menu
 function toggleBurgerMenu() {
     const dropdown = document.getElementById('burgerDropdown');
@@ -30,7 +60,10 @@ function closeBurgerMenu() {
 // Modal functions
 async function openAbout() {
     closeBurgerMenu();
-    const content = await fetch('templates/about.html').then(r => r.text());
+    const settings = window.SETTINGS || {dialect: 'gb', shavianDefs: 'english'};
+    const immersive = settings.shavianDefs === 'shavian';
+    const templateFile = immersive ? 'templates/about-shavian.html' : 'templates/about.html';
+    const content = await fetch(templateFile).then(r => r.text());
     showModal(content);
 }
 
@@ -38,42 +71,44 @@ async function openSettings() {
     closeBurgerMenu();
 
     const settings = window.SETTINGS || {dialect: 'gb', shavianDefs: 'english'};
+    const lang = settings.shavianDefs === 'shavian' ? 'shavian' : 'latin';
+    const strings = STRINGS[lang];
 
     const content = `
-<h2>Settings</h2>
+<h2>${strings.settings_title}</h2>
 
 <form method="get" action="index.cgi" id="settingsForm">
     <input type="hidden" name="word" value="${document.getElementById('searchInput')?.value || ''}">
 
     <div class="setting-group">
-        <h3>Dialect</h3>
-        <p>Select your preferred English dialect:</p>
+        <h3>${strings.dialect_heading}</h3>
+        <p>${strings.dialect_prompt}</p>
         <label>
             <input type="radio" name="dialect" value="gb" ${settings.dialect === 'gb' ? 'checked' : ''}>
-            British English (GB)
+            ${strings.dialect_gb}
         </label>
         <label>
             <input type="radio" name="dialect" value="us" ${settings.dialect === 'us' ? 'checked' : ''}>
-            American English (US)
+            ${strings.dialect_us}
         </label>
     </div>
 
     <div class="setting-group">
-        <h3>Shavian Definitions</h3>
-        <p>When looking up Shavian words, show definitions in:</p>
+        <h3>${strings.shavian_defs_heading}</h3>
+        <p>${strings.shavian_defs_prompt}</p>
         <label>
             <input type="radio" name="shavianDefs" value="english" ${settings.shavianDefs === 'english' ? 'checked' : ''}>
-            English (with Shavian headword)
+            ${strings.shavian_defs_english}
         </label>
         <label>
             <input type="radio" name="shavianDefs" value="shavian" ${settings.shavianDefs === 'shavian' ? 'checked' : ''}>
-            Shavian only (immersive mode)
+            ${strings.shavian_defs_shavian}
         </label>
     </div>
 
     <div class="setting-actions">
-        <button type="submit" class="btn-primary">Save Settings</button>
-        <button type="button" onclick="closeModal()" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-primary">${strings.save_button}</button>
+        <button type="button" onclick="closeModal()" class="btn-secondary">${strings.cancel_button}</button>
     </div>
 </form>
     `;

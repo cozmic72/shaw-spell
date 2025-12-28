@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Generate Hunspell dictionaries (.dic and .aff) from WordNet comprehensive cache.
+Generate Hunspell dictionaries (.dic and .aff) from WordNet comprehensive cache
+and Readlex data.
 
-Uses the comprehensive WordNet cache to generate high-quality Hunspell dictionaries
-with proper dialect filtering and minimal affix rules (since irregular forms are explicit).
+Uses the comprehensive WordNet cache and Readlex to generate high-quality Hunspell
+dictionaries with proper dialect filtering and minimal affix rules (since irregular
+forms are explicit).
 
 Generates:
   - build/io.joro.shaw-spell.en_GB.dic + .aff
@@ -42,6 +44,48 @@ def load_comprehensive_cache(cache_path: Path) -> Dict:
         cache = json.load(f)
     print(f"Loaded {len(cache)} entries")
     return cache
+
+
+def load_readlex_data(readlex_path: Path) -> Dict:
+    """Load Readlex data."""
+    print(f"Loading Readlex data from {readlex_path}...")
+    with open(readlex_path, 'r', encoding='utf-8') as f:
+        readlex = json.load(f)
+    print(f"Loaded {len(readlex)} Readlex entries")
+    return readlex
+
+
+def extract_readlex_words(readlex_data: Dict, target_dialect: str) -> Set[str]:
+    """
+    Extract Latin alphabet words from Readlex for the target dialect.
+
+    Args:
+        readlex_data: The Readlex data dictionary
+        target_dialect: 'gb' or 'us'
+
+    Returns:
+        Set of lowercase Latin words from Readlex
+    """
+    words = set()
+
+    # Map dialect codes
+    if target_dialect.lower() == 'gb':
+        target_variants = ['RRP', 'GB']  # Received Pronunciation and GB
+    else:
+        target_variants = ['GenAm']  # General American
+
+    for key, entries in readlex_data.items():
+        for entry in entries:
+            latn = entry.get('Latn', '').strip()
+            var = entry.get('var', '')
+
+            # Include words that match the target dialect or have no variant specified
+            if latn and (not var or var in target_variants):
+                # Add the word in lowercase (Hunspell is case-insensitive for base words)
+                words.add(latn.lower())
+
+    print(f"Extracted {len(words)} unique Latin words from Readlex for {target_dialect.upper()}")
+    return words
 
 
 def should_include_word(entry: Dict, target_dialect: str) -> bool:
@@ -100,9 +144,9 @@ def get_affix_flags(lemma: str, pos: str, has_explicit_forms: bool) -> str:
     return ''.join(sorted(flags))
 
 
-def generate_dic_file(cache: Dict, target_dialect: str, output_path: Path):
+def generate_dic_file(cache: Dict, target_dialect: str, output_path: Path, readlex_words: Set[str] = None):
     """
-    Generate .dic file from comprehensive cache.
+    Generate .dic file from comprehensive cache and Readlex words.
 
     Format:
         <word count>
@@ -115,6 +159,7 @@ def generate_dic_file(cache: Dict, target_dialect: str, output_path: Path):
 
     word_entries = set()  # Use set to avoid duplicates
 
+    # Add words from WordNet cache
     for lemma, entry in cache.items():
         # Check if this word belongs in this dialect
         if not should_include_word(entry, target_dialect):
@@ -137,8 +182,26 @@ def generate_dic_file(cache: Dict, target_dialect: str, output_path: Path):
             for form in forms:
                 word_entries.add(form)
 
+    wordnet_count = len(word_entries)
+    print(f"Added {wordnet_count:,} entries from WordNet")
+
+    # Add words from Readlex (if provided)
+    if readlex_words:
+        # Build a set of base words from WordNet for fast lookup
+        wordnet_base_words = {entry.split('/')[0] for entry in word_entries}
+
+        readlex_only = 0
+        for word in readlex_words:
+            # Only add if not already in word_entries (from WordNet)
+            # This allows WordNet entries (with their flags) to take precedence
+            if word not in wordnet_base_words:
+                word_entries.add(word)
+                readlex_only += 1
+
+        print(f"Added {readlex_only:,} additional entries from Readlex")
+
     # Write .dic file
-    print(f"Writing {len(word_entries)} entries to {output_path}")
+    print(f"Writing {len(word_entries):,} total entries to {output_path}")
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(f"{len(word_entries)}\n")
         for entry in sorted(word_entries):
@@ -381,7 +444,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Generate Hunspell dictionaries from WordNet comprehensive cache'
+        description='Generate Hunspell dictionaries from WordNet comprehensive cache and Readlex'
     )
     parser.add_argument(
         '--dialect',
@@ -394,6 +457,12 @@ def main():
         type=Path,
         default=Path(__file__).parent.parent.parent / 'data/wordnet-comprehensive.json',
         help='Path to comprehensive WordNet cache'
+    )
+    parser.add_argument(
+        '--readlex',
+        type=Path,
+        default=Path(__file__).parent.parent.parent / 'external/readlex/readlex.json',
+        help='Path to Readlex data file'
     )
     parser.add_argument(
         '--output-dir',
@@ -410,6 +479,15 @@ def main():
         print("Run: ./src/tools/build_wordnet_cache.py")
         sys.exit(1)
 
+    if not args.readlex.exists():
+        print(f"WARNING: Readlex file not found: {args.readlex}")
+        print("Continuing without Readlex data...")
+        readlex_words = None
+    else:
+        # Load Readlex and extract words
+        readlex_data = load_readlex_data(args.readlex)
+        readlex_words = extract_readlex_words(readlex_data, args.dialect)
+
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     # Output paths
@@ -419,9 +497,10 @@ def main():
     print("="*60)
     print(f"GENERATING HUNSPELL {args.dialect.upper()} DICTIONARY")
     print("="*60)
-    print(f"Cache:  {args.cache}")
-    print(f"Output: {dic_path}")
-    print(f"        {aff_path}")
+    print(f"Cache:   {args.cache}")
+    print(f"Readlex: {args.readlex}")
+    print(f"Output:  {dic_path}")
+    print(f"         {aff_path}")
     print()
 
     # Load cache
@@ -430,8 +509,8 @@ def main():
     # Generate .aff file
     generate_aff_file(args.dialect, aff_path)
 
-    # Generate .dic file
-    generate_dic_file(cache, args.dialect, dic_path)
+    # Generate .dic file with Readlex words
+    generate_dic_file(cache, args.dialect, dic_path, readlex_words)
 
     # Count entries for both dialects for statistics
     gb_count = sum(1 for e in cache.values() if should_include_word(e, 'gb'))

@@ -80,6 +80,33 @@ def should_include_word(lemma, preferred_dialect, wordnet_cache):
     return False
 
 
+def calculate_character_frequencies(readlex_data):
+    """
+    Calculate character frequencies weighted by word frequency.
+
+    Returns:
+        String of Shavian characters ordered by frequency (most common first)
+    """
+    from collections import Counter
+
+    char_freq = Counter()
+
+    for key, entries in readlex_data.items():
+        for entry in entries:
+            shaw = entry.get('Shaw', '')
+            freq = entry.get('freq', 1)  # Default freq of 1 if not specified
+
+            # Weight each character by the word's frequency
+            for char in shaw:
+                # Only count actual Shavian letters (exclude namer dot, hyphen, etc.)
+                if '\U00010450' <= char <= '\U0001047F':  # Shavian Unicode range
+                    char_freq[char] += freq
+
+    # Sort by frequency (most common first)
+    sorted_chars = sorted(char_freq.items(), key=lambda x: x[1], reverse=True)
+    return ''.join([char for char, _ in sorted_chars])
+
+
 def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb', wordnet_cache=None):
     """
     Generate simple Hunspell dictionary (all word forms as separate entries).
@@ -157,6 +184,11 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
     # Write .aff file with word character configuration
     print(f"Writing {output_aff}...")
 
+    # Calculate frequency-optimized character ordering for TRY line
+    print("Calculating character frequencies for TRY optimization...")
+    try_chars = calculate_character_frequencies(readlex_data)
+    print(f"TRY string: {try_chars[:20]}... (top 20 chars)")
+
     # Load replacement rules from external file
     replacements_file = Path(__file__).parent / 'hunspell-replacements.txt'
     replacement_rules = ""
@@ -168,7 +200,8 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
         f.write("# Hunspell affix file for Shavian script\n")
         f.write(f"# Configuration for {dialect_name}\n\n")
         f.write("SET UTF-8\n")
-        f.write("TRY 𐑐𐑑𐑒𐑓𐑔𐑕𐑖𐑗𐑘𐑙𐑚𐑛𐑜𐑝𐑞𐑟𐑠𐑡𐑢𐑣𐑤𐑥𐑦𐑧𐑨𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿\n\n")
+        f.write(f"# TRY: Characters ordered by frequency for optimal suggestion ranking\n")
+        f.write(f"TRY {try_chars}\n\n")
         f.write("# Word characters include Shavian letters, hyphen, and namer dot\n")
         f.write("WORDCHARS 𐑐𐑑𐑒𐑓𐑔𐑕𐑖𐑗𐑘𐑙𐑚𐑛𐑜𐑝𐑞𐑟𐑠𐑡𐑢𐑣𐑤𐑥𐑦𐑧𐑨𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿-·\n\n")
 

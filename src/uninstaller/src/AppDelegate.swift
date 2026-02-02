@@ -214,7 +214,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Stop LaunchAgent
         script += """
         echo 'Stopping spell server...'
+        # Bootout is the modern way to stop launchd services
+        launchctl bootout gui/$(id -u)/io.joro.Shaw-Spell 2>/dev/null || true
+        # Also try the legacy unload command for compatibility
         launchctl unload "\(homeDir)/Library/LaunchAgents/io.joro.Shaw-Spell.plist" 2>/dev/null || true
+        # Kill any remaining processes
+        pkill -9 -f Shaw-Spell.service 2>/dev/null || true
+        # Remove the plist
         rm -f "\(homeDir)/Library/LaunchAgents/io.joro.Shaw-Spell.plist"
 
         """

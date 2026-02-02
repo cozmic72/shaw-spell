@@ -9,14 +9,78 @@ import Foundation
 import os.log
 
 private let logger = OSLog(subsystem: "io.joro.Shaw-Spell", category: "SpellChecker")
+private let performanceLog = OSLog(subsystem: "io.joro.Shaw-Spell", category: "Performance")
+
+// Performance instrumentation signpost IDs
+private let signpostWordExtraction = OSSignpostID(log: performanceLog)
+private let signpostHunspellLookup = OSSignpostID(log: performanceLog)
+private let signpostCacheLookup = OSSignpostID(log: performanceLog)
 
 // Shavian Unicode range: U+10450 to U+1047F
 private let shavianStart: UInt32 = 0x10450
 private let shavianEnd: UInt32 = 0x1047F
 
+// LRU Cache for spell-check results
+private class SpellCheckCache {
+    private let capacity: Int
+    private var cache: [String: Bool] = [:]
+    private var accessOrder: [String] = []
+
+    init(capacity: Int = 2000) {
+        self.capacity = capacity
+    }
+
+    func get(_ word: String) -> Bool? {
+        guard let result = cache[word] else {
+            return nil
+        }
+
+        // Update LRU order
+        if let index = accessOrder.firstIndex(of: word) {
+            accessOrder.remove(at: index)
+        }
+        accessOrder.append(word)
+
+        return result
+    }
+
+    func set(_ word: String, _ isCorrect: Bool) {
+        // If already exists, update access order
+        if cache[word] != nil {
+            if let index = accessOrder.firstIndex(of: word) {
+                accessOrder.remove(at: index)
+            }
+        } else if cache.count >= capacity {
+            // Evict oldest entry
+            if let oldest = accessOrder.first {
+                cache.removeValue(forKey: oldest)
+                accessOrder.removeFirst()
+            }
+        }
+
+        cache[word] = isCorrect
+        accessOrder.append(word)
+    }
+
+    func clear() {
+        cache.removeAll()
+        accessOrder.removeAll()
+    }
+
+    var hitCount: Int {
+        return cache.count
+    }
+}
+
 class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     private var shavianHandle: OpaquePointer?
     private var englishHandle: OpaquePointer?
+    private var spellCheckCache = SpellCheckCache(capacity: 2000)
+
+    // Performance statistics
+    private var cacheHits: Int = 0
+    private var cacheMisses: Int = 0
+    private var totalChecks: Int = 0
 
     override init() {
         super.init()
@@ -112,64 +176,88 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         return false
     }
 
-    private func findNextWord(in string: String, startingAt start: Int) -> NSRange {
-        guard start < string.count else {
-            return NSRange(location: NSNotFound, length: 0)
+    // Optimized word extraction using CFStringTokenizer
+    private func extractWords(from string: String) -> [(word: String, range: NSRange)] {
+        os_signpost(.begin, log: performanceLog, name: "Word Extraction", signpostID: signpostWordExtraction)
+        defer {
+            os_signpost(.end, log: performanceLog, name: "Word Extraction", signpostID: signpostWordExtraction)
         }
 
+        var words: [(word: String, range: NSRange)] = []
         let nsString = string as NSString
-        var pos = start
-        var wordStart: Int?
+        let stringRange = CFRange(location: 0, length: nsString.length)
 
-        // Skip non-letters to find word start
-        while pos < nsString.length {
-            let range = nsString.rangeOfComposedCharacterSequence(at: pos)
-            let character = nsString.substring(with: range)
+        // Create tokenizer with word boundary detection
+        guard let tokenizer = CFStringTokenizerCreate(
+            kCFAllocatorDefault,
+            nsString as CFString,
+            stringRange,
+            kCFStringTokenizerUnitWordBoundary,
+            nil
+        ) else {
+            return words
+        }
 
-            if let scalar = character.unicodeScalars.first {
-                let codepoint = scalar.value
+        // Iterate through all word tokens
+        var tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)
+        while tokenType != CFStringTokenizerTokenType(rawValue: 0) {
+            let tokenRange = CFStringTokenizerGetCurrentTokenRange(tokenizer)
+            let range = NSRange(location: tokenRange.location, length: tokenRange.length)
+            let word = nsString.substring(with: range)
 
-                if isShavianOrLatinLetter(codepoint) {
-                    wordStart = pos
+            // Only include words that contain Shavian or Latin letters
+            var containsLetter = false
+            for scalar in word.unicodeScalars {
+                if isShavianOrLatinLetter(scalar.value) {
+                    containsLetter = true
                     break
                 }
             }
 
-            pos = NSMaxRange(range)
+            if containsLetter {
+                words.append((word: word, range: range))
+            }
+
+            tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)
         }
 
-        guard let start = wordStart else {
-            return NSRange(location: NSNotFound, length: 0)
-        }
+        return words
+    }
 
-        // Find word end
-        pos = start
-        var wordEnd = start
+    // Legacy function for compatibility (now uses CFStringTokenizer internally)
+    private func findNextWord(in string: String, startingAt start: Int) -> NSRange {
+        let words = extractWords(from: string)
 
-        while pos < nsString.length {
-            let range = nsString.rangeOfComposedCharacterSequence(at: pos)
-            let character = nsString.substring(with: range)
-
-            if let scalar = character.unicodeScalars.first {
-                let codepoint = scalar.value
-
-                if !isShavianOrLatinLetter(codepoint) {
-                    break
-                }
-
-                wordEnd = NSMaxRange(range)
-                pos = wordEnd
-            } else {
-                break
+        for (_, range) in words {
+            if range.location >= start {
+                return range
             }
         }
 
-        return NSRange(location: start, length: wordEnd - start)
+        return NSRange(location: NSNotFound, length: 0)
     }
 
     // MARK: - Spell Checking
 
     private func checkWord(_ word: String) -> Bool {
+        totalChecks += 1
+
+        // Check cache first
+        os_signpost(.begin, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup)
+        if let cached = spellCheckCache.get(word) {
+            cacheHits += 1
+            os_signpost(.end, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup, "Hit")
+            return cached
+        }
+        cacheMisses += 1
+        os_signpost(.end, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup, "Miss")
+
+        // Cache miss - check with Hunspell
+        os_signpost(.begin, log: performanceLog, name: "Hunspell Lookup", signpostID: signpostHunspellLookup)
+        defer {
+            os_signpost(.end, log: performanceLog, name: "Hunspell Lookup", signpostID: signpostHunspellLookup)
+        }
+
         // Determine which dictionary to use based on script
         let isShavian = containsShavianScript(word)
         let handle = isShavian ? shavianHandle : englishHandle
@@ -179,7 +267,20 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         }
 
         let result = Hunspell_spell(hunspellHandle, word)
-        return result != 0  // Non-zero means correctly spelled
+        let isCorrect = result != 0  // Non-zero means correctly spelled
+
+        // Store in cache
+        spellCheckCache.set(word, isCorrect)
+
+        // Log performance stats every 100 checks
+        if totalChecks % 100 == 0 {
+            let hitRate = Double(cacheHits) / Double(totalChecks) * 100.0
+            os_log("Performance: %d checks, %.1f%% cache hit rate (%d hits, %d misses)",
+                   log: performanceLog, type: .info,
+                   totalChecks, hitRate, cacheHits, cacheMisses)
+        }
+
+        return isCorrect
     }
 
     // MARK: - NSSpellServerDelegate
@@ -190,35 +291,29 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
                     wordCount: UnsafeMutablePointer<Int>,
                     countOnly: Bool) -> NSRange {
 
-        // Iterate through all words, checking both Shavian and Latin
-        var position = 0
-        var count = 0
+        // Extract all words in one pass using optimized tokenizer
+        let words = extractWords(from: stringToCheck)
+        wordCount.pointee = words.count
 
-        while position < stringToCheck.count {
-            let wordRange = findNextWord(in: stringToCheck, startingAt: position)
-
-            if wordRange.location == NSNotFound {
-                break  // No more words
-            }
-
-            count += 1
-
-            if !countOnly {
-                let word = (stringToCheck as NSString).substring(with: wordRange)
-
-                if !checkWord(word) {
-                    // Found misspelled word
-                    wordCount.pointee = count
-                    return wordRange
-                }
-            }
-
-            // Move to next word
-            position = NSMaxRange(wordRange)
+        // If only counting, return early
+        if countOnly {
+            return NSRange(location: NSNotFound, length: 0)
         }
 
-        wordCount.pointee = count
-        return NSRange(location: NSNotFound, length: 0)  // No misspelled words found
+        // Check each word for spelling
+        for (word, range) in words {
+            if !checkWord(word) {
+                // Found misspelled word - return its position
+                // Note: wordCount should be set to the number of words checked so far
+                if let index = words.firstIndex(where: { $0.range.location == range.location }) {
+                    wordCount.pointee = index + 1
+                }
+                return range
+            }
+        }
+
+        // No misspelled words found
+        return NSRange(location: NSNotFound, length: 0)
     }
 
     func spellServer(_ sender: NSSpellServer,
@@ -265,6 +360,9 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         _ = word.withCString { cWord in
             Hunspell_add(handle, cWord)
         }
+
+        // Invalidate cache for this word
+        spellCheckCache.set(word, true)
     }
 
     @objc func spellServer(_ sender: NSSpellServer,
@@ -280,5 +378,8 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         _ = word.withCString { cWord in
             Hunspell_remove(handle, cWord)
         }
+
+        // Invalidate cache for this word
+        spellCheckCache.set(word, false)
     }
 }

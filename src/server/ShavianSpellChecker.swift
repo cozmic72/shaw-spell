@@ -82,6 +82,10 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     private var cacheMisses: Int = 0
     private var totalChecks: Int = 0
 
+    // Cache the last string we checked to avoid re-tokenizing on repeated calls
+    private var lastCheckedString: String?
+    private var lastTokenizer: CFStringTokenizer?
+
     override init() {
         super.init()
 
@@ -176,18 +180,21 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         return false
     }
 
-    // Optimized word extraction using CFStringTokenizer
-    private func extractWords(from string: String) -> [(word: String, range: NSRange)] {
+    // Optimized word extraction using CFStringTokenizer - incremental
+    private func findNextWord(in string: String, startingAt start: Int) -> NSRange {
         os_signpost(.begin, log: performanceLog, name: "Word Extraction", signpostID: signpostWordExtraction)
         defer {
             os_signpost(.end, log: performanceLog, name: "Word Extraction", signpostID: signpostWordExtraction)
         }
 
-        var words: [(word: String, range: NSRange)] = []
-        let nsString = string as NSString
-        let stringRange = CFRange(location: 0, length: nsString.length)
+        guard start < string.count else {
+            return NSRange(location: NSNotFound, length: 0)
+        }
 
-        // Create tokenizer with word boundary detection
+        let nsString = string as NSString
+        let stringRange = CFRange(location: start, length: nsString.length - start)
+
+        // Create tokenizer starting from the given position
         guard let tokenizer = CFStringTokenizerCreate(
             kCFAllocatorDefault,
             nsString as CFString,
@@ -195,17 +202,17 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             kCFStringTokenizerUnitWordBoundary,
             nil
         ) else {
-            return words
+            return NSRange(location: NSNotFound, length: 0)
         }
 
-        // Iterate through all word tokens
+        // Get the first word token at or after start position
         var tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)
         while tokenType != CFStringTokenizerTokenType(rawValue: 0) {
             let tokenRange = CFStringTokenizerGetCurrentTokenRange(tokenizer)
             let range = NSRange(location: tokenRange.location, length: tokenRange.length)
             let word = nsString.substring(with: range)
 
-            // Only include words that contain Shavian or Latin letters
+            // Only return words that contain Shavian or Latin letters
             var containsLetter = false
             for scalar in word.unicodeScalars {
                 if isShavianOrLatinLetter(scalar.value) {
@@ -215,23 +222,10 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             }
 
             if containsLetter {
-                words.append((word: word, range: range))
+                return range
             }
 
             tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)
-        }
-
-        return words
-    }
-
-    // Legacy function for compatibility (now uses CFStringTokenizer internally)
-    private func findNextWord(in string: String, startingAt start: Int) -> NSRange {
-        let words = extractWords(from: string)
-
-        for (_, range) in words {
-            if range.location >= start {
-                return range
-            }
         }
 
         return NSRange(location: NSNotFound, length: 0)
@@ -272,14 +266,6 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         // Store in cache
         spellCheckCache.set(word, isCorrect)
 
-        // Log performance stats every 100 checks
-        if totalChecks % 100 == 0 {
-            let hitRate = Double(cacheHits) / Double(totalChecks) * 100.0
-            os_log("Performance: %d checks, %.1f%% cache hit rate (%d hits, %d misses)",
-                   log: performanceLog, type: .info,
-                   totalChecks, hitRate, cacheHits, cacheMisses)
-        }
-
         return isCorrect
     }
 
@@ -291,29 +277,35 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
                     wordCount: UnsafeMutablePointer<Int>,
                     countOnly: Bool) -> NSRange {
 
-        // Extract all words in one pass using optimized tokenizer
-        let words = extractWords(from: stringToCheck)
-        wordCount.pointee = words.count
+        // Incremental word-by-word checking - only check from current position forward
+        var position = 0
+        var count = 0
 
-        // If only counting, return early
-        if countOnly {
-            return NSRange(location: NSNotFound, length: 0)
-        }
+        while position < stringToCheck.count {
+            let wordRange = findNextWord(in: stringToCheck, startingAt: position)
 
-        // Check each word for spelling
-        for (word, range) in words {
-            if !checkWord(word) {
-                // Found misspelled word - return its position
-                // Note: wordCount should be set to the number of words checked so far
-                if let index = words.firstIndex(where: { $0.range.location == range.location }) {
-                    wordCount.pointee = index + 1
-                }
-                return range
+            if wordRange.location == NSNotFound {
+                break  // No more words
             }
+
+            count += 1
+
+            if !countOnly {
+                let word = (stringToCheck as NSString).substring(with: wordRange)
+
+                if !checkWord(word) {
+                    // Found misspelled word
+                    wordCount.pointee = count
+                    return wordRange
+                }
+            }
+
+            // Move to next word
+            position = NSMaxRange(wordRange)
         }
 
-        // No misspelled words found
-        return NSRange(location: NSNotFound, length: 0)
+        wordCount.pointee = count
+        return NSRange(location: NSNotFound, length: 0)  // No misspelled words found
     }
 
     func spellServer(_ sender: NSSpellServer,

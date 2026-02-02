@@ -180,6 +180,30 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         return false
     }
 
+    // Check if a word is complete (followed by whitespace/punctuation, not at end of string)
+    private func isWordComplete(at range: NSRange, in string: String) -> Bool {
+        let nsString = string as NSString
+        let wordEnd = NSMaxRange(range)
+
+        // Word at the very end of the string is incomplete (user might still be typing)
+        if wordEnd >= nsString.length {
+            return false
+        }
+
+        // Check the character immediately after the word
+        let nextCharRange = nsString.rangeOfComposedCharacterSequence(at: wordEnd)
+        let nextChar = nsString.substring(with: nextCharRange)
+
+        // Word is complete if followed by whitespace, punctuation, or other non-letter
+        if let scalar = nextChar.unicodeScalars.first {
+            let codepoint = scalar.value
+            // Not a letter = word boundary = complete word
+            return !isShavianOrLatinLetter(codepoint)
+        }
+
+        return false
+    }
+
     // Optimized word extraction using CFStringTokenizer - incremental
     private func findNextWord(in string: String, startingAt start: Int) -> NSRange {
         os_signpost(.begin, log: performanceLog, name: "Word Extraction", signpostID: signpostWordExtraction)
@@ -222,7 +246,10 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             }
 
             if containsLetter {
-                return range
+                // Only return complete words (not currently being typed)
+                if isWordComplete(at: range, in: string) {
+                    return range
+                }
             }
 
             tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)

@@ -260,12 +260,21 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
 
     // MARK: - Spell Checking
 
+    private func normalizeWord(_ word: String) -> String {
+        // Remove soft hyphens (U+00AD) which are invisible formatting characters
+        // that shouldn't affect spell-checking
+        return word.replacingOccurrences(of: "\u{00AD}", with: "")
+    }
+
     private func checkWord(_ word: String) -> Bool {
         totalChecks += 1
 
+        // Normalize word (remove soft hyphens, etc.)
+        let normalizedWord = normalizeWord(word)
+
         // Check cache first
         os_signpost(.begin, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup)
-        if let cached = spellCheckCache.get(word) {
+        if let cached = spellCheckCache.get(normalizedWord) {
             cacheHits += 1
             os_signpost(.end, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup, "Hit")
             return cached
@@ -280,18 +289,18 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         }
 
         // Determine which dictionary to use based on script
-        let isShavian = containsShavianScript(word)
+        let isShavian = containsShavianScript(normalizedWord)
         let handle = isShavian ? shavianHandle : englishHandle
 
         guard let hunspellHandle = handle else {
             return true  // No dictionary loaded for this script, assume correct
         }
 
-        let result = Hunspell_spell(hunspellHandle, word)
+        let result = Hunspell_spell(hunspellHandle, normalizedWord)
         let isCorrect = result != 0  // Non-zero means correctly spelled
 
         // Store in cache
-        spellCheckCache.set(word, isCorrect)
+        spellCheckCache.set(normalizedWord, isCorrect)
 
         return isCorrect
     }

@@ -77,10 +77,10 @@ $(INSTALLER_APP): $(DICT_SHAVIAN_ENGLISH_GB) $(DICT_ENGLISH_SHAVIAN_GB) $(DICT_S
                   $(DICT_SHAVIAN_ENGLISH_US) $(DICT_ENGLISH_SHAVIAN_US) $(DICT_SHAVIAN_SHAVIAN_US) \
                   $(HUNSPELL_GB) $(HUNSPELL_US) $(HUNSPELL_EN_GB) $(HUNSPELL_EN_US) \
                   $(SPELLSERVER_BUNDLE) $(INSTALLER_ICON) \
-                  src/installer/src/*.swift src/installer/src/Info.plist src/installer/resources/*.html
+                  src/installer/src/*.swift src/installer/src/Info.plist.template src/installer/resources/*.html
 	@cd src/installer && $(MAKE)
 
-$(UNINSTALLER_APP): $(UNINSTALLER_ICON) src/uninstaller/src/*.swift src/uninstaller/src/Info.plist src/uninstaller/Makefile
+$(UNINSTALLER_APP): $(UNINSTALLER_ICON) src/uninstaller/src/*.swift src/uninstaller/src/Info.plist.template src/uninstaller/Makefile
 	@cd src/uninstaller && $(MAKE)
 
 .PHONY: installer uninstaller-app

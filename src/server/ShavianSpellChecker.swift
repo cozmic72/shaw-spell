@@ -420,9 +420,13 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     @objc func spellServer(_ sender: NSSpellServer,
                     didLearnWord word: String,
                     inLanguage language: String) {
-        // Determine which dictionary this word belongs to based on script
         let isShavian = containsShavianScript(word)
+        NSLog("ShavianSpellChecker: didLearnWord called (language: %@, script: %@)",
+              language, isShavian ? "Shavian" : "Latin")
+
+        // Determine which dictionary this word belongs to based on script
         guard let handle = isShavian ? shavianHandle : englishHandle else {
+            NSLog("ShavianSpellChecker: No dictionary handle available for learned word")
             return
         }
 
@@ -436,6 +440,8 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
 
         // Persist to user's personal dictionary file
         saveWordToPersonalDictionary(word, language: language)
+
+        NSLog("ShavianSpellChecker: Word learned successfully")
     }
 
     private func saveWordToPersonalDictionary(_ word: String, language: String) {
@@ -473,9 +479,13 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     @objc func spellServer(_ sender: NSSpellServer,
                     didForgetWord word: String,
                     inLanguage language: String) {
-        // Determine which dictionary this word belongs to based on script
         let isShavian = containsShavianScript(word)
+        NSLog("ShavianSpellChecker: didForgetWord called (language: %@, script: %@)",
+              language, isShavian ? "Shavian" : "Latin")
+
+        // Determine which dictionary this word belongs to based on script
         guard let handle = isShavian ? shavianHandle : englishHandle else {
+            NSLog("ShavianSpellChecker: No dictionary handle available for forgotten word")
             return
         }
 
@@ -489,6 +499,8 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
 
         // Remove from user's personal dictionary file
         removeWordFromPersonalDictionary(word, language: language)
+
+        NSLog("ShavianSpellChecker: Word forgotten successfully")
     }
 
     private func removeWordFromPersonalDictionary(_ word: String, language: String) {

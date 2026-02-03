@@ -233,11 +233,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
 
         """
 
-        // Load LaunchAgent
+        // Load and start LaunchAgent
         script += """
         echo 'Starting spell server...'
-        launchctl unload "$LAUNCH_AGENT_DIR/io.joro.Shaw-Spell.plist" 2>/dev/null || true
-        launchctl load "$LAUNCH_AGENT_DIR/io.joro.Shaw-Spell.plist"
+        # Stop any existing instance
+        launchctl bootout gui/$(id -u)/io.joro.Shaw-Spell 2>/dev/null || true
+        # Bootstrap the service (modern way to load)
+        launchctl bootstrap gui/$(id -u) "$LAUNCH_AGENT_DIR/io.joro.Shaw-Spell.plist" 2>/dev/null || true
+        # Force start immediately (in case RunAtLoad doesn't trigger)
+        launchctl kickstart -k gui/$(id -u)/io.joro.Shaw-Spell
 
         """
 

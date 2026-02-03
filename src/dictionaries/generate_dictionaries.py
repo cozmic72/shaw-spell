@@ -16,6 +16,7 @@ Generates:
 
 import json
 import sys
+import subprocess
 from pathlib import Path
 from html import escape
 from collections import defaultdict
@@ -26,6 +27,32 @@ from build_definition_caches import POS_TO_ENGLISH, POS_TO_SHAVIAN
 # Cache for normalized words to avoid repeated lookups
 _normalize_us_cache = {}
 _normalize_gb_cache = {}
+
+
+def hyphenate_shavian(text):
+    """
+    Hyphenate Shavian text using the shyphenate command-line tool.
+
+    Args:
+        text: String containing Shavian text to hyphenate
+
+    Returns:
+        Hyphenated text with soft hyphens (U+00AD) inserted, or original text if tool fails
+    """
+    try:
+        # Run shyphenate as a pipe: stdin → stdout
+        result = subprocess.run(
+            ['shyphenate'],
+            input=text,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        # If shyphenate fails or isn't found, return original text
+        print(f"Warning: shyphenate failed or not found: {e}", file=sys.stderr)
+        return text
 
 def normalize_to_us_with_cache(word, wordnet_cache):
     """
@@ -1374,7 +1401,11 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         f.write(f'        <h3><i>{escape(pos_label)}</i></h3>\n')
                         f.write('        <ol class="definition-list">\n')
                         for i, def_data in enumerate(pos_defs[:5], 1):
-                            f.write(f'          <li class="definition">{escape(def_data["definition"])}</li>\n')
+                            definition_text = def_data["definition"]
+                            # Hyphenate Shavian definitions
+                            if config.get('use_shavian_cache', False):
+                                definition_text = hyphenate_shavian(definition_text)
+                            f.write(f'          <li class="definition">{escape(definition_text)}</li>\n')
                         f.write('        </ol>\n')
                         f.write('      </div>\n')
                     f.write('    </div>\n')

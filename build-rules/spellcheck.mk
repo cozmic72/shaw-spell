@@ -60,7 +60,7 @@ $(BUILD_HUNSPELL)/io.joro.shaw-spell.en_US.aff: $(HUNSPELL_EN_US)
 SPELLSERVER_BUNDLE = $(BUILD_ROOT)/Shaw-Spell.service/Contents/MacOS/Shaw-Spell
 
 $(SPELLSERVER_BUNDLE): $(wildcard $(SRC_SERVER)/*.swift) $(wildcard $(SRC_SERVER)/*.h) \
-                       $(SRC_SERVER)/Makefile $(SRC_SERVER)/Info.plist \
+                       $(SRC_SERVER)/Makefile $(SRC_SERVER)/Info.plist.template \
                        $(HUNSPELL_FILES)
 	@echo "Building spell server..."
 	@cd $(SRC_SERVER) && $(MAKE)

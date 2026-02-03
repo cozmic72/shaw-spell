@@ -1079,11 +1079,11 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
     # Write XML
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(create_xml_header(config['name'], config['from_lang'], config['to_lang']))
-        f.write(create_front_matter())
-        f.flush()
+            f.write(create_xml_header(config['name'], config['from_lang'], config['to_lang']))
+            f.write(create_front_matter())
+            f.flush()
 
-        written_entries = 0
+            written_entries = 0
 
         # Write entries - each readlex entry is a separate word sense
         # Sort index words, stripping namer dots so ·𐑛𐑵 sorts with 𐑛𐑵

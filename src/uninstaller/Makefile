@@ -13,6 +13,10 @@ REPO_ROOT = ../..
 ENTITLEMENTS = Uninstaller.entitlements
 include $(REPO_ROOT)/src/signing.mk
 
+# Get VERSION from parent (set by build-rules/common.mk)
+VERSION ?= $(shell cat $(REPO_ROOT)/current-version | tr -d '\n')
+export VERSION
+
 # Source files
 SWIFT_SOURCES = src/main.swift src/AppDelegate.swift
 
@@ -39,7 +43,7 @@ ICON_FILE = $(BUILD_DIR)/icons/uninstaller-AppIcon.icns
 all: $(MACOS_DIR)/$(EXECUTABLE_NAME)
 
 # Build the complete uninstaller app bundle atomically
-$(MACOS_DIR)/$(EXECUTABLE_NAME): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist
+$(MACOS_DIR)/$(EXECUTABLE_NAME): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) src/Info.plist.template
 	@echo "Building uninstaller app bundle..."
 	@TEMP=$$(mktemp -d) && \
 	TEMP_BUNDLE="$$TEMP/$(BUNDLE_NAME)" && \
@@ -47,10 +51,10 @@ $(MACOS_DIR)/$(EXECUTABLE_NAME): $(BUILD_DIR)/$(EXECUTABLE_NAME) $(ICON_FILE) sr
 	TEMP_MACOS="$$TEMP_CONTENTS/MacOS" && \
 	TEMP_RESOURCES="$$TEMP_CONTENTS/Resources" && \
 	mkdir -p "$$TEMP_MACOS" "$$TEMP_RESOURCES" && \
+	echo "  Generating Info.plist from template..." && \
+	$(REPO_ROOT)/src/tools/interpolate_template.py src/Info.plist.template "$$TEMP_CONTENTS/Info.plist" VERSION="$(VERSION)" && \
 	echo "  Copying executable..." && \
 	cp "$(BUILD_DIR)/$(EXECUTABLE_NAME)" "$$TEMP_MACOS/" && \
-	echo "  Copying Info.plist..." && \
-	cp src/Info.plist "$$TEMP_CONTENTS/" && \
 	echo "  Copying icon..." && \
 	cp "$(ICON_FILE)" "$$TEMP_RESOURCES/AppIcon.icns" && \
 	echo "  Code signing..." && \

@@ -13,6 +13,10 @@ REPO_ROOT = ../..
 ENTITLEMENTS = Shaw-Spell.entitlements
 include $(REPO_ROOT)/src/signing.mk
 
+# Get VERSION from parent (set by build-rules/common.mk)
+VERSION ?= $(shell cat $(REPO_ROOT)/current-version | tr -d '\n')
+export VERSION
+
 # Source files
 SWIFT_SOURCES = main.swift ShavianSpellChecker.swift
 BRIDGE_HEADER = HunspellBridge.h
@@ -72,7 +76,7 @@ TEST_PROGRAMS = $(addprefix $(TEST_DIR)/,$(TEST_SOURCES:.m=))
 all: $(MACOS_DIR)/$(SERVICE_NAME)
 
 # Build the complete spell server bundle atomically
-$(MACOS_DIR)/$(SERVICE_NAME): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
+$(MACOS_DIR)/$(SERVICE_NAME): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist.template
 	@echo "Building spell server service bundle..."
 	@TEMP=$$(mktemp -d) && \
 	TEMP_BUNDLE="$$TEMP/$(BUNDLE_NAME)" && \
@@ -81,10 +85,10 @@ $(MACOS_DIR)/$(SERVICE_NAME): $(BUILD_DIR)/$(SERVICE_NAME) Info.plist
 	TEMP_RESOURCES="$$TEMP_CONTENTS/Resources" && \
 	TEMP_FRAMEWORKS="$$TEMP_CONTENTS/Frameworks" && \
 	mkdir -p "$$TEMP_MACOS" "$$TEMP_RESOURCES" "$$TEMP_FRAMEWORKS" && \
+	echo "  Generating Info.plist from template..." && \
+	$(REPO_ROOT)/src/tools/interpolate_template.py Info.plist.template "$$TEMP_CONTENTS/Info.plist" VERSION="$(VERSION)" && \
 	echo "  Copying executable..." && \
 	cp "$(BUILD_DIR)/$(SERVICE_NAME)" "$$TEMP_MACOS/" && \
-	echo "  Copying Info.plist..." && \
-	cp Info.plist "$$TEMP_CONTENTS/" && \
 	echo "  Creating universal Hunspell library..." && \
 	lipo -create "$(HUNSPELL_DYLIB_ARM64)" "$(HUNSPELL_DYLIB_X86_64)" -output "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \
 	chmod +w "$$TEMP_FRAMEWORKS/libhunspell-1.7.0.dylib" && \

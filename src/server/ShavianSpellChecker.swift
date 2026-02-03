@@ -290,7 +290,17 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             if containsLetter {
                 // Only return complete words (not currently being typed)
                 if isWordComplete(at: range, in: string) {
-                    return range
+                    // Check if word is preceded by namer dot (·)
+                    var finalRange = range
+                    if range.location > 0 {
+                        let beforeRange = NSRange(location: range.location - 1, length: 1)
+                        let charBefore = nsString.substring(with: beforeRange)
+                        if charBefore == "·" {  // U+00B7 MIDDLE DOT
+                            // Include the namer dot in the word
+                            finalRange = NSRange(location: range.location - 1, length: range.length + 1)
+                        }
+                    }
+                    return finalRange
                 }
             }
 

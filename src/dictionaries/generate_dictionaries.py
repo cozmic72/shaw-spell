@@ -29,30 +29,65 @@ _normalize_us_cache = {}
 _normalize_gb_cache = {}
 
 
-def hyphenate_shavian(text):
+class ShyphenateSession:
     """
-    Hyphenate Shavian text using the shyphenate command-line tool.
+    Persistent shyphenate subprocess for efficient hyphenation.
 
-    Args:
-        text: String containing Shavian text to hyphenate
-
-    Returns:
-        Hyphenated text with soft hyphens (U+00AD) inserted, or original text if tool fails
+    Keeps a single shyphenate process running and communicates
+    via stdin/stdout to avoid fork overhead.
     """
-    try:
-        # Run shyphenate as a pipe: stdin → stdout
-        result = subprocess.run(
-            ['shyphenate'],
-            input=text,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        return result.stdout
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        # If shyphenate fails or isn't found, return original text
-        print(f"Warning: shyphenate failed or not found: {e}", file=sys.stderr)
-        return text
+    def __init__(self):
+        self.process = None
+        self._start_process()
+
+    def _start_process(self):
+        """Start the shyphenate subprocess."""
+        try:
+            self.process = subprocess.Popen(
+                ['shyphenate'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1  # Line buffered
+            )
+        except FileNotFoundError:
+            print("Warning: shyphenate not found on PATH", file=sys.stderr)
+            self.process = None
+
+    def hyphenate(self, text):
+        """
+        Hyphenate a single text using the persistent subprocess.
+
+        Args:
+            text: String to hyphenate
+
+        Returns:
+            Hyphenated text, or original if process isn't available
+        """
+        if self.process is None:
+            return text
+
+        try:
+            # Write text with newline
+            self.process.stdin.write(text + '\n')
+            self.process.stdin.flush()
+
+            # Read response
+            result = self.process.stdout.readline()
+            return result.rstrip('\n')
+        except (BrokenPipeError, OSError) as e:
+            print(f"Warning: shyphenate process failed: {e}", file=sys.stderr)
+            return text
+
+    def close(self):
+        """Close the subprocess."""
+        if self.process:
+            self.process.stdin.close()
+            self.process.stdout.close()
+            self.process.stderr.close()
+            self.process.wait()
+            self.process = None
 
 def normalize_to_us_with_cache(word, wordnet_cache):
     """
@@ -709,6 +744,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         dialect: 'gb' or 'us' (for preferred variant)
         wordnet_cache: Comprehensive WordNet cache (required for dialect detection)
     """
+    # Initialize hyphenation session for Shavian dictionaries
+    shyphenate_session = None
     # Configuration based on dictionary type
     config = {
         'shaw-eng': {
@@ -1035,8 +1072,13 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 if key not in index_to_entries[index_word]:
                     index_to_entries[index_word].append(key)
 
+    # Initialize hyphenation session if needed
+    if config.get('use_shavian_cache', False):
+        shyphenate_session = ShyphenateSession()
+
     # Write XML
-    with open(output_path, 'w', encoding='utf-8') as f:
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
         f.write(create_xml_header(config['name'], config['from_lang'], config['to_lang']))
         f.write(create_front_matter())
         f.flush()
@@ -1402,9 +1444,9 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         f.write('        <ol class="definition-list">\n')
                         for i, def_data in enumerate(pos_defs[:5], 1):
                             definition_text = def_data["definition"]
-                            # Hyphenate Shavian definitions
-                            if config.get('use_shavian_cache', False):
-                                definition_text = hyphenate_shavian(definition_text)
+                            # Hyphenate Shavian definitions using persistent session
+                            if shyphenate_session:
+                                definition_text = shyphenate_session.hyphenate(definition_text)
                             f.write(f'          <li class="definition">{escape(definition_text)}</li>\n')
                         f.write('        </ol>\n')
                         f.write('      </div>\n')
@@ -1448,10 +1490,14 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             if written_entries % 1000 == 0:
                 f.flush()
 
-        f.write(create_xml_footer())
-        f.flush()
+            f.write(create_xml_footer())
+            f.flush()
 
-    print(f"Generated {written_entries} entries → {output_path}")
+        print(f"Generated {written_entries} entries → {output_path}")
+    finally:
+        # Close hyphenation session if it was created
+        if shyphenate_session:
+            shyphenate_session.close()
 
 
 def main():

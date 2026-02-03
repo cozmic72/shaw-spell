@@ -1,13 +1,6 @@
 @charset "UTF-8";
 @namespace d url(http://www.apple.com/DTDs/DictionaryService-1.0.rng);
 
-@font-face {
-	font-family: 'Bernie Sans 0.878';
-	src: url('Resources/BernieSans0.878VF.ttf') format('truetype-variations');
-	font-weight: 100 900;
-	font-stretch: 75% 125%;
-}
-
 body {
 	font-family: 'Bernie Sans 0.878', sans-serif;
 }

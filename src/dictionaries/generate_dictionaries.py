@@ -1085,413 +1085,413 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
             written_entries = 0
 
-        # Write entries - each readlex entry is a separate word sense
-        # Sort index words, stripping namer dots so ·𐑛𐑵 sorts with 𐑛𐑵
-        def index_sort_key(word):
-            return word.lstrip('·')
+            # Write entries - each readlex entry is a separate word sense
+            # Sort index words, stripping namer dots so ·𐑛𐑵 sorts with 𐑛𐑵
+            def index_sort_key(word):
+                return word.lstrip('·')
 
-        for index_word in sorted(index_to_entries.keys(), key=index_sort_key):
-            entry_keys = index_to_entries[index_word]
+            for index_word in sorted(index_to_entries.keys(), key=index_sort_key):
+                entry_keys = index_to_entries[index_word]
 
-            # Sort entries: direct matches first, then by lemma, then by POS
-            def sort_entries(entry_key):
-                entry_data = merged_entries[entry_key]
+                # Sort entries: direct matches first, then by lemma, then by POS
+                def sort_entries(entry_key):
+                    entry_data = merged_entries[entry_key]
 
-                # Check if this is a direct match (index_word matches ANY form - lemma or derived)
-                is_direct_match = False
-                lemma_text = None
-                for form in entry_data['forms']:
-                    form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
-                    if form_index == index_word:
-                        is_direct_match = True
-                    if lemma_text is None and form['is_lemma']:
-                        lemma_text = form['latn'].lower()
+                    # Check if this is a direct match (index_word matches ANY form - lemma or derived)
+                    is_direct_match = False
+                    lemma_text = None
+                    for form in entry_data['forms']:
+                        form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
+                        if form_index == index_word:
+                            is_direct_match = True
+                        if lemma_text is None and form['is_lemma']:
+                            lemma_text = form['latn'].lower()
 
-                # Get POS for sorting
-                pos = entry_pos.get(entry_key, ())
-                pos_str = ''.join(sorted(pos)) if pos else 'zzz'  # Put entries without POS at end
+                    # Get POS for sorting
+                    pos = entry_pos.get(entry_key, ())
+                    pos_str = ''.join(sorted(pos)) if pos else 'zzz'  # Put entries without POS at end
 
-                # Sort key: (not is_direct_match, lemma, pos)
-                # not is_direct_match: False (direct) comes before True (indirect)
-                return (not is_direct_match, lemma_text or '', pos_str)
+                    # Sort key: (not is_direct_match, lemma, pos)
+                    # not is_direct_match: False (direct) comes before True (indirect)
+                    return (not is_direct_match, lemma_text or '', pos_str)
 
-            entry_keys = sorted(entry_keys, key=sort_entries)
+                entry_keys = sorted(entry_keys, key=sort_entries)
 
-            # Debug: check for dew entries
-            if index_word in debug_shavian:
-                print(f"DEBUG INDEX: {index_word} has {len(entry_keys)} entries:")
-                for ek in entry_keys:
-                    sort_key = sort_entries(ek)
-                    ed = merged_entries[ek]
-                    lemma_form = next((f['latn'] for f in ed['forms'] if f['is_lemma']), 'unknown')
-                    print(f"  {ek}: sort_key={sort_key}, lemma={lemma_form}")
+                # Debug: check for dew entries
+                if index_word in debug_shavian:
+                    print(f"DEBUG INDEX: {index_word} has {len(entry_keys)} entries:")
+                    for ek in entry_keys:
+                        sort_key = sort_entries(ek)
+                        ed = merged_entries[ek]
+                        lemma_form = next((f['latn'] for f in ed['forms'] if f['is_lemma']), 'unknown')
+                        print(f"  {ek}: sort_key={sort_key}, lemma={lemma_form}")
 
-            # Write separate entry for each merged entry (each word sense)
-            for entry_idx, entry_key in enumerate(entry_keys):
-                entry_data = merged_entries[entry_key]
-                lemma_data = {'forms': entry_data['forms'], 'definitions': entry_data['definitions']}
+                # Write separate entry for each merged entry (each word sense)
+                for entry_idx, entry_key in enumerate(entry_keys):
+                    entry_data = merged_entries[entry_key]
+                    lemma_data = {'forms': entry_data['forms'], 'definitions': entry_data['definitions']}
 
-                # Collect all index words for d:index tags (all forms from this lemma)
-                lemma_forms_indices = set()
-                for form in lemma_data['forms']:
-                    form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
+                    # Collect all index words for d:index tags (all forms from this lemma)
+                    lemma_forms_indices = set()
+                    for form in lemma_data['forms']:
+                        form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
 
-                    # Apply proper noun formatting to index values
-                    if config['index_key'] == 'shaw':
-                        # Add namer dot version for proper nouns
-                        if is_proper_noun(form['pos']):
-                            # Add both with and without namer dot for flexibility
-                            lemma_forms_indices.add(form_index)
-                            lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
-                        else:
-                            lemma_forms_indices.add(form_index)
-                    else:
-                        # For Latin, add both lowercase and capitalized versions for proper nouns
-                        lemma_forms_indices.add(form_index)  # lowercase version
-                        if is_proper_noun(form['pos']):
-                            lemma_forms_indices.add(form_index.capitalize())
-
-                # Add foreign dialect forms as cross-references
-                # E.g., in GB dictionary, add "color" indices pointing to "colour" entry
-                for foreign_key, home_key in foreign_to_home.items():
-                    if home_key == entry_key:
-                        # This home entry has foreign variants - add their forms as indices
-                        foreign_data = readlex_entries[foreign_key]
-                        for form in foreign_data['forms']:
-                            form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
-                            if config['index_key'] == 'shaw':
-                                if is_proper_noun(form['pos']):
-                                    lemma_forms_indices.add(form_index)
-                                    lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
-                                else:
-                                    lemma_forms_indices.add(form_index)
+                        # Apply proper noun formatting to index values
+                        if config['index_key'] == 'shaw':
+                            # Add namer dot version for proper nouns
+                            if is_proper_noun(form['pos']):
+                                # Add both with and without namer dot for flexibility
+                                lemma_forms_indices.add(form_index)
+                                lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
                             else:
                                 lemma_forms_indices.add(form_index)
-                                if is_proper_noun(form['pos']):
-                                    lemma_forms_indices.add(form_index.capitalize())
-
-                # Write entry for this readlex key
-                entry_id = f"{config['index_key']}_{index_word}_{entry_idx}"
-                f.write(f'  <d:entry id="{escape(entry_id)}" d:title="{escape(index_word)}">\n')
-
-                # Add d:index for each form in this lemma
-                for form_index in sorted(lemma_forms_indices):
-                    f.write(f'    <d:index d:value="{escape(form_index)}"/>\n')
-
-                # Apply proper noun formatting to h1 title based on first lemma form's POS
-                lemma_forms = [f for f in lemma_data['forms'] if f['is_lemma']]
-                first_pos = lemma_forms[0]['pos'] if lemma_forms else ''
-
-                # Determine which text to display in h1 based on dictionary type
-                # Use the canonical form from the readlex entry
-                if config['index_key'] == 'shaw':
-                    # For Shavian dictionaries, use the canonical Shavian from readlex key
-                    h1_text = entry_data['canonical_shavian']
-                    h1_text = add_namer_dot_if_proper_noun(h1_text, first_pos)
-                else:
-                    # For Latin dictionaries, use the first lemma form's Latin text
-                    if lemma_forms:
-                        h1_text = lemma_forms[0]['latn']
-                        h1_text = capitalize_if_proper_noun(h1_text, first_pos)
-                    else:
-                        h1_text = index_word
-
-                f.write(f'    <h1>{escape(h1_text)}</h1>\n')
-
-                # Check if we need to show variants
-                unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
-                show_variants = len(unique_variants) > 1
-
-                # Determine home dialect spelling for this dictionary
-                home_dialect = 'GB' if preferred_var == 'RRP' else 'US'
-
-                # Group forms by normalized English word to find all variants together
-                # This groups spelling variants (colour/color) AND pronunciation variants
-                # (due /djuː/ GB vs /duː/ US) under one word
-                word_groups = defaultdict(list)
-                is_eng_to_shaw = (config['index_key'] == 'latn')
-
-                for form in lemma_data['forms']:
-                    # ALL dictionaries: Group by normalized English spelling
-                    # This merges colour/color and also groups due /djuː/ with due /duː/
-                    base_word = normalize_to_us_with_cache(form['latn'], wordnet_cache)
-                    key = (base_word, form['is_lemma'])
-                    word_groups[key].append(form)
-
-                # Display forms for this lemma
-                f.write('    <div class="forms">\n')
-
-                # Sort: lemmas first, then derived forms
-                def sort_key(k):
-                    base_word, is_lemma = k
-                    return (not is_lemma, base_word)
-
-                sorted_words = sorted(word_groups.keys(), key=sort_key)
-
-                for word_key in sorted_words:
-                    base_word, is_lemma = word_key
-                    forms = word_groups[word_key]
-
-                    # Separate forms by variant (home vs alt)
-                    # For spelling variants (color/colour), use spelling_variant field
-                    # For pronunciation variants (due /djuː/ vs /duː/), use var field
-                    home_forms = []
-                    alt_forms = []
-
-                    for form in forms:
-                        # Check spelling variant first (US/GB spelling like color/colour)
-                        spelling_var = form.get('spelling_variant')
-                        if spelling_var:
-                            # Use spelling variant to determine home vs alt
-                            is_home = (spelling_var == home_dialect)
                         else:
-                            # Fall back to pronunciation variant (var field)
-                            var = form.get('var')
-                            is_home = (var == preferred_var or var is None)
+                            # For Latin, add both lowercase and capitalized versions for proper nouns
+                            lemma_forms_indices.add(form_index)  # lowercase version
+                            if is_proper_noun(form['pos']):
+                                lemma_forms_indices.add(form_index.capitalize())
 
-                        if is_home:
-                            home_forms.append(form)
-                        else:
-                            alt_forms.append(form)
-
-                    # Determine style
-                    div_class = 'lemma-form' if is_lemma else 'derived-form'
-                    f.write(f'      <div class="{div_class}">')
-
-                    alt_dialect = 'US' if home_dialect == 'GB' else 'GB'
-
-                    # Determine which field to display based on dictionary type
-                    # shaw->eng: display English (latn)
-                    # eng->shaw and shaw->shaw: display Shavian (shaw)
-                    display_key = 'shaw' if is_eng_to_shaw or config['display_text'] is None else 'latn'
-
-                    # Get the home form to display
-                    if home_forms:
-                        home_form = home_forms[0]
-
-                        # Apply proper noun formatting to displayed text
-                        home_display_text = home_form[display_key]
-                        if display_key == 'shaw':
-                            home_display_text = add_namer_dot_if_proper_noun(home_display_text, home_form['pos'])
-                        else:
-                            home_display_text = capitalize_if_proper_noun(home_display_text, home_form['pos'])
-
-                        # Display the main text
-                        f.write(escape(home_display_text))
-                        f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
-
-                        # Look up alternate dialect spellings from WordNet cache
-                        # E.g., in GB dict for "colour", find "color" from cache variants
-                        lemma_latn = home_form.get('latn', '')
-                        alt_spellings = []  # List of (spelling, dialect, ipa) tuples
-
-                        if wordnet_cache and lemma_latn.lower() in wordnet_cache and is_lemma:
-                            # Get the synset for this entry
-                            entry_sig = entry_signatures.get(entry_key)
-                            if entry_sig and entry_sig[0] == 'synset':
-                                synset_id = entry_sig[2]
-
-                                # Look up variants in the cache for this synset
-                                cache_entry = wordnet_cache[lemma_latn.lower()]
-                                for pos_data in cache_entry.get('pos_entries', {}).values():
-                                    for sense in pos_data.get('sense_variants', []):
-                                        if sense.get('synset') == synset_id:
-                                            variants = sense.get('variants', {})
-                                            # Check each dialect
-                                            for dialect, variant_words in variants.items():
-                                                if dialect != home_dialect:
-                                                    # This is a foreign dialect
-                                                    for variant_word in variant_words:
-                                                        if variant_word.lower() != lemma_latn.lower():
-                                                            # Different spelling - try to find pronunciation from WordNet cache
-                                                            variant_ipa = None
-                                                            if variant_word.lower() in wordnet_cache:
-                                                                variant_cache = wordnet_cache[variant_word.lower()]
-                                                                # Look for this synset in the variant's cache entry
-                                                                for v_pos_data in variant_cache.get('pos_entries', {}).values():
-                                                                    for v_sense in v_pos_data.get('sense_variants', []):
-                                                                        if v_sense.get('synset') == synset_id:
-                                                                            # Found the right sense - get pronunciation
-                                                                            prons = v_sense.get('pronunciations', {})
-                                                                            # Prefer the dialect-specific pronunciation
-                                                                            variant_ipa = prons.get(dialect) or prons.get('default') or prons.get('US') or prons.get('GB')
-                                                                            break
-                                                            alt_spellings.append((variant_word, dialect, variant_ipa))
-
-                        # Check for additional pronunciations in home_forms (e.g., due /djuː/ and /duː/)
-                        for additional_form in home_forms[1:]:
-                            if additional_form['ipa'] != home_form['ipa']:
-                                # Different pronunciation - show it
-                                variant_label = additional_form.get('var')
-                                if variant_label == 'GenAm':
-                                    variant_label = 'US'
-                                elif variant_label == 'RRP':
-                                    variant_label = 'GB'
-
-                                if variant_label and variant_label != home_dialect:
-                                    f.write(f' <span class="variant">({escape(home_display_text)}, {variant_label} /{additional_form["ipa"]}/)</span>')
+                    # Add foreign dialect forms as cross-references
+                    # E.g., in GB dictionary, add "color" indices pointing to "colour" entry
+                    for foreign_key, home_key in foreign_to_home.items():
+                        if home_key == entry_key:
+                            # This home entry has foreign variants - add their forms as indices
+                            foreign_data = readlex_entries[foreign_key]
+                            for form in foreign_data['forms']:
+                                form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
+                                if config['index_key'] == 'shaw':
+                                    if is_proper_noun(form['pos']):
+                                        lemma_forms_indices.add(form_index)
+                                        lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
+                                    else:
+                                        lemma_forms_indices.add(form_index)
                                 else:
-                                    f.write(f' <span class="variant">({escape(home_display_text)} /{additional_form["ipa"]}/)</span>')
+                                    lemma_forms_indices.add(form_index)
+                                    if is_proper_noun(form['pos']):
+                                        lemma_forms_indices.add(form_index.capitalize())
 
-                        # Display alternate spellings (only if actually different)
-                        # For shaw-shaw dictionary, skip Latin alphabet variants
-                        if alt_spellings and dict_type != 'shaw-shaw':
-                            for alt_spelling, alt_dialect, alt_ipa in alt_spellings:
-                                # Only show if spelling is different OR pronunciation is different
-                                spelling_differs = alt_spelling.lower() != home_form.get('latn', '').lower()
-                                pronunciation_differs = alt_ipa and alt_ipa != home_form['ipa']
+                    # Write entry for this readlex key
+                    entry_id = f"{config['index_key']}_{index_word}_{entry_idx}"
+                    f.write(f'  <d:entry id="{escape(entry_id)}" d:title="{escape(index_word)}">\n')
 
-                                if not spelling_differs and not pronunciation_differs:
-                                    # Nothing different - skip this variant
-                                    continue
+                    # Add d:index for each form in this lemma
+                    for form_index in sorted(lemma_forms_indices):
+                        f.write(f'    <d:index d:value="{escape(form_index)}"/>\n')
 
-                                if pronunciation_differs:
-                                    # Different pronunciation - show both spelling and IPA
-                                    f.write(f' <span class="variant">({escape(alt_spelling)}, {alt_dialect} /{alt_ipa}/)</span>')
-                                elif spelling_differs:
-                                    # Only spelling differs (same or no pronunciation)
-                                    f.write(f' <span class="variant">({escape(alt_spelling)}, {alt_dialect})</span>')
+                    # Apply proper noun formatting to h1 title based on first lemma form's POS
+                    lemma_forms = [f for f in lemma_data['forms'] if f['is_lemma']]
+                    first_pos = lemma_forms[0]['pos'] if lemma_forms else ''
 
-                        # Check for additional spelling variants in the same dialect from the actual forms
-                        # Only show variants that exist in THIS entry (not from cache lookup)
-                        # e.g., if we have both "colour" and "colourise" in home_forms, show them
-                        displayed_latn_normalized = normalize_to_us_with_cache(home_form.get('latn', ''), wordnet_cache)
-                        additional_home_forms = []
-                        for additional_form in home_forms[1:]:  # Skip the first one we already displayed
-                            # Only include if it's a different word (not just different POS)
-                            form_normalized = normalize_to_us_with_cache(additional_form.get('latn', ''), wordnet_cache)
-                            if form_normalized != displayed_latn_normalized:
-                                additional_home_forms.append(additional_form['latn'])
+                    # Determine which text to display in h1 based on dictionary type
+                    # Use the canonical form from the readlex entry
+                    if config['index_key'] == 'shaw':
+                        # For Shavian dictionaries, use the canonical Shavian from readlex key
+                        h1_text = entry_data['canonical_shavian']
+                        h1_text = add_namer_dot_if_proper_noun(h1_text, first_pos)
+                    else:
+                        # For Latin dictionaries, use the first lemma form's Latin text
+                        if lemma_forms:
+                            h1_text = lemma_forms[0]['latn']
+                            h1_text = capitalize_if_proper_noun(h1_text, first_pos)
+                        else:
+                            h1_text = index_word
 
-                        if additional_home_forms:
-                            variants_text = ', '.join(additional_home_forms)
-                            f.write(f' <span class="variant">(also: {escape(variants_text)})</span>')
+                    f.write(f'    <h1>{escape(h1_text)}</h1>\n')
 
-                        # Check for alternate forms
-                        if alt_forms:
+                    # Check if we need to show variants
+                    unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
+                    show_variants = len(unique_variants) > 1
+
+                    # Determine home dialect spelling for this dictionary
+                    home_dialect = 'GB' if preferred_var == 'RRP' else 'US'
+
+                    # Group forms by normalized English word to find all variants together
+                    # This groups spelling variants (colour/color) AND pronunciation variants
+                    # (due /djuː/ GB vs /duː/ US) under one word
+                    word_groups = defaultdict(list)
+                    is_eng_to_shaw = (config['index_key'] == 'latn')
+
+                    for form in lemma_data['forms']:
+                        # ALL dictionaries: Group by normalized English spelling
+                        # This merges colour/color and also groups due /djuː/ with due /duː/
+                        base_word = normalize_to_us_with_cache(form['latn'], wordnet_cache)
+                        key = (base_word, form['is_lemma'])
+                        word_groups[key].append(form)
+
+                    # Display forms for this lemma
+                    f.write('    <div class="forms">\n')
+
+                    # Sort: lemmas first, then derived forms
+                    def sort_key(k):
+                        base_word, is_lemma = k
+                        return (not is_lemma, base_word)
+
+                    sorted_words = sorted(word_groups.keys(), key=sort_key)
+
+                    for word_key in sorted_words:
+                        base_word, is_lemma = word_key
+                        forms = word_groups[word_key]
+
+                        # Separate forms by variant (home vs alt)
+                        # For spelling variants (color/colour), use spelling_variant field
+                        # For pronunciation variants (due /djuː/ vs /duː/), use var field
+                        home_forms = []
+                        alt_forms = []
+
+                        for form in forms:
+                            # Check spelling variant first (US/GB spelling like color/colour)
+                            spelling_var = form.get('spelling_variant')
+                            if spelling_var:
+                                # Use spelling variant to determine home vs alt
+                                is_home = (spelling_var == home_dialect)
+                            else:
+                                # Fall back to pronunciation variant (var field)
+                                var = form.get('var')
+                                is_home = (var == preferred_var or var is None)
+
+                            if is_home:
+                                home_forms.append(form)
+                            else:
+                                alt_forms.append(form)
+
+                        # Determine style
+                        div_class = 'lemma-form' if is_lemma else 'derived-form'
+                        f.write(f'      <div class="{div_class}">')
+
+                        alt_dialect = 'US' if home_dialect == 'GB' else 'GB'
+
+                        # Determine which field to display based on dictionary type
+                        # shaw->eng: display English (latn)
+                        # eng->shaw and shaw->shaw: display Shavian (shaw)
+                        display_key = 'shaw' if is_eng_to_shaw or config['display_text'] is None else 'latn'
+
+                        # Get the home form to display
+                        if home_forms:
+                            home_form = home_forms[0]
+
+                            # Apply proper noun formatting to displayed text
+                            home_display_text = home_form[display_key]
+                            if display_key == 'shaw':
+                                home_display_text = add_namer_dot_if_proper_noun(home_display_text, home_form['pos'])
+                            else:
+                                home_display_text = capitalize_if_proper_noun(home_display_text, home_form['pos'])
+
+                            # Display the main text
+                            f.write(escape(home_display_text))
+                            f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
+
+                            # Look up alternate dialect spellings from WordNet cache
+                            # E.g., in GB dict for "colour", find "color" from cache variants
+                            lemma_latn = home_form.get('latn', '')
+                            alt_spellings = []  # List of (spelling, dialect, ipa) tuples
+
+                            if wordnet_cache and lemma_latn.lower() in wordnet_cache and is_lemma:
+                                # Get the synset for this entry
+                                entry_sig = entry_signatures.get(entry_key)
+                                if entry_sig and entry_sig[0] == 'synset':
+                                    synset_id = entry_sig[2]
+
+                                    # Look up variants in the cache for this synset
+                                    cache_entry = wordnet_cache[lemma_latn.lower()]
+                                    for pos_data in cache_entry.get('pos_entries', {}).values():
+                                        for sense in pos_data.get('sense_variants', []):
+                                            if sense.get('synset') == synset_id:
+                                                variants = sense.get('variants', {})
+                                                # Check each dialect
+                                                for dialect, variant_words in variants.items():
+                                                    if dialect != home_dialect:
+                                                        # This is a foreign dialect
+                                                        for variant_word in variant_words:
+                                                            if variant_word.lower() != lemma_latn.lower():
+                                                                # Different spelling - try to find pronunciation from WordNet cache
+                                                                variant_ipa = None
+                                                                if variant_word.lower() in wordnet_cache:
+                                                                    variant_cache = wordnet_cache[variant_word.lower()]
+                                                                    # Look for this synset in the variant's cache entry
+                                                                    for v_pos_data in variant_cache.get('pos_entries', {}).values():
+                                                                        for v_sense in v_pos_data.get('sense_variants', []):
+                                                                            if v_sense.get('synset') == synset_id:
+                                                                                # Found the right sense - get pronunciation
+                                                                                prons = v_sense.get('pronunciations', {})
+                                                                                # Prefer the dialect-specific pronunciation
+                                                                                variant_ipa = prons.get(dialect) or prons.get('default') or prons.get('US') or prons.get('GB')
+                                                                                break
+                                                                alt_spellings.append((variant_word, dialect, variant_ipa))
+
+                            # Check for additional pronunciations in home_forms (e.g., due /djuː/ and /duː/)
+                            for additional_form in home_forms[1:]:
+                                if additional_form['ipa'] != home_form['ipa']:
+                                    # Different pronunciation - show it
+                                    variant_label = additional_form.get('var')
+                                    if variant_label == 'GenAm':
+                                        variant_label = 'US'
+                                    elif variant_label == 'RRP':
+                                        variant_label = 'GB'
+
+                                    if variant_label and variant_label != home_dialect:
+                                        f.write(f' <span class="variant">({escape(home_display_text)}, {variant_label} /{additional_form["ipa"]}/)</span>')
+                                    else:
+                                        f.write(f' <span class="variant">({escape(home_display_text)} /{additional_form["ipa"]}/)</span>')
+
+                            # Display alternate spellings (only if actually different)
+                            # For shaw-shaw dictionary, skip Latin alphabet variants
+                            if alt_spellings and dict_type != 'shaw-shaw':
+                                for alt_spelling, alt_dialect, alt_ipa in alt_spellings:
+                                    # Only show if spelling is different OR pronunciation is different
+                                    spelling_differs = alt_spelling.lower() != home_form.get('latn', '').lower()
+                                    pronunciation_differs = alt_ipa and alt_ipa != home_form['ipa']
+
+                                    if not spelling_differs and not pronunciation_differs:
+                                        # Nothing different - skip this variant
+                                        continue
+
+                                    if pronunciation_differs:
+                                        # Different pronunciation - show both spelling and IPA
+                                        f.write(f' <span class="variant">({escape(alt_spelling)}, {alt_dialect} /{alt_ipa}/)</span>')
+                                    elif spelling_differs:
+                                        # Only spelling differs (same or no pronunciation)
+                                        f.write(f' <span class="variant">({escape(alt_spelling)}, {alt_dialect})</span>')
+
+                            # Check for additional spelling variants in the same dialect from the actual forms
+                            # Only show variants that exist in THIS entry (not from cache lookup)
+                            # e.g., if we have both "colour" and "colourise" in home_forms, show them
+                            displayed_latn_normalized = normalize_to_us_with_cache(home_form.get('latn', ''), wordnet_cache)
+                            additional_home_forms = []
+                            for additional_form in home_forms[1:]:  # Skip the first one we already displayed
+                                # Only include if it's a different word (not just different POS)
+                                form_normalized = normalize_to_us_with_cache(additional_form.get('latn', ''), wordnet_cache)
+                                if form_normalized != displayed_latn_normalized:
+                                    additional_home_forms.append(additional_form['latn'])
+
+                            if additional_home_forms:
+                                variants_text = ', '.join(additional_home_forms)
+                                f.write(f' <span class="variant">(also: {escape(variants_text)})</span>')
+
+                            # Check for alternate forms
+                            if alt_forms:
+                                alt_form = alt_forms[0]
+
+                                # Apply proper noun formatting to alternate form
+                                alt_display_text = alt_form[display_key]
+                                if display_key == 'shaw':
+                                    alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
+                                else:
+                                    alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
+
+                                # Check if pronunciation is the same
+                                if home_form['ipa'] == alt_form['ipa']:
+                                    # Same pronunciation - just show alternate spelling (colour vs color)
+                                    f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect})</span>')
+                                else:
+                                    # Different pronunciation - show alternate with its IPA
+                                    f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect} /{alt_form["ipa"]}/)</span>')
+
+                        elif alt_forms:
+                            # Only alt form available
                             alt_form = alt_forms[0]
 
-                            # Apply proper noun formatting to alternate form
+                            # Apply proper noun formatting
                             alt_display_text = alt_form[display_key]
                             if display_key == 'shaw':
                                 alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
                             else:
                                 alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
 
-                            # Check if pronunciation is the same
-                            if home_form['ipa'] == alt_form['ipa']:
-                                # Same pronunciation - just show alternate spelling (colour vs color)
-                                f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect})</span>')
-                            else:
-                                # Different pronunciation - show alternate with its IPA
-                                f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect} /{alt_form["ipa"]}/)</span>')
+                            f.write(escape(alt_display_text))
+                            f.write(f' <span class="ipa">/{alt_form["ipa"]}/</span>')
+                            f.write(f' <span class="variant">({alt_dialect})</span>')
 
-                    elif alt_forms:
-                        # Only alt form available
-                        alt_form = alt_forms[0]
+                        f.write('</div>\n')
 
-                        # Apply proper noun formatting
-                        alt_display_text = alt_form[display_key]
-                        if display_key == 'shaw':
-                            alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
-                        else:
-                            alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
-
-                        f.write(escape(alt_display_text))
-                        f.write(f' <span class="ipa">/{alt_form["ipa"]}/</span>')
-                        f.write(f' <span class="variant">({alt_dialect})</span>')
-
-                    f.write('</div>\n')
-
-                f.write('    </div>\n')
-
-                # Irregular forms (if any)
-                # Get the first lemma form to determine which lemma to look up
-                if lemma_forms:
-                    first_lemma_latn = lemma_forms[0]['latn']
-                    irregular_forms = get_irregular_forms(first_lemma_latn, wordnet_cache)
-
-                    if irregular_forms:
-                        f.write('    <div class="irregular-forms">\n')
-                        for pos, forms in irregular_forms.items():
-                            # Map WordNet POS to readable forms
-                            pos_label = POS_TO_ENGLISH.get(pos, pos)
-
-                            # Translate forms list if needed
-                            if config['translate_labels']:
-                                forms_display = ', '.join([translate_to_shavian(form, shavian_lookup) for form in forms])
-                                label_text = translate_to_shavian(f'Irregular {pos_label} forms', shavian_lookup)
-                            else:
-                                forms_display = ', '.join(forms)
-                                label_text = f'Irregular {pos_label} forms'
-
-                            f.write(f'      <p><i>{escape(label_text)}:</i> {escape(forms_display)}</p>\n')
-                        f.write('    </div>\n')
-
-                # Definitions for this lemma
-                if lemma_data['definitions']:
-                    pos_groups = group_definitions_by_pos(lemma_data['definitions'][:20])
-                    f.write('    <div class="definitions">\n')
-                    for pos, pos_defs in pos_groups:
-                        # Convert single-letter POS code to readable label
-                        pos_label = wordnet_pos_to_label(pos)
-                        # Translate to Shavian if needed
-                        if config['translate_labels']:
-                            pos_label = translate_to_shavian(pos_label, shavian_lookup)
-
-                        f.write(f'      <div class="pos-group">\n')
-                        f.write(f'        <h3><i>{escape(pos_label)}</i></h3>\n')
-                        f.write('        <ol class="definition-list">\n')
-                        for i, def_data in enumerate(pos_defs[:5], 1):
-                            definition_text = def_data["definition"]
-                            # Hyphenate Shavian definitions using persistent session
-                            if shyphenate_session:
-                                definition_text = shyphenate_session.hyphenate(definition_text)
-                            f.write(f'          <li class="definition">{escape(definition_text)}</li>\n')
-                        f.write('        </ol>\n')
-                        f.write('      </div>\n')
                     f.write('    </div>\n')
-                else:
-                    # No WordNet definitions - show POS from readlex with no defs message
-                    readlex_pos_tuple = entry_pos.get(entry_key)
 
-                    f.write('    <div class="definitions">\n')
-                    if readlex_pos_tuple:
-                        # Show each POS with no definitions message
-                        for pos in readlex_pos_tuple:
+                    # Irregular forms (if any)
+                    # Get the first lemma form to determine which lemma to look up
+                    if lemma_forms:
+                        first_lemma_latn = lemma_forms[0]['latn']
+                        irregular_forms = get_irregular_forms(first_lemma_latn, wordnet_cache)
+
+                        if irregular_forms:
+                            f.write('    <div class="irregular-forms">\n')
+                            for pos, forms in irregular_forms.items():
+                                # Map WordNet POS to readable forms
+                                pos_label = POS_TO_ENGLISH.get(pos, pos)
+
+                                # Translate forms list if needed
+                                if config['translate_labels']:
+                                    forms_display = ', '.join([translate_to_shavian(form, shavian_lookup) for form in forms])
+                                    label_text = translate_to_shavian(f'Irregular {pos_label} forms', shavian_lookup)
+                                else:
+                                    forms_display = ', '.join(forms)
+                                    label_text = f'Irregular {pos_label} forms'
+
+                                f.write(f'      <p><i>{escape(label_text)}:</i> {escape(forms_display)}</p>\n')
+                            f.write('    </div>\n')
+
+                    # Definitions for this lemma
+                    if lemma_data['definitions']:
+                        pos_groups = group_definitions_by_pos(lemma_data['definitions'][:20])
+                        f.write('    <div class="definitions">\n')
+                        for pos, pos_defs in pos_groups:
+                            # Convert single-letter POS code to readable label
                             pos_label = wordnet_pos_to_label(pos)
+                            # Translate to Shavian if needed
                             if config['translate_labels']:
                                 pos_label = translate_to_shavian(pos_label, shavian_lookup)
-                                no_defs_msg = '(𐑯𐑴 𐑛𐑧𐑓𐑦𐑯𐑦𐑖𐑩𐑯𐑟 𐑩𐑝𐑱𐑤𐑩𐑚𐑩𐑤)'
-                            else:
-                                no_defs_msg = '(No definitions available)'
 
                             f.write(f'      <div class="pos-group">\n')
                             f.write(f'        <h3><i>{escape(pos_label)}</i></h3>\n')
-                            f.write(f'        <p><i>{escape(no_defs_msg)}</i></p>\n')
+                            f.write('        <ol class="definition-list">\n')
+                            for i, def_data in enumerate(pos_defs[:5], 1):
+                                definition_text = def_data["definition"]
+                                # Hyphenate Shavian definitions using persistent session
+                                if shyphenate_session:
+                                    definition_text = shyphenate_session.hyphenate(definition_text)
+                                f.write(f'          <li class="definition">{escape(definition_text)}</li>\n')
+                            f.write('        </ol>\n')
                             f.write('      </div>\n')
+                        f.write('    </div>\n')
                     else:
-                        # Can't determine POS
-                        if config['translate_labels']:
-                            no_defs_msg = '(𐑯𐑴 𐑛𐑧𐑓𐑦𐑯𐑦𐑖𐑩𐑯𐑟 𐑩𐑝𐑱𐑤𐑩𐑚𐑩𐑤)'
+                        # No WordNet definitions - show POS from readlex with no defs message
+                        readlex_pos_tuple = entry_pos.get(entry_key)
+
+                        f.write('    <div class="definitions">\n')
+                        if readlex_pos_tuple:
+                            # Show each POS with no definitions message
+                            for pos in readlex_pos_tuple:
+                                pos_label = wordnet_pos_to_label(pos)
+                                if config['translate_labels']:
+                                    pos_label = translate_to_shavian(pos_label, shavian_lookup)
+                                    no_defs_msg = '(𐑯𐑴 𐑛𐑧𐑓𐑦𐑯𐑦𐑖𐑩𐑯𐑟 𐑩𐑝𐑱𐑤𐑩𐑚𐑩𐑤)'
+                                else:
+                                    no_defs_msg = '(No definitions available)'
+
+                                f.write(f'      <div class="pos-group">\n')
+                                f.write(f'        <h3><i>{escape(pos_label)}</i></h3>\n')
+                                f.write(f'        <p><i>{escape(no_defs_msg)}</i></p>\n')
+                                f.write('      </div>\n')
                         else:
-                            no_defs_msg = '(No definitions available)'
-                        f.write(f'      <p><i>{escape(no_defs_msg)}</i></p>\n')
-                    f.write('    </div>\n')
+                            # Can't determine POS
+                            if config['translate_labels']:
+                                no_defs_msg = '(𐑯𐑴 𐑛𐑧𐑓𐑦𐑯𐑦𐑖𐑩𐑯𐑟 𐑩𐑝𐑱𐑤𐑩𐑚𐑩𐑤)'
+                            else:
+                                no_defs_msg = '(No definitions available)'
+                            f.write(f'      <p><i>{escape(no_defs_msg)}</i></p>\n')
+                        f.write('    </div>\n')
 
-                # Add separator between entries except for the last one
-                if entry_idx < len(entry_keys) - 1:
-                    f.write('    <hr/>\n')
+                    # Add separator between entries except for the last one
+                    if entry_idx < len(entry_keys) - 1:
+                        f.write('    <hr/>\n')
 
-                f.write('  </d:entry>\n')
-                written_entries += 1
+                    f.write('  </d:entry>\n')
+                    written_entries += 1
 
-            # Flush every 1000 entries
-            if written_entries % 1000 == 0:
+                # Flush every 1000 entries
+                if written_entries % 1000 == 0:
+                    f.flush()
+
+                f.write(create_xml_footer())
                 f.flush()
-
-            f.write(create_xml_footer())
-            f.flush()
 
         print(f"Generated {written_entries} entries → {output_path}")
     finally:

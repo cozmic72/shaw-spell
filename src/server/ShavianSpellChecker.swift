@@ -318,7 +318,32 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         return word.replacingOccurrences(of: "\u{00AD}", with: "")
     }
 
-    private func checkWord(_ word: String) -> Bool {
+    // Check if we're in a proper noun context (after namer dot, before sentence boundary)
+    private func isInProperNounContext(at position: Int, in string: String) -> Bool {
+        let nsString = string as NSString
+
+        // Look backwards from position to find either a namer dot or sentence boundary
+        var searchPos = position - 1
+        while searchPos >= 0 {
+            let charRange = nsString.rangeOfComposedCharacterSequence(at: searchPos)
+            let char = nsString.substring(with: charRange)
+
+            if char == "·" {  // Found namer dot - we're in proper noun context
+                return true
+            }
+
+            // Check for sentence boundaries
+            if char == "." || char == "!" || char == "?" || char == "\n" {
+                return false  // Found sentence boundary before namer dot
+            }
+
+            searchPos = charRange.location - 1
+        }
+
+        return false  // Reached start of string without finding namer dot
+    }
+
+    private func checkWord(_ word: String, at position: Int, in fullString: String) -> Bool {
         totalChecks += 1
 
         // Normalize word (remove soft hyphens, etc.)
@@ -348,8 +373,24 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             return true  // No dictionary loaded for this script, assume correct
         }
 
-        let result = Hunspell_spell(hunspellHandle, normalizedWord)
-        let isCorrect = result != 0  // Non-zero means correctly spelled
+        var result = Hunspell_spell(hunspellHandle, normalizedWord)
+        var isCorrect = result != 0  // Non-zero means correctly spelled
+
+        // If word starts with namer dot, also check without it (for proper noun context)
+        // If word doesn't start with namer dot but is in proper noun context, also check with it
+        if !isCorrect && isShavian {
+            if normalizedWord.hasPrefix("·") {
+                // Word has namer dot but failed - try without it
+                let withoutDot = String(normalizedWord.dropFirst())
+                result = Hunspell_spell(hunspellHandle, withoutDot)
+                isCorrect = result != 0
+            } else if isInProperNounContext(at: position, in: fullString) {
+                // Word doesn't have namer dot but we're in proper noun context - try with it
+                let withDot = "·" + normalizedWord
+                result = Hunspell_spell(hunspellHandle, withDot)
+                isCorrect = result != 0
+            }
+        }
 
         // Store in cache
         spellCheckCache.set(normalizedWord, isCorrect)
@@ -381,7 +422,7 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             if !countOnly {
                 let word = (stringToCheck as NSString).substring(with: wordRange)
 
-                if !checkWord(word) {
+                if !checkWord(word, at: wordRange.location, in: stringToCheck) {
                     // Found misspelled word
                     wordCount.pointee = count
                     return wordRange

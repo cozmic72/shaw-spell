@@ -420,7 +420,10 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     @objc func spellServer(_ sender: NSSpellServer,
                     didLearnWord word: String,
                     inLanguage language: String) {
-        let isShavian = containsShavianScript(word)
+        // Normalize word (strip soft hyphens) before learning
+        let normalizedWord = normalizeWord(word)
+
+        let isShavian = containsShavianScript(normalizedWord)
         NSLog("ShavianSpellChecker: didLearnWord called (language: %@, script: %@)",
               language, isShavian ? "Shavian" : "Latin")
 
@@ -431,15 +434,15 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         }
 
         // Add to Hunspell runtime dictionary
-        _ = word.withCString { cWord in
+        _ = normalizedWord.withCString { cWord in
             Hunspell_add(handle, cWord)
         }
 
         // Update cache for this word
-        spellCheckCache.set(word, true)
+        spellCheckCache.set(normalizedWord, true)
 
         // Persist to user's personal dictionary file
-        saveWordToPersonalDictionary(word, language: language)
+        saveWordToPersonalDictionary(normalizedWord, language: language)
 
         NSLog("ShavianSpellChecker: Word learned successfully")
     }
@@ -479,7 +482,10 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     @objc func spellServer(_ sender: NSSpellServer,
                     didForgetWord word: String,
                     inLanguage language: String) {
-        let isShavian = containsShavianScript(word)
+        // Normalize word (strip soft hyphens) before forgetting
+        let normalizedWord = normalizeWord(word)
+
+        let isShavian = containsShavianScript(normalizedWord)
         NSLog("ShavianSpellChecker: didForgetWord called (language: %@, script: %@)",
               language, isShavian ? "Shavian" : "Latin")
 
@@ -490,15 +496,15 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         }
 
         // Remove from Hunspell runtime dictionary
-        _ = word.withCString { cWord in
+        _ = normalizedWord.withCString { cWord in
             Hunspell_remove(handle, cWord)
         }
 
         // Invalidate cache for this word (mark as incorrect)
-        spellCheckCache.set(word, false)
+        spellCheckCache.set(normalizedWord, false)
 
         // Remove from user's personal dictionary file
-        removeWordFromPersonalDictionary(word, language: language)
+        removeWordFromPersonalDictionary(normalizedWord, language: language)
 
         NSLog("ShavianSpellChecker: Word forgotten successfully")
     }

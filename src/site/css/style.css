@@ -2,52 +2,24 @@
 /* Based on shaw-type styling with Inter-Alia fonts */
 
 @font-face {
-    font-family: 'Inter-Alia';
-    src: url('{{FONT_URL}}/InterAlia-Regular.otf') format('opentype');
-    font-weight: 400;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'Inter-Alia';
-    src: url('{{FONT_URL}}/InterAlia-Italic.otf') format('opentype');
-    font-weight: 400;
-    font-style: italic;
-}
-
-@font-face {
-    font-family: 'Inter-Alia';
-    src: url('{{FONT_URL}}/InterAlia-Medium.otf') format('opentype');
-    font-weight: 500;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'Inter-Alia';
-    src: url('{{FONT_URL}}/InterAlia-Bold.otf') format('opentype');
-    font-weight: 700;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'Inter-Alia';
-    src: url('{{FONT_URL}}/InterAlia-BoldItalic.otf') format('opentype');
-    font-weight: 700;
-    font-style: italic;
+    font-family: 'Bernie Sans 0.878';
+    src: url('{{FONT_URL}}/BernieSans0.878VF.ttf') format('truetype-variations');
+    font-weight: 100 900;
+    font-stretch: 75% 125%;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter-Alia', sans-serif;
+    font-family: 'Bernie Sans 0.878', sans-serif;
     /* Enable OpenType features for ZWJ ligatures everywhere */
     font-feature-settings: "calt" 1, "clig" 1, "liga" 1;
     font-variant-ligatures: contextual common-ligatures;
 }
 
 body {
-    font-family: 'Inter-Alia', sans-serif;
+    font-family: 'Bernie Sans 0.878', sans-serif;
     background: linear-gradient(to bottom, #667eea 0%, #9d4268 100%);
     min-height: 100vh;
     display: flex;
@@ -130,7 +102,7 @@ h1 {
     margin: 0;
     font-size: 40px;
     font-weight: bold;
-    font-family: 'Inter-Alia', sans-serif;
+    font-family: 'Bernie Sans 0.878', sans-serif;
     flex: 1;
 }
 
@@ -208,7 +180,7 @@ h1 {
     max-width: 240px;
     padding: 15px 20px;
     font-size: 20px;
-    font-family: 'Inter-Alia', sans-serif;
+    font-family: 'Bernie Sans 0.878', sans-serif;
     border: 2px solid #e0e0e0;
     border-radius: 12px;
     transition: border-color 0.3s;
@@ -292,7 +264,7 @@ span.w:hover {
     font-size: 28px;
     color: #333;
     margin-bottom: 15px;
-    font-family: 'Inter-Alia', sans-serif;
+    font-family: 'Bernie Sans 0.878', sans-serif;
     text-align: left;
 }
 

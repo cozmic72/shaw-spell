@@ -74,9 +74,12 @@ $(PLIST_PATH): $(PLIST_TEMPLATE) $(DESCRIPTION_FILE)
 	@rm -f $(DESCRIPTION_FILE).tmp
 
 # Build dictionary
-$(DICT_OUTPUT): $(DICT_SRC_PATH) $(CSS_PATH) $(PLIST_PATH) $(DESCRIPTION_FILE)
+$(DICT_OUTPUT): $(DICT_SRC_PATH) $(CSS_PATH) $(PLIST_PATH) $(DESCRIPTION_FILE) BernieSans0.878VF.ttf
 	@echo "Building $(DICT_NAME) dictionary..."
 	"$(DICT_BUILD_TOOL_BIN)/build_dict.sh" $(DICT_BUILD_OPTS) $(DICT_NAME) $(DICT_SRC_PATH) $(CSS_PATH) $(PLIST_PATH)
+	@echo "Copying font file..."
+	@mkdir -p $(DICT_OUTPUT)/Contents/Resources
+	@cp BernieSans0.878VF.ttf $(DICT_OUTPUT)/Contents/Resources/
 	@echo "Done building $(DICT_NAME)."
 
 install: $(DICT_OUTPUT)

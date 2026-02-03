@@ -132,21 +132,38 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
     has_common_sense = defaultdict(bool)  # shaw -> True if ANY entry is NOT a proper noun
     namer_dot = '·'  # U+00B7 MIDDLE DOT
 
+    # Map dialect codes to Readlex variants
+    if dialect == 'gb':
+        target_variants = {'RRP', 'GB'}  # Received Pronunciation and GB
+    else:
+        target_variants = {'GenAm'}  # General American
+
     # First pass: collect all words and track their POS patterns
     for key, entries in readlex_data.items():
-        # Extract lemma from key for dialect filtering
+        # Extract lemma from key for WordNet fallback filtering
         lemma = extract_lemma_from_key(key)
-        if not lemma:
-            continue
-
-        # Check if this lemma should be included in this dialect
-        if not should_include_word(lemma, dialect, wordnet_cache):
-            continue
 
         for entry in entries:
             shaw = entry.get('Shaw', '')
             if not shaw:
                 continue
+
+            # Check dialect: prefer Readlex var field, fall back to WordNet
+            var = entry.get('var', '')
+
+            # If Readlex specifies a variant, check if it matches
+            if var and var not in target_variants:
+                # Readlex says wrong dialect - but check WordNet as override
+                if lemma and wordnet_cache:
+                    if not should_include_word(lemma, dialect, wordnet_cache):
+                        continue  # Both Readlex and WordNet say skip
+                else:
+                    continue  # Readlex says skip, no WordNet to override
+            # If no var field, rely on WordNet
+            elif not var and lemma and wordnet_cache:
+                if not should_include_word(lemma, dialect, wordnet_cache):
+                    continue  # WordNet says skip
+            # Otherwise include (matching var, or no filtering info available)
 
             pos = entry.get('pos', '')
 

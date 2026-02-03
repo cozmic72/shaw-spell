@@ -133,7 +133,49 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             NSLog("ShavianSpellChecker: English dictionary files not found at \(enDicPath)")
         }
 
+        // Load user's personal dictionary (learned words)
+        loadPersonalDictionary()
+
         NSLog("ShavianSpellChecker: Initialized")
+    }
+
+    private func loadPersonalDictionary() {
+        let spellingDir = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling")
+
+        // Load words from both en_GB and en_US personal dictionaries
+        for langCode in ["en_GB", "en_US", "English"] {
+            let personalDictPath = (spellingDir as NSString).appendingPathComponent(langCode)
+
+            guard FileManager.default.fileExists(atPath: personalDictPath),
+                  let contents = try? String(contentsOfFile: personalDictPath, encoding: .utf8) else {
+                continue
+            }
+
+            var learnedCount = 0
+            for word in contents.components(separatedBy: .newlines) {
+                let trimmed = word.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { continue }
+
+                // Determine which dictionary this word belongs to
+                let isShavian = containsShavianScript(trimmed)
+                guard let handle = isShavian ? shavianHandle : englishHandle else {
+                    continue
+                }
+
+                // Add to Hunspell runtime dictionary
+                _ = trimmed.withCString { cWord in
+                    Hunspell_add(handle, cWord)
+                }
+
+                // Add to cache
+                spellCheckCache.set(trimmed, true)
+                learnedCount += 1
+            }
+
+            if learnedCount > 0 {
+                NSLog("ShavianSpellChecker: Loaded %d learned words from %@", learnedCount, langCode)
+            }
+        }
     }
 
     deinit {
@@ -389,8 +431,43 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             Hunspell_add(handle, cWord)
         }
 
-        // Invalidate cache for this word
+        // Update cache for this word
         spellCheckCache.set(word, true)
+
+        // Persist to user's personal dictionary file
+        saveWordToPersonalDictionary(word, language: language)
+    }
+
+    private func saveWordToPersonalDictionary(_ word: String, language: String) {
+        let spellingDir = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling")
+
+        // Map language codes to file names
+        var langCode = language
+        if langCode == "English" || langCode.isEmpty {
+            langCode = "en_GB"  // Default to GB
+        }
+
+        let personalDictPath = (spellingDir as NSString).appendingPathComponent(langCode)
+
+        // Read existing words
+        var words: Set<String> = []
+        if FileManager.default.fileExists(atPath: personalDictPath),
+           let contents = try? String(contentsOfFile: personalDictPath, encoding: .utf8) {
+            words = Set(contents.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+        }
+
+        // Add new word
+        words.insert(word)
+        words.remove("")  // Remove empty lines
+
+        // Write back to file
+        let sortedWords = words.sorted().joined(separator: "\n")
+        do {
+            try sortedWords.write(toFile: personalDictPath, atomically: true, encoding: .utf8)
+            NSLog("ShavianSpellChecker: Saved learned word '%@' to %@", word, langCode)
+        } catch {
+            NSLog("ShavianSpellChecker: Failed to save word to %@: %@", langCode, error.localizedDescription)
+        }
     }
 
     @objc func spellServer(_ sender: NSSpellServer,
@@ -407,7 +484,41 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             Hunspell_remove(handle, cWord)
         }
 
-        // Invalidate cache for this word
+        // Invalidate cache for this word (mark as incorrect)
         spellCheckCache.set(word, false)
+
+        // Remove from user's personal dictionary file
+        removeWordFromPersonalDictionary(word, language: language)
+    }
+
+    private func removeWordFromPersonalDictionary(_ word: String, language: String) {
+        let spellingDir = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Spelling")
+
+        // Map language codes to file names
+        var langCode = language
+        if langCode == "English" || langCode.isEmpty {
+            langCode = "en_GB"  // Default to GB
+        }
+
+        let personalDictPath = (spellingDir as NSString).appendingPathComponent(langCode)
+
+        guard FileManager.default.fileExists(atPath: personalDictPath),
+              let contents = try? String(contentsOfFile: personalDictPath, encoding: .utf8) else {
+            return
+        }
+
+        // Read existing words and remove the specified word
+        var words = Set(contents.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+        words.remove(word)
+        words.remove("")  // Remove empty lines
+
+        // Write back to file
+        let sortedWords = words.sorted().joined(separator: "\n")
+        do {
+            try sortedWords.write(toFile: personalDictPath, atomically: true, encoding: .utf8)
+            NSLog("ShavianSpellChecker: Removed word '%@' from %@", word, langCode)
+        } catch {
+            NSLog("ShavianSpellChecker: Failed to remove word from %@: %@", langCode, error.localizedDescription)
+        }
     }
 }

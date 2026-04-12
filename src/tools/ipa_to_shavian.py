@@ -93,13 +93,63 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     # Remove parenthesized optional segments like (ɹ)
     ipa = re.sub(r'\([^)]*\)', '', ipa)
 
+    # --- GenAm-specific IPA symbols ---
+    if source == "wiktionary_gam":
+        ipa = _normalize_genam(ipa)
+
     # --- R-restoration for non-rhotic sources ---
     if source in ("britfone", "wiktionary_rp"):
         ipa = _restore_rhoticity(ipa, word)
 
     # --- Dialect normalization toward ReadLex conventions ---
-    if source in ("britfone", "wiktionary_rp"):
+    if source in ("britfone", "wiktionary_rp", "wiktionary_gam"):
         ipa = _normalize_to_readlex_dialect(ipa, word)
+
+    return ipa
+
+
+def _normalize_genam(ipa: str) -> str:
+    """Normalize GenAm IPA symbols to ReadLex RRP conventions.
+
+    GenAm IPA uses symbols that don't exist in ReadLex:
+      ɚ  → əR  (r-colored schwa, e.g. "better")
+      ɝ  → ɜːR (r-colored NURSE, e.g. "bird")
+      ɾ  → t   (alveolar flap, e.g. "butter" — ReadLex writes 't')
+      ɑɹ → ɑːR (START, e.g. "car" — GenAm has short ɑ+ɹ, ReadLex has ɑːR)
+      ɔɹ → ɔːR (FORCE, e.g. "more")
+
+    GenAm vowel mappings where they differ from RP:
+      bare ɑ → ɒ  (LOT: GenAm merges LOT into ɑ, ReadLex uses ɒ)
+      ɔ (without ː) → ɔː (THOUGHT: GenAm often drops the length mark)
+
+    Note: Many GenAm words produce the SAME Shavian as RRP because
+    ReadLex is designed as a universal compromise. GenAm entries in
+    ReadLex only exist for genuine exceptions (yod-dropping, etc.).
+    """
+    # R-colored vowels (must come before bare ɚ/ɝ and before ɑ→ɒ)
+    ipa = ipa.replace("ɝː", "ɜːR")   # long r-colored NURSE (rare variant)
+    ipa = ipa.replace("ɝ", "ɜːR")    # r-colored NURSE: bird, her
+    ipa = ipa.replace("ɚ", "əR")     # r-colored schwa: better, water
+
+    # Flap
+    ipa = ipa.replace("ɾ", "t")      # alveolar flap → t
+
+    # GenAm ɑɹ → ɑːR (START) — must come before bare ɑ mapping
+    ipa = ipa.replace("ɑɹ", "ɑːR")
+    ipa = ipa.replace("ɑr", "ɑːR")
+
+    # GenAm ɔɹ → ɔːR (FORCE)
+    ipa = ipa.replace("ɔɹ", "ɔːR")
+    ipa = ipa.replace("ɔr", "ɔːR")
+
+    # GenAm bare ɑ → ɒ (LOT vowel)
+    # But ɑː should stay as ɑː (PALM/BATH)
+    # And ɑːR is already handled above
+    ipa = re.sub(r'ɑ(?!ː)', 'ɒ', ipa)
+
+    # GenAm bare ɔ (without length mark) before consonant → ɔː (THOUGHT)
+    # But don't touch ɔː or ɔɪ
+    ipa = re.sub(r'ɔ(?!ː|ɪ|ʊ|R|r)', 'ɔː', ipa)
 
     return ipa
 

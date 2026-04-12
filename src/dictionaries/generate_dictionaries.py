@@ -596,25 +596,33 @@ def pos_to_readable(pos_code):
         'AJ0': 'adjective', 'AJC': 'adjective (comparative)', 'AJS': 'adjective (superlative)',
         'AT0': 'article',
         'AV0': 'adverb', 'AVP': 'adverb', 'AVQ': 'adverb',
-        'CJC': 'conjunction', 'CJS': 'conjunction', 'CJT': 'conjunction',
+        'CJC': 'conjunction', 'CJS': 'subordinating conjunction', 'CJT': 'conjunction',
         'CRD': 'cardinal number',
-        'DPS': 'determiner', 'DT0': 'determiner', 'DTQ': 'determiner',
+        'DPS': 'possessive (e.g., "my", "your")', 'DT0': 'determiner', 'DTQ': 'determiner',
         'EX0': 'existential',
         'ITJ': 'interjection',
-        'NN0': 'noun', 'NN1': 'noun', 'NN2': 'noun (plural)',
+        'NN0': 'noun', 'NN1': 'noun (singular)', 'NN2': 'noun (plural)',
         'NP0': 'proper noun',
-        'ORD': 'ordinal',
-        'PNI': 'pronoun', 'PNP': 'pronoun', 'PNQ': 'pronoun', 'PNX': 'pronoun',
+        'ORD': 'ordinal number',
+        'PNI': 'pronoun (indefinite)', 'PNP': 'pronoun (personal)', 'PNQ': 'pronoun', 'PNX': 'pronoun',
         'PRE': 'prefix', 'PRF': 'prefix', 'PRP': 'preposition',
         'TO0': 'infinitive marker',
         'UNC': '',
-        'VBB': 'verb', 'VBD': 'verb', 'VBG': 'verb', 'VBI': 'verb', 'VBN': 'verb', 'VBZ': 'verb',
-        'VDB': 'verb', 'VDD': 'verb', 'VDG': 'verb', 'VDI': 'verb', 'VDN': 'verb', 'VDZ': 'verb',
-        'VHB': 'verb', 'VHD': 'verb', 'VHG': 'verb', 'VHI': 'verb', 'VHN': 'verb', 'VHZ': 'verb',
+        'VBB': 'verb (base form of "be")', 'VBD': 'verb (past tense of "be")',
+        'VBG': 'verb (-ing form of "be")', 'VBI': 'verb (infinitive of "be")',
+        'VBN': 'verb (past participle of "be")', 'VBZ': 'verb ("is")',
+        'VDB': 'verb (base form of "do")', 'VDD': 'verb (past tense of "do")',
+        'VDG': 'verb (-ing form of "do")', 'VDI': 'verb (infinitive of "do")',
+        'VDN': 'verb (past participle of "do")', 'VDZ': 'verb ("does")',
+        'VHB': 'verb (base form of "have")', 'VHD': 'verb (past tense of "have")',
+        'VHG': 'verb (-ing form of "have")', 'VHI': 'verb (infinitive of "have")',
+        'VHN': 'verb (past participle of "have")', 'VHZ': 'verb ("has")',
         'VM0': 'modal verb',
-        'VVB': 'verb', 'VVD': 'verb', 'VVG': 'verb', 'VVI': 'verb', 'VVN': 'verb', 'VVZ': 'verb',
+        'VVB': 'verb (base form)', 'VVD': 'verb (past tense)',
+        'VVG': 'verb (-ing form)', 'VVI': 'verb (infinitive)',
+        'VVN': 'verb (past participle)', 'VVZ': 'verb (3rd person singular)',
         'XX0': 'negation',
-        'ZZ0': 'letter',
+        'ZZ0': 'letter of the alphabet',
         'POS': 'possessive',
     }
     return pos_map.get(pos_code, pos_code)
@@ -1318,6 +1326,13 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             f.write(escape(home_display_text))
                             f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
 
+                            # Display POS label if available
+                            pos_label_text = pos_to_readable(home_form.get('pos', ''))
+                            if pos_label_text:
+                                if config['translate_labels']:
+                                    pos_label_text = translate_to_shavian(pos_label_text, shavian_lookup)
+                                f.write(f' <i>{escape(pos_label_text)}</i>')
+
                             # Look up alternate dialect spellings from WordNet cache
                             # E.g., in GB dict for "colour", find "color" from cache variants
                             lemma_latn = home_form.get('latn', '')
@@ -1452,6 +1467,14 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
                             f.write(escape(alt_display_text))
                             f.write(f' <span class="ipa">/{alt_form["ipa"]}/</span>')
+
+                            # Display POS label if available
+                            pos_label_text = pos_to_readable(alt_form.get('pos', ''))
+                            if pos_label_text:
+                                if config['translate_labels']:
+                                    pos_label_text = translate_to_shavian(pos_label_text, shavian_lookup)
+                                f.write(f' <i>{escape(pos_label_text)}</i>')
+
                             if alt_form.get('var') != 'TrapBath':
                                 f.write(f' <span class="variant">({alt_dialect})</span>')
 

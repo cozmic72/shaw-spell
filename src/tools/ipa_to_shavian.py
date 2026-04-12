@@ -139,14 +139,13 @@ def _restore_rhoticity(ipa: str, word: str) -> str:
         # Also handle ə before word-boundary space/hyphen
         stripped = re.sub(r'ə(?=[ -])', 'əR', stripped)
 
-    # Inflected/suffixed forms: word ends in Vr + suffix letters.
+    # Inflected forms: word ends in Vr + inflectional suffix (s, ed, d, ly, ing).
     # Insert R after word-final ə that's followed by suffix consonant(s).
     # e.g., actors (Vr+s), filtered (Vr+ed), mastered, pictured,
-    # fatherly, partnership, overhead, etc.
-    # The 'r' must be near the end: within last 6 chars after stripping
-    # common inflectional suffixes.
-    stem = re.sub(r'(ed|ing|s|ly|ment|ship|ness|ful|less|ise|ize|ous|ive|ble|dom|hood|ism|ist|ish|ard|wards?|line|head|land|side|like|wise|most|tion|sion|ture|ance|ence|able|ible)$', '', word_lower)
-    if re.search(r'[aeiouy]r[^aeiouy]*$', stem) and len(stem) > 0:
+    # fatherly, wandering, etc.
+    # Only strip true inflectional endings to find the stem.
+    stem = re.sub(r'(ed|ing|ly|s)$', '', word_lower)
+    if re.search(r'[aeiouy]r[^aeiouy]*$', stem) and len(stem) > 1:
         stripped = re.sub(r'ə([pbtdkɡfvθðszʃʒhmnŋlwjʍ]+)$', r'əR\1', stripped)
 
     # Now handle the harder cases using a spelling-IPA alignment approach.
@@ -219,8 +218,7 @@ def _normalize_to_readlex_dialect(ipa: str, word: str) -> str:
 
     ReadLex makes specific editorial choices that differ from standard SSB:
     1. Uses uppercase Ə for grammatical suffixes (-Əd, -Əz)
-    2. Prefers ə over ɪ/ʊ in unstressed syllables
-    3. Mid-word ər restoration where spelling has 'r'
+    2. Prefers ə over ʊ after j in unstressed syllables
     """
     # --- Suffix conventions: ReadLex uses uppercase Ə for -ed/-es suffixes ---
     # Require a consonant before ɪ to avoid matching diphthongs (aɪd, eɪz).

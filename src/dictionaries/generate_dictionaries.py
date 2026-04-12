@@ -1279,7 +1279,13 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             else:
                                 # Fall back to pronunciation variant (var field)
                                 var = form.get('var')
-                                is_home = (var == preferred_var or var is None)
+                                if dialect == 'us':
+                                    # For US: GenAm and TrapBath are both home forms (TRAP is standard in GenAm)
+                                    is_home = (var in ('GenAm', 'TrapBath', None))
+                                else:
+                                    # For GB: only RRP is home (BATH vowel is standard RP);
+                                    # TrapBath is alt (shown as "also")
+                                    is_home = (var in ('RRP', None))
 
                             if is_home:
                                 home_forms.append(form)
@@ -1359,11 +1365,14 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                         variant_label = 'US'
                                     elif variant_label == 'RRP':
                                         variant_label = 'GB'
+                                    elif variant_label == 'TrapBath':
+                                        # TrapBath is an accepted alternative, not a dialect — show as "also"
+                                        variant_label = None
 
                                     if variant_label and variant_label != home_dialect:
                                         f.write(f' <span class="variant">({escape(home_display_text)}, {variant_label} /{additional_form["ipa"]}/)</span>')
                                     else:
-                                        f.write(f' <span class="variant">({escape(home_display_text)} /{additional_form["ipa"]}/)</span>')
+                                        f.write(f' <span class="variant">(also /{additional_form["ipa"]}/)</span>')
 
                             # Display alternate spellings (only if actually different)
                             # For shaw-shaw dictionary, skip Latin alphabet variants
@@ -1410,13 +1419,25 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 else:
                                     alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
 
+                                # Determine the label for this alt form
+                                alt_var = alt_form.get('var')
+                                is_trap_bath = (alt_var == 'TrapBath')
+
                                 # Check if pronunciation is the same
                                 if home_form['ipa'] == alt_form['ipa']:
-                                    # Same pronunciation - just show alternate spelling (colour vs color)
-                                    f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect})</span>')
+                                    if is_trap_bath:
+                                        # Same pronunciation TrapBath — no need to show
+                                        pass
+                                    else:
+                                        # Same pronunciation - just show alternate spelling (colour vs color)
+                                        f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect})</span>')
                                 else:
-                                    # Different pronunciation - show alternate with its IPA
-                                    f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect} /{alt_form["ipa"]}/)</span>')
+                                    if is_trap_bath:
+                                        # TrapBath variant — show as "also" without dialect label
+                                        f.write(f' <span class="variant">(also /{alt_form["ipa"]}/)</span>')
+                                    else:
+                                        # Different pronunciation - show alternate with its IPA
+                                        f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect} /{alt_form["ipa"]}/)</span>')
 
                         elif alt_forms:
                             # Only alt form available
@@ -1431,7 +1452,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
                             f.write(escape(alt_display_text))
                             f.write(f' <span class="ipa">/{alt_form["ipa"]}/</span>')
-                            f.write(f' <span class="variant">({alt_dialect})</span>')
+                            if alt_form.get('var') != 'TrapBath':
+                                f.write(f' <span class="variant">({alt_dialect})</span>')
 
                         f.write('</div>\n')
 

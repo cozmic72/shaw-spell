@@ -135,10 +135,12 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
     # Map dialect codes to Readlex variants
     # RSSB = Rhotic Standard Southern British (supplement data). Include in
     # both dialects since a spellchecker should accept any valid Shavian spelling.
+    # RRPVar/RRPvar = variant RP pronunciations; SSB = Standard Southern British
+    # GenAus = General Australian (included in both for maximum acceptance)
     if dialect == 'gb':
-        target_variants = {'RRP', 'GB', 'RSSB', 'TrapBath'}
+        target_variants = {'RRP', 'GB', 'RSSB', 'TrapBath', 'RRPVar', 'RRPvar', 'SSB', 'GenAus'}
     else:
-        target_variants = {'GenAm', 'RSSB', 'RGAM', 'GAM'}
+        target_variants = {'GenAm', 'RSSB', 'RGAM', 'GenAus'}
 
     # First pass: collect all words and track their POS patterns
     for key, entries in readlex_data.items():

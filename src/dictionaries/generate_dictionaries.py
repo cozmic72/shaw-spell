@@ -1568,8 +1568,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 if written_entries % 1000 == 0:
                     f.flush()
 
-                f.write(create_xml_footer())
-                f.flush()
+            f.write(create_xml_footer())
+            f.flush()
 
         print(f"Generated {written_entries} entries → {output_path}")
     finally:

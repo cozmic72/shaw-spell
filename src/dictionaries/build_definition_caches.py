@@ -217,9 +217,10 @@ def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, dial
     print(f"Found {len(readlex_lemmas)} unique lemmas in readlex")
 
     # Find all (lemma, synset_id) pairs from WordNet where lemma is in readlex
+    # Use case-insensitive matching since readlex lemmas are lowercased
     synset_keys_with_defs = []
     for (lemma, synset_id) in wordnet_defs.keys():
-        if lemma in readlex_lemmas:
+        if lemma.lower() in readlex_lemmas:
             synset_keys_with_defs.append((lemma, synset_id))
 
     synset_keys_with_defs = sorted(synset_keys_with_defs)

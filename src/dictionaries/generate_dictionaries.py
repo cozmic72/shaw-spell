@@ -580,7 +580,8 @@ def get_definitions_from_cache(lemma, wordnet_cache):
             for def_text in sense_defs:
                 all_definitions.append({
                     'definition': def_text,
-                    'pos': pos
+                    'pos': pos,
+                    'source': 'WordNet'
                 })
 
     return all_definitions

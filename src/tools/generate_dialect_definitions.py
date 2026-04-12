@@ -129,7 +129,7 @@ def convert_definitions_to_dialect(
     Convert all definitions to target dialect.
 
     Args:
-        wordnet_defs: Dictionary of {lemma: [{definition, pos, examples}]}
+        wordnet_defs: Dictionary of {lemma: [{definition, pos, examples, source}]}
         spelling_map: Spelling conversion map
         dialect_name: Name of target dialect (for logging)
 
@@ -160,16 +160,74 @@ def convert_definitions_to_dialect(
 
             total_defs += 1
 
-            converted_lemma_defs.append({
+            entry = {
                 'definition': new_definition,
                 'pos': def_entry.get('pos', ''),
                 'examples': new_examples
-            })
+            }
+            # Preserve source attribution
+            if 'source' in def_entry:
+                entry['source'] = def_entry['source']
+
+            converted_lemma_defs.append(entry)
 
         converted[lemma] = converted_lemma_defs
 
     print(f"  Converted {converted_count}/{total_defs} definitions")
     return converted
+
+
+def extract_lemma_from_readlex_key(key: str) -> str:
+    """Extract lemma from readlex key format: {lemma}_{pos}_{shavian}"""
+    parts = key.split('_')
+    if parts:
+        return parts[0].lower()
+    return ''
+
+
+def extract_definitions_from_wordnet(wordnet_cache: Dict, readlex_lemmas: Set[str]) -> Dict:
+    """
+    Extract definitions from WordNet comprehensive cache for all readlex lemmas.
+
+    Args:
+        wordnet_cache: The comprehensive WordNet cache
+        readlex_lemmas: Set of lowercased lemmas from readlex
+
+    Returns:
+        Dictionary of {lemma: [{definition, pos, examples, source}]}
+    """
+    print("Extracting definitions from WordNet comprehensive cache...")
+
+    wordnet_defs = {}
+    matched_lemmas = 0
+
+    for wn_lemma, entry in wordnet_cache.items():
+        # Match case-insensitively against readlex lemmas
+        if wn_lemma.lower() not in readlex_lemmas:
+            continue
+
+        matched_lemmas += 1
+        lemma_key = wn_lemma.lower()
+
+        if lemma_key not in wordnet_defs:
+            wordnet_defs[lemma_key] = []
+
+        for pos, pos_data in entry.get('pos_entries', {}).items():
+            for sense in pos_data.get('sense_variants', []):
+                sense_defs = sense.get('definitions', [])
+                for def_text in sense_defs:
+                    wordnet_defs[lemma_key].append({
+                        'definition': def_text,
+                        'pos': pos,
+                        'examples': [],
+                        'source': 'WordNet'
+                    })
+
+    print(f"  Matched {matched_lemmas} WordNet entries to readlex lemmas")
+    total_defs = sum(len(v) for v in wordnet_defs.values())
+    print(f"  Extracted {total_defs} definitions for {len(wordnet_defs)} unique lemmas")
+
+    return wordnet_defs
 
 
 def main():
@@ -185,6 +243,7 @@ def main():
     project_dir = script_dir.parent.parent
 
     wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
+    readlex_path = project_dir / 'data/readlex.json'
 
     if output_dir is None:
         output_dir = project_dir / 'data'
@@ -203,38 +262,26 @@ def main():
         wordnet_cache = json.load(f)
     print(f"Loaded {len(wordnet_cache)} entries\n")
 
-    # Load existing Shavian definitions (they contain the original English)
-    # We'll use the GB version as the source since it exists
-    shavian_gb_path = project_dir / 'data/definitions-shavian-gb.json'
-
-    print("Loading Shavian definition cache (contains English definitions)...")
-    if not shavian_gb_path.exists():
-        print(f"ERROR: Shavian definitions not found at {shavian_gb_path}")
-        print("Please run: ./src/build_definition_caches.py")
+    # Load readlex to get lemma set
+    print("Loading readlex...")
+    if not readlex_path.exists():
+        print(f"ERROR: readlex not found at {readlex_path}")
         sys.exit(1)
 
-    with open(shavian_gb_path, 'r', encoding='utf-8') as f:
-        shavian_cache = json.load(f)
-    print(f"Loaded {len(shavian_cache)} definition entries\n")
+    with open(readlex_path, 'r', encoding='utf-8') as f:
+        readlex_raw = json.load(f)
 
-    # Extract English definitions from the Shavian cache
-    # The cache is keyed by "lemma|synset_id", we need to reorganize by lemma
-    wordnet_defs = {}
-    for cache_key, entry in shavian_cache.items():
-        # Extract lemma from "lemma|synset_id" format
-        lemma = cache_key.split('|')[0] if '|' in cache_key else cache_key
+    readlex_lemmas = set()
+    for key in readlex_raw:
+        lemma = extract_lemma_from_readlex_key(key)
+        if lemma:
+            readlex_lemmas.add(lemma)
+    print(f"Found {len(readlex_lemmas)} unique readlex lemmas\n")
 
-        if lemma not in wordnet_defs:
-            wordnet_defs[lemma] = []
-
-        # Extract the English definition (not the transliterated one)
-        wordnet_defs[lemma].append({
-            'definition': entry.get('definition', ''),
-            'pos': entry.get('pos', ''),
-            'examples': entry.get('examples', [])
-        })
-
-    print(f"Extracted definitions for {len(wordnet_defs)} unique lemmas\n")
+    # Extract definitions directly from WordNet comprehensive cache
+    # (previously this read from the Shavian cache, limiting coverage)
+    wordnet_defs = extract_definitions_from_wordnet(wordnet_cache, readlex_lemmas)
+    print()
 
     # Build spelling conversion maps
     us_to_gb, gb_to_us = build_spelling_maps(wordnet_cache)
@@ -258,10 +305,13 @@ def main():
     with open(gb_output_path, 'w', encoding='utf-8') as f:
         json.dump(gb_definitions, f, ensure_ascii=False, indent=2)
 
+    total_us = sum(len(v) for v in us_definitions.values())
+    total_gb = sum(len(v) for v in gb_definitions.values())
+
     print("\nDone!")
     print(f"Generated:")
-    print(f"  - {us_output_path}")
-    print(f"  - {gb_output_path}")
+    print(f"  - {us_output_path}: {len(us_definitions)} lemmas, {total_us} definitions")
+    print(f"  - {gb_output_path}: {len(gb_definitions)} lemmas, {total_gb} definitions")
 
 
 if __name__ == '__main__':

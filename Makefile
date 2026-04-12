@@ -7,6 +7,7 @@
 
 # Include modular build system
 include build-rules/common.mk
+include build-rules/supplements.mk
 include build-rules/icons.mk
 include build-rules/dictionaries.mk
 include build-rules/spellcheck.mk
@@ -41,6 +42,12 @@ help:
 	@echo "  spellcheck          Build all Hunspell dictionaries"
 	@echo "  site                Build web dictionary frontend"
 	@echo "  site-tarball        Build deployable tarball for Linux/web servers"
+	@echo ""
+	@echo "Supplement targets:"
+	@echo "  supplements         Ensure merged readlex is up to date"
+	@echo "  supplements-from-source  Rebuild all supplements from source data"
+	@echo "  rescore-full        Re-score confidence with full shave consultation"
+	@echo "  review-files        Generate review TSVs for human inspection"
 	@echo ""
 	@echo "Cache regeneration (explicit only, commits to git):"
 	@echo "  wordnet-cache       Rebuild comprehensive WordNet cache (~2 min)"

@@ -71,12 +71,12 @@ def extract_readlex_words(readlex_data: Dict, target_dialect: str) -> Set[str]:
     # Map dialect codes — include all variants for maximum acceptance
     # RSSB = Rhotic Standard Southern British (supplement)
     # RRPVar/RRPvar = variant RP pronunciations; SSB = Standard Southern British
-    # RGAM = Rhotic General American (supplement)
+    # GenAm = General American (supplement)
     # GenAus = General Australian (included in both for maximum acceptance)
     if target_dialect.lower() == 'gb':
         target_variants = ['RRP', 'GB', 'RSSB', 'TrapBath', 'RRPVar', 'RRPvar', 'SSB', 'GenAus']
     else:
-        target_variants = ['GenAm', 'RSSB', 'RGAM', 'GenAus']
+        target_variants = ['GenAm', 'RSSB', 'GenAus']
 
     for key, entries in readlex_data.items():
         # Normalize: supplement entries may be single dicts

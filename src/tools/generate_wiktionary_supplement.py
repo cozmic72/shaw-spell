@@ -82,7 +82,7 @@ def _compute_ml_shaw(word: str, ipa: str, dialect: str,
     """Get ML model's Shavian prediction, or None if unavailable.
 
     Only applies ML to RSSB entries (the model is UK-trained).
-    For RGAM, returns None.
+    For GenAm, returns None.
     """
     if dialect != "RSSB" or not have_ml or not ml_model:
         return None
@@ -93,22 +93,22 @@ def _compute_ml_shaw(word: str, ipa: str, dialect: str,
 
 # Dialect tag classification
 RSSB_TAGS = {"Received-Pronunciation", "UK", "British"}
-RGAM_TAGS = {"General-American", "US"}
+GENAM_TAGS = {"General-American", "US"}
 
 
 def classify_dialect(tags: list[str]) -> str | None:
     """Classify a list of tags into a dialect variant.
 
-    Returns "RSSB", "RGAM", or None if no recognizable dialect tag.
+    Returns "RSSB", "GenAm", or None if no recognizable dialect tag.
     """
     tag_set = set(tags) if tags else set()
     has_rssb = bool(tag_set & RSSB_TAGS)
-    has_rgam = bool(tag_set & RGAM_TAGS)
-    if has_rssb and not has_rgam:
+    has_genam = bool(tag_set & GENAM_TAGS)
+    if has_rssb and not has_genam:
         return "RSSB"
-    if has_rgam and not has_rssb:
-        return "RGAM"
-    if has_rssb and has_rgam:
+    if has_genam and not has_rssb:
+        return "GenAm"
+    if has_rssb and has_genam:
         # Both — ambiguous, treat as unlabelled
         return None
     return None
@@ -185,7 +185,7 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
         dialect = classify_dialect(tags)
         if dialect == "RSSB":
             norm_source = "wiktionary_rp"
-        elif dialect == "RGAM":
+        elif dialect == "GenAm":
             norm_source = "wiktionary_gam"
         else:
             norm_source = "wiktionary_rp"  # default guess for unlabelled
@@ -400,7 +400,7 @@ def main():
     print(f"Reliable entries (dialect-labelled):")
     print(f"  Total:  {stats['reliable_entries']:,}")
     print(f"  RSSB:   {stats['dialect_RSSB']:,}")
-    print(f"  RGAM:   {stats['dialect_RGAM']:,}")
+    print(f"  GenAm:   {stats['dialect_GenAm']:,}")
     print(f"  Keys:   {len(reliable):,}")
     print()
     print(f"Speculative entries (no dialect label):")

@@ -140,7 +140,7 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
     if dialect == 'gb':
         target_variants = {'RRP', 'GB', 'RSSB', 'TrapBath', 'RRPVar', 'RRPvar', 'SSB', 'GenAus'}
     else:
-        target_variants = {'GenAm', 'RSSB', 'RGAM', 'GenAus'}
+        target_variants = {'GenAm', 'RSSB', 'GenAus'}
 
     # First pass: collect all words and track their POS patterns
     for key, entries in readlex_data.items():

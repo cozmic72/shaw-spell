@@ -2101,8 +2101,8 @@
       "ipa": "ˈæktʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑒𐑗𐑫𐑩𐑤; overridden:was=𐑨𐑒𐑗𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "actually_UNC_𐑨𐑒𐑗𐑫𐑩𐑤𐑦": [
@@ -2113,8 +2113,8 @@
       "ipa": "ˈæktʃʊəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑒𐑗𐑫𐑩𐑤𐑦; overridden:was=𐑨𐑒𐑗𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "acute_UNC_𐑩𐑒𐑿𐑑": [
@@ -4957,8 +4957,8 @@
       "ipa": "ælfrƏd",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑤𐑓𐑮𐑦𐑛; overridden:was=𐑨𐑤𐑓𐑮𐑩𐑛; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "algae_UNC_𐑨𐑤𐑜𐑦": [
@@ -7811,8 +7811,8 @@
       "ipa": "ˈænjəəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑯𐑘𐑫𐑩𐑤; overridden:was=𐑨𐑯𐑘𐑩𐑩𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "annually_UNC_𐑨𐑯𐑘𐑫𐑩𐑤𐑦": [
@@ -7823,8 +7823,8 @@
       "ipa": "ˈænjəəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑯𐑘𐑫𐑩𐑤𐑦; overridden:was=𐑨𐑯𐑘𐑩𐑩𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "annul_UNC_𐑩𐑯𐑳𐑤": [
@@ -10959,8 +10959,8 @@
       "ipa": "æspɪreɪʃən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑕𐑐𐑼𐑱𐑖𐑩𐑯; overridden:was=𐑨𐑕𐑐𐑦𐑮𐑱𐑖𐑩𐑯; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "aspirations_UNC_𐑨𐑕𐑐𐑼𐑱𐑖𐑩𐑯𐑟": [
@@ -10971,8 +10971,8 @@
       "ipa": "æspɪreɪʃənz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑕𐑐𐑼𐑱𐑖𐑩𐑯𐑟; overridden:was=𐑨𐑕𐑐𐑦𐑮𐑱𐑖𐑩𐑯𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "aspire_UNC_𐑩𐑕𐑐𐑲𐑼": [
@@ -18295,8 +18295,8 @@
       "ipa": "baɪsˈekʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑩𐑤; overridden:was=𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "bishop_UNC_𐑚𐑦𐑖𐑩𐑐": [
@@ -23551,8 +23551,8 @@
       "ipa": "bjəərəʊz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑚𐑘𐑫𐑼𐑴𐑟; overridden:was=𐑚𐑘𐑩𐑼𐑴𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "burgers_UNC_𐑚𐑻𐑜𐑼𐑟": [
@@ -26769,8 +26769,8 @@
       "ipa": "kˈæʒʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑨𐑠𐑫𐑩𐑤; overridden:was=𐑒𐑨𐑠𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "casual",
@@ -26791,8 +26791,8 @@
       "ipa": "kˈæʒʊəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑨𐑠𐑫𐑩𐑤𐑦; overridden:was=𐑒𐑨𐑠𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "casually",
@@ -35981,8 +35981,8 @@
       "ipa": "kənsˈeptʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑩𐑯𐑕𐑧𐑐𐑗𐑫𐑩𐑤; overridden:was=𐑒𐑩𐑯𐑕𐑧𐑐𐑗𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "concern_UNC_𐑒𐑩𐑯𐑕𐑻𐑯": [
@@ -37677,8 +37677,8 @@
       "ipa": "kənstˈɪtʃʊənsiz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑩𐑯𐑕𐑦𐑟; overridden:was=𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑼𐑯𐑕𐑦𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "constituency_UNC_𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑩𐑯𐑕𐑦": [
@@ -37689,8 +37689,8 @@
       "ipa": "kənstˈɪtʃʊənsi",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑩𐑯𐑕𐑦; overridden:was=𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑼𐑯𐑕𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "constituent_UNC_𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑩𐑯𐑑": [
@@ -37701,8 +37701,8 @@
       "ipa": "kənstˈɪtʃʊənt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑩𐑯𐑑; overridden:was=𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑼𐑯𐑑; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "constituents_UNC_𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑩𐑯𐑑𐑕": [
@@ -37713,8 +37713,8 @@
       "ipa": "kənstˈɪtʃʊənts",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑩𐑯𐑑𐑕; overridden:was=𐑒𐑩𐑯𐑕𐑑𐑦𐑗𐑫𐑼𐑯𐑑𐑕; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "constitute_UNC_𐑒𐑪𐑯𐑕𐑑𐑦𐑑𐑿𐑑": [
@@ -38387,8 +38387,8 @@
       "ipa": "kəntˈɪnjəəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑫𐑩𐑤𐑦; overridden:was=𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑩𐑩𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "continuation_UNC_𐑒𐑩𐑯𐑑𐑦𐑯𐑿𐑱𐑖𐑩𐑯": [
@@ -50539,8 +50539,8 @@
       "ipa": "dˈɪsɪplɪnz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑟; overridden:was=𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "disclaimer_UNC_𐑛𐑦𐑕𐑒𐑤𐑱𐑥𐑼": [
@@ -60843,8 +60843,8 @@
       "ipa": "ɪvˈæljəˌeɪt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑑; overridden:was=𐑦𐑝𐑨𐑤𐑘𐑩𐑱𐑑; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "evaluated_UNC_𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑑𐑩𐑛": [
@@ -60855,8 +60855,8 @@
       "ipa": "ɪvˈæljəˌeɪtƏd",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑑𐑩𐑛; overridden:was=𐑦𐑝𐑨𐑤𐑘𐑩𐑱𐑑𐑩𐑛; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "evaluating_UNC_𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑑𐑦𐑙": [
@@ -60867,8 +60867,8 @@
       "ipa": "ɪvˈæljəˌeɪtɪŋ",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑑𐑦𐑙; overridden:was=𐑦𐑝𐑨𐑤𐑘𐑩𐑱𐑑𐑦𐑙; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "evaluation_UNC_𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑖𐑩𐑯": [
@@ -60879,8 +60879,8 @@
       "ipa": "ɪvˌæljəˈeɪʃən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑖𐑩𐑯; overridden:was=𐑦𐑝𐑨𐑤𐑘𐑩𐑱𐑖𐑩𐑯; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "evaluations_UNC_𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑖𐑩𐑯𐑟": [
@@ -60891,8 +60891,8 @@
       "ipa": "ɪvˌæljəˈeɪʃənz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑝𐑨𐑤𐑘𐑫𐑱𐑖𐑩𐑯𐑟; overridden:was=𐑦𐑝𐑨𐑤𐑘𐑩𐑱𐑖𐑩𐑯𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "evanescence_UNC_𐑧𐑝𐑩𐑯𐑧𐑕𐑩𐑯𐑕": [
@@ -61033,8 +61033,8 @@
       "ipa": "ɪvˈentʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑝𐑧𐑯𐑗𐑫𐑩𐑤; overridden:was=𐑦𐑝𐑧𐑯𐑗𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "eventually_UNC_𐑦𐑝𐑧𐑯𐑗𐑫𐑩𐑤𐑦": [
@@ -61045,8 +61045,8 @@
       "ipa": "ɪvˈentʃʊəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑝𐑧𐑯𐑗𐑫𐑩𐑤𐑦; overridden:was=𐑦𐑝𐑧𐑯𐑗𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "ever_UNC_𐑧𐑝𐑼": [
@@ -63755,8 +63755,8 @@
       "ipa": "fˈæktʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑓𐑨𐑒𐑗𐑫𐑩𐑤; overridden:was=𐑓𐑨𐑒𐑗𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "faculty_UNC_𐑓𐑨𐑒𐑩𐑤𐑑𐑦": [
@@ -73059,8 +73059,8 @@
       "ipa": "dʒənˈetɪk",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑡𐑦𐑯𐑧𐑑𐑦𐑒; overridden:was=𐑡𐑩𐑯𐑧𐑑𐑦𐑒; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "genetically_UNC_𐑡𐑩𐑯𐑧𐑑𐑦𐑒𐑩𐑤𐑦": [
@@ -73083,8 +73083,8 @@
       "ipa": "dʒənˈetɪks",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑡𐑦𐑯𐑧𐑑𐑦𐑒𐑕; overridden:was=𐑡𐑩𐑯𐑧𐑑𐑦𐑒𐑕; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "geneva_UNC_𐑡𐑦𐑯𐑰𐑝𐑩": [
@@ -82731,8 +82731,8 @@
       "ipa": "hˌəʊməʊsˈekʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑴𐑥𐑴𐑕𐑧𐑒𐑖𐑫𐑩𐑤; overridden:was=𐑣𐑴𐑥𐑴𐑕𐑧𐑒𐑖𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "honda_UNC_𐑣𐑪𐑯𐑛𐑩": [
@@ -87253,8 +87253,8 @@
       "ipa": "ˌɪndɪvˈɪdjəəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤; overridden:was=𐑦𐑯𐑛𐑦𐑝𐑦𐑛𐑘𐑩𐑩𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "individually_UNC_𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤𐑦": [
@@ -87265,8 +87265,8 @@
       "ipa": "ˌɪndɪvˈɪdjəəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤𐑦; overridden:was=𐑦𐑯𐑛𐑦𐑝𐑦𐑛𐑘𐑩𐑩𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "individuals_UNC_𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤𐑟": [
@@ -87277,8 +87277,8 @@
       "ipa": "ˌɪndɪvˈɪdjəəlz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤𐑟; overridden:was=𐑦𐑯𐑛𐑦𐑝𐑦𐑛𐑘𐑩𐑩𐑤𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "indonesia_UNC_𐑦𐑯𐑛𐑩𐑯𐑰𐑠𐑩": [
@@ -87753,8 +87753,8 @@
       "ipa": "ˈɪnflʊəns",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑓𐑤𐑫𐑩𐑯𐑕; overridden:was=𐑦𐑯𐑓𐑤𐑫𐑼𐑯𐑕; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "influenced_UNC_𐑦𐑯𐑓𐑤𐑫𐑩𐑯𐑕𐑑": [
@@ -87765,8 +87765,8 @@
       "ipa": "ˈɪnflʊənst",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑓𐑤𐑫𐑩𐑯𐑕𐑑; overridden:was=𐑦𐑯𐑓𐑤𐑫𐑼𐑯𐑕𐑑; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "influences_UNC_𐑦𐑯𐑓𐑤𐑫𐑩𐑯𐑕𐑩𐑟": [
@@ -87777,8 +87777,8 @@
       "ipa": "ˈɪnflʊənsƏz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑓𐑤𐑫𐑩𐑯𐑕𐑩𐑟; overridden:was=𐑦𐑯𐑓𐑤𐑫𐑼𐑯𐑕𐑩𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "influential_UNC_𐑦𐑯𐑓𐑤𐑫𐑧𐑯𐑖𐑩𐑤": [
@@ -89447,8 +89447,8 @@
       "ipa": "ˌɪntəlˈektʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑑𐑩𐑤𐑧𐑒𐑗𐑫𐑩𐑤; overridden:was=𐑦𐑯𐑑𐑩𐑤𐑧𐑒𐑗𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "intelligence_UNC_𐑦𐑯𐑑𐑧𐑤𐑦𐑡𐑩𐑯𐑕": [
@@ -91959,8 +91959,8 @@
       "ipa": "dʒænjəəri",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑡𐑨𐑯𐑘𐑫𐑼𐑦; overridden:was=𐑡𐑨𐑯𐑘𐑩𐑼𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "japan_UNC_𐑡𐑩𐑐𐑨𐑯": [
@@ -93057,8 +93057,8 @@
       "ipa": "dʒˈɒʃʊə",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑡𐑪𐑖𐑫𐑩; overridden:was=𐑡𐑪𐑖𐑫𐑼; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "josie_UNC_𐑡𐑴𐑟𐑦": [
@@ -98041,8 +98041,8 @@
       "ipa": "lɪdʒˈɪtɪmɪt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑤𐑦𐑡𐑦𐑑𐑦𐑥𐑩𐑑; overridden:was=𐑤𐑦𐑡𐑦𐑑𐑦𐑥𐑦𐑑; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "lego_UNC_𐑤𐑧𐑜𐑴": [
@@ -104121,8 +104121,8 @@
       "ipa": "mˈænjəəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑥𐑨𐑯𐑘𐑫𐑩𐑤; overridden:was=𐑥𐑨𐑯𐑘𐑩𐑩𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "manually_UNC_𐑥𐑨𐑯𐑘𐑫𐑩𐑤𐑦": [
@@ -104133,8 +104133,8 @@
       "ipa": "mˈænjəəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑥𐑨𐑯𐑘𐑫𐑩𐑤𐑦; overridden:was=𐑥𐑨𐑯𐑘𐑩𐑩𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "manuals_UNC_𐑥𐑨𐑯𐑘𐑫𐑩𐑤𐑟": [
@@ -104145,8 +104145,8 @@
       "ipa": "mˈænjəəlz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑥𐑨𐑯𐑘𐑫𐑩𐑤𐑟; overridden:was=𐑥𐑨𐑯𐑘𐑩𐑩𐑤𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "manufacture_UNC_𐑥𐑨𐑯𐑘𐑩𐑓𐑨𐑒𐑗𐑼": [
@@ -112465,8 +112465,8 @@
       "ipa": "mjˈuːtʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑥𐑿𐑗𐑫𐑩𐑤; overridden:was=𐑥𐑿𐑗𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "my_UNC_𐑥𐑲": [
@@ -152363,8 +152363,8 @@
       "ipa": "sˈekʃʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑕𐑧𐑒𐑖𐑫𐑩𐑤; overridden:was=𐑕𐑧𐑒𐑖𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "sexuality_UNC_𐑕𐑧𐑒𐑖𐑫𐑨𐑤𐑦𐑑𐑦": [
@@ -152387,8 +152387,8 @@
       "ipa": "sˈekʃʊəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑕𐑧𐑒𐑖𐑫𐑩𐑤𐑦; overridden:was=𐑕𐑧𐑒𐑖𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "sexy_UNC_𐑕𐑧𐑒𐑕𐑦": [
@@ -169929,8 +169929,8 @@
       "ipa": "tɪəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑑𐑺; overridden:was=𐑑𐑽; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "tear",
@@ -170999,8 +170999,8 @@
       "ipa": "təriːsə",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑑𐑼𐑰𐑟𐑩; overridden:was=𐑑𐑼𐑰𐑕𐑩; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "teresa",
@@ -180433,8 +180433,8 @@
       "ipa": "ʌnjˈuːʒʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑳𐑯𐑿𐑠𐑫𐑩𐑤; overridden:was=𐑳𐑯𐑿𐑠𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "unusually_UNC_𐑳𐑯𐑿𐑠𐑫𐑩𐑤𐑦": [
@@ -180445,8 +180445,8 @@
       "ipa": "ʌnjˈuːʒʊəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑳𐑯𐑿𐑠𐑫𐑩𐑤𐑦; overridden:was=𐑳𐑯𐑿𐑠𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "unwanted_UNC_𐑳𐑯𐑢𐑪𐑯𐑑𐑩𐑛": [
@@ -181137,8 +181137,8 @@
       "ipa": "jˈuːʒʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑿𐑠𐑫𐑩𐑤; overridden:was=𐑿𐑠𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "usually_UNC_𐑿𐑠𐑫𐑩𐑤𐑦": [
@@ -181149,8 +181149,8 @@
       "ipa": "jˈuːʒʊəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑿𐑠𐑫𐑩𐑤𐑦; overridden:was=𐑿𐑠𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "usurp_UNC_𐑿𐑟𐑻𐑐": [
@@ -181653,8 +181653,8 @@
       "ipa": "væljəˈeɪʃən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑝𐑨𐑤𐑘𐑫𐑱𐑖𐑩𐑯; overridden:was=𐑝𐑨𐑤𐑘𐑩𐑱𐑖𐑩𐑯; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "value_UNC_𐑝𐑨𐑤𐑿": [
@@ -183901,8 +183901,8 @@
       "ipa": "vˈɪʒʊəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑝𐑦𐑠𐑫𐑩𐑤; overridden:was=𐑝𐑦𐑠𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "visual",
@@ -183923,8 +183923,8 @@
       "ipa": "vˌɪʒʊəlaɪzˈeɪʃən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑝𐑦𐑠𐑫𐑩𐑤𐑲𐑟𐑱𐑖𐑩𐑯; overridden:was=𐑝𐑦𐑠𐑫𐑼𐑤𐑲𐑟𐑱𐑖𐑩𐑯; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "visualisation",
@@ -183945,8 +183945,8 @@
       "ipa": "vˌɪʒʊəlaɪzˈeɪʃən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑝𐑦𐑠𐑫𐑩𐑤𐑲𐑟𐑱𐑖𐑩𐑯; overridden:was=𐑝𐑦𐑠𐑫𐑼𐑤𐑲𐑟𐑱𐑖𐑩𐑯; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "visualization",

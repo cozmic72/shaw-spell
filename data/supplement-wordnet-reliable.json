@@ -2084,7 +2084,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɑɨ; shave_says:𐑸𐑡𐑩𐑯𐑑𐑦𐑯𐑾𐑯"
+      "review": "unknown_chars:ɨɑ; shave_says:𐑸𐑡𐑩𐑯𐑑𐑦𐑯𐑾𐑯"
     }
   ],
   "argentinian_NN1_ɑ𐑮𐑡ɨ𐑯𐑑𐑦𐑯𐑦𐑩𐑯": [
@@ -2096,7 +2096,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɑɨ; shave_says:𐑸𐑡𐑩𐑯𐑑𐑦𐑯𐑾𐑯"
+      "review": "unknown_chars:ɨɑ; shave_says:𐑸𐑡𐑩𐑯𐑑𐑦𐑯𐑾𐑯"
     }
   ],
   "argive_AJ0_𐑸𐑜𐑲𐑝": [
@@ -20251,8 +20251,8 @@
       "ipa": "ˈænjəəli",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑨𐑯𐑘𐑫𐑩𐑤𐑦; overridden:was=𐑨𐑯𐑘𐑩𐑩𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "annuity_NN1_𐑩𐑯𐑫𐑦𐑑𐑦": [
@@ -60583,8 +60583,8 @@
       "ipa": "ˈkæʒʊəli",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑨𐑠𐑫𐑩𐑤𐑦; overridden:was=𐑒𐑨𐑠𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "casualty_NN1_𐑒𐑨𐑠𐑩𐑤𐑑𐑦": [
@@ -67748,7 +67748,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɑx; shave_says:𐑣𐑫𐑑𐑕𐑐𐑩"
+      "review": "unknown_chars:xɑ; shave_says:𐑣𐑫𐑑𐑕𐑐𐑩"
     }
   ],
   "chyle_NN1_𐑒𐑲𐑤": [
@@ -89647,8 +89647,8 @@
       "ipa": "kjəərət",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑘𐑫𐑼𐑩𐑑; overridden:was=𐑒𐑘𐑩𐑼𐑩𐑑; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "curb_VVI_𐑒𐑻𐑚": [
@@ -124664,7 +124664,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɑɨ; shave_says:𐑧𐑯𐑛𐑪𐑡𐑩𐑯𐑩𐑕"
+      "review": "unknown_chars:ɨɑ; shave_says:𐑧𐑯𐑛𐑪𐑡𐑩𐑯𐑩𐑕"
     }
   ],
   "endolymph_NN1_𐑧𐑯𐑛𐑩𐑤𐑦𐑥𐑓": [
@@ -138428,7 +138428,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ːɚ; shave_says:𐑓𐑼𐑑𐑦𐑤𐑦𐑑𐑦"
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚː; shave_says:𐑓𐑼𐑑𐑦𐑤𐑦𐑑𐑦"
     }
   ],
   "fertilize_VVI_𐑓𐑻𐑑𐑦𐑤𐑲𐑟": [
@@ -142987,8 +142987,8 @@
       "ipa": "flɒrƏd",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑓𐑤𐑪𐑮𐑦𐑛; overridden:was=𐑓𐑤𐑪𐑮𐑩𐑛; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "florilegium_NN1_𐑓𐑤𐑷𐑮𐑼𐑤𐑰𐑡𐑦𐑩𐑥": [
@@ -147848,7 +147848,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ː̃; shave_says:𐑓𐑮𐑰𐑕𐑪𐑯"
+      "review": "unknown_chars:̃ː; shave_says:𐑓𐑮𐑰𐑕𐑪𐑯"
     }
   ],
   "frittata_NN1_𐑓𐑮𐑦𐑑ɑ𐑑𐑩": [
@@ -163723,8 +163723,8 @@
       "ipa": "həˈbɪtʃʊəl",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑩𐑚𐑦𐑗𐑫𐑩𐑤; overridden:was=𐑣𐑩𐑚𐑦𐑗𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "habitually_AV0_𐑣𐑩𐑚𐑦𐑑𐑘𐑫𐑩𐑤𐑦": [
@@ -165788,7 +165788,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɑɨ; shave_says:harquebus"
+      "review": "unknown_chars:ɨɑ; shave_says:harquebus"
     }
   ],
   "harridan_NN1_𐑣𐑨𐑮𐑦𐑛𐑩𐑯": [
@@ -167588,7 +167588,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ː̰̃; shave_says:𐑣𐑰-𐑣𐑷"
+      "review": "unknown_chars:̃ː̰; shave_says:𐑣𐑰-𐑣𐑷"
     }
   ],
   "hee-haw_VVI_𐑣𐑰𐑣𐑷̰̃ː": [
@@ -167600,7 +167600,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ː̰̃; shave_says:𐑣𐑰-𐑣𐑷"
+      "review": "unknown_chars:̃ː̰; shave_says:𐑣𐑰-𐑣𐑷"
     }
   ],
   "heebie-jeebies_NN1_𐑣𐑰𐑚𐑰𐑡𐑰𐑚𐑰𐑟": [
@@ -174895,8 +174895,8 @@
       "ipa": "haɪdrɒdʒəneɪt",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑲𐑛𐑮𐑪𐑡𐑦𐑯𐑱𐑑; overridden:was=𐑣𐑲𐑛𐑮𐑪𐑡𐑩𐑯𐑱𐑑; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "hydrologist_NN1_𐑣𐑲𐑛𐑮𐑪𐑤𐑩𐑡𐑦𐑕𐑑": [
@@ -182443,8 +182443,8 @@
       "ipa": "ˌɪndɪˈvɪdʒʊəl",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤; overridden:was=𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "individual_NN1_𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤": [
@@ -182455,8 +182455,8 @@
       "ipa": "ˌɪndɪˈvɪdʒʊəl",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑩𐑤; overridden:was=𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "individuality_NN1_𐑦𐑯𐑛𐑦𐑝𐑦𐑡𐑫𐑨𐑤𐑦𐑑𐑦": [
@@ -214856,7 +214856,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɑɨ; shave_says:𐑥𐑸𐑖𐑩𐑯𐑧𐑕"
+      "review": "unknown_chars:ɨɑ; shave_says:𐑥𐑸𐑖𐑩𐑯𐑧𐑕"
     }
   ],
   "marchland_NN1_𐑥𐑸𐑗𐑤𐑨𐑯𐑛": [
@@ -229219,8 +229219,8 @@
       "ipa": "ˈmjuːtʃʊəli",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑥𐑿𐑗𐑫𐑩𐑤𐑦; overridden:was=𐑥𐑿𐑗𐑫𐑼𐑤𐑦; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "muumuu_NN1_𐑥𐑵𐑥𐑵": [
@@ -287108,7 +287108,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɝɨ; shave_says:𐑮𐑦𐑣𐑻𐑕"
+      "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɨɝ; shave_says:𐑮𐑦𐑣𐑻𐑕"
     }
   ],
   "reification_NN1_𐑮𐑱𐑩𐑓𐑩𐑒𐑱𐑖𐑩𐑯": [
@@ -310088,7 +310088,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɑɨ; shave_says:𐑖𐑸𐑐𐑩𐑯"
+      "review": "unknown_chars:ɨɑ; shave_says:𐑖𐑸𐑐𐑩𐑯"
     }
   ],
   "sharpener_NN1_𐑖𐑸𐑐𐑼𐑯𐑼": [
@@ -344360,7 +344360,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ːç; shave_says:𐑑𐑭𐑤𐑝𐑧𐑜"
+      "review": "unknown_chars:çː; shave_says:𐑑𐑭𐑤𐑝𐑧𐑜"
     }
   ],
   "thanatology_NN1_𐑔𐑨𐑯𐑩𐑑𐑪𐑤𐑩𐑡𐑦": [
@@ -362827,8 +362827,8 @@
       "ipa": "ˈjuːʒʊəl",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑿𐑠𐑫𐑩𐑤; overridden:was=𐑿𐑠𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "usually_AV0_𐑿𐑠𐑤𐑦": [
@@ -368383,8 +368383,8 @@
       "ipa": "ˈvɪʒʊəl",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑝𐑦𐑠𐑫𐑩𐑤; overridden:was=𐑝𐑦𐑠𐑫𐑼𐑤; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "visualise_VVI_𐑝𐑦𐑠𐑫𐑩𐑤𐑲𐑟": [
@@ -368395,8 +368395,8 @@
       "ipa": "ˈvɪʒʊəlaɪz",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑝𐑦𐑠𐑫𐑩𐑤𐑲𐑟; overridden:was=𐑝𐑦𐑠𐑫𐑼𐑤𐑲𐑟; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "visualization_NN1_𐑝𐑦𐑠𐑫𐑩𐑤𐑲𐑟𐑱𐑖𐑩𐑯": [
@@ -368407,8 +368407,8 @@
       "ipa": "ˌvɪʒʊəlaɪˈzeɪʃən",
       "freq": 0,
       "var": "RRP",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑝𐑦𐑠𐑫𐑩𐑤𐑲𐑟𐑱𐑖𐑩𐑯; overridden:was=𐑝𐑦𐑠𐑫𐑼𐑤𐑲𐑟𐑱𐑖𐑩𐑯; shave+ml_consensus"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "vital_AJ0_𐑝𐑲𐑑𐑩𐑤": [
@@ -369728,7 +369728,7 @@
       "freq": 0,
       "var": "RRP",
       "confidence": 1,
-      "review": "unknown_chars:ɜɾ; shave_says:𐑝𐑳𐑤𐑜𐑨𐑮𐑦𐑑𐑦"
+      "review": "unknown_chars:ɾɜ; shave_says:𐑝𐑳𐑤𐑜𐑨𐑮𐑦𐑑𐑦"
     }
   ],
   "vulnerability_NN1_𐑝𐑳𐑤𐑯𐑼𐑼𐑚𐑦𐑤𐑦𐑑𐑦": [

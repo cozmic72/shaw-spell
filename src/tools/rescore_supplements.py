@@ -93,11 +93,11 @@ def rescore_file(filepath: Path, ml_model, full_shave: bool) -> dict:
             e["_ml_shaw"] = ml_shaw
             stats["rescored"] += 1
 
-    # Phase 2: shave consultation — British for RSSB/RRP, American for RGAM/GAM
+    # Phase 2: shave consultation — British for RSSB/RRP, American for GenAm/GAM
     shave_threshold = 100 if full_shave else 89
 
     british_vars = {"RSSB", "RRP", "UNC", "TrapBath", "SSB"}
-    american_vars = {"RGAM", "GAM", "GenAm"}
+    american_vars = {"GenAm", "GAM"}
 
     for dialect_label, dialect_flag, target_vars in [
         ("British", "british", british_vars),

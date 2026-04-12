@@ -198,11 +198,79 @@ def _restore_rhoticity(ipa: str, word: str) -> str:
     if re.search(r'[aeiouy]r[^aeiouy]*$', stem) and len(stem) > 1:
         stripped = re.sub(r'ə([pbtdkɡfvθðszʃʒhmnŋlwjʍ]+)$', r'əR\1', stripped)
 
+    # Mid-word ə before consonant: check if spelling has 'r' at aligned position.
+    # Handles words like yesterday (jestədeɪ), saturday (sætədeɪ), butterfly (bʌtəflaɪ).
+    stripped = _restore_midword_schwa_r(stripped, word_lower)
+
     # Now handle the harder cases using a spelling-IPA alignment approach.
     # We extract the consonant/vowel skeleton of the spelling to find where
     # 'r' sits relative to other sounds, then match against IPA patterns.
     result = _align_and_insert_r(stripped, word_lower)
     return result
+
+
+def _restore_midword_schwa_r(ipa: str, word: str) -> str:
+    """Insert R after mid-word ə when the spelling has 'r' at the aligned position.
+
+    Uses ratio-based position mapping: if ə is at position i in the IPA,
+    look for 'r' near position i/len(ipa) * len(word) in the spelling.
+
+    Only targets ə followed by a consonant (not word-final, not before a vowel,
+    not already followed by R/r, and not part of eə/ɪə/ʊə diphthongs).
+    """
+    if 'r' not in word:
+        return ipa
+
+    ipa_vowels = set("ɪiɛeæɑɒɔəʊʌɐuaoyː")
+    ipa_consonants = set("pbtdkɡgfvθðszʃʒhmnŋlwjʍ")
+
+    result = list(ipa)
+    ipa_len = len(result)
+    word_len = len(word)
+    insertions = []  # collect (index, 'R') to insert, applied right-to-left
+
+    for i, ch in enumerate(result):
+        if ch != 'ə':
+            continue
+        # Skip word-final ə (already handled)
+        if i == ipa_len - 1:
+            continue
+        # Skip if already followed by R or r
+        if result[i + 1] in ('R', 'r'):
+            continue
+        # Skip if followed by a vowel (linking position, not r-colored)
+        if result[i + 1] in ipa_vowels:
+            continue
+        # Must be followed by a consonant
+        if result[i + 1] not in ipa_consonants:
+            continue
+        # Skip if this ə is part of eə, ɪə, or ʊə diphthong
+        if i >= 1 and result[i - 1] in ('e', 'ɪ', 'ʊ'):
+            continue
+
+        # Ratio-based alignment: where in the spelling does this ə sit?
+        ratio = (i + 1) / ipa_len  # position just after the ə
+        spelling_pos = int(ratio * word_len)
+
+        # Search for 'r' in a window around the aligned position
+        # Window size scales with word length but at least ±2
+        window = max(2, word_len // 4)
+        lo = max(0, spelling_pos - window)
+        hi = min(word_len, spelling_pos + window + 1)
+        spelling_slice = word[lo:hi]
+
+        if 'r' in spelling_slice:
+            # Extra guard: the 'r' in spelling should follow a vowel letter
+            # (to avoid matching initial 'r' or 'r' in consonant clusters like 'str')
+            r_idx = word.find('r', lo)
+            if r_idx is not None and r_idx > 0 and word[r_idx - 1] in 'aeiouy':
+                insertions.append(i + 1)
+
+    # Apply insertions right-to-left to preserve indices
+    for idx in reversed(insertions):
+        result.insert(idx, 'R')
+
+    return ''.join(result)
 
 
 def _align_and_insert_r(ipa: str, word: str) -> str:

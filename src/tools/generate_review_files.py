@@ -60,6 +60,8 @@ def generate_disagreements(entries, rl_shaws, rl_ipas, output_path):
         word = e['Latn'].lower()
         shaw = e['Shaw']
         ipa = e.get('ipa', '')
+        var = e.get('var', '')
+        confidence = e.get('confidence', '')
 
         # Filters
         if starts_with_digit(word):
@@ -83,22 +85,22 @@ def generate_disagreements(entries, rl_shaws, rl_ipas, output_path):
 
         rl_shaw_str = ', '.join(sorted(rl_shaws[word]))
         rl_ipa_str = rl_ipas.get(word, '')
-        confidence = e.get('confidence', '')
         notes = e.get('review', '')
 
-        rows.append(f"{word}\t{shaw}\t{ipa}\t{rl_shaw_str}\t{rl_ipa_str}\t{confidence}\t{notes}")
+        rows.append((confidence, word, shaw, ipa, var, rl_shaw_str, rl_ipa_str, notes))
 
-    rows.sort()
+    # Sort by confidence ascending (worst first), then word
+    rows.sort(key=lambda r: (r[0] if isinstance(r[0], int) else 999, r[1]))
     with open(output_path, 'w') as f:
-        f.write("word\tour_shaw\tour_ipa\treadlex_shaw\treadlex_ipa\tconfidence\tnotes\n")
-        for row in rows:
-            f.write(row + '\n')
+        f.write("word\tour_shaw\tour_ipa\tvar\tconfidence\treadlex_shaw\treadlex_ipa\tnotes\n")
+        for conf, word, shaw, ipa, var, rl_shaw_str, rl_ipa_str, notes in rows:
+            f.write(f"{word}\t{shaw}\t{ipa}\t{var}\t{conf}\t{rl_shaw_str}\t{rl_ipa_str}\t{notes}\n")
 
     return len(rows)
 
 
-def generate_new_words(entries, rl_shaws, output_path):
-    """Generate new words TSV: high-confidence entries not in ReadLex at all."""
+def generate_new_words(entries, rl_shaws, output_path, confidence_threshold=70):
+    """Generate new words TSV: entries above confidence threshold not in ReadLex at all."""
     seen = set()
     rows = []
     for e in entries:
@@ -108,13 +110,14 @@ def generate_new_words(entries, rl_shaws, output_path):
         pos = e.get('pos', '')
         var = e.get('var', '')
         confidence = e.get('confidence', '')
+        notes = e.get('review', '')
 
         # Filters
         if starts_with_digit(word):
             continue
         if not is_pure_shavian(shaw):
             continue
-        if confidence != 'high':
+        if not isinstance(confidence, int) or confidence < confidence_threshold:
             continue
 
         # Must NOT be in ReadLex at all
@@ -127,13 +130,14 @@ def generate_new_words(entries, rl_shaws, output_path):
             continue
         seen.add(dedup_key)
 
-        rows.append(f"{word}\t{shaw}\t{ipa}\t{pos}\t{var}\t{confidence}")
+        rows.append((confidence, word, shaw, ipa, pos, var, notes))
 
-    rows.sort()
+    # Sort by confidence ascending (worst first), then word
+    rows.sort(key=lambda r: (r[0], r[1]))
     with open(output_path, 'w') as f:
-        f.write("word\tshaw\tipa\tpos\tvar\tconfidence\n")
-        for row in rows:
-            f.write(row + '\n')
+        f.write("word\tshaw\tipa\tpos\tvar\tconfidence\tnotes\n")
+        for conf, word, shaw, ipa, pos, var, notes in rows:
+            f.write(f"{word}\t{shaw}\t{ipa}\t{pos}\t{var}\t{conf}\t{notes}\n")
 
     return len(rows)
 

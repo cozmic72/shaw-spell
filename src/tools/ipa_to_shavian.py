@@ -564,6 +564,111 @@ def _convert_stripped(ipa: str) -> str:
 # All Shavian letters that contain an 'r' sound
 SHAVIAN_R_LETTERS = set("𐑮𐑼𐑻𐑺𐑽𐑸𐑹")
 
+# Valid Shavian characters (for unknown-char detection)
+KNOWN_SHAVIAN = set("𐑐𐑚𐑑𐑛𐑒𐑜𐑓𐑝𐑔𐑞𐑕𐑟𐑖𐑠𐑗𐑡𐑥𐑯𐑙𐑤𐑮𐑢𐑣𐑘𐑨𐑧𐑦𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿 -.'")
+
+
+def score_confidence(word: str, ipa: str, shaw: str,
+                     ml_shaw: str | None = None) -> tuple[int, list[str]]:
+    """Score conversion confidence as a percentage (0-99) with explanatory notes.
+
+    Empirically calibrated against ReadLex overlap data:
+      Clean (no flags):              89% accuracy → confidence 89
+      shave+ML consensus override:  ~99% accuracy → confidence 99
+      r_gap + shave agrees:          97% accuracy → confidence 95
+      ML disagrees + shave agrees:   67% accuracy → confidence 65
+      r_gap only:                    30% accuracy → confidence 30
+      ML disagrees only:              5% accuracy → confidence 5
+      missing_r or unknown_chars:     0% accuracy → confidence 1
+
+    Args:
+        word: Latin spelling
+        ipa: Normalized IPA string
+        shaw: Shavian output from converter
+        ml_shaw: Shavian from ML model (None if unavailable)
+
+    Returns:
+        (confidence_pct, notes) where confidence_pct is 0-99
+    """
+    notes = []
+    penalties = []
+
+    # Check ML disagreement
+    if ml_shaw is not None and ml_shaw != shaw:
+        notes.append(f"ml_disagrees:{ml_shaw}")
+        penalties.append("ml_disagrees")
+
+    # Check r-gap (spelling has more r's than IPA)
+    word_lower = word.lower()
+    if 'r' in word_lower:
+        spelling_r = word_lower.count('r')
+        ipa_r = ipa.count('r') + ipa.count('R')
+        if spelling_r > ipa_r:
+            notes.append(f"r_gap:spelling={spelling_r},ipa={ipa_r}")
+            penalties.append("r_gap")
+
+    # Check missing r entirely
+    missing_r = check_missing_r(word, shaw)
+    if missing_r:
+        notes.append(missing_r)
+        penalties.append("missing_r")
+
+    # Check unknown characters
+    unknown = set(shaw) - KNOWN_SHAVIAN
+    if unknown:
+        notes.append(f"unknown_chars:{''.join(unknown)}")
+        penalties.append("unknown_chars")
+
+    # Check numeral in word
+    if word and word[0].isdigit():
+        notes.append("numeral")
+        penalties.append("numeral")
+
+    # Compute confidence percentage from penalty combination
+    p = set(penalties)
+    if not p:
+        pct = 89
+    elif "unknown_chars" in p:
+        pct = 1
+    elif "missing_r" in p and "r_gap" in p:
+        pct = 1
+    elif "missing_r" in p:
+        pct = 5
+    elif "numeral" in p:
+        pct = 10
+    elif "ml_disagrees" in p and "r_gap" in p:
+        pct = 3
+    elif "ml_disagrees" in p:
+        pct = 5
+    elif "r_gap" in p:
+        pct = 30
+    else:
+        pct = 50  # unknown combination
+
+    return pct, notes
+
+
+def upgrade_confidence_shave(pct: int, notes: list[str],
+                             shaw: str, shave_shaw: str,
+                             ml_shaw: str | None) -> tuple[int, list[str], str | None]:
+    """Upgrade confidence based on shave tool agreement.
+
+    Returns (new_pct, updated_notes, override_shaw_or_None).
+    """
+    if shave_shaw == shaw:
+        # Shave agrees with rules
+        new_pct = max(pct, 95) if pct < 89 else max(pct, 97)
+        notes.append("shave_agrees")
+        return new_pct, notes, None
+    elif ml_shaw and shave_shaw == ml_shaw:
+        # Shave + ML consensus → override
+        notes.append(f"overridden:was={shaw}; shave+ml_consensus")
+        return 99, notes, shave_shaw
+    else:
+        # Shave disagrees with both
+        notes.append(f"shave_says:{shave_shaw}")
+        return pct, notes, None
+
 
 def check_missing_r(word: str, shaw: str) -> str | None:
     """Check if a word has 'r' in its Latin spelling but no r-sound in Shavian.

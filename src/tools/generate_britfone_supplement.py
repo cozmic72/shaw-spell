@@ -28,7 +28,7 @@ from pathlib import Path
 TOOLS_DIR = Path(__file__).parent
 sys.path.insert(0, str(TOOLS_DIR))
 
-from ipa_to_shavian import ipa_to_shavian, normalize_ipa, check_missing_r
+from ipa_to_shavian import ipa_to_shavian, normalize_ipa, score_confidence, upgrade_confidence_shave
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -96,58 +96,13 @@ def _batch_shave(words: list[str]) -> dict[str, str]:
         return {}
 
 
-def _score_confidence(word: str, ipa: str, shaw_rules: str,
-                      have_ml: bool, ml_model) -> tuple[str, str]:
-    """Score conversion confidence based on multiple signals.
-
-    Returns (confidence_level, review_notes) where:
-        confidence_level: "high", "medium", or "low"
-        review_notes: human-readable explanation of concerns (empty if high)
-    """
-    notes = []
-
-    # Signal 1: ML model disagrees with rules
-    if have_ml and ml_model:
-        ipa_stripped = strip_stress(ipa)
-        ml_ipa = ml_normalize_ipa(ipa_stripped, word, ml_model)
-        shaw_ml = ipa_to_shavian(ml_ipa)
-        if shaw_ml != shaw_rules:
-            notes.append(f"ml_disagrees:{shaw_ml}")
-
-    # Signal 2: word has 'r' in spelling — r-restoration may be incomplete
-    word_lower = word.lower()
-    if 'r' in word_lower:
-        # Check if the IPA has fewer r/R than the spelling has 'r'
-        spelling_r_count = word_lower.count('r')
-        ipa_r_count = ipa.count('r') + ipa.count('R')
-        if spelling_r_count > ipa_r_count:
-            notes.append(f"r_gap:spelling={spelling_r_count},ipa={ipa_r_count}")
-
-    # Signal 2b: word has 'r' in spelling but Shavian has NO r-sound at all
-    missing_r = check_missing_r(word, shaw_rules)
-    if missing_r:
-        notes.append(missing_r)
-
-    # Signal 3: unknown characters passed through
-    known_shaw = set("𐑐𐑚𐑑𐑛𐑒𐑜𐑓𐑝𐑔𐑞𐑕𐑟𐑖𐑠𐑗𐑡𐑥𐑯𐑙𐑤𐑮𐑢𐑣𐑘𐑨𐑧𐑦𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿 -.'")
-    unknown = set(shaw_rules) - known_shaw
-    if unknown:
-        notes.append(f"unknown_chars:{''.join(unknown)}")
-
-    # Signal 4: multiple pronunciations for same word
-    # (handled at the word level, not here)
-
-    # Determine confidence level
-    if not notes:
-        return "high", ""
-    elif any(n.startswith("unknown_chars") for n in notes):
-        return "low", "; ".join(notes)
-    elif any(n.startswith("missing_r") for n in notes):
-        return "low", "; ".join(notes)
-    elif any(n.startswith("ml_disagrees") for n in notes) and any(n.startswith("r_gap") for n in notes):
-        return "low", "; ".join(notes)
-    else:
-        return "medium", "; ".join(notes)
+def _compute_ml_shaw(word: str, ipa: str, have_ml: bool, ml_model) -> str | None:
+    """Get ML model's Shavian prediction, or None if unavailable."""
+    if not have_ml or not ml_model:
+        return None
+    ipa_stripped = strip_stress(ipa)
+    ml_ipa = ml_normalize_ipa(ipa_stripped, word, ml_model)
+    return ipa_to_shavian(ml_ipa)
 
 
 def main():
@@ -206,7 +161,6 @@ def main():
     # Build ReadLex-format output with confidence scoring
     supplement: dict[str, list[dict]] = {}
     conversion_errors = 0
-    confidence_counts = {"high": 0, "medium": 0, "low": 0}
 
     # Load ML model for confidence comparison
     try:
@@ -226,11 +180,11 @@ def main():
                 print(f"  Conversion error for '{word}' (ipa={ipa}): {e}", file=sys.stderr)
                 continue
 
-            # Score confidence
-            confidence, review_notes = _score_confidence(
-                word, ipa, shaw_rules, have_ml, ml_model if have_ml else None
-            )
-            confidence_counts[confidence] += 1
+            # Get ML prediction for confidence comparison
+            ml_shaw = _compute_ml_shaw(word, ipa, have_ml, ml_model)
+
+            # Score confidence as percentage
+            conf_pct, notes = score_confidence(word, ipa, shaw_rules, ml_shaw)
 
             entry = {
                 "Latn": word,
@@ -239,10 +193,12 @@ def main():
                 "ipa": ipa,
                 "freq": 0,
                 "var": "RSSB",
-                "confidence": confidence,
+                "confidence": conf_pct,
             }
-            if review_notes:
-                entry["review"] = review_notes
+            if notes:
+                entry["review"] = "; ".join(notes)
+            # Stash ml_shaw for shave consultation later
+            entry["_ml_shaw"] = ml_shaw
 
             entries.append(entry)
 
@@ -250,11 +206,11 @@ def main():
             key = f"{word}_UNC_{entries[0]['Shaw']}"
             supplement[key] = entries
 
-    # Consult `shave` tool for medium/low confidence entries
+    # Consult `shave` tool for entries below 89% confidence
     review_words = set()
     for key, entries in supplement.items():
         for e in entries:
-            if e.get("confidence") in ("medium", "low"):
+            if e.get("confidence", 89) < 89:
                 review_words.add(e["Latn"])
 
     if review_words:
@@ -264,34 +220,25 @@ def main():
         shave_overridden = 0
         for key, entries in supplement.items():
             for e in entries:
-                if e.get("confidence") not in ("medium", "low"):
+                if e.get("confidence", 89) >= 89:
                     continue
                 w = e["Latn"]
                 if w not in shave_results:
                     continue
                 shave_shaw = shave_results[w]
-                review = e.get("review", "")
+                ml_shaw = e.pop("_ml_shaw", None)
+                notes = [n for n in e.get("review", "").split("; ") if n]
 
-                if shave_shaw == e["Shaw"]:
-                    # shave agrees with our rules — upgrade confidence
-                    e["confidence"] = "medium" if e["confidence"] == "low" else "high"
-                    e["review"] = review + "; shave_agrees"
+                new_pct, notes, override = upgrade_confidence_shave(
+                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw
+                )
+                e["confidence"] = new_pct
+                e["review"] = "; ".join(notes) if notes else ""
+                if override:
+                    e["Shaw"] = override
+                    shave_overridden += 1
+                elif new_pct > e.get("confidence", 0):
                     shave_upgraded += 1
-                else:
-                    # Check if shave agrees with ML
-                    ml_shaw = None
-                    if "ml_disagrees:" in review:
-                        ml_shaw = review.split("ml_disagrees:")[1].split(";")[0].strip()
-
-                    if ml_shaw and shave_shaw == ml_shaw:
-                        # shave + ML consensus overrides rules
-                        old_shaw = e["Shaw"]
-                        e["Shaw"] = shave_shaw
-                        e["confidence"] = "high"
-                        e["review"] = f"overridden:was={old_shaw}; shave+ml_consensus"
-                        shave_overridden += 1
-                    else:
-                        e["review"] = review + f"; shave_says:{shave_shaw}"
 
         # Fix keys for overridden entries
         new_supplement = {}
@@ -303,11 +250,20 @@ def main():
         print(f"  Upgraded {shave_upgraded} entries based on shave agreement")
         print(f"  Overrode {shave_overridden} entries based on shave+ML consensus")
 
-        # Recount confidence
-        confidence_counts = {"high": 0, "medium": 0, "low": 0}
-        for key, entries in supplement.items():
-            for e in entries:
-                confidence_counts[e.get("confidence", "high")] += 1
+    # Clean up internal fields and compute stats
+    conf_buckets = {"high (>=80)": 0, "medium (30-79)": 0, "low (<30)": 0}
+    for key, entries in supplement.items():
+        for e in entries:
+            e.pop("_ml_shaw", None)
+            if not e.get("review"):
+                e.pop("review", None)
+            pct = e.get("confidence", 89)
+            if pct >= 80:
+                conf_buckets["high (>=80)"] += 1
+            elif pct >= 30:
+                conf_buckets["medium (30-79)"] += 1
+            else:
+                conf_buckets["low (<30)"] += 1
 
     # Write output
     OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
@@ -323,8 +279,7 @@ def main():
     print(f"  Total entries: {len(supplement)}")
     print(f"  Words also in ReadLex: {len(overlap)}")
     print(f"  Words NOT in ReadLex (new): {len(new_words)}")
-    print(f"  Confidence: high={confidence_counts['high']}, "
-          f"medium={confidence_counts['medium']}, low={confidence_counts['low']}")
+    print(f"  Confidence: {conf_buckets}")
     if conversion_errors:
         print(f"  Conversion errors: {conversion_errors}")
 

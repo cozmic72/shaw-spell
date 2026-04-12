@@ -124,13 +124,13 @@ def main():
                     merged[merged_key] = []
                     stats["added_keys"] += 1
 
-                # Avoid exact duplicates
+                # Avoid exact duplicates and redundant supplements
                 is_dup = False
                 for existing in merged[merged_key]:
-                    if (existing.get("Latn") == merged_entry["Latn"]
+                    if (existing.get("Latn", "").lower() == merged_entry["Latn"].lower()
                             and existing.get("Shaw") == merged_entry["Shaw"]
-                            and existing.get("var") == merged_entry["var"]
-                            and existing.get("source") == merged_entry.get("source")):
+                            and existing.get("var") == merged_entry["var"]):
+                        # Same word+shaw+var — redundant regardless of source
                         is_dup = True
                         break
 

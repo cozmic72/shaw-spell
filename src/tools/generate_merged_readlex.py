@@ -17,7 +17,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 READLEX_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
-OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex-merged.json"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex.json"
 
 SUPPLEMENTS = [
     ("britfone", PROJECT_ROOT / "data" / "supplement-britfone.json"),

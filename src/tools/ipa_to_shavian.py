@@ -81,6 +81,9 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     # Britfone-specific: ɐ → ʌ (STRUT vowel)
     ipa = ipa.replace("ɐ", "ʌ")
 
+    # Britfone uses ASCII g (U+0067), ReadLex uses IPA ɡ (U+0261)
+    ipa = ipa.replace("g", "ɡ")
+
     # Wiktionary narrow transcription conventions → ReadLex broad
     ipa = ipa.replace("ɫ", "l")    # dark l → plain l
     ipa = ipa.replace("ɒʊ", "əʊ")  # GOAT: Wiktionary sometimes uses ɒʊ, ReadLex uses əʊ
@@ -93,6 +96,10 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     # --- R-restoration for non-rhotic sources ---
     if source in ("britfone", "wiktionary_rp"):
         ipa = _restore_rhoticity(ipa, word)
+
+    # --- Dialect normalization toward ReadLex conventions ---
+    if source in ("britfone", "wiktionary_rp"):
+        ipa = _normalize_to_readlex_dialect(ipa, word)
 
     return ipa
 
@@ -132,9 +139,15 @@ def _restore_rhoticity(ipa: str, word: str) -> str:
         # Also handle ə before word-boundary space/hyphen
         stripped = re.sub(r'ə(?=[ -])', 'əR', stripped)
 
-    # Note: mid-word ə before consonant (like "aberdeen" əd → əRd) is NOT
-    # handled here because heuristic alignment between spelling and IPA is
-    # too error-prone. These cases are accepted as dialect differences.
+    # Inflected/suffixed forms: word ends in Vr + suffix letters.
+    # Insert R after word-final ə that's followed by suffix consonant(s).
+    # e.g., actors (Vr+s), filtered (Vr+ed), mastered, pictured,
+    # fatherly, partnership, overhead, etc.
+    # The 'r' must be near the end: within last 6 chars after stripping
+    # common inflectional suffixes.
+    stem = re.sub(r'(ed|ing|s|ly|ment|ship|ness|ful|less|ise|ize|ous|ive|ble|dom|hood|ism|ist|ish|ard|wards?|line|head|land|side|like|wise|most|tion|sion|ture|ance|ence|able|ible)$', '', word_lower)
+    if re.search(r'[aeiouy]r[^aeiouy]*$', stem) and len(stem) > 0:
+        stripped = re.sub(r'ə([pbtdkɡfvθðszʃʒhmnŋlwjʍ]+)$', r'əR\1', stripped)
 
     # Now handle the harder cases using a spelling-IPA alignment approach.
     # We extract the consonant/vowel skeleton of the spelling to find where
@@ -199,6 +212,42 @@ def _align_and_insert_r(ipa: str, word: str) -> str:
         i -= 1
 
     return ''.join(result)
+
+
+def _normalize_to_readlex_dialect(ipa: str, word: str) -> str:
+    """Apply ReadLex-specific dialect preferences to normalized IPA.
+
+    ReadLex makes specific editorial choices that differ from standard SSB:
+    1. Uses uppercase Ə for grammatical suffixes (-Əd, -Əz)
+    2. Prefers ə over ɪ/ʊ in unstressed syllables
+    3. Mid-word ər restoration where spelling has 'r'
+    """
+    # --- Suffix conventions: ReadLex uses uppercase Ə for -ed/-es suffixes ---
+    # Require a consonant before ɪ to avoid matching diphthongs (aɪd, eɪz).
+    cons = r'[pbtdkɡfvθðszʃʒhmnŋlrwjʍR]'
+    ipa = re.sub(r'(' + cons + r')ɪd$', r'\1Əd', ipa)
+    ipa = re.sub(r'(' + cons + r')ɪz$', r'\1Əz', ipa)
+    ipa = re.sub(r'(' + cons + r')ɪdli$', r'\1Ədli', ipa)
+
+    # --- Unstressed jʊ → jə ---
+    # ReadLex prefers ə where modern pronunciation has reduced ʊ after j
+    result = list(ipa)
+    i = 0
+    while i < len(result) - 1:
+        if result[i] == 'j' and result[i + 1] == 'ʊ':
+            stressed = False
+            for j in range(i - 1, max(i - 3, -1), -1):
+                if result[j] == 'ˈ':
+                    stressed = True
+                    break
+                elif result[j] not in ('ˈ', 'ˌ'):
+                    break
+            if not stressed:
+                result[i + 1] = 'ə'
+        i += 1
+    ipa = ''.join(result)
+
+    return ipa
 
 
 def _r_likely_after_vowel(word: str, *patterns: str) -> bool:

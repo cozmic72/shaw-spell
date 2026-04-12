@@ -56,7 +56,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 10,
-            "review": "numeral; shave_says:1st"
+            "review": "numeral; shave_says:1𐑕𐑑"
         }
     ],
     "9/11_NN1_𐑯𐑲𐑯𐑩𐑤𐑧𐑝𐑩𐑯": [
@@ -3095,7 +3095,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɜɑ; shave_says:𐑨𐑚𐑛𐑪𐑥𐑦𐑯𐑪𐑒𐑩𐑯𐑑𐑰𐑕𐑦𐑕"
+            "review": "unknown_chars:ɑɜ; shave_says:𐑨𐑚𐑛𐑪𐑥𐑦𐑯𐑪𐑒𐑩𐑯𐑑𐑰𐑕𐑦𐑕"
         }
     ],
     "abdominoplasty_NN1_𐑨𐑚𐑛ɑ𐑥𐑦𐑯𐑴𐑐𐑤𐑨𐑕𐑑𐑦": [
@@ -4093,7 +4093,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑩𐑚𐑪𐑥𐑦𐑯𐑱𐑑𐑼"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑩𐑚𐑪𐑥𐑦𐑯𐑱𐑑𐑼"
         }
     ],
     "aborad_AV0_𐑨𐑚𐑪𐑮𐑨𐑛": [
@@ -4802,7 +4802,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑨𐑚𐑕𐑦𐑤𐑼"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑨𐑚𐑕𐑦𐑤𐑼"
         }
     ],
     "absence_NN1_𐑨𐑚𐑕𐑩𐑯𐑕": [
@@ -5034,7 +5034,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑩𐑚𐑟𐑪𐑤𐑝𐑼"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑩𐑚𐑟𐑪𐑤𐑝𐑼"
         }
     ],
     "absolvitory_AJ0_𐑨𐑚𐑟ɑ𐑤𐑝𐑼𐑑𐑷𐑮𐑦": [
@@ -6351,7 +6351,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɚɑ; shave_says:𐑩𐑒𐑕𐑧𐑤𐑼𐑪𐑥𐑦𐑑𐑼"
+            "review": "unknown_chars:ɑɚ; shave_says:𐑩𐑒𐑕𐑧𐑤𐑼𐑪𐑥𐑦𐑑𐑼"
         }
     ],
     "accent_NN1_𐑨𐑒𐑕𐑩𐑯𐑑": [
@@ -15651,12 +15651,12 @@
             "confidence": 89
         }
     ],
-    "amativeness_NN1_𐑨𐑥𐑩𐑑𐑦𐑝𐑯𐑦𐑕": [
+    "amativeness_NN1_𐑨𐑥𐑩𐑑𐑦𐑝𐑯𐑩𐑕": [
         {
             "Latn": "amativeness",
-            "Shaw": "𐑨𐑥𐑩𐑑𐑦𐑝𐑯𐑦𐑕",
+            "Shaw": "𐑨𐑥𐑩𐑑𐑦𐑝𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈamətɪvnɪs",
+            "ipa": "ˈamətɪvnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -22141,7 +22141,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=3,ipa=2; unknown_chars:ɝɑ; shave_says:𐑸𐑚𐑦𐑑𐑮𐑭𐑠𐑻"
+            "review": "r_gap:spelling=3,ipa=2; unknown_chars:ɑɝ; shave_says:𐑸𐑚𐑦𐑑𐑮𐑭𐑠𐑻"
         }
     ],
     "arbitral_AJ0_𐑸𐑚𐑦𐑑𐑮𐑩𐑤": [
@@ -22242,7 +22242,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑸𐑚𐑼𐑝𐑲𐑑𐑦"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑸𐑚𐑼𐑝𐑲𐑑𐑦"
         }
     ],
     "arc_NN1_𐑸𐑒": [
@@ -22444,7 +22444,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɘɑ; shave_says:𐑸𐑒𐑦𐑪𐑤𐑩𐑡𐑦"
+            "review": "unknown_chars:ɑɘ; shave_says:𐑸𐑒𐑦𐑪𐑤𐑩𐑡𐑦"
         }
     ],
     "archeopteryx_NN1_𐑸𐑒𐑰𐑪𐑐𐑑𐑼𐑦𐑒𐑕": [
@@ -23606,7 +23606,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɚɑ; shave_says:𐑸𐑑𐑽𐑦𐑴𐑕𐑒𐑤𐑼𐑴𐑕𐑦𐑕"
+            "review": "unknown_chars:ɑɚ; shave_says:𐑸𐑑𐑽𐑦𐑴𐑕𐑒𐑤𐑼𐑴𐑕𐑦𐑕"
         }
     ],
     "artery_NN1_𐑸𐑑𐑼𐑦": [
@@ -23852,12 +23852,12 @@
             "confidence": 89
         }
     ],
-    "artless_AJ0_ɑ𐑮𐑑𐑤𐑦𐑕": [
+    "artless_AJ0_ɑ𐑮𐑑𐑤𐑩𐑕": [
         {
             "Latn": "artless",
-            "Shaw": "ɑ𐑮𐑑𐑤𐑦𐑕",
+            "Shaw": "ɑ𐑮𐑑𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ɑrtlɪs",
+            "ipa": "ɑrtləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
@@ -24662,7 +24662,7 @@
             "Latn": "assembly",
             "Shaw": "𐑩𐑕𐑧𐑥𐑚𐑤𐑦",
             "pos": "NN1",
-            "ipa": "əˈsemblɪ",
+            "ipa": "əˈsembli",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -27729,7 +27729,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑭𐑝𐑪𐑯-𐑜𐑸𐑛"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑭𐑝𐑪𐑯-𐑜𐑸𐑛"
         }
     ],
     "avant-garde_NN1_𐑨𐑝ɑ̃𐑑𐑜𐑸𐑛": [
@@ -27741,7 +27741,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑭𐑝𐑪𐑯-𐑜𐑸𐑛"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑭𐑝𐑪𐑯-𐑜𐑸𐑛"
         }
     ],
     "avaricious_AJ0_𐑨𐑝𐑼𐑦𐑖𐑩𐑕": [
@@ -28283,12 +28283,12 @@
             "confidence": 89
         }
     ],
-    "aweless_AJ0_𐑷𐑤𐑦𐑕": [
+    "aweless_AJ0_𐑷𐑤𐑩𐑕": [
         {
             "Latn": "aweless",
-            "Shaw": "𐑷𐑤𐑦𐑕",
+            "Shaw": "𐑷𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈɔːlɪs",
+            "ipa": "ˈɔːləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -40110,16 +40110,15 @@
             "confidence": 89
         }
     ],
-    "blessedness_NN1_𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑦𐑕": [
+    "blessedness_NN1_𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑩𐑕": [
         {
             "Latn": "blessedness",
-            "Shaw": "𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑦𐑕",
+            "Shaw": "𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈblesɪdnɪs",
+            "ipa": "ˈblesɪdnəs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 5,
-            "review": "ml_disagrees:𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑩𐑕; shave_says:𐑚𐑤𐑧𐑕𐑩𐑛𐑯𐑩𐑕"
+            "confidence": 89
         }
     ],
     "blessing_NN1_𐑚𐑤𐑧𐑕𐑦𐑙": [
@@ -43002,7 +43001,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑚𐑵𐑓𐑭𐑯𐑑"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑚𐑵𐑓𐑭𐑯𐑑"
         }
     ],
     "bouffant_NN1_𐑚𐑵𐑓ɑ̃": [
@@ -43014,7 +43013,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑚𐑵𐑓𐑭𐑯𐑑"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑚𐑵𐑓𐑭𐑯𐑑"
         }
     ],
     "bougainvillea_NN1_𐑚𐑵𐑜𐑩𐑯𐑝𐑦𐑤𐑾": [
@@ -45440,7 +45439,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑚𐑮𐑦𐑟𐑭𐑯𐑕"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑚𐑮𐑦𐑟𐑭𐑯𐑕"
         }
     ],
     "brisk_AJ0_𐑚𐑮𐑦𐑕𐑒": [
@@ -48081,12 +48080,12 @@
             "confidence": 89
         }
     ],
-    "business_NN1_𐑚𐑦𐑟𐑯𐑦𐑕": [
+    "business_NN1_𐑚𐑦𐑟𐑯𐑩𐑕": [
         {
             "Latn": "business",
-            "Shaw": "𐑚𐑦𐑟𐑯𐑦𐑕",
+            "Shaw": "𐑚𐑦𐑟𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈbɪznɪs",
+            "ipa": "ˈbɪznəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -54594,12 +54593,12 @@
             "confidence": 89
         }
     ],
-    "careless_AJ0_𐑒𐑺𐑤𐑦𐑕": [
+    "careless_AJ0_𐑒𐑺𐑤𐑩𐑕": [
         {
             "Latn": "careless",
-            "Shaw": "𐑒𐑺𐑤𐑦𐑕",
+            "Shaw": "𐑒𐑺𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "keəRlɪs",
+            "ipa": "keəRləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -59608,7 +59607,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑗𐑸𐑥𐑼"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑗𐑸𐑥𐑼"
         }
     ],
     "charming_AJ0_𐑗𐑸𐑥𐑦𐑙": [
@@ -62462,7 +62461,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:xɑ; shave_says:𐑣𐑫𐑑𐑕𐑐𐑩"
+            "review": "unknown_chars:ɑx; shave_says:𐑣𐑫𐑑𐑕𐑐𐑩"
         }
     ],
     "chyle_NN1_𐑒𐑲𐑤": [
@@ -72330,7 +72329,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑒𐑪𐑯𐑓𐑹𐑥𐑱𐑖𐑩𐑯"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑒𐑪𐑯𐑓𐑹𐑥𐑱𐑖𐑩𐑯"
         }
     ],
     "conformist_AJ0_𐑒𐑩𐑯𐑓𐑷𐑮𐑥𐑦𐑕𐑑": [
@@ -75104,7 +75103,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑒𐑪𐑯𐑑𐑮𐑩𐑑𐑪𐑥"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑒𐑪𐑯𐑑𐑮𐑩𐑑𐑪𐑥"
         }
     ],
     "contribute_VVI_𐑒𐑩𐑯𐑑𐑮𐑦𐑚𐑿𐑑": [
@@ -87655,7 +87654,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑛𐑦𐑚𐑮𐑰𐑛𐑥𐑩𐑯𐑑"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑛𐑦𐑚𐑮𐑰𐑛𐑥𐑩𐑯𐑑"
         }
     ],
     "debrief_VVI_𐑛𐑰𐑚𐑮𐑰𐑓": [
@@ -92999,7 +92998,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑛𐑱𐑯𐑵𐑥𐑭𐑯"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑛𐑱𐑯𐑵𐑥𐑭𐑯"
         }
     ],
     "denounce_VVI_𐑛𐑦𐑯𐑬𐑯𐑕": [
@@ -100718,12 +100717,12 @@
             "confidence": 89
         }
     ],
-    "disgruntlement_NN1_𐑛𐑦𐑕𐑜𐑮𐑳𐑯𐑑𐑩𐑤𐑥𐑦𐑯𐑑": [
+    "disgruntlement_NN1_𐑛𐑦𐑕𐑜𐑮𐑳𐑯𐑑𐑩𐑤𐑥𐑩𐑯𐑑": [
         {
             "Latn": "disgruntlement",
-            "Shaw": "𐑛𐑦𐑕𐑜𐑮𐑳𐑯𐑑𐑩𐑤𐑥𐑦𐑯𐑑",
+            "Shaw": "𐑛𐑦𐑕𐑜𐑮𐑳𐑯𐑑𐑩𐑤𐑥𐑩𐑯𐑑",
             "pos": "NN1",
-            "ipa": "dɪsɡrʌntəlmɪnt",
+            "ipa": "dɪsɡrʌntəlmənt",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -101888,12 +101887,12 @@
             "confidence": 89
         }
     ],
-    "displacement_NN1_𐑛𐑦𐑕𐑐𐑤𐑱𐑕𐑥𐑦𐑯𐑑": [
+    "displacement_NN1_𐑛𐑦𐑕𐑐𐑤𐑱𐑕𐑥𐑩𐑯𐑑": [
         {
             "Latn": "displacement",
-            "Shaw": "𐑛𐑦𐑕𐑐𐑤𐑱𐑕𐑥𐑦𐑯𐑑",
+            "Shaw": "𐑛𐑦𐑕𐑐𐑤𐑱𐑕𐑥𐑩𐑯𐑑",
             "pos": "NN1",
-            "ipa": "dɪsˈpleɪsmɪnt",
+            "ipa": "dɪsˈpleɪsmənt",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -103022,12 +103021,12 @@
             "confidence": 89
         }
     ],
-    "distinctiveness_NN1_𐑛𐑦𐑕𐑑𐑦𐑙𐑑𐑦𐑝𐑯𐑦𐑕": [
+    "distinctiveness_NN1_𐑛𐑦𐑕𐑑𐑦𐑙𐑑𐑦𐑝𐑯𐑩𐑕": [
         {
             "Latn": "distinctiveness",
-            "Shaw": "𐑛𐑦𐑕𐑑𐑦𐑙𐑑𐑦𐑝𐑯𐑦𐑕",
+            "Shaw": "𐑛𐑦𐑕𐑑𐑦𐑙𐑑𐑦𐑝𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "dɪsˈtɪŋtɪvnɪs",
+            "ipa": "dɪsˈtɪŋtɪvnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -112259,7 +112258,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɵɨ; shave_says:𐑦𐑤𐑧𐑒𐑑𐑮𐑩𐑤𐑲𐑑"
+            "review": "unknown_chars:ɨɵ; shave_says:𐑦𐑤𐑧𐑒𐑑𐑮𐑩𐑤𐑲𐑑"
         }
     ],
     "electrolytic_AJ0_ɨ𐑤𐑧𐑒𐑑𐑮ɵ𐑤𐑦𐑑𐑦𐑒": [
@@ -112271,7 +112270,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɵɨ; shave_says:𐑦𐑤𐑧𐑒𐑑𐑮𐑩𐑤𐑦𐑑𐑦𐑒"
+            "review": "unknown_chars:ɨɵ; shave_says:𐑦𐑤𐑧𐑒𐑑𐑮𐑩𐑤𐑦𐑑𐑦𐑒"
         }
     ],
     "electrolytic_NN1_ɨ𐑤𐑧𐑒𐑑𐑮ɵ𐑤𐑦𐑑𐑦𐑒": [
@@ -112283,7 +112282,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɵɨ; shave_says:𐑦𐑤𐑧𐑒𐑑𐑮𐑩𐑤𐑦𐑑𐑦𐑒"
+            "review": "unknown_chars:ɨɵ; shave_says:𐑦𐑤𐑧𐑒𐑑𐑮𐑩𐑤𐑦𐑑𐑦𐑒"
         }
     ],
     "electromagnetism_NN1_𐑦𐑤𐑧𐑒𐑑𐑮𐑴𐑥𐑨𐑜𐑯𐑩𐑑𐑦𐑟𐑩𐑥": [
@@ -113286,7 +113285,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑭𐑥𐑚𐑪𐑯𐑐𐑢𐑭𐑙"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑭𐑥𐑚𐑪𐑯𐑐𐑢𐑭𐑙"
         }
     ],
     "embonpoint_NN1_ɑ̃𐑚𐑷̃𐑐𐑢𐑧̃": [
@@ -113298,7 +113297,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑭𐑥𐑚𐑪𐑯𐑐𐑢𐑭𐑙"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑭𐑥𐑚𐑪𐑯𐑐𐑢𐑭𐑙"
         }
     ],
     "embouchure_NN1_𐑪𐑥𐑚𐑫𐑖𐑫𐑼": [
@@ -114842,11 +114841,10 @@
             "Latn": "endless",
             "Shaw": "𐑧𐑯𐑛𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈendlɪs",
+            "ipa": "ˈendləs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑧𐑯𐑛𐑤𐑩𐑕; overridden:was=𐑧𐑯𐑛𐑤𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "endmost_AJ0_𐑧𐑯𐑛𐑥𐑴𐑕𐑑": [
@@ -114925,7 +114923,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɨɑ; shave_says:𐑧𐑯𐑛𐑪𐑡𐑩𐑯𐑩𐑕"
+            "review": "unknown_chars:ɑɨ; shave_says:𐑧𐑯𐑛𐑪𐑡𐑩𐑯𐑩𐑕"
         }
     ],
     "endolymph_NN1_𐑧𐑯𐑛𐑩𐑤𐑦𐑥𐑓": [
@@ -126676,12 +126674,12 @@
             "confidence": 89
         }
     ],
-    "fearlessness_NN1_𐑓𐑽𐑤𐑦𐑕𐑯𐑦𐑕": [
+    "fearlessness_NN1_𐑓𐑽𐑤𐑦𐑕𐑯𐑩𐑕": [
         {
             "Latn": "fearlessness",
-            "Shaw": "𐑓𐑽𐑤𐑦𐑕𐑯𐑦𐑕",
+            "Shaw": "𐑓𐑽𐑤𐑦𐑕𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "fɪəRlɪsnɪs",
+            "ipa": "fɪəRlɪsnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -127184,12 +127182,12 @@
             "confidence": 89
         }
     ],
-    "femaleness_NN1_𐑓𐑰𐑥𐑱𐑤𐑯𐑦𐑕": [
+    "femaleness_NN1_𐑓𐑰𐑥𐑱𐑤𐑯𐑩𐑕": [
         {
             "Latn": "femaleness",
-            "Shaw": "𐑓𐑰𐑥𐑱𐑤𐑯𐑦𐑕",
+            "Shaw": "𐑓𐑰𐑥𐑱𐑤𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈfiːmeɪlnɪs",
+            "ipa": "ˈfiːmeɪlnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -134214,12 +134212,12 @@
             "confidence": 89
         }
     ],
-    "forgetfulness_NN1_𐑓𐑼𐑜𐑧𐑑𐑓𐑫𐑤𐑯𐑦𐑕": [
+    "forgetfulness_NN1_𐑓𐑼𐑜𐑧𐑑𐑓𐑫𐑤𐑯𐑩𐑕": [
         {
             "Latn": "forgetfulness",
-            "Shaw": "𐑓𐑼𐑜𐑧𐑑𐑓𐑫𐑤𐑯𐑦𐑕",
+            "Shaw": "𐑓𐑼𐑜𐑧𐑑𐑓𐑫𐑤𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "fəRɡetfʊlnɪs",
+            "ipa": "fəRɡetfʊlnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -139106,11 +139104,10 @@
             "Latn": "guinness",
             "Shaw": "𐑜𐑦𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈɡɪnɪs",
+            "ipa": "ˈɡɪnəs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑜𐑦𐑯𐑩𐑕; overridden:was=𐑜𐑦𐑯𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "gujarati_NN1_𐑜𐑫𐑡𐑼𐑸𐑑𐑦": [
@@ -144187,7 +144184,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɚɑ; shave_says:𐑜𐑤𐑪𐑚𐑿𐑤𐑼"
+            "review": "unknown_chars:ɑɚ; shave_says:𐑜𐑤𐑪𐑚𐑿𐑤𐑼"
         }
     ],
     "globule_NN1_𐑜𐑤𐑪𐑚𐑿𐑤": [
@@ -147258,12 +147255,12 @@
             "confidence": 89
         }
     ],
-    "greediness_NN1_𐑜𐑮𐑰𐑛𐑦𐑯𐑦𐑕": [
+    "greediness_NN1_𐑜𐑮𐑰𐑛𐑦𐑯𐑩𐑕": [
         {
             "Latn": "greediness",
-            "Shaw": "𐑜𐑮𐑰𐑛𐑦𐑯𐑦𐑕",
+            "Shaw": "𐑜𐑮𐑰𐑛𐑦𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ɡriːdinɪs",
+            "ipa": "ɡriːdinəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -152231,11 +152228,10 @@
             "Latn": "hapless",
             "Shaw": "𐑣𐑨𐑐𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈhæplɪs",
+            "ipa": "ˈhæpləs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑣𐑨𐑐𐑤𐑩𐑕; overridden:was=𐑣𐑨𐑐𐑤𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "happen_VVI_𐑣𐑨𐑐𐑩𐑯": [
@@ -152271,12 +152267,12 @@
             "confidence": 89
         }
     ],
-    "happiness_NN1_𐑣𐑨𐑐𐑦𐑯𐑦𐑕": [
+    "happiness_NN1_𐑣𐑨𐑐𐑦𐑯𐑩𐑕": [
         {
             "Latn": "happiness",
-            "Shaw": "𐑣𐑨𐑐𐑦𐑯𐑦𐑕",
+            "Shaw": "𐑣𐑨𐑐𐑦𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈhæpinɪs",
+            "ipa": "ˈhæpinəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -152847,7 +152843,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɨɑ; shave_says:harquebus"
+            "review": "unknown_chars:ɑɨ; shave_says:harquebus"
         }
     ],
     "harridan_NN1_𐑣𐑨𐑮𐑦𐑛𐑩𐑯": [
@@ -154033,12 +154029,12 @@
             "confidence": 89
         }
     ],
-    "heartless_AJ0_𐑣𐑸𐑑𐑤𐑦𐑕": [
+    "heartless_AJ0_𐑣𐑸𐑑𐑤𐑩𐑕": [
         {
             "Latn": "heartless",
-            "Shaw": "𐑣𐑸𐑑𐑤𐑦𐑕",
+            "Shaw": "𐑣𐑸𐑑𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "hɑːRtlɪs",
+            "ipa": "hɑːRtləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -154921,11 +154917,10 @@
             "Latn": "helpless",
             "Shaw": "𐑣𐑧𐑤𐑐𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈhelplɪs",
+            "ipa": "ˈhelpləs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑣𐑧𐑤𐑐𐑤𐑩𐑕; overridden:was=𐑣𐑧𐑤𐑐𐑤𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "helplessly_AV0_𐑣𐑧𐑤𐑐𐑤𐑩𐑕𐑤𐑦": [
@@ -157801,12 +157796,12 @@
             "confidence": 89
         }
     ],
-    "homeless_AJ0_𐑣𐑴𐑥𐑤𐑦𐑕": [
+    "homeless_AJ0_𐑣𐑴𐑥𐑤𐑩𐑕": [
         {
             "Latn": "homeless",
-            "Shaw": "𐑣𐑴𐑥𐑤𐑦𐑕",
+            "Shaw": "𐑣𐑴𐑥𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈhoʊmlɪs",
+            "ipa": "ˈhoʊmləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -158735,11 +158730,10 @@
             "Latn": "hopeless",
             "Shaw": "𐑣𐑴𐑐𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈhəʊplɪs",
+            "ipa": "ˈhəʊpləs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑣𐑴𐑐𐑤𐑩𐑕; overridden:was=𐑣𐑴𐑐𐑤𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "hopelessly_AV0_𐑣𐑴𐑐𐑤𐑦𐑕𐑤𐑦": [
@@ -158940,12 +158934,12 @@
             "confidence": 89
         }
     ],
-    "hornless_AJ0_𐑣𐑹𐑯𐑤𐑦𐑕": [
+    "hornless_AJ0_𐑣𐑹𐑯𐑤𐑩𐑕": [
         {
             "Latn": "hornless",
-            "Shaw": "𐑣𐑹𐑯𐑤𐑦𐑕",
+            "Shaw": "𐑣𐑹𐑯𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "hɔːRnlɪs",
+            "ipa": "hɔːRnləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -164735,7 +164729,7 @@
             "Latn": "immutably",
             "Shaw": "𐑦𐑥𐑿𐑑𐑩𐑚𐑤𐑦",
             "pos": "AV0",
-            "ipa": "ɪˈmjuːtəblɪ",
+            "ipa": "ɪˈmjuːtəbli",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -178008,7 +178002,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑡𐑪𐑙𐑤𐑻"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑡𐑪𐑙𐑤𐑻"
         }
     ],
     "jonquil_NN1_𐑡𐑪𐑙𐑒𐑢𐑩𐑤": [
@@ -180558,11 +180552,10 @@
             "Latn": "kindness",
             "Shaw": "𐑒𐑲𐑯𐑛𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈkaɪndnɪs",
+            "ipa": "ˈkaɪndnəs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑒𐑲𐑯𐑛𐑯𐑩𐑕; overridden:was=𐑒𐑲𐑯𐑛𐑯𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "kindred_AJ0_𐑒𐑦𐑯𐑛𐑮𐑩𐑛": [
@@ -184477,11 +184470,10 @@
             "Latn": "lankiness",
             "Shaw": "𐑤𐑨𐑙𐑒𐑦𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈlæŋkɪnɪs",
+            "ipa": "ˈlæŋkɪnəs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑤𐑨𐑙𐑒𐑦𐑯𐑩𐑕; overridden:was=𐑤𐑨𐑙𐑒𐑦𐑯𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "lanky_AJ0_𐑤𐑨𐑙𐑒𐑦": [
@@ -185037,12 +185029,12 @@
             "confidence": 89
         }
     ],
-    "lastingness_NN1_𐑤𐑭𐑕𐑑𐑦𐑙𐑯𐑦𐑕": [
+    "lastingness_NN1_𐑤𐑭𐑕𐑑𐑦𐑙𐑯𐑩𐑕": [
         {
             "Latn": "lastingness",
-            "Shaw": "𐑤𐑭𐑕𐑑𐑦𐑙𐑯𐑦𐑕",
+            "Shaw": "𐑤𐑭𐑕𐑑𐑦𐑙𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈlɑːstɪŋnɪs",
+            "ipa": "ˈlɑːstɪŋnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -185136,12 +185128,12 @@
             "confidence": 89
         }
     ],
-    "lateness_NN1_𐑤𐑱𐑑𐑯𐑦𐑕": [
+    "lateness_NN1_𐑤𐑱𐑑𐑯𐑩𐑕": [
         {
             "Latn": "lateness",
-            "Shaw": "𐑤𐑱𐑑𐑯𐑦𐑕",
+            "Shaw": "𐑤𐑱𐑑𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈleɪtnɪs",
+            "ipa": "ˈleɪtnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -185448,12 +185440,12 @@
             "confidence": 89
         }
     ],
-    "laudableness_NN1_𐑤𐑷𐑛𐑩𐑚𐑩𐑤𐑯𐑦𐑕": [
+    "laudableness_NN1_𐑤𐑷𐑛𐑩𐑚𐑩𐑤𐑯𐑩𐑕": [
         {
             "Latn": "laudableness",
-            "Shaw": "𐑤𐑷𐑛𐑩𐑚𐑩𐑤𐑯𐑦𐑕",
+            "Shaw": "𐑤𐑷𐑛𐑩𐑚𐑩𐑤𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈlɔːdəbəlnɪs",
+            "ipa": "ˈlɔːdəbəlnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -185734,12 +185726,12 @@
             "confidence": 89
         }
     ],
-    "lavishness_NN1_𐑤𐑨𐑝𐑦𐑖𐑯𐑦𐑕": [
+    "lavishness_NN1_𐑤𐑨𐑝𐑦𐑖𐑯𐑩𐑕": [
         {
             "Latn": "lavishness",
-            "Shaw": "𐑤𐑨𐑝𐑦𐑖𐑯𐑦𐑕",
+            "Shaw": "𐑤𐑨𐑝𐑦𐑖𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈlævɪʃnɪs",
+            "ipa": "ˈlævɪʃnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -190354,7 +190346,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑤𐑪𐑡𐑼"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑤𐑪𐑡𐑼"
         }
     ],
     "lodging_NN1_𐑤𐑪𐑡𐑦𐑙": [
@@ -198154,7 +198146,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɨɑ; shave_says:𐑥𐑸𐑖𐑩𐑯𐑩𐑕"
+            "review": "unknown_chars:ɑɨ; shave_says:𐑥𐑸𐑖𐑩𐑯𐑩𐑕"
         }
     ],
     "marchland_NN1_𐑥𐑸𐑗𐑤𐑨𐑯𐑛": [
@@ -202374,12 +202366,12 @@
             "confidence": 89
         }
     ],
-    "meritless_AJ0_𐑥𐑧𐑮𐑦𐑑𐑤𐑦𐑕": [
+    "meritless_AJ0_𐑥𐑧𐑮𐑦𐑑𐑤𐑩𐑕": [
         {
             "Latn": "meritless",
-            "Shaw": "𐑥𐑧𐑮𐑦𐑑𐑤𐑦𐑕",
+            "Shaw": "𐑥𐑧𐑮𐑦𐑑𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "merɪtlɪs",
+            "ipa": "merɪtləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -214063,12 +214055,12 @@
             "confidence": 89
         }
     ],
-    "neckless_AJ0_𐑯𐑧𐑒𐑤𐑦𐑕": [
+    "neckless_AJ0_𐑯𐑧𐑒𐑤𐑩𐑕": [
         {
             "Latn": "neckless",
-            "Shaw": "𐑯𐑧𐑒𐑤𐑦𐑕",
+            "Shaw": "𐑯𐑧𐑒𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈneklɪs",
+            "ipa": "ˈnekləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -215496,12 +215488,12 @@
             "confidence": 89
         }
     ],
-    "niceness_NN1_𐑯𐑲𐑕𐑯𐑦𐑕": [
+    "niceness_NN1_𐑯𐑲𐑕𐑯𐑩𐑕": [
         {
             "Latn": "niceness",
-            "Shaw": "𐑯𐑲𐑕𐑯𐑦𐑕",
+            "Shaw": "𐑯𐑲𐑕𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈnaɪsnɪs",
+            "ipa": "ˈnaɪsnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -215893,12 +215885,12 @@
             "confidence": 89
         }
     ],
-    "nimbleness_NN1_𐑯𐑦𐑥𐑚𐑩𐑤𐑯𐑦𐑕": [
+    "nimbleness_NN1_𐑯𐑦𐑥𐑚𐑩𐑤𐑯𐑩𐑕": [
         {
             "Latn": "nimbleness",
-            "Shaw": "𐑯𐑦𐑥𐑚𐑩𐑤𐑯𐑦𐑕",
+            "Shaw": "𐑯𐑦𐑥𐑚𐑩𐑤𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈnɪmbəlnɪs",
+            "ipa": "ˈnɪmbəlnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -220214,12 +220206,12 @@
             "confidence": 89
         }
     ],
-    "obviousness_NN1_𐑪𐑝𐑦𐑩𐑕𐑯𐑦𐑕": [
+    "obviousness_NN1_𐑪𐑝𐑦𐑩𐑕𐑯𐑩𐑕": [
         {
             "Latn": "obviousness",
-            "Shaw": "𐑪𐑝𐑦𐑩𐑕𐑯𐑦𐑕",
+            "Shaw": "𐑪𐑝𐑦𐑩𐑕𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈɒviəsnɪs",
+            "ipa": "ˈɒviəsnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -221142,7 +221134,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑪𐑓𐑼𐑼"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑪𐑓𐑼𐑼"
         }
     ],
     "offhand_AJ0_𐑷𐑓𐑣𐑨𐑯𐑛": [
@@ -224894,7 +224886,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑪𐑑𐑴𐑤𐑼𐑦𐑙𐑪𐑤𐑩𐑡𐑦𐑕𐑑"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑪𐑑𐑴𐑤𐑼𐑦𐑙𐑪𐑤𐑩𐑡𐑦𐑕𐑑"
         }
     ],
     "otolaryngology_NN1_𐑴𐑑𐑼𐑤𐑨𐑮𐑦𐑙𐑜𐑪𐑤𐑩𐑡𐑦": [
@@ -225789,11 +225781,10 @@
             "Latn": "outwardness",
             "Shaw": "𐑬𐑑𐑢𐑼𐑛𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "aʊtwəRdnɪs",
+            "ipa": "aʊtwəRdnəs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑬𐑑𐑢𐑼𐑛𐑯𐑩𐑕; overridden:was=𐑬𐑑𐑢𐑼𐑛𐑯𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "outwards_AV0_𐑬𐑑𐑢𐑼𐑛𐑟": [
@@ -226460,7 +226451,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑴𐑝𐑼𐑐𐑪𐑐𐑿𐑤𐑱𐑖𐑩𐑯"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑴𐑝𐑼𐑐𐑪𐑐𐑿𐑤𐑱𐑖𐑩𐑯"
         }
     ],
     "overpower_VVI_𐑴𐑝𐑼𐑐𐑬𐑼": [
@@ -233566,12 +233557,12 @@
             "confidence": 89
         }
     ],
-    "patroness_NN1_𐑐𐑱𐑑𐑮𐑩𐑯𐑦𐑕": [
+    "patroness_NN1_𐑐𐑱𐑑𐑮𐑩𐑯𐑩𐑕": [
         {
             "Latn": "patroness",
-            "Shaw": "𐑐𐑱𐑑𐑮𐑩𐑯𐑦𐑕",
+            "Shaw": "𐑐𐑱𐑑𐑮𐑩𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "peɪtrənɪs",
+            "ipa": "peɪtrənəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -246199,12 +246190,12 @@
             "confidence": 89
         }
     ],
-    "positiveness_NN1_𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑯𐑦𐑕": [
+    "positiveness_NN1_𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑯𐑩𐑕": [
         {
             "Latn": "positiveness",
-            "Shaw": "𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑯𐑦𐑕",
+            "Shaw": "𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈpɒzɪtɪvnɪs",
+            "ipa": "ˈpɒzɪtɪvnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -246633,7 +246624,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑐𐑴𐑕𐑑𐑥𐑪𐑛𐑼𐑯𐑦𐑟𐑩𐑥"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑐𐑴𐑕𐑑𐑥𐑪𐑛𐑼𐑯𐑦𐑟𐑩𐑥"
         }
     ],
     "postoperative_AJ0_𐑐𐑴𐑕𐑑𐑪𐑐𐑼𐑼𐑑𐑦𐑝": [
@@ -249757,7 +249748,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ʉː; shave_says:𐑐𐑮𐑰𐑝𐑿"
+            "review": "unknown_chars:ːʉ; shave_says:𐑐𐑮𐑰𐑝𐑿"
         }
     ],
     "preview_VVI_𐑐𐑮𐑰𐑝𐑘ʉː": [
@@ -249769,7 +249760,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ʉː; shave_says:𐑐𐑮𐑰𐑝𐑿"
+            "review": "unknown_chars:ːʉ; shave_says:𐑐𐑮𐑰𐑝𐑿"
         }
     ],
     "previous_AJ0_𐑐𐑮𐑰𐑝𐑾𐑕": [
@@ -256950,7 +256941,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ːɑ; shave_says:𐑒𐑢𐑪𐑛𐑮𐑧𐑯𐑾𐑥"
+            "review": "unknown_chars:ɑː; shave_says:𐑒𐑢𐑪𐑛𐑮𐑧𐑯𐑾𐑥"
         }
     ],
     "quadrilateral_AJ0_𐑒𐑢𐑪𐑛𐑮𐑩𐑤𐑨𐑑𐑼𐑼𐑤": [
@@ -264363,11 +264354,10 @@
             "Latn": "regardless",
             "Shaw": "𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "rɪɡɑːRdlɪs",
+            "ipa": "rɪɡɑːRdləs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕; overridden:was=𐑮𐑦𐑜𐑸𐑛𐑤𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "regardless_AV0_𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕": [
@@ -264375,11 +264365,10 @@
             "Latn": "regardless",
             "Shaw": "𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕",
             "pos": "AV0",
-            "ipa": "rɪɡɑːRdlɪs",
+            "ipa": "rɪɡɑːRdləs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕; overridden:was=𐑮𐑦𐑜𐑸𐑛𐑤𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "regatta_NN1_𐑮𐑦𐑜𐑨𐑑𐑩": [
@@ -264812,7 +264801,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɝɨ; shave_says:𐑮𐑦𐑣𐑻𐑕"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɨɝ; shave_says:𐑮𐑦𐑣𐑻𐑕"
         }
     ],
     "reification_NN1_𐑮𐑱𐑩𐑓𐑩𐑒𐑱𐑖𐑩𐑯": [
@@ -265854,12 +265843,12 @@
             "confidence": 89
         }
     ],
-    "remissness_NN1_𐑮𐑦𐑥𐑦𐑕𐑯𐑦𐑕": [
+    "remissness_NN1_𐑮𐑦𐑥𐑦𐑕𐑯𐑩𐑕": [
         {
             "Latn": "remissness",
-            "Shaw": "𐑮𐑦𐑥𐑦𐑕𐑯𐑦𐑕",
+            "Shaw": "𐑮𐑦𐑥𐑦𐑕𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "rɪmɪsnɪs",
+            "ipa": "rɪmɪsnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -268218,7 +268207,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɾɑ; shave_says:𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑩𐑚𐑦𐑤𐑦𐑑𐑦"
+            "review": "unknown_chars:ɑɾ; shave_says:𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑩𐑚𐑦𐑤𐑦𐑑𐑦"
         }
     ],
     "responsible_AJ0_𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑩𐑚𐑩𐑤": [
@@ -268243,12 +268232,12 @@
             "confidence": 89
         }
     ],
-    "responsiveness_NN1_𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑦𐑝𐑯𐑦𐑕": [
+    "responsiveness_NN1_𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑦𐑝𐑯𐑩𐑕": [
         {
             "Latn": "responsiveness",
-            "Shaw": "𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑦𐑝𐑯𐑦𐑕",
+            "Shaw": "𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑦𐑝𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "rɪspɒnsɪvnɪs",
+            "ipa": "rɪspɒnsɪvnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -268367,12 +268356,12 @@
             "confidence": 89
         }
     ],
-    "restless_AJ0_𐑮𐑧𐑕𐑑𐑤𐑦𐑕": [
+    "restless_AJ0_𐑮𐑧𐑕𐑑𐑤𐑩𐑕": [
         {
             "Latn": "restless",
-            "Shaw": "𐑮𐑧𐑕𐑑𐑤𐑦𐑕",
+            "Shaw": "𐑮𐑧𐑕𐑑𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "restlɪs",
+            "ipa": "restləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -283907,7 +283896,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɑ; shave_says:𐑕𐑰𐑯𐑽𐑲𐑑𐑦𐑕"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɑɚ; shave_says:𐑕𐑰𐑯𐑽𐑲𐑑𐑦𐑕"
         }
     ],
     "seniority_NN1_𐑕𐑰𐑯𐑦𐑪𐑮𐑦𐑑𐑦": [
@@ -286011,7 +286000,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑖𐑸𐑐𐑼"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑖𐑸𐑐𐑼"
         }
     ],
     "sharply_AV0_𐑖𐑸𐑐𐑤𐑦": [
@@ -288249,11 +288238,10 @@
             "Latn": "sickness",
             "Shaw": "𐑕𐑦𐑒𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈsɪknɪs",
+            "ipa": "ˈsɪknəs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑕𐑦𐑒𐑯𐑩𐑕; overridden:was=𐑕𐑦𐑒𐑯𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "sideboob_NN1_𐑕𐑲𐑛𐑚𐑫𐑚": [
@@ -288896,12 +288884,12 @@
             "confidence": 89
         }
     ],
-    "silliness_NN1_𐑕𐑦𐑤𐑦𐑯𐑦𐑕": [
+    "silliness_NN1_𐑕𐑦𐑤𐑦𐑯𐑩𐑕": [
         {
             "Latn": "silliness",
-            "Shaw": "𐑕𐑦𐑤𐑦𐑯𐑦𐑕",
+            "Shaw": "𐑕𐑦𐑤𐑦𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈsɪlinɪs",
+            "ipa": "ˈsɪlinəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -297348,12 +297336,12 @@
             "confidence": 89
         }
     ],
-    "speechless_AJ0_𐑕𐑐𐑰𐑗𐑤𐑦𐑕": [
+    "speechless_AJ0_𐑕𐑐𐑰𐑗𐑤𐑩𐑕": [
         {
             "Latn": "speechless",
-            "Shaw": "𐑕𐑐𐑰𐑗𐑤𐑦𐑕",
+            "Shaw": "𐑕𐑐𐑰𐑗𐑤𐑩𐑕",
             "pos": "AJ0",
-            "ipa": "ˈspiːtʃlɪs",
+            "ipa": "ˈspiːtʃləs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -300919,7 +300907,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑕𐑑𐑸𐑚𐑼𐑛"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑕𐑑𐑸𐑚𐑼𐑛"
         }
     ],
     "starboard_VVI_𐑕𐑑ɑ𐑮𐑚ɚ𐑛": [
@@ -300931,7 +300919,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑕𐑑𐑸𐑚𐑼𐑛"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑕𐑑𐑸𐑚𐑼𐑛"
         }
     ],
     "starch_NN1_𐑕𐑑𐑸𐑗": [
@@ -301012,7 +301000,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑕𐑑𐑸𐑜𐑱𐑟𐑼"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑕𐑑𐑸𐑜𐑱𐑟𐑼"
         }
     ],
     "staring_AJ0_𐑕𐑑𐑺𐑦𐑙": [
@@ -301035,7 +301023,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑕𐑑𐑸𐑒𐑼𐑟"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑕𐑑𐑸𐑒𐑼𐑟"
         }
     ],
     "starlet_NN1_𐑕𐑑𐑸𐑤𐑦𐑑": [
@@ -301713,12 +301701,12 @@
             "confidence": 89
         }
     ],
-    "steaminess_NN1_𐑕𐑑𐑰𐑥𐑦𐑯𐑦𐑕": [
+    "steaminess_NN1_𐑕𐑑𐑰𐑥𐑦𐑯𐑩𐑕": [
         {
             "Latn": "steaminess",
-            "Shaw": "𐑕𐑑𐑰𐑥𐑦𐑯𐑦𐑕",
+            "Shaw": "𐑕𐑑𐑰𐑥𐑦𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈstiːminɪs",
+            "ipa": "ˈstiːminəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -304043,7 +304031,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɾɑ; shave_says:𐑕𐑑𐑮𐑲𐑛𐑼"
+            "review": "unknown_chars:ɑɾ; shave_says:𐑕𐑑𐑮𐑲𐑛𐑼"
         }
     ],
     "stridulate_VVI_𐑕𐑑𐑮𐑦𐑛𐑘𐑩𐑤𐑱𐑖𐑯": [
@@ -304891,7 +304879,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɾɚ; shave_says:𐑕𐑑𐑳𐑑𐑼"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɾ; shave_says:𐑕𐑑𐑳𐑑𐑼"
         }
     ],
     "stutter_VVI_𐑕𐑑𐑳ɾɚ": [
@@ -304903,7 +304891,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɾɚ; shave_says:𐑕𐑑𐑳𐑑𐑼"
+            "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; unknown_chars:ɚɾ; shave_says:𐑕𐑑𐑳𐑑𐑼"
         }
     ],
     "style_NN1_𐑕𐑑𐑲𐑤": [
@@ -307430,7 +307418,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ʉː; shave_says:𐑕𐑵𐑐𐑼𐑨𐑯𐑿𐑱𐑖𐑩𐑯"
+            "review": "unknown_chars:ːʉ; shave_says:𐑕𐑵𐑐𐑼𐑨𐑯𐑿𐑱𐑖𐑩𐑯"
         }
     ],
     "superb_AJ0_𐑕𐑿𐑐𐑻𐑚": [
@@ -309847,12 +309835,12 @@
             "confidence": 89
         }
     ],
-    "swiftness_NN1_𐑕𐑢𐑦𐑓𐑑𐑯𐑦𐑕": [
+    "swiftness_NN1_𐑕𐑢𐑦𐑓𐑑𐑯𐑩𐑕": [
         {
             "Latn": "swiftness",
-            "Shaw": "𐑕𐑢𐑦𐑓𐑑𐑯𐑦𐑕",
+            "Shaw": "𐑕𐑢𐑦𐑓𐑑𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈswɪftnɪs",
+            "ipa": "ˈswɪftnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -310751,7 +310739,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɱɑ; shave_says:𐑕𐑦𐑥𐑓𐑪𐑯𐑦𐑒"
+            "review": "unknown_chars:ɑɱ; shave_says:𐑕𐑦𐑥𐑓𐑪𐑯𐑦𐑒"
         }
     ],
     "symphony_NN1_𐑕𐑦𐑥𐑓𐑩𐑯𐑦": [
@@ -316225,11 +316213,10 @@
             "Latn": "tenderness",
             "Shaw": "𐑑𐑧𐑯𐑛𐑼𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "tendəRnɪs",
+            "ipa": "tendəRnəs",
             "freq": 0,
             "var": "RRP",
-            "confidence": 99,
-            "review": "ml_disagrees:𐑑𐑧𐑯𐑛𐑼𐑯𐑩𐑕; overridden:was=𐑑𐑧𐑯𐑛𐑼𐑯𐑦𐑕; shave+ml_consensus"
+            "confidence": 89
         }
     ],
     "tendinitis_NN1_𐑑𐑧𐑯𐑛𐑩𐑯𐑲𐑑𐑦𐑕": [
@@ -319066,12 +319053,12 @@
             "confidence": 89
         }
     ],
-    "thoughtlessness_NN1_𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑦𐑕": [
+    "thoughtlessness_NN1_𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑩𐑕": [
         {
             "Latn": "thoughtlessness",
-            "Shaw": "𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑦𐑕",
+            "Shaw": "𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ˈθɔːtləsnɪs",
+            "ipa": "ˈθɔːtləsnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -327931,7 +327918,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ʉː; shave_says:𐑑𐑿𐑯𐑦𐑙"
+            "review": "unknown_chars:ːʉ; shave_says:𐑑𐑿𐑯𐑦𐑙"
         }
     ],
     "tunnel_NN1_𐑑𐑳𐑯𐑤": [
@@ -331030,7 +331017,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɚɑ; shave_says:𐑳𐑯𐑛𐑼𐑸𐑥"
+            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɑɚ; shave_says:𐑳𐑯𐑛𐑼𐑸𐑥"
         }
     ],
     "underbelly_NN1_𐑳𐑯𐑛𐑼𐑚𐑧𐑤𐑦": [
@@ -333518,12 +333505,12 @@
             "confidence": 89
         }
     ],
-    "unwellness_NN1_𐑳𐑯𐑢𐑧𐑤𐑯𐑦𐑕": [
+    "unwellness_NN1_𐑳𐑯𐑢𐑧𐑤𐑯𐑩𐑕": [
         {
             "Latn": "unwellness",
-            "Shaw": "𐑳𐑯𐑢𐑧𐑤𐑯𐑦𐑕",
+            "Shaw": "𐑳𐑯𐑢𐑧𐑤𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "ʌnˈwelnɪs",
+            "ipa": "ʌnˈwelnəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89
@@ -338432,7 +338419,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ːɑ; shave_says:𐑝𐑲𐑚𐑮𐑩𐑓𐑴𐑯"
+            "review": "unknown_chars:ɑː; shave_says:𐑝𐑲𐑚𐑮𐑩𐑓𐑴𐑯"
         }
     ],
     "vibrate_VVI_𐑝𐑲𐑚𐑮𐑱𐑑": [
@@ -340340,7 +340327,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:̃ɑ; shave_says:𐑝𐑪𐑤-𐑴-𐑝𐑧𐑯𐑑"
+            "review": "unknown_chars:ɑ̃; shave_says:𐑝𐑪𐑤-𐑴-𐑝𐑧𐑯𐑑"
         }
     ],
     "volant_AJ0_𐑝𐑴𐑤𐑩𐑯𐑑": [
@@ -340990,7 +340977,7 @@
             "freq": 0,
             "var": "RRP",
             "confidence": 1,
-            "review": "unknown_chars:ɾɜ; shave_says:𐑝𐑳𐑤𐑜𐑨𐑮𐑦𐑑𐑦"
+            "review": "unknown_chars:ɜɾ; shave_says:𐑝𐑳𐑤𐑜𐑨𐑮𐑦𐑑𐑦"
         }
     ],
     "vulnerability_NN1_𐑝𐑳𐑤𐑯𐑼𐑼𐑚𐑦𐑤𐑦𐑑𐑦": [
@@ -343269,12 +343256,12 @@
             "confidence": 89
         }
     ],
-    "weariness_NN1_𐑢𐑽𐑦𐑯𐑦𐑕": [
+    "weariness_NN1_𐑢𐑽𐑦𐑯𐑩𐑕": [
         {
             "Latn": "weariness",
-            "Shaw": "𐑢𐑽𐑦𐑯𐑦𐑕",
+            "Shaw": "𐑢𐑽𐑦𐑯𐑩𐑕",
             "pos": "NN1",
-            "ipa": "wɪərinɪs",
+            "ipa": "wɪərinəs",
             "freq": 0,
             "var": "RRP",
             "confidence": 89

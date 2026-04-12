@@ -43,7 +43,6 @@ diarrhea	𐑛𐑲𐑼𐑰𐑩	daɪəriːə	RRP	3	𐑛𐑲𐑼𐑾	ˌdaɪəˈrɪ�
 actually	𐑨𐑒𐑖𐑫𐑼𐑤𐑦	ˈakʃʊəli	RRP	5	𐑨𐑒𐑗𐑫𐑩𐑤𐑦	ˈæktʃuəli	ml_disagrees:𐑨𐑒𐑖𐑫𐑩𐑤𐑦; shave_says:𐑨𐑒𐑑𐑵𐑤𐑦
 annually	𐑨𐑯𐑘𐑩𐑩𐑤𐑦	ˈænjəəli	RRP	5	𐑨𐑯𐑘𐑫𐑩𐑤𐑦	ˈænjuəli	ml_disagrees:𐑨𐑯𐑘𐑫𐑩𐑤𐑦; shave_says:𐑨𐑯𐑿𐑤𐑦
 bayonet	𐑚𐑱𐑩𐑯𐑦𐑑	ˈbeɪənɪt	RRP	5	𐑚𐑱𐑩𐑯𐑧𐑑	ˈbeɪənet	ml_disagrees:𐑚𐑱𐑩𐑯𐑩𐑑; shave_says:𐑚𐑱𐑩𐑯𐑧𐑑
-blessedness	𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑦𐑕	ˈblesɪdnɪs	RRP	5	𐑚𐑤𐑧𐑕𐑩𐑛𐑯𐑩𐑕	ˈblesƏdnəs	ml_disagrees:𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑩𐑕; shave_says:𐑚𐑤𐑧𐑕𐑩𐑛𐑯𐑩𐑕
 casually	𐑒𐑨𐑠𐑫𐑼𐑤𐑦	ˈkæʒʊəli	RRP	5	𐑒𐑨𐑠𐑫𐑩𐑤𐑦	ˈkæʒuəli	ml_disagrees:𐑒𐑨𐑠𐑫𐑩𐑤𐑦; shave_says:𐑒𐑨𐑠𐑵𐑤𐑦
 comprehensible	𐑒𐑪𐑥𐑐𐑮𐑩𐑣𐑧𐑯𐑕𐑦𐑚𐑩𐑤	kɒmprəhensɪbəl	RRP	5	𐑒𐑪𐑥𐑐𐑮𐑦𐑣𐑧𐑯𐑕𐑩𐑚𐑩𐑤	ˌkɒmprɪˈhensəbəl	ml_disagrees:𐑒𐑪𐑥𐑐𐑮𐑩𐑣𐑧𐑯𐑕𐑩𐑚𐑩𐑤; shave_says:𐑒𐑪𐑥𐑐𐑮𐑦𐑣𐑧𐑯𐑕𐑩𐑚𐑩𐑤
 continuation	𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑩𐑱𐑖𐑯	kəntɪnjəˈeɪʃn	RRP	5	𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑫𐑱𐑖𐑩𐑯	kənˌtɪnjuˈeɪʃən	ml_disagrees:𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑫𐑱𐑖𐑯; shave_says:𐑒𐑩𐑯𐑑𐑦𐑯𐑿𐑱𐑖𐑩𐑯
@@ -693,6 +692,7 @@ blamelessly	𐑚𐑤𐑱𐑥𐑤𐑧𐑕𐑤𐑰	ˈbleɪmlesliː	RRP	89	𐑚𐑤
 blandishment	𐑚𐑤𐑨𐑯𐑛𐑦𐑖𐑥𐑯𐑑	ˈblændɪʃmnt	RRP	89	𐑚𐑤𐑨𐑯𐑛𐑦𐑖𐑥𐑩𐑯𐑑	ˈblændɪʃmənt	
 blanket	𐑚𐑤𐑨𐑙𐑒𐑦𐑑	ˈblæŋkɪt	RRP	89	𐑚𐑤𐑨𐑙𐑒𐑩𐑑	ˈblæŋkIt	
 blenheim	𐑚𐑤𐑧𐑯𐑩𐑥	ˈblenəm	RRP	89	𐑚𐑤𐑧𐑯𐑦𐑥	ˈblenɪm	
+blessedness	𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑩𐑕	ˈblesɪdnəs	RRP	89	𐑚𐑤𐑧𐑕𐑩𐑛𐑯𐑩𐑕	ˈblesƏdnəs	
 blooming	𐑚𐑤𐑫𐑥𐑦𐑙	ˈblʊmɪŋ	RRP	89	𐑚𐑤𐑵𐑥𐑦𐑙	ˈbluːmɪŋ	
 blouse	𐑚𐑤𐑬𐑕	blaʊs	RRP	89	𐑚𐑤𐑬𐑟	blaʊz	
 boardroom	𐑚𐑷𐑮𐑛𐑮𐑵𐑥	bɔrdruːm	RRP	89	𐑚𐑹𐑛𐑮𐑵𐑥	ˈbɔːRdruːm	
@@ -753,7 +753,6 @@ buoy	𐑚𐑫𐑦	ˈbui	RRP	89	𐑚𐑶	bɔɪ
 burden	𐑚𐑻𐑛𐑯	bɜːRdn	RRP	89	𐑚𐑻𐑛𐑩𐑯	ˈbɜːRdən	
 bureau	𐑚𐑘𐑼𐑴	bjərəʊ	RRP	89	𐑚𐑘𐑫𐑼𐑴	ˈbjʊərəʊ	
 burlesque	𐑚𐑼𐑤𐑧𐑕𐑒	bəRlesk	RRP	89	𐑚𐑻𐑤𐑧𐑕𐑒	bɜːRˈlesk	
-business	𐑚𐑦𐑟𐑯𐑦𐑕	ˈbɪznɪs	RRP	89	𐑚𐑦𐑟𐑯𐑩𐑕	ˈbɪznəs	
 bye-bye	𐑚𐑲𐑚𐑲	baɪˈbaɪ	RRP	89	𐑚𐑲-𐑚𐑲	ˌbaɪ-ˈbaɪ	
 byword	𐑚𐑲𐑢𐑼𐑛	baɪwəRd	RRP	89	𐑚𐑲𐑢𐑻𐑛	ˈbaɪwɜːRd	
 cabal	𐑒𐑩𐑚𐑭𐑤	kəˈbɑːl	RRP	89	𐑒𐑩𐑚𐑨𐑤	kəˈbæl	
@@ -810,7 +809,6 @@ carbonate	𐑒𐑸𐑚𐑩𐑯𐑩𐑑	kɑːRbənət	RRP	89	𐑒𐑸𐑚𐑩𐑯
 carbonated	𐑒𐑸𐑚𐑪𐑯𐑱𐑑𐑩𐑛	kɑːRbɒneɪtəd	RRP	89	𐑒𐑸𐑚𐑩𐑯𐑱𐑑𐑩𐑛	ˈkɑːRbəneɪtƏd	
 careful	𐑒𐑻𐑓𐑩𐑤	kɜːRfəl	RRP	89	𐑒𐑺𐑓𐑩𐑤	ˈkeəRfəl	
 carefully	𐑒𐑻𐑓𐑩𐑤𐑦	kɜːRfəli	RRP	89	𐑒𐑺𐑓𐑩𐑤𐑦	ˈkeəRfəli	
-careless	𐑒𐑺𐑤𐑦𐑕	keəRlɪs	RRP	89	𐑒𐑺𐑤𐑩𐑕	ˈkeəRləs	
 careworn	𐑒𐑻𐑢𐑹𐑯	kɜːRwɔːRn	RRP	89	𐑒𐑺𐑢𐑹𐑯	ˈkeəRwɔːRn	
 caribbean	𐑒𐑨𐑮𐑦𐑚𐑰𐑩𐑯	kærɪbiːən	RRP	89	𐑒𐑨𐑮𐑦𐑚𐑾𐑯	kærɪˈbiən	
 caribou	𐑒𐑧𐑮𐑼𐑚𐑫	kerəRbu	RRP	89	𐑒𐑨𐑮𐑦𐑚𐑵	ˈkærɪbuː	
@@ -1401,7 +1399,6 @@ disorganized	𐑛𐑦𐑕𐑹𐑜𐑼𐑯𐑲𐑟𐑛	dɪsɔːRɡəRnaɪzd	RRP	8
 disorient	𐑛𐑦𐑕𐑹𐑦𐑩𐑯𐑑	dɪsɔːriənt	RRP	89	𐑛𐑦𐑕𐑹𐑾𐑯𐑑	dɪsˈɔːrɪənt	
 disorientation	𐑛𐑦𐑕𐑹𐑾𐑯𐑑𐑱𐑖𐑩𐑯	dɪsɔːrɪənteɪʃən	RRP	89	𐑛𐑦𐑟𐑹𐑾𐑯𐑑𐑱𐑖𐑩𐑯	dɪzˌɔːrɪənˈteɪʃən	
 disparate	𐑛𐑦𐑕𐑐𐑮𐑼𐑑	dɪsprəRt	RRP	89	𐑛𐑦𐑕𐑐𐑼𐑩𐑑	ˈdɪspərət	
-displacement	𐑛𐑦𐑕𐑐𐑤𐑱𐑕𐑥𐑦𐑯𐑑	dɪsˈpleɪsmɪnt	RRP	89	𐑛𐑦𐑕𐑐𐑤𐑱𐑕𐑥𐑩𐑯𐑑	dɪsˈpleɪsmənt	
 dispossess	𐑛𐑦𐑕𐑐𐑩𐑟𐑩𐑕	dɪspəˈzəs	RRP	89	𐑛𐑦𐑕𐑐𐑩𐑟𐑧𐑕	ˌdɪspəˈzes	
 disproportion	𐑛𐑦𐑕𐑐𐑮𐑩𐑐𐑹𐑖𐑼𐑯	dɪsprəpɔːRʃəRn	RRP	89	𐑛𐑦𐑕𐑐𐑮𐑩𐑐𐑹𐑖𐑩𐑯	ˌdɪsprəˈpɔːRʃən	
 disproportionate	𐑛𐑦𐑕𐑐𐑮𐑩𐑐𐑹𐑖𐑼𐑯𐑩𐑑	dɪsprəpɔːRʃəRnət	RRP	89	𐑛𐑦𐑕𐑐𐑮𐑩𐑐𐑹𐑖𐑩𐑯𐑩𐑑	ˌdɪsprəˈpɔːRʃənət	
@@ -1412,7 +1409,7 @@ dissever	𐑛𐑦𐑕𐑧𐑝𐑼	dɪsevəR	RRP	89	𐑛𐑦𐑕𐑕𐑧𐑝𐑼	
 dissociation	𐑛𐑦𐑕𐑴𐑖𐑰𐑱𐑖𐑩𐑯	ˈdɪˌsəʊʃiːeɪʃən	RRP	89	𐑛𐑦𐑕𐑴𐑖𐑦𐑱𐑖𐑩𐑯	dɪˌsəʊʃɪˈeɪʃən	
 dissolute	𐑛𐑦𐑕𐑩𐑤𐑿𐑑	ˈdɪsəljuːt	RRP	89	𐑛𐑦𐑕𐑩𐑤𐑵𐑑	ˈdɪsəluːt	
 distance	𐑛𐑦𐑕𐑑𐑦𐑯𐑕	ˈdɪstɪns	RRP	89	𐑛𐑦𐑕𐑑𐑩𐑯𐑕	ˈdɪstəns	
-distinctiveness	𐑛𐑦𐑕𐑑𐑦𐑙𐑑𐑦𐑝𐑯𐑦𐑕	dɪsˈtɪŋtɪvnɪs	RRP	89	𐑛𐑦𐑕𐑑𐑦𐑙𐑒𐑑𐑦𐑝𐑯𐑩𐑕	dɪˈstɪŋktɪvnəs	
+distinctiveness	𐑛𐑦𐑕𐑑𐑦𐑙𐑑𐑦𐑝𐑯𐑩𐑕	dɪsˈtɪŋtɪvnəs	RRP	89	𐑛𐑦𐑕𐑑𐑦𐑙𐑒𐑑𐑦𐑝𐑯𐑩𐑕	dɪˈstɪŋktɪvnəs	
 distraction	𐑛𐑦𐑕𐑑𐑮𐑨𐑒𐑖𐑯	dɪstrækʃn	RRP	89	𐑛𐑦𐑕𐑑𐑮𐑨𐑒𐑖𐑩𐑯	dɪˈstrækʃən	
 distribution	𐑛𐑦𐑕𐑑𐑮𐑩𐑚𐑿𐑖𐑩𐑯	dɪstrəbjuːʃən	RRP	89	𐑛𐑦𐑕𐑑𐑮𐑦𐑚𐑿𐑖𐑩𐑯	ˌdɪstrɪˈbjuːʃən	
 disuse	𐑛𐑦𐑕𐑘𐑫𐑕	dɪsˈjus	RRP	89	𐑛𐑦𐑕𐑿𐑕	dɪsˈjuːs	
@@ -1734,7 +1731,7 @@ favourable	𐑓𐑱𐑝𐑮𐑼𐑚𐑩𐑤	feɪvrəRbəl	RRP	89	𐑓𐑱𐑝�
 favourite	𐑓𐑱𐑝𐑮𐑦𐑑	feɪvrɪt	RRP	89	𐑓𐑱𐑝𐑼𐑦𐑑	ˈfeɪvərɪt	
 fbi	𐑧𐑓𐑚𐑰𐑲	ˈefbiːaɪ	RRP	89	⸰⁠𐑓𐑚𐑦	ˌefbɪˈaɪ	
 fearful	𐑓𐑽𐑓𐑼𐑤	fɪəRfəRl	RRP	89	𐑓𐑽𐑓𐑩𐑤	ˈfɪəRfəl	
-fearlessness	𐑓𐑽𐑤𐑦𐑕𐑯𐑦𐑕	fɪəRlɪsnɪs	RRP	89	𐑓𐑽𐑤𐑩𐑕𐑯𐑩𐑕	ˈfɪəRləsnəs	
+fearlessness	𐑓𐑽𐑤𐑦𐑕𐑯𐑩𐑕	fɪəRlɪsnəs	RRP	89	𐑓𐑽𐑤𐑩𐑕𐑯𐑩𐑕	ˈfɪəRləsnəs	
 federal	𐑓𐑧𐑛𐑼𐑼𐑤	fedərəRl	RRP	89	𐑓𐑧𐑛𐑼𐑩𐑤	ˈfedərəl	
 federalist	𐑓𐑧𐑛𐑼𐑼𐑤𐑦𐑕𐑑	fedərəRlɪst	RRP	89	𐑓𐑧𐑛𐑼𐑩𐑤𐑦𐑕𐑑	ˈfedərəlɪst	
 felicity	𐑓𐑦𐑤𐑦𐑕𐑦𐑑𐑦	fɪˈlɪsɪti	RRP	89	𐑓𐑩𐑤𐑦𐑕𐑦𐑑𐑦	fəˈlɪsɪti	
@@ -1805,7 +1802,7 @@ forestall	𐑓𐑹𐑕𐑑𐑹𐑤	fɔːRstɔːRl	RRP	89	𐑓𐑹𐑕𐑑𐑷�
 foretell	𐑓𐑷𐑮𐑑𐑧𐑤	fɔrtel	RRP	89	𐑓𐑹𐑑𐑧𐑤	fɔːRˈtel	
 forgather	𐑓𐑼𐑜𐑨𐑞𐑼	fəRɡaðəR	RRP	89	𐑓𐑹𐑜𐑨𐑞𐑼	fɔːRˈɡæðəR	
 forget-me-not	𐑓𐑼𐑜𐑧𐑑𐑥𐑰𐑯𐑪𐑑	fəRɡetmiːnɒt	RRP	89	𐑓𐑼𐑜𐑧𐑑-𐑥𐑰-𐑯𐑪𐑑	fəRˈɡet-miː-nɒt	
-forgetfulness	𐑓𐑼𐑜𐑧𐑑𐑓𐑫𐑤𐑯𐑦𐑕	fəRɡetfʊlnɪs	RRP	89	𐑓𐑼𐑜𐑧𐑑𐑓𐑩𐑤𐑯𐑩𐑕	fəRˈɡetfəlnəs	
+forgetfulness	𐑓𐑼𐑜𐑧𐑑𐑓𐑫𐑤𐑯𐑩𐑕	fəRɡetfʊlnəs	RRP	89	𐑓𐑼𐑜𐑧𐑑𐑓𐑩𐑤𐑯𐑩𐑕	fəRˈɡetfəlnəs	
 formalism	𐑓𐑹𐑥𐑩𐑤𐑦𐑟𐑥	fɔːRməlɪzm	RRP	89	𐑓𐑹𐑥𐑩𐑤𐑦𐑟𐑩𐑥	ˈfɔːRməlɪzəm	
 formation	𐑓𐑼𐑥𐑱𐑖𐑩𐑯	fəRmeɪʃən	RRP	89	𐑓𐑹𐑥𐑱𐑖𐑩𐑯	fɔːRˈmeɪʃən	
 formatting	𐑓𐑷𐑮𐑥𐑨𐑑𐑦𐑙	fɔrmætiŋ	RRP	89	𐑓𐑹𐑥𐑨𐑑𐑦𐑙	ˈfɔːRmætɪŋ	
@@ -1950,7 +1947,6 @@ grazier	𐑜𐑮𐑱𐑟𐑦𐑼	ɡreɪziəR	RRP	89	𐑜𐑮𐑱𐑟𐑽	ˈɡre�
 greatest	𐑜𐑮𐑱𐑑𐑧𐑕𐑑	ɡreɪtest	RRP	89	𐑜𐑮𐑱𐑑𐑩𐑕𐑑	ˈɡreɪtəst	
 grecian	𐑜𐑮𐑦𐑖𐑩𐑯	ɡriʃən	RRP	89	𐑜𐑮𐑰𐑖𐑩𐑯	ˈɡriːʃən	
 greed	𐑜𐑮𐑦𐑛	ɡrid	RRP	89	𐑜𐑮𐑰𐑛	ɡriːd	
-greediness	𐑜𐑮𐑰𐑛𐑦𐑯𐑦𐑕	ɡriːdinɪs	RRP	89	𐑜𐑮𐑰𐑛𐑦𐑯𐑩𐑕	ˈɡriːdɪnəs	
 greengrocer	𐑜𐑮𐑦𐑯𐑜𐑮𐑴𐑕𐑼	ɡrinɡrəʊsəR	RRP	89	𐑜𐑮𐑰𐑯𐑜𐑮𐑴𐑕𐑼	ˈɡriːnɡrəʊsəR	
 gregorian	𐑜𐑮𐑦𐑜𐑹𐑦𐑩𐑯	ɡrɪɡɔːriən	RRP	89	𐑜𐑮𐑦𐑜𐑹𐑾𐑯	ɡrɪˈɡɔːrɪən	
 grippe	𐑜𐑮𐑦𐑐	ɡrɪp	RRP	89	𐑜𐑮𐑰𐑐	ɡriːp	
@@ -1996,7 +1992,6 @@ handsome	𐑣𐑨𐑯𐑕𐑩𐑥	ˈhænsəm	RRP	89	𐑣𐑨𐑯𐑛𐑕𐑩𐑥
 handsomely	𐑣𐑨𐑯𐑕𐑩𐑥𐑤𐑦	ˈhænsəmli	RRP	89	𐑣𐑨𐑯𐑛𐑕𐑩𐑥𐑤𐑦	ˈhændsəmli	
 hansard	𐑣𐑨𐑯𐑕𐑼𐑛	hænsəRd	RRP	89	𐑣𐑨𐑯𐑕𐑸𐑛	ˈhænsɑːRd	
 happily	𐑣𐑨𐑐𐑩𐑤𐑦	ˈhapəli	RRP	89	𐑣𐑨𐑐𐑦𐑤𐑦	ˈhæpɪli	
-happiness	𐑣𐑨𐑐𐑦𐑯𐑦𐑕	ˈhæpinɪs	RRP	89	𐑣𐑨𐑐𐑦𐑯𐑩𐑕	ˈhæpɪnəs	
 happy	𐑣𐑨𐑐𐑰	ˈhæpiː	RRP	89	𐑣𐑨𐑐𐑦	ˈhæpi	
 harass	𐑣𐑨𐑮𐑼𐑕	hærəRs	RRP	89	𐑣𐑼𐑨𐑕	həˈræs	
 harlequinade	𐑣𐑸𐑤𐑼𐑒𐑢𐑦𐑯𐑱𐑛	hɑːRləRkwɪneɪd	RRP	89	𐑣𐑸𐑤𐑦𐑒𐑢𐑦𐑯𐑱𐑛	ˌhɑːRlɪkwɪˈneɪd	
@@ -2014,7 +2009,6 @@ he	𐑣𐑦	hi	RRP	89	𐑣𐑰	hiː
 he-man	𐑣𐑰𐑥𐑨𐑯	ˈhiːmæn	RRP	89	𐑣𐑰-𐑥𐑨𐑯	ˈhiː-mæn	
 hearken	𐑣𐑸𐑒𐑯	hɑːRkn	RRP	89	𐑣𐑸𐑒𐑩𐑯	ˈhɑːRkən	
 hearten	𐑣𐑸𐑑𐑼𐑯	hɑːRtəRn	RRP	89	𐑣𐑸𐑑𐑩𐑯	ˈhɑːRtən	
-heartless	𐑣𐑸𐑑𐑤𐑦𐑕	hɑːRtlɪs	RRP	89	𐑣𐑸𐑑𐑤𐑩𐑕	ˈhɑːRtləs	
 heartlessness	𐑣𐑸𐑑𐑤𐑦𐑕𐑯𐑩𐑕	hɑːRtlɪsnəs	RRP	89	𐑣𐑸𐑑𐑤𐑩𐑕𐑯𐑩𐑕	ˈhɑːRtləsnəs	
 hedonism	𐑣𐑧𐑛𐑩𐑯𐑦𐑟𐑩𐑥	ˈhedənɪzəm	RRP	89	𐑣𐑰𐑛𐑩𐑯𐑦𐑟𐑩𐑥	ˈhiːdənɪzəm	
 hedonist	𐑣𐑧𐑛𐑩𐑯𐑦𐑕𐑑	ˈhedənɪst	RRP	89	𐑣𐑰𐑛𐑩𐑯𐑦𐑕𐑑	ˈhiːdənɪst	
@@ -2065,7 +2059,6 @@ hocus-pocus	𐑣𐑴𐑒𐑩𐑕 𐑐𐑴𐑒𐑩𐑕	ˌhəʊkəs ˈpəʊkəs	RR
 hoity-toity	𐑣𐑶𐑑𐑦𐑑𐑶𐑑𐑦	ˌhɔɪtiˈtɔɪti	RRP	89	𐑣𐑶𐑑𐑦-𐑑𐑶𐑑𐑦	ˌhɔɪti-ˈtɔɪti	
 holster	𐑣𐑪𐑤𐑕𐑑𐑼	hɒlstəR	RRP	89	𐑣𐑴𐑤𐑕𐑑𐑼	ˈhəʊlstəR	
 home	𐑴𐑥	əʊm	RRP	89	𐑣𐑴𐑥	həʊm	
-homeless	𐑣𐑴𐑥𐑤𐑦𐑕	ˈhoʊmlɪs	RRP	89	𐑣𐑴𐑥𐑤𐑩𐑕	ˈhəʊmləs	
 homogeneity	𐑣𐑪𐑥𐑩𐑡𐑩𐑯𐑰𐑩𐑑𐑦	ˌhɒmədʒəˈniːəti	RRP	89	𐑣𐑴𐑥𐑴𐑡𐑩𐑯𐑱𐑦𐑑𐑦	ˌhəʊməʊdʒəˈneɪɪti	
 homogeneous	𐑣𐑪𐑥𐑩𐑡𐑰𐑯𐑾𐑕	ˌhɒməˈdʒiːnɪəs	RRP	89	𐑣𐑴𐑥𐑩𐑡𐑰𐑯𐑾𐑕	ˌhəʊməˈdʒiːnɪəs	
 homogenise	𐑣𐑩𐑥𐑪𐑡𐑩𐑯𐑲𐑟	həˈmɒdʒənaɪz	RRP	89	𐑣𐑩𐑥𐑪𐑡𐑦𐑯𐑲𐑟	həˈmɒdʒɪnaɪz	
@@ -2082,7 +2075,6 @@ hopelessly	𐑣𐑴𐑐𐑤𐑦𐑕𐑤𐑦	ˈhəʊplɪsli	RRP	89	𐑣𐑴𐑐�
 horchata	𐑹𐑗𐑸𐑑𐑩	ɔːrtʃɑːRtə	RRP	89	𐑣𐑹𐑗𐑭𐑑𐑩	hɔːRˈtʃɑːtə	
 hormonal	𐑣𐑷𐑮𐑥𐑴𐑯𐑩𐑤	hɔrmoʊnəl	RRP	89	𐑣𐑹𐑥𐑴𐑯𐑩𐑤	hɔːRˈməʊnəl	
 hornet	𐑣𐑹𐑯𐑦𐑑	hɔːRnɪt	RRP	89	𐑣𐑹𐑯𐑩𐑑	ˈhɔːRnIt	
-hornless	𐑣𐑹𐑯𐑤𐑦𐑕	hɔːRnlɪs	RRP	89	𐑣𐑹𐑯𐑤𐑩𐑕	ˈhɔːRnləs	
 horoscope	𐑣𐑪𐑮𐑼𐑕𐑒𐑴𐑐	hɒrəRskəʊp	RRP	89	𐑣𐑪𐑮𐑩𐑕𐑒𐑴𐑐	ˈhɒrəskəʊp	
 hosier	𐑣𐑴𐑠𐑼	həʊʒəR	RRP	89	𐑣𐑴𐑟𐑽	ˈhəʊzɪəR	
 hosiery	𐑣𐑴𐑠𐑼𐑦	hoʊʒəri	RRP	89	𐑣𐑴𐑟𐑽𐑦	ˈhəʊzɪəri	
@@ -2438,7 +2430,6 @@ laos	𐑤𐑬𐑟	laʊz	RRP	89	𐑤𐑬𐑕	ˈlaʊs
 largesse	𐑤𐑸𐑠𐑧𐑕	lɑːRʒes	RRP	89	𐑤𐑸𐑡𐑧𐑕	lɑːRˈdʒes	
 laryngitis	𐑤𐑨𐑮𐑦𐑯𐑡𐑨𐑘𐑑𐑦𐑕	lærɪndʒajtɪs	RRP	89	𐑤𐑨𐑮𐑦𐑯𐑡𐑲𐑑𐑦𐑕	ˌlærɪnˈdʒaɪtɪs	
 lasagne	𐑤𐑩𐑟𐑨𐑯𐑘𐑩	ləˈzænjə	RRP	89	𐑤𐑩𐑟𐑭𐑯𐑘𐑩	ləˈzɑːnjə	
-lateness	𐑤𐑱𐑑𐑯𐑦𐑕	ˈleɪtnɪs	RRP	89	𐑤𐑱𐑑𐑯𐑩𐑕	ˈleɪtnəs	
 lateral	𐑤𐑨𐑑𐑼𐑼𐑤	lætərəRl	RRP	89	𐑤𐑨𐑑𐑼𐑩𐑤	ˈlætərəl	
 laterite	𐑤𐑨𐑑𐑼𐑳𐑦𐑑	latərʌɪt	RRP	89	𐑤𐑨𐑑𐑼𐑲𐑑	ˈlætəraɪt	
 lathi	𐑤𐑳𐑑𐑰	lʌˈtiː	RRP	89	𐑤𐑨𐑑𐑦, 𐑤𐑭𐑑𐑦	ˈlⱭːti	
@@ -2836,13 +2827,11 @@ newfoundland	𐑯𐑿𐑓𐑬𐑯𐑛𐑤𐑩𐑯𐑛	ˈnjuːˌfaʊndlənd	RRP	8
 newspaper	𐑯𐑿𐑕𐑐𐑱𐑐𐑼	njuːspeɪpəR	RRP	89	𐑯𐑵𐑟𐑐𐑱𐑐𐑼, 𐑯𐑿𐑟𐑐𐑱𐑐𐑼	ˈnjuːzpeɪpəR	
 niagara	𐑯𐑲𐑨𐑜𐑮𐑩	naɪæɡrə	RRP	89	𐑯𐑲𐑨𐑜𐑼𐑩	naɪˈæɡərə	
 nicely	𐑯𐑳𐑦𐑕𐑤𐑦	ˈnʌɪsli	RRP	89	𐑯𐑲𐑕𐑤𐑦	ˈnaɪsli	
-niceness	𐑯𐑲𐑕𐑯𐑦𐑕	ˈnaɪsnɪs	RRP	89	𐑯𐑲𐑕𐑯𐑩𐑕	ˈnaɪsnəs	
 niche	𐑯𐑦𐑗	nɪtʃ	RRP	89	𐑯𐑰𐑖	niːʃ	
 niger	𐑯𐑲𐑡𐑼	naɪdʒəR	RRP	89	𐑯𐑰𐑠𐑺	niːˈʒeəR	
 nigerien	𐑯𐑰𐑠𐑺𐑦𐑩𐑯	niːʒeəriən	RRP	89	𐑯𐑰𐑠𐑺𐑾𐑯	niːˈʒeərɪən	
 nightshade	𐑯𐑲𐑗𐑱𐑛	ˈnaɪtʃeɪd	RRP	89	𐑯𐑲𐑑𐑖𐑱𐑛	ˈnaɪt+ʃeɪd	
 nihilism	𐑯𐑲𐑦𐑤𐑦𐑟𐑥	ˈnaɪɪlɪzm	RRP	89	𐑯𐑲𐑦𐑤𐑦𐑟𐑩𐑥	ˈnaɪɪlɪzəm	
-nimbleness	𐑯𐑦𐑥𐑚𐑩𐑤𐑯𐑦𐑕	ˈnɪmbəlnɪs	RRP	89	𐑯𐑦𐑥𐑚𐑩𐑤𐑯𐑩𐑕	ˈnɪmbəlnəs	
 ninetieth	𐑯𐑲𐑯𐑑𐑦𐑩𐑔	ˈnaɪntiəθ	RRP	89	𐑯𐑲𐑯𐑑𐑾𐑔	ˈnaɪntɪəθ	
 niobe	𐑯𐑳𐑾𐑚𐑦	ˈnʌɪəbi	RRP	89	𐑯𐑲𐑴𐑚𐑦	ˈnaɪəʊbi	
 nipple	𐑯𐑦𐑐𐑤	ˈnɪpl	RRP	89	𐑯𐑦𐑐𐑩𐑤	ˈnɪpəl	
@@ -2891,7 +2880,7 @@ obsidian	𐑪𐑚𐑕𐑦𐑛𐑦𐑩𐑯	ˌɒbˈsɪdiən	RRP	89	𐑩𐑚𐑕�
 obstreperous	𐑩𐑚𐑕𐑑𐑮𐑧𐑐𐑼𐑼𐑕	əbstrepərəRs	RRP	89	𐑩𐑚𐑕𐑑𐑮𐑧𐑐𐑼𐑩𐑕	əbˈstrepərəs	
 obstructionism	𐑩𐑚𐑕𐑑𐑮𐑳𐑒𐑖𐑩𐑯𐑦𐑟𐑥	əbstrʌkʃənɪzm	RRP	89	𐑩𐑚𐑕𐑑𐑮𐑳𐑒𐑖𐑩𐑯𐑦𐑟𐑩𐑥	əbˈstrʌkʃənɪzəm	
 obviously	𐑪𐑝𐑾𐑕𐑤𐑦	ˈɒvɪəsli	RRP	89	𐑪𐑚𐑝𐑾𐑕𐑤𐑦	ˈɒbvɪəsli	
-obviousness	𐑪𐑝𐑦𐑩𐑕𐑯𐑦𐑕	ˈɒviəsnɪs	RRP	89	𐑪𐑚𐑝𐑾𐑕𐑯𐑩𐑕	ˈɒbvɪəsnəs	
+obviousness	𐑪𐑝𐑦𐑩𐑕𐑯𐑩𐑕	ˈɒviəsnəs	RRP	89	𐑪𐑚𐑝𐑾𐑕𐑯𐑩𐑕	ˈɒbvɪəsnəs	
 occasional	𐑩𐑒𐑱𐑠𐑯𐑩𐑤	əˈkeɪʒnəl	RRP	89	𐑩𐑒𐑱𐑠𐑩𐑯𐑩𐑤	əˈkeɪʒənəl	
 occidental	𐑪𐑒𐑕𐑩𐑛𐑧𐑯𐑑𐑩𐑤	ˌɒksəˈdentəl	RRP	89	𐑪𐑒𐑕𐑦𐑛𐑧𐑯𐑑𐑩𐑤	ˌɒksɪˈdentəl	
 octagon	𐑪𐑒𐑑𐑩𐑜𐑯	ˈɒktəɡn	RRP	89	𐑪𐑒𐑑𐑩𐑜𐑪𐑯	ˈɒktəɡɒn	
@@ -3048,7 +3037,7 @@ patriot	𐑐𐑨𐑑𐑮𐑦𐑩𐑑	pætriət	RRP	89	𐑐𐑱𐑑𐑮𐑾𐑑	�
 patriotic	𐑐𐑨𐑑𐑮𐑦𐑪𐑑𐑦𐑒	pætriɒtɪk	RRP	89	𐑐𐑱𐑑𐑮𐑦𐑪𐑑𐑦𐑒	ˌpeɪtrɪˈɒtɪk	
 patriotism	𐑐𐑨𐑑𐑮𐑦𐑩𐑑𐑦𐑟𐑩𐑥	pætriətɪzəm	RRP	89	𐑐𐑱𐑑𐑮𐑾𐑑𐑦𐑟𐑩𐑥	ˈpeɪtrɪətɪzəm	
 patronage	𐑐𐑱𐑑𐑮𐑩𐑯𐑦𐑡	peɪtrənɪdʒ	RRP	89	𐑐𐑨𐑑𐑮𐑩𐑯𐑦𐑡	ˈpætrənɪdʒ	
-patroness	𐑐𐑱𐑑𐑮𐑩𐑯𐑦𐑕	peɪtrənɪs	RRP	89	𐑐𐑱𐑑𐑮𐑩𐑯𐑧𐑕	ˈpeɪtrənes	
+patroness	𐑐𐑱𐑑𐑮𐑩𐑯𐑩𐑕	peɪtrənəs	RRP	89	𐑐𐑱𐑑𐑮𐑩𐑯𐑧𐑕	ˈpeɪtrənes	
 patten	𐑐𐑨𐑑𐑯	ˈpatn	RRP	89	𐑐𐑨𐑑𐑩𐑯	ˈpætən	
 pauline	𐑐𐑷𐑤𐑲𐑯	ˈpɔːˌlaɪn	RRP	89	𐑐𐑷𐑤𐑰𐑯	ˈpɔːliːn	
 pc	𐑐𐑰 𐑕𐑰	ˌpiː ˈsiː	RRP	89	𐑐𐑰𐑕𐑰	ˌpiːˈsiː	
@@ -3242,7 +3231,7 @@ poseur	𐑐𐑴𐑟𐑫𐑼	poʊzʊər	RRP	89	𐑐𐑴𐑟𐑻	pəʊˈzɜːR
 posh	𐑐𐑴𐑖	pəʊʃ	RRP	89	𐑐𐑪𐑖	pɒʃ	
 position	𐑐𐑩𐑟𐑦𐑖𐑯	pəˈzɪʃn	RRP	89	𐑐𐑩𐑟𐑦𐑖𐑩𐑯	pəˈzɪʃən	
 positively	𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑤𐑦	ˈpɒzɪtɪvli	RRP	89	𐑐𐑪𐑟𐑩𐑑𐑦𐑝𐑤𐑦	ˈpɒzətɪvli	
-positiveness	𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑯𐑦𐑕	ˈpɒzɪtɪvnɪs	RRP	89	𐑐𐑪𐑟𐑩𐑑𐑦𐑝𐑯𐑩𐑕	ˈpɒzətɪvnəs	
+positiveness	𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑯𐑩𐑕	ˈpɒzɪtɪvnəs	RRP	89	𐑐𐑪𐑟𐑩𐑑𐑦𐑝𐑯𐑩𐑕	ˈpɒzətɪvnəs	
 positivism	𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑦𐑟𐑥	ˈpɒzɪtɪvˌɪzm	RRP	89	𐑐𐑪𐑟𐑦𐑑𐑦𐑝𐑦𐑟𐑩𐑥	ˈpɒzɪtɪvɪzəm	
 possessor	𐑐𐑪𐑟𐑧𐑕𐑹	pɒzesɔːR	RRP	89	𐑐𐑩𐑟𐑧𐑕𐑼	pəˈzesəR	
 posset	𐑐𐑪𐑕𐑦𐑑	ˈpɒsɪt	RRP	89	𐑐𐑪𐑕𐑩𐑑	ˈpɒsIt	
@@ -3550,7 +3539,6 @@ reminiscence	𐑮𐑧𐑥𐑩𐑯𐑦𐑕𐑩𐑯𐑕	remənɪsəns	RRP	89	𐑮�
 reminiscent	𐑮𐑧𐑥𐑩𐑯𐑦𐑕𐑯𐑑	remənɪsnt	RRP	89	𐑮𐑧𐑥𐑦𐑯𐑦𐑕𐑩𐑯𐑑	ˌremɪˈnɪsənt	
 remiss	𐑮𐑩𐑥𐑦𐑕	rəmɪs	RRP	89	𐑮𐑦𐑥𐑦𐑕	rɪˈmɪs	
 remission	𐑮𐑦𐑥𐑦𐑖𐑯	rɪmɪʃn	RRP	89	𐑮𐑦𐑥𐑦𐑖𐑩𐑯	rɪˈmɪʃən	
-remissness	𐑮𐑦𐑥𐑦𐑕𐑯𐑦𐑕	rɪmɪsnɪs	RRP	89	𐑮𐑦𐑥𐑦𐑕𐑯𐑩𐑕	rɪˈmɪsnəs	
 remorseful	𐑮𐑦𐑥𐑹𐑕𐑓𐑫𐑤	rɪmɔːRsfʊl	RRP	89	𐑮𐑦𐑥𐑹𐑕𐑓𐑩𐑤	rɪˈmɔːRsfəl	
 removal	𐑮𐑩𐑥𐑵𐑝𐑩𐑤	rəmuːvəl	RRP	89	𐑮𐑦𐑥𐑵𐑝𐑩𐑤	rɪˈmuːvəl	
 remunerative	𐑮𐑦𐑥𐑿𐑯𐑮𐑼𐑑𐑦𐑝	rɪmjuːnrəRtɪv	RRP	89	𐑮𐑦𐑥𐑿𐑯𐑼𐑩𐑑𐑦𐑝	rɪˈmjuːnərətɪv	
@@ -3592,11 +3580,9 @@ respiratory	𐑮𐑦𐑕𐑐𐑦𐑮𐑼𐑑𐑮𐑦	rɪspɪrəRtri	RRP	89	𐑮�
 respite	𐑮𐑧𐑕𐑐𐑦𐑑	respɪt	RRP	89	𐑮𐑧𐑕𐑐𐑲𐑑	ˈrespaɪt	
 respond	𐑮𐑩𐑕𐑐𐑪𐑯𐑛	rəspɒnd	RRP	89	𐑮𐑦𐑕𐑐𐑪𐑯𐑛	rɪˈspɒnd	
 responder	𐑮𐑩𐑕𐑐𐑪𐑯𐑛𐑼	rəspɒndəR	RRP	89	𐑮𐑦𐑕𐑐𐑪𐑯𐑛𐑼	rɪˈspɒndəR	
-responsiveness	𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑦𐑝𐑯𐑦𐑕	rɪspɒnsɪvnɪs	RRP	89	𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑦𐑝𐑯𐑩𐑕	rɪˈspɒnsɪvnəs	
 restart	𐑮𐑦𐑕𐑑𐑸𐑑	rɪstɑːRt	RRP	89	𐑮𐑰𐑕𐑑𐑸𐑑	riːˈstɑːRt	
 restful	𐑮𐑧𐑕𐑓𐑤	resfl	RRP	89	𐑮𐑧𐑕𐑑𐑓𐑩𐑤	ˈrestfəl	
 restitution	𐑮𐑧𐑕𐑑𐑦𐑑𐑘𐑫𐑖𐑩𐑯	restɪtjuʃən	RRP	89	𐑮𐑧𐑕𐑑𐑦𐑑𐑵𐑖𐑩𐑯, 𐑮𐑧𐑕𐑑𐑦𐑑𐑿𐑖𐑩𐑯	ˌrestɪˈtjuːʃən	
-restless	𐑮𐑧𐑕𐑑𐑤𐑦𐑕	restlɪs	RRP	89	𐑮𐑧𐑕𐑑𐑤𐑩𐑕	ˈrestləs	
 restorative	𐑮𐑦𐑕𐑑𐑪𐑮𐑼𐑑𐑦𐑝	rɪstɒrəRtɪv	RRP	89	𐑮𐑦𐑕𐑑𐑹𐑩𐑑𐑦𐑝	rɪˈstɔːrətɪv	
 resume	𐑮𐑧𐑟𐑫𐑥𐑱	rezʊmeɪ	RRP	89	𐑮𐑦𐑟𐑿𐑥, 𐑮𐑧𐑟𐑿𐑥𐑱	ˈrezjuːmeɪ	
 retail	𐑮𐑦𐑑𐑱𐑤	riteɪl	RRP	89	𐑮𐑰𐑑𐑱𐑤	ˈriːteɪl	
@@ -3800,7 +3786,6 @@ sidle	𐑕𐑲𐑛𐑤	ˈsaɪdl	RRP	89	𐑕𐑲𐑛𐑩𐑤	ˈsaɪdəl
 signatory	𐑕𐑦𐑜𐑯𐑼𐑑𐑮𐑦	sɪɡnəRtri	RRP	89	𐑕𐑦𐑜𐑯𐑩𐑑𐑼𐑦	ˈsɪɡnətəri	
 signature	𐑕𐑦𐑜𐑯𐑼𐑗𐑼	sɪɡnəRtʃəR	RRP	89	𐑕𐑦𐑜𐑯𐑩𐑗𐑼	ˈsɪɡnətʃəR	
 silhouette	𐑕𐑦𐑤𐑫𐑢𐑧𐑑	ˌsɪlʊˈwet	RRP	89	𐑕𐑦𐑤𐑵𐑧𐑑	ˌsɪluːˈet	
-silliness	𐑕𐑦𐑤𐑦𐑯𐑦𐑕	ˈsɪlinɪs	RRP	89	𐑕𐑦𐑤𐑦𐑯𐑩𐑕	ˈsɪlɪnəs	
 simian	𐑕𐑦𐑥𐑦𐑩𐑯	ˈsɪmiən	RRP	89	𐑕𐑦𐑥𐑾𐑯	ˈsɪmɪən	
 similar	𐑕𐑦𐑥𐑼𐑤𐑼	sɪməRləR	RRP	89	𐑕𐑦𐑥𐑦𐑤𐑼	ˈsɪmɪləR	
 similarly	𐑕𐑦𐑥𐑼𐑤𐑼𐑤𐑦	sɪməRləRli	RRP	89	𐑕𐑦𐑥𐑦𐑤𐑼𐑤𐑦	ˈsɪmɪləRli	
@@ -3869,7 +3854,6 @@ spatula	𐑕𐑐𐑨𐑑𐑘𐑩𐑤𐑩	ˈspætjələ	RRP	89	𐑕𐑐𐑨𐑗�
 specialization	𐑕𐑐𐑧𐑖𐑩𐑤𐑦𐑟𐑱𐑖𐑩𐑯	ˌspeʃəlɪˈzeɪʃən	RRP	89	𐑕𐑐𐑧𐑖𐑩𐑤𐑲𐑟𐑱𐑖𐑩𐑯	ˌspeʃəlaɪˈzeɪʃən	
 specimen	𐑕𐑐𐑧𐑕𐑦𐑥𐑦𐑯	ˈspesɪmɪn	RRP	89	𐑕𐑐𐑧𐑕𐑩𐑥𐑩𐑯	ˈspesəmən	
 speculative	𐑕𐑐𐑧𐑒𐑘𐑫𐑤𐑩𐑑𐑦𐑝	ˈspekjuləˌtɪv	RRP	89	𐑕𐑐𐑧𐑒𐑘𐑩𐑤𐑩𐑑𐑦𐑝	ˈspekjələtɪv	
-speechless	𐑕𐑐𐑰𐑗𐑤𐑦𐑕	ˈspiːtʃlɪs	RRP	89	𐑕𐑐𐑰𐑗𐑤𐑩𐑕	ˈspiːtʃləs	
 speedboat	𐑕𐑐𐑦𐑛𐑚𐑴𐑑	ˈspidˌboʊt	RRP	89	𐑕𐑐𐑰𐑛𐑚𐑴𐑑	ˈspiːdbəʊt	
 spendthrift	𐑕𐑐𐑧𐑯𐑔𐑮𐑦𐑓𐑑	spenθrɪft	RRP	89	𐑕𐑐𐑧𐑯𐑛𐑔𐑮𐑦𐑓𐑑	ˈspendθrɪft	
 spermatozoon	𐑕𐑐𐑻𐑥𐑼𐑑𐑩𐑟𐑴𐑪𐑯	spɜːRməRtəzəʊɒn	RRP	89	𐑕𐑐𐑻𐑥𐑩𐑑𐑩𐑟𐑴𐑪𐑯	ˌspɜːRmətəˈzəʊɒn	
@@ -3984,7 +3968,6 @@ suzerain	𐑕𐑫𐑟𐑮𐑼𐑯	suzrəRn	RRP	89	𐑕𐑵𐑟𐑼𐑱𐑯	ˈsu�
 suzerainty	𐑕𐑫𐑟𐑮𐑼𐑯𐑑𐑦	suzrəRnti	RRP	89	𐑕𐑵𐑟𐑼𐑩𐑯𐑑𐑦	ˈsuːzərənti	
 swahili	𐑕𐑢𐑩𐑣𐑰𐑤𐑦	swəˈhiːli	RRP	89	𐑕𐑢𐑭𐑣𐑰𐑤𐑦	swɑːˈhiːli	
 swarthy	𐑕𐑢𐑷𐑮𐑞𐑦	swɔrði	RRP	89	𐑕𐑢𐑹𐑞𐑦	ˈswɔːRði	
-swiftness	𐑕𐑢𐑦𐑓𐑑𐑯𐑦𐑕	ˈswɪftnɪs	RRP	89	𐑕𐑢𐑦𐑓𐑑𐑯𐑩𐑕	ˈswɪftnəs	
 swindle	𐑕𐑢𐑦𐑯𐑛𐑤	ˈswɪndl	RRP	89	𐑕𐑢𐑦𐑯𐑛𐑩𐑤	ˈswɪndəl	
 swingeing	𐑕𐑢𐑦𐑯𐑠𐑦𐑙	ˈswɪnʒɪŋ	RRP	89	𐑕𐑢𐑦𐑯𐑡𐑦𐑙	ˈswɪndʒɪŋ	
 switzerland	𐑕𐑢𐑦𐑑𐑕𐑼𐑤𐑼𐑯𐑛	swɪtsəRləRnd	RRP	89	𐑕𐑢𐑦𐑑𐑕𐑼𐑤𐑩𐑯𐑛	ˈswɪtsəRlənd	
@@ -4089,7 +4072,6 @@ thoughtful	𐑔𐑷𐑑𐑓𐑫𐑤	ˈθɔːtfʊl	RRP	89	𐑔𐑷𐑑𐑓𐑩�
 thoughtfully	𐑔𐑷𐑑𐑓𐑫𐑤𐑦	ˈθɔːtfʊli	RRP	89	𐑔𐑷𐑑𐑓𐑩𐑤𐑦	ˈθɔːtfəli	
 thoughtfulness	𐑔𐑷𐑑𐑓𐑤𐑯𐑩𐑕	ˈθɔːtflnəs	RRP	89	𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕	ˈθɔːtfəlnəs	
 thoughtlessly	𐑔𐑷𐑑𐑤𐑦𐑕𐑤𐑦	ˈθɔtlɪsli	RRP	89	𐑔𐑷𐑑𐑤𐑩𐑕𐑤𐑦	ˈθɔːtləsli	
-thoughtlessness	𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑦𐑕	ˈθɔːtləsnɪs	RRP	89	𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑩𐑕	ˈθɔːtləsnəs	
 thousandth	𐑔𐑬𐑟𐑩𐑯𐑑𐑔	ˈθaʊzəntθ	RRP	89	𐑔𐑬𐑟𐑩𐑯𐑛𐑔	ˈθaʊzəndθ	
 threepence	𐑔𐑮𐑳𐑐𐑩𐑯𐑕	θrʌpəns	RRP	89	𐑔𐑮𐑧𐑐𐑩𐑯𐑕	ˈθrepəns	
 threepenny	𐑔𐑮𐑳𐑐𐑩𐑯𐑦	θrʌpəni	RRP	89	𐑔𐑮𐑧𐑐𐑩𐑯𐑦	ˈθrepəni	
@@ -4402,7 +4384,6 @@ weaken	𐑢𐑦𐑒𐑩𐑯	ˈwikən	RRP	89	𐑢𐑰𐑒𐑩𐑯	ˈwiːkən
 weakened	𐑢𐑰𐑒𐑧𐑯𐑛	wiːˈkend	RRP	89	𐑢𐑰𐑒𐑩𐑯𐑛	ˈwiːkənd	
 weakling	𐑢𐑦𐑘𐑒𐑤𐑦𐑙𐑜	ˈwijkˈlɪŋɡ	RRP	89	𐑢𐑰𐑒𐑤𐑦𐑙	ˈwiːklɪŋ	
 wearable	𐑢𐑺𐑼𐑚𐑤	weərəRbl	RRP	89	𐑢𐑺𐑩𐑚𐑩𐑤	ˈweərəbəl	
-weariness	𐑢𐑽𐑦𐑯𐑦𐑕	wɪərinɪs	RRP	89	𐑢𐑽𐑦𐑯𐑩𐑕	ˈwɪərɪnəs	
 weasel	𐑢𐑰𐑟𐑤	ˈwiːzl	RRP	89	𐑢𐑰𐑟𐑩𐑤	ˈwiːzəl	
 weevil	𐑢𐑰𐑝𐑤	ˈwiːvl	RRP	89	𐑢𐑰𐑝𐑩𐑤	ˈwiːvəl	
 welkin	𐑢𐑧𐑤𐑒𐑩𐑯	ˈwelkən	RRP	89	𐑢𐑧𐑤𐑒𐑦𐑯	ˈwelkɪn	

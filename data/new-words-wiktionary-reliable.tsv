@@ -201,7 +201,6 @@ word	shaw	ipa	pos	var	confidence	notes
 -navir	𐑯𐑩𐑝𐑦𐑮	nəˌvɪr	UNC	RGAM	89	
 -nercept	𐑯𐑼𐑕𐑧𐑐𐑑	nəRsept	UNC	RSSB	89	
 -ness	𐑯𐑩𐑕	nəs	UNC	RSSB	89	
--ness	𐑯𐑦𐑕	nɪs	UNC	RSSB	89	
 -ness	𐑯𐑧𐑕	nes	UNC	RGAM	89	
 -nicline	𐑯𐑩𐑒𐑤𐑦𐑯	nəklɪn	UNC	RGAM	89	
 -nidazole	𐑯𐑳𐑦𐑛𐑩𐑟𐑴𐑤	ˈnʌɪdəzəʊl	UNC	RSSB	89	
@@ -562,10 +561,9 @@ abas	𐑩𐑚𐑪𐑕	əˈbɒs	NN1	RGAM	89
 abasedly	𐑩𐑚𐑱𐑕𐑩𐑛𐑤𐑦	əˈbeɪsƏdli	AV0	RSSB	89	
 abaser	𐑩𐑚𐑱𐑕𐑼	əˈbeɪsəR	NN1	RGAM	89	
 abashedly	𐑩𐑚𐑨𐑖𐑩𐑛𐑤𐑦	əˈbæʃƏdli	AV0	RSSB	89	
-abashedness	𐑩𐑚𐑨𐑖𐑦𐑛𐑯𐑦𐑕	əˈbæʃɪdnɪs	NN1	RGAM	89	
+abashedness	𐑩𐑚𐑨𐑖𐑦𐑛𐑯𐑩𐑕	əˈbæʃɪdnəs	NN1	RSSB	89	
 abashev	𐑩𐑚𐑪𐑖𐑩𐑓	əˈbɒʃəf	AJ0	RGAM	89	
-abashless	𐑩𐑚𐑨𐑖𐑤𐑦𐑕	əˈbæʃlɪs	AJ0	RSSB	89	
-abashless	𐑩𐑚𐑨𐑖𐑤𐑩𐑕	əˈbæʃləs	AJ0	RGAM	89	
+abashless	𐑩𐑚𐑨𐑖𐑤𐑩𐑕	əˈbæʃləs	AJ0	RSSB	89	
 abashlessly	𐑩𐑚𐑨𐑖𐑤𐑩𐑕𐑤𐑦	əˈbæʃləsli	AV0	RGAM	89	
 abashment	𐑩𐑚𐑨𐑖𐑥𐑩𐑯𐑑	əˈbæʃmənt	NN1	RSSB	89	
 abasia-astasia	𐑩𐑚𐑱𐑠𐑦𐑩 𐑩𐑕𐑑𐑱𐑠𐑦𐑩	əˈbeɪʒiə əˈsteɪʒiə	NN1	RGAM	89	
@@ -1854,7 +1852,7 @@ accusatorial	𐑩𐑒𐑘𐑫𐑟𐑩𐑑𐑹𐑦𐑩𐑤	əˌkjuzəˈtɔːRiəl
 accusatory	𐑩𐑒𐑘𐑫𐑟𐑩𐑑𐑹𐑦	əˈkjuzəˌtɔːRi	AJ0	RGAM	89	
 accusatrices	𐑨𐑒𐑘𐑫𐑟𐑱𐑑𐑮𐑦𐑕𐑰𐑟	ækjuzeɪtrɪsiːz	NN1	RSSB	89	
 accusement	𐑩𐑒𐑿𐑟𐑥𐑩𐑯𐑑	əˈkjuːzmənt	NN1	RSSB	89	
-accustomedness	𐑩𐑒𐑳𐑕𐑑𐑩𐑥𐑛𐑯𐑦𐑕	əˈkʌstəmdnɪs	NN1	RGAM	89	
+accustomedness	𐑩𐑒𐑳𐑕𐑑𐑩𐑥𐑛𐑯𐑩𐑕	əˈkʌstəmdnəs	NN1	RGAM	89	
 ace inhibitor	𐑱𐑕 𐑦𐑯𐑣𐑦𐑚𐑦𐑑𐑼	ˈeɪs ɪnˌhɪbɪtəR	NN1	RGAM	89	
 acebutolol	𐑨𐑕𐑩𐑚𐑘𐑫𐑑𐑩𐑤𐑷𐑤	ˌæsəˈbjutəˌlɔːl	NN1	RGAM	89	
 acephalan	𐑱𐑕𐑧𐑓𐑩𐑤𐑩𐑯	eɪˈsefələn	NN1	RGAM	89	
@@ -2801,7 +2799,6 @@ almere	𐑨𐑤𐑥𐑦𐑮𐑩	ælˈmirə	NP0	RGAM	89
 almere	𐑨𐑤𐑥𐑺𐑼	ælmeərəR	NP0	RSSB	89	
 almere	𐑨𐑤𐑥𐑽𐑼	ælmɪərəR	NP0	RSSB	89	
 almightiness	𐑷𐑤𐑥𐑲𐑑𐑦𐑯𐑩𐑕	ɔːlˈmaɪtinəs	NN1	RSSB	89	
-almightiness	𐑷𐑤𐑥𐑲𐑑𐑦𐑯𐑦𐑕	ɔːlˈmaɪtinɪs	NN1	RGAM	89	
 almightiness	𐑷𐑤𐑥𐑲𐑑𐑦𐑯𐑧𐑕	ɔːlˈmaɪtines	NN1	RGAM	89	
 almirah	𐑨𐑤𐑥𐑲𐑮𐑩	almaɪrə	NN1	RSSB	89	
 almucantar	𐑨𐑤𐑥𐑩𐑒𐑨𐑯𐑑𐑼	ælməkæntəR	NN1	RSSB	89	
@@ -2930,7 +2927,7 @@ amateur hour	𐑨𐑥𐑼𐑑𐑼 𐑬𐑼	aməRtəR aʊər	NN1	RSSB	89
 amateur hour	𐑨𐑥𐑩𐑑𐑼 𐑬𐑼	ˈæmətəR ˈaʊəR	NN1	RGAM	89	
 amateurly	𐑨𐑥𐑩𐑗𐑼𐑤𐑦	æmətʃəRli	AV0	RGAM	89	
 amative	𐑨𐑥𐑩𐑑𐑦𐑝	ˈamətɪv	AJ0	RSSB	89	
-amativeness	𐑨𐑥𐑩𐑑𐑦𐑝𐑯𐑦𐑕	ˈamətɪvnɪs	NN1	RSSB	89	
+amativeness	𐑨𐑥𐑩𐑑𐑦𐑝𐑯𐑩𐑕	ˈamətɪvnəs	NN1	RSSB	89	
 amatol	𐑨𐑥𐑩𐑑𐑪𐑤	ˈæməˌtɒl	NN1	RSSB	89	
 amatol	-𐑑𐑷𐑤	-ˌtɔːl	NN1	RGAM	89	
 amatoxin	𐑨𐑥𐑩𐑑𐑪𐑒𐑕𐑦𐑯	ˌæməˈtɒksɪn	NN1	RSSB	89	
@@ -4617,7 +4614,7 @@ awara	𐑨𐑢𐑸𐑳	æwɑːrʌ	NN1	RSSB	89
 awara	𐑪𐑢𐑳𐑮𐑳	ɒwʌrʌ	NN1	RSSB	89	
 aweary	𐑩𐑢𐑽𐑦	əwɪəri	AJ0	RSSB	89	
 aweary	𐑩𐑢𐑦𐑮𐑦	əˈwiri	AJ0	RGAM	89	
-aweless	𐑷𐑤𐑦𐑕	ˈɔːlɪs	AJ0	RSSB	89	
+aweless	𐑷𐑤𐑩𐑕	ˈɔːləs	AJ0	RSSB	89	
 aweless	-𐑤𐑩𐑕	-ləs	AJ0	RSSB	89	
 awesomely	𐑷𐑕𐑩𐑥𐑤𐑦	ˈɔːsəmli	AV0	RSSB	89	
 awesomeness	𐑷𐑕𐑩𐑥𐑯𐑩𐑕	ˈɔːsəmnəs	NN1	RSSB	89	
@@ -6836,7 +6833,7 @@ cahoot	𐑒𐑩𐑣𐑵𐑑	kəˈhuːt	NN1	RSSB	89
 cahoot	𐑒𐑩𐑣𐑫𐑑	kəˈhut	NN1	RGAM	89	
 cairned	𐑒𐑧𐑻𐑯𐑑	keɜːRnt	AJ0	RSSB	89	
 cairned	𐑒𐑺𐑯𐑛	keərnd	AJ0	RSSB	89	
-caithness	𐑒𐑱𐑔𐑯𐑦𐑕	ˈkeɪθnɪs	NP0	RGAM	89	
+caithness	𐑒𐑱𐑔𐑯𐑩𐑕	ˈkeɪθnəs	NP0	RGAM	89	
 caithness	𐑒𐑱𐑔𐑯𐑧𐑕	keɪθˈnes	NP0	RGAM	89	
 cake shop	𐑒𐑱𐑒 𐑖𐑪𐑐	ˈkeɪk ʃɒp	NN1	RSSB	89	
 cakeshop	𐑒𐑱𐑒𐑖𐑪𐑐	ˈkeɪkʃɒp	NN1	RSSB	89	
@@ -8905,7 +8902,7 @@ conflagrate	𐑒𐑪𐑯𐑓𐑤𐑩𐑜𐑮𐑱𐑑	ˈkɒnfləɡreɪt	VVI	RGAM	
 conflate	𐑒𐑩𐑯𐑓𐑤𐑱𐑑	kənˈfleɪt	VVI	RSSB	89	
 conflate	𐑒𐑪𐑯𐑓𐑤𐑱𐑑	kɒnˈfleɪt	VVI	RSSB	89	
 conflictively	𐑒𐑪𐑯𐑓𐑤𐑦𐑒𐑑𐑦𐑝𐑤𐑦	kɒnˈflɪktɪvli	AV0	RSSB	89	
-conflictiveness	𐑒𐑪𐑯𐑓𐑤𐑦𐑒𐑑𐑦𐑝𐑯𐑦𐑕	kɒnˈflɪktɪvnɪs	NN1	RSSB	89	
+conflictiveness	𐑒𐑪𐑯𐑓𐑤𐑦𐑒𐑑𐑦𐑝𐑯𐑩𐑕	kɒnˈflɪktɪvnəs	NN1	RSSB	89	
 conflow	𐑒𐑩𐑯𐑓𐑤𐑴	kənˈfloʊ	VVI	RGAM	89	
 confocal	𐑒𐑩𐑯𐑓𐑴𐑒𐑩𐑤	kənˈfəʊkəl	AJ0	RSSB	89	
 conforaneous	𐑒𐑪𐑯𐑓𐑼𐑱𐑯𐑾𐑕	kɒnfəreɪnɪəs	AJ0	RSSB	89	
@@ -9038,8 +9035,8 @@ contemporality	𐑒𐑩𐑯𐑑𐑧𐑥𐑐𐑼𐑨𐑤𐑦𐑑𐑦	kəntempər�
 content management system	𐑒𐑪𐑯𐑑𐑧𐑯𐑑 𐑥𐑨𐑯𐑦𐑡𐑥𐑩𐑯𐑑 𐑕𐑦𐑕𐑑𐑩𐑥	ˈkɒntent ˈmænɪdʒmənt ˈsɪstəm	NN1	RSSB	89	
 contenter	𐑒𐑩𐑯𐑑𐑧𐑯𐑑𐑼	kənˈtentəR	AJ0	RGAM	89	
 contentful	𐑒𐑪𐑯𐑑𐑧𐑯𐑑𐑓𐑩𐑤	ˈkɒntentfəl	AJ0	RSSB	89	
-contentless	𐑒𐑪𐑯𐑑𐑧𐑯𐑑𐑤𐑦𐑕	ˈkɒntentlɪs	AJ0	RSSB	89	
-contentlessness	𐑒𐑪𐑯𐑑𐑧𐑯𐑑𐑤𐑦𐑕𐑯𐑦𐑕	ˈkɒntentlɪsnɪs	NN1	RSSB	89	
+contentless	𐑒𐑪𐑯𐑑𐑧𐑯𐑑𐑤𐑩𐑕	ˈkɒntentləs	AJ0	RSSB	89	
+contentlessness	𐑒𐑪𐑯𐑑𐑧𐑯𐑑𐑤𐑦𐑕𐑯𐑩𐑕	ˈkɒntentlɪsnəs	NN1	RSSB	89	
 conterminal	𐑒𐑩𐑯𐑑𐑻𐑥𐑦𐑯𐑩𐑤	kənˈtɜːRmɪnəl	AJ0	RGAM	89	
 contest shape	𐑒𐑪𐑯𐑑𐑧𐑕𐑑 𐑖𐑱𐑐	ˈkɒntest ˌʃeɪp	NN1	RSSB	89	
 contest shape	𐑒𐑭𐑯𐑑𐑧𐑕𐑑 𐑖𐑱𐑐	ˈkɑːntest ˌʃeɪp	NN1	RGAM	89	
@@ -9754,7 +9751,7 @@ curly cuh	𐑒𐑻𐑤𐑦 𐑒𐑩	kɜːRli kə	NN1	RSSB	89
 curmur	𐑒𐑼𐑥𐑻	kəRˈmɜːR	VVI	RGAM	89	
 curonian	𐑒𐑘𐑼𐑴𐑯𐑦𐑩𐑯	kjərəʊniən	AJ0	RSSB	89	
 curricular	𐑒𐑼𐑦𐑒𐑘𐑼𐑤𐑼	kərɪkjəRləR	AJ0	RSSB	89	
-cursedness	𐑒𐑻𐑕𐑦𐑛𐑯𐑦𐑕	ˈkɜːRsɪdnɪs	NN1	RGAM	89	
+cursedness	𐑒𐑻𐑕𐑦𐑛𐑯𐑩𐑕	kɜːRsɪdnəs	NN1	RSSB	89	
 cursednesses	𐑒𐑻𐑕𐑑𐑯𐑦𐑕𐑩𐑟	kɜːRstnɪsƏz	NN1	RSSB	89	
 curtilage	𐑒𐑻𐑑𐑦𐑤𐑦𐑡	kɜːRtɪlɪdʒ	NN1	RSSB	89	
 curtilage	𐑒𐑻𐑑𐑩𐑤𐑦𐑡	ˈkɜːRtəlɪdʒ	NN1	RGAM	89	
@@ -12158,7 +12155,6 @@ douyiner	𐑛𐑴𐑘𐑦𐑯𐑼	doʊˈjɪnəR	NN1	RGAM	89
 douzeper	𐑛𐑵𐑟𐑐𐑻	duːzpɜːR	NN1	RSSB	89	
 douzeper	𐑛𐑫𐑟𐑐𐑺	ˈduzˌpeər	NN1	RGAM	89	
 dovishness	𐑛𐑳𐑝𐑦𐑖𐑯𐑩𐑕	ˈdʌvɪʃnəs	NN1	RSSB	89	
-dovishness	𐑛𐑳𐑝𐑦𐑖𐑯𐑦𐑕	ˈdʌvɪʃnɪs	NN1	RGAM	89	
 dovishness	𐑛𐑳𐑝𐑦𐑖𐑯𐑧𐑕	ˈdʌvɪʃnes	NN1	RGAM	89	
 down but not out	𐑛𐑬𐑯 𐑚𐑩𐑑 𐑯𐑪𐑑 𐑬𐑑	ˈdaʊn bət nɒt ˈaʊt	AJ0	RSSB	89	
 down syndrome	𐑛𐑬𐑯 𐑕𐑦𐑯𐑛𐑮𐑴𐑥	daʊn sɪndrəʊm	NN1	RSSB	89	
@@ -16167,7 +16163,7 @@ guidon	𐑜𐑲𐑛𐑪𐑯	ˈɡaɪdɒn	NN1	RGAM	89
 guidonian	𐑜𐑢𐑦𐑛𐑴𐑯𐑦𐑩𐑯	ɡwɪˈdəʊniən	AJ0	RSSB	89	
 guidonian	𐑜𐑢𐑦-	ɡwɪˈ-	AJ0	RGAM	89	
 guilefully	𐑜𐑳𐑦𐑤𐑓𐑩𐑤𐑦	ˈɡʌɪlfəli	AV0	RSSB	89	
-guilelessness	𐑜𐑲𐑤𐑤𐑦𐑕𐑯𐑦𐑕	ˈɡaɪllɪsnɪs	NN1	RGAM	89	
+guilelessness	𐑜𐑲𐑤𐑤𐑦𐑕𐑯𐑩𐑕	ˈɡaɪllɪsnəs	NN1	RGAM	89	
 guinevere	𐑜𐑢𐑦𐑯𐑼𐑝𐑽	ɡwɪnəRvɪəR	NP0	RSSB	89	
 guinevere	𐑜𐑢𐑦𐑯𐑩𐑝𐑦𐑮	ˈɡwɪnəvɪr	NP0	RGAM	89	
 guirl	𐑜𐑻𐑤	ˈɡɜːRl	NP0	RGAM	89	
@@ -17774,7 +17770,7 @@ iliad	𐑦𐑤𐑦𐑨𐑛	ˈɪliˌæd	NP0	RGAM	89
 iliad	𐑦𐑤𐑦𐑩𐑛	ˈɪliəd	NP0	RGAM	89	
 iliopsoas	𐑦𐑤𐑦𐑴𐑕𐑴𐑩𐑕	ˌɪlioʊˈsoʊəs	NN1	RGAM	89	
 ilium	𐑦𐑤𐑾𐑥	ˈɪlɪəm	NN1	RSSB	89	
-ill-favouredness	𐑦𐑤𐑓𐑱𐑝𐑼𐑛𐑯𐑦𐑕	ɪlˈfeɪvəRdnɪs	NN1	RGAM	89	
+ill-favouredness	𐑦𐑤𐑓𐑱𐑝𐑼𐑛𐑯𐑩𐑕	ɪlfeɪvəRdnəs	NN1	RSSB	89	
 illapse	𐑦𐑤𐑨𐑐𐑕	ɪˈlæps	NN1	RSSB	89	
 illation	𐑦𐑤𐑱𐑖𐑩𐑯	ɪˈleɪʃən	NN1	RSSB	89	
 illation	𐑩𐑤𐑱𐑖𐑩𐑯	əˈleɪʃən	NN1	RGAM	89	
@@ -18255,7 +18251,7 @@ introitus vaginarum	𐑦𐑯𐑑𐑮𐑴𐑦𐑑𐑵𐑕 𐑝𐑩𐑡𐑲𐑯�
 introitus vaginæ	𐑦𐑯𐑑𐑮𐑴𐑦𐑑𐑩𐑕 𐑝𐑩𐑡𐑲𐑯𐑰	ɪntrəʊɪtəs vədʒaɪniː	NN1	RSSB	89	
 introitus vaginæ	𐑦𐑯𐑑𐑮𐑴𐑦𐑑𐑵𐑕 𐑝𐑩𐑡𐑲𐑯𐑰	ɪntrəʊɪtuːs vədʒaɪniː	NN1	RSSB	89	
 intron	𐑦𐑯𐑑𐑮𐑪𐑯	ɪntrɒn	NN1	RSSB	89	
-intuitionless	𐑦𐑯𐑑𐑿𐑦𐑖𐑩𐑯𐑤𐑦𐑕	ɪntjuːˈɪʃənlɪs	AJ0	RSSB	89	
+intuitionless	𐑦𐑯𐑑𐑿𐑦𐑖𐑩𐑯𐑤𐑩𐑕	ɪntjuːˈɪʃənləs	AJ0	RSSB	89	
 intuitivity	𐑦𐑯𐑗𐑫𐑦𐑑𐑦𐑝𐑦𐑑𐑦	ɪnˌtʃuɪˈtɪvɪti	NN1	RSSB	89	
 intuitivity	𐑦𐑯𐑑𐑘𐑫𐑦𐑑𐑦𐑝𐑦𐑑𐑦	ɪnˌtjuɪˈtɪvɪti	NN1	RSSB	89	
 intumesce	𐑦𐑯𐑑𐑘𐑩𐑥𐑧𐑕	ɪntjəˈmes	VVI	RSSB	89	
@@ -19693,8 +19689,8 @@ last chance saloon	𐑤𐑨𐑕𐑑-	ˈlæst-	NN1	RGAM	89
 last mile	𐑤𐑭𐑕𐑑 𐑥𐑲𐑤	ˌlɑːst ˈmaɪl	NN1	RSSB	89	
 last mile	𐑤𐑨𐑕𐑑-	ˌlæst-	NN1	RSSB	89	
 last mile	𐑤𐑨𐑕𐑑 𐑥𐑲𐑤	ˌlæst ˈmaɪl	NN1	RGAM	89	
-lastingness	𐑤𐑭𐑕𐑑𐑦𐑙𐑯𐑦𐑕	ˈlɑːstɪŋnɪs	NN1	RSSB	89	
-lastingness	𐑤𐑨𐑕𐑑𐑦𐑙𐑯𐑦𐑕	ˈlæstɪŋnɪs	NN1	RGAM	89	
+lastingness	𐑤𐑭𐑕𐑑𐑦𐑙𐑯𐑩𐑕	ˈlɑːstɪŋnəs	NN1	RSSB	89	
+lastingness	𐑤𐑨𐑕𐑑𐑦𐑙𐑯𐑩𐑕	ˈlæstɪŋnəs	NN1	RGAM	89	
 latah	𐑤𐑭𐑑𐑩	ˈlɑːtə	NN1	RSSB	89	
 latakia	𐑤𐑨𐑑𐑩𐑒𐑰𐑩	latəˈkiːə	NN1	RSSB	89	
 late night	𐑤𐑱𐑑 𐑯𐑲𐑑	ˌleɪt ˈnaɪt	NN1	RGAM	89	
@@ -19809,7 +19805,7 @@ leander	𐑤𐑰𐑨𐑯𐑛𐑼	liːˈændəR	NP0	RGAM	89
 leap year	𐑤𐑰𐑐 𐑘𐑽	liːp jɪəR	NN1	RSSB	89	
 leap year	𐑤𐑦𐑐 𐑘𐑽	ˈlip ˌjɪər	NN1	RGAM	89	
 learn the ropes	𐑤𐑻𐑯 𐑞𐑩 𐑮𐑴𐑐𐑕	lɜːRn ðə rəʊps	VVI	RSSB	89	
-learned helplessness	𐑤𐑻𐑯𐑛 𐑣𐑧𐑤𐑐𐑤𐑦𐑕𐑯𐑦𐑕	ˈlɜːRnd ˈhelplɪsnɪs	NN1	RGAM	89	
+learned helplessness	𐑤𐑻𐑯𐑛 𐑣𐑧𐑤𐑐𐑤𐑦𐑕𐑯𐑩𐑕	ˈlɜːRnd ˈhelplɪsnəs	NN1	RGAM	89	
 learnedism	𐑤𐑻𐑯𐑦𐑛𐑦𐑟𐑩𐑥	lɜːRnɪdɪzəm	NN1	RSSB	89	
 learnedism	𐑤𐑼𐑯𐑦𐑛𐑦𐑟𐑩𐑥	ˈləRnɪdɪzəm	NN1	RGAM	89	
 leaser	𐑤𐑰𐑕𐑼	liːsəR	NN1	RSSB	89	
@@ -20493,8 +20489,9 @@ lovely jubbly	𐑤𐑳𐑝𐑤𐑦 𐑡𐑳𐑚𐑤𐑦	ˌlʌvli ˈdʒʌbli	ITJ	
 lovely jubbly	-𐑤𐑦	-ˌli	ITJ	RSSB	89	
 lovely jubbly	𐑤𐑳𐑝𐑤𐑦 𐑡𐑳𐑚𐑩𐑤𐑦	ˌlʌvli ˈdʒʌbəli	ITJ	RGAM	89	
 loverboy	𐑤𐑳𐑝𐑼𐑚𐑶	ˈlʌvəRˌbɔɪ	NN1	RGAM	89	
+lovingkindness	𐑤𐑳𐑝𐑦𐑙𐑒𐑳𐑦𐑯𐑛𐑯𐑩𐑕	lʌvɪŋˈkʌɪndnəs	NN1	RSSB	89	
 lovingkindness	-𐑯𐑩𐑕	-nəs	NN1	RSSB	89	
-lovingkindness	𐑤𐑩𐑝𐑦𐑙𐑒𐑲𐑯𐑛𐑯𐑦𐑕	ˌləvɪŋˈkaɪndnɪs	NN1	RGAM	89	
+lovingkindness	𐑤𐑩𐑝𐑦𐑙𐑒𐑲𐑯𐑛𐑯𐑩𐑕	ˌləvɪŋˈkaɪndnəs	NN1	RGAM	89	
 low-key	𐑤𐑴𐑒𐑦	ˈləʊki	AJ0	RSSB	89	
 low-key	𐑤𐑴𐑒𐑰	ˌləʊˈkiː	AJ0	RSSB	89	
 lowboy	𐑤𐑴𐑚𐑶	ˈləʊbɔɪ	NN1	RSSB	89	
@@ -21317,8 +21314,7 @@ masshole	𐑥𐑨𐑕𐑣𐑴𐑤	ˈmæshoʊl	NN1	RGAM	89
 massic	𐑥𐑨𐑕𐑦𐑒	ˈmæsɪk	AJ0	RGAM	89	
 massivity	𐑥𐑨𐑕𐑦𐑝𐑦𐑑𐑦	maˈsɪvɪti	NN1	RSSB	89	
 massless	𐑥𐑨𐑕𐑤𐑩𐑕	ˈmæsləs	AJ0	RGAM	89	
-massless	𐑥𐑨𐑕𐑤𐑦𐑕	ˈmæslɪs	AJ0	RGAM	89	
-masslessness	𐑥𐑨𐑕𐑤𐑦𐑕𐑯𐑦𐑕	ˈmæslɪsnɪs	NN1	RGAM	89	
+masslessness	𐑥𐑨𐑕𐑤𐑦𐑕𐑯𐑩𐑕	ˈmæslɪsnəs	NN1	RGAM	89	
 masslessness	𐑥𐑨𐑕𐑤𐑩𐑕𐑯𐑩𐑕	ˈmæsləsnəs	NN1	RGAM	89	
 masterdom	𐑥𐑭𐑕𐑑𐑼𐑛𐑩𐑥	mɑːstəRdəm	NN1	RSSB	89	
 masterdom	𐑥𐑨𐑕𐑑𐑼𐑛𐑩𐑥	ˈmæstəRdəm	NN1	RGAM	89	
@@ -21470,7 +21466,7 @@ meadery	𐑥𐑰𐑛𐑼𐑦	miːdəri	NN1	RSSB	89
 meadowbank	𐑥𐑧𐑛𐑴𐑚𐑨𐑙𐑒	ˈmedəʊbaŋk	NP0	RSSB	89	
 meadowsweet	𐑥𐑧𐑛𐑴𐑕𐑢𐑰𐑑	ˈmedəʊswiːt	NN1	RSSB	89	
 meadowsweet	𐑥𐑧𐑛𐑴𐑕𐑢𐑦𐑑	ˈmedoʊˈswit	NN1	RGAM	89	
-meaninglessness	𐑥𐑦𐑯𐑦𐑙𐑤𐑦𐑕𐑯𐑦𐑕	ˈminɪŋlɪsnɪs	NN1	RGAM	89	
+meaninglessness	𐑥𐑦𐑯𐑦𐑙𐑤𐑦𐑕𐑯𐑩𐑕	ˈminɪŋlɪsnəs	NN1	RGAM	89	
 mear	𐑥𐑽	mɪəR	NN1	RSSB	89	
 mear	𐑥𐑦𐑮	mɪr	NN1	RGAM	89	
 measle	𐑥𐑰𐑟𐑩𐑤	ˈmiːzəl	NN1	RSSB	89	
@@ -22322,7 +22318,7 @@ monique	𐑥𐑴𐑯𐑦𐑒	moʊˈnik	NP0	RGAM	89
 monism	𐑥𐑪𐑯𐑦𐑟𐑩𐑥	ˈmɒnɪzəm	NN1	RSSB	89	
 monistic	𐑥𐑩𐑯𐑦𐑕𐑑𐑦𐑒	məˈnɪstɪk	AJ0	RSSB	89	
 monition	𐑥𐑩𐑯𐑦𐑖𐑩𐑯	məˈnɪʃən	NN1	RSSB	89	
-monkey business	𐑥𐑳𐑙𐑒𐑦 𐑚𐑦𐑟𐑯𐑦𐑕	ˈmʌŋkɪ ˌbɪznɪs	NN1	RSSB	89	
+monkey business	𐑥𐑳𐑙𐑒𐑦 𐑚𐑦𐑟𐑯𐑩𐑕	ˈmʌŋkɪ ˌbɪznəs	NN1	RSSB	89	
 monkey business	-𐑯𐑩𐑟	-nƏz	NN1	RSSB	89	
 monkey business	-𐑯𐑩𐑕	-nəs	NN1	RSSB	89	
 monkey business	𐑥𐑩𐑙-	ˈməŋ-	NN1	RGAM	89	
@@ -24398,7 +24394,7 @@ omniarch	𐑪𐑥𐑯𐑦𐑸𐑒	ɒmnɪˈɑːRk	NN1	RGAM	89
 omnicomprehensive	𐑪𐑥𐑯𐑦𐑒𐑪𐑥𐑐𐑮𐑦𐑣𐑧𐑯𐑕𐑦𐑝	ɒmnikɒmprɪhensɪv	AJ0	RSSB	89	
 omnicomprehensive	𐑪𐑥𐑯𐑦𐑒𐑪𐑥𐑐𐑮𐑩𐑣𐑧𐑯𐑕𐑦𐑝	ˌɒmniˌkɒmprəˈhensɪv	AJ0	RGAM	89	
 omnicomprehensiveness	𐑪𐑥𐑯𐑦𐑒𐑪𐑥𐑐𐑮𐑦𐑣𐑧𐑯𐑕𐑦𐑝𐑯𐑩𐑕	ɒmnikɒmprɪhensɪvnəs	NN1	RSSB	89	
-omnicomprehensiveness	𐑪𐑥𐑯𐑦𐑒𐑪𐑥𐑐𐑮𐑩𐑣𐑧𐑯𐑕𐑦𐑝𐑯𐑦𐑕	ˌɒmniˌkɒmprəˈhensɪvnɪs	NN1	RGAM	89	
+omnicomprehensiveness	𐑪𐑥𐑯𐑦𐑒𐑪𐑥𐑐𐑮𐑩𐑣𐑧𐑯𐑕𐑦𐑝𐑯𐑩𐑕	ˌɒmniˌkɒmprəˈhensɪvnəs	NN1	RGAM	89	
 omnifarious	𐑪𐑥𐑯𐑦𐑓𐑺𐑦𐑩𐑕	ɒmnɪfeəriəs	AJ0	RSSB	89	
 omnifarious	𐑪𐑥𐑯𐑦𐑓𐑧𐑮𐑦𐑩𐑕	ˌɒmnɪˈferiəs	AJ0	RGAM	89	
 omnific	𐑪𐑥𐑯𐑦𐑓𐑦𐑒	ɒmˈnɪfɪk	AJ0	RSSB	89	
@@ -25035,7 +25031,7 @@ outspend	𐑬𐑑𐑕𐑐𐑧𐑯𐑛	aʊtˈspend	VVI	RGAM	89
 outswagger	𐑬𐑑𐑕𐑢𐑨𐑜𐑼	aʊtˈswæɡəR	VVI	RGAM	89	
 outta	𐑬𐑑𐑩	ˈaʊtə	PRP	RSSB	89	
 outtake	𐑬𐑑𐑑𐑱𐑒	ˈaʊtˌteɪk	NN1	RGAM	89	
-outwardness	𐑬𐑑𐑢𐑼𐑛𐑯𐑦𐑕	ˈaʊtwəRdnɪs	NN1	RGAM	89	
+outwardness	𐑬𐑑𐑢𐑼𐑛𐑯𐑩𐑕	aʊtwəRdnəs	NN1	RSSB	89	
 outwith	𐑬𐑑𐑢𐑦𐑞	aʊtˈwɪð	PRP	RSSB	89	
 outwith	𐑬𐑑𐑢𐑦𐑔	aʊtˈwɪθ	PRP	RSSB	89	
 ouvert	𐑵𐑝𐑻	uːvɜːR	NN1	RSSB	89	
@@ -27696,7 +27692,7 @@ presentative	𐑐𐑮𐑦-	pri-	AJ0	RGAM	89
 presenteeism	𐑐𐑮𐑧𐑕𐑩𐑯𐑑𐑰𐑦𐑟𐑩𐑥	presəntiːɪzəm	NN1	RSSB	89	
 presenteeism	𐑐𐑮𐑧𐑕𐑩𐑯𐑑𐑦𐑦𐑟𐑩𐑥	ˌpresənˈtiˌɪzəm	NN1	RGAM	89	
 presidentialness	𐑐𐑮𐑧𐑟𐑦𐑛𐑧𐑯𐑖𐑩𐑤𐑯𐑩𐑕	prezɪdenʃəlnəs	NN1	RSSB	89	
-presidentialness	𐑐𐑮𐑧𐑟𐑦𐑛𐑧𐑯𐑗𐑩𐑤𐑯𐑦𐑕	ˌprezɪˈdentʃəlnɪs	NN1	RGAM	89	
+presidentialness	𐑐𐑮𐑧𐑟𐑦𐑛𐑧𐑯𐑗𐑩𐑤𐑯𐑩𐑕	ˌprezɪˈdentʃəlnəs	NN1	RGAM	89	
 presidial	𐑐𐑮𐑦𐑕𐑦𐑛𐑾𐑤	prɪsɪdɪəl	AJ0	RSSB	89	
 presolve	𐑐𐑮𐑰𐑕𐑪𐑤𐑝	priːsɒlv	VVI	RSSB	89	
 presolve	𐑐𐑮𐑦𐑕𐑪𐑤𐑝	priˈsɒlv	VVI	RGAM	89	
@@ -29334,7 +29330,6 @@ respirable	𐑮𐑧𐑕𐑐𐑼𐑼𐑚𐑩𐑤	respərəRbəl	AJ0	RSSB	89
 respirable	𐑮𐑧𐑕𐑐𐑼𐑩𐑚𐑩𐑤	ˈrespərəbəl	AJ0	RGAM	89	
 respondence	𐑮𐑦𐑕𐑐𐑪𐑯𐑛𐑩𐑯𐑕	rɪspɒndəns	NN1	RSSB	89	
 responseless	𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑤𐑩𐑕	rɪˈspɒnsləs	AJ0	RGAM	89	
-responseless	𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑤𐑦𐑕	rɪˈspɒnslɪs	AJ0	RGAM	89	
 responsion	𐑮𐑦𐑕𐑐𐑪𐑯𐑖𐑩𐑯	rɪspɒnʃən	NN1	RSSB	89	
 responsorial	𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑹𐑦𐑼𐑤	rɪspɒnsɔːriəRl	NN1	RSSB	89	
 responsorial	𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑹𐑦𐑩𐑤	ˌrɪspɒnˈsɔːriəl	NN1	RGAM	89	
@@ -31252,7 +31247,8 @@ short twentieth century	𐑖𐑪𐑮𐑑 𐑑𐑢𐑧𐑯𐑑𐑾𐑔 𐑕𐑧�
 short wave	𐑖𐑹𐑑 𐑢𐑱𐑝	ʃɔːRt weɪv	NN1	RSSB	89	
 short wave	𐑖𐑪𐑮𐑑 𐑢𐑱𐑝	ˈʃort ˌweɪv	NN1	RGAM	89	
 short-fetched	𐑖𐑹𐑑𐑓𐑧𐑗𐑑	ʃɔːRtfetʃt	AJ0	RSSB	89	
-short-livedness	𐑖𐑪𐑮𐑑𐑤𐑲𐑝𐑦𐑛𐑯𐑦𐑕	ˈʃortˈlaɪvɪdnɪs	NN1	RGAM	89	
+short-livedness	𐑖𐑹𐑑𐑤𐑲𐑝𐑦𐑛𐑯𐑩𐑕	ʃɔːRtlaɪvɪdnəs	NN1	RSSB	89	
+short-livedness	𐑖𐑪𐑮𐑑𐑤𐑲𐑝𐑦𐑛𐑯𐑩𐑕	ˈʃortˈlaɪvɪdnəs	NN1	RGAM	89	
 shortchange	𐑖𐑹𐑑𐑗𐑱𐑯𐑡	ʃɔːRtˈtʃeɪndʒ	VVI	RGAM	89	
 shortcomer	𐑖𐑪𐑮𐑑𐑒𐑩𐑥𐑼	ˈʃortkəməR	NN1	RGAM	89	
 shortener	𐑖𐑹𐑑𐑩𐑯𐑼	ˈʃɔːRtənəR	NN1	RGAM	89	
@@ -31289,7 +31285,7 @@ shulgin	𐑖𐑳𐑤𐑜𐑦𐑯	ˈʃʌlɡɪn	NP0	RGAM	89
 shulgoer	𐑖𐑵𐑤𐑜𐑴𐑼	ʃuːlɡəʊəR	NN1	RSSB	89	
 shulgoer	𐑖𐑫𐑤𐑜𐑴𐑼	ˈʃulˌɡoʊər	NN1	RGAM	89	
 shunless	𐑖𐑳𐑯𐑤𐑩𐑕	ˈʃʌnləs	AJ0	RSSB	89	
-shunless	-𐑤𐑦𐑕	-lɪs	AJ0	RSSB	89	
+shunless	-𐑤𐑩𐑕	-ləs	AJ0	RSSB	89	
 shup	𐑖𐑳𐑐	ʃʌp	ITJ	RSSB	89	
 shuriken	𐑖𐑻𐑦𐑒𐑩𐑯	ˈʃɜːRɪkən	NN1	RGAM	89	
 shut up	𐑖𐑳𐑑 𐑳𐑐	ʃʌt ʌp	VVI	RSSB	89	
@@ -32442,10 +32438,10 @@ steam locomotive	𐑕𐑑𐑰𐑥 𐑤𐑴𐑒𐑴𐑥𐑴𐑑𐑦𐑝	stiːm ˌ
 steam shovel	𐑕𐑑𐑰𐑥 𐑖𐑳𐑝𐑩𐑤	ˈstiːm ˌʃʌvəl	NN1	RSSB	89	
 steam shovel	𐑕𐑑𐑦𐑥 𐑖𐑳𐑝𐑩𐑤	ˈstim ˌʃʌvəl	NN1	RGAM	89	
 steamie	𐑕𐑑𐑰𐑥𐑦	ˈstiːmi	NN1	RSSB	89	
-steaminess	𐑕𐑑𐑰𐑥𐑦𐑯𐑦𐑕	ˈstiːminɪs	NN1	RSSB	89	
+steaminess	𐑕𐑑𐑰𐑥𐑦𐑯𐑩𐑕	ˈstiːminəs	NN1	RSSB	89	
 steaminess	𐑕𐑑𐑰𐑥𐑦-	ˈstiːmɪ-	NN1	RSSB	89	
 steaminess	-𐑯𐑩𐑕	-nəs	NN1	RSSB	89	
-steaminess	𐑕𐑑𐑦𐑥𐑦𐑯𐑦𐑕	ˈstiminɪs	NN1	RGAM	89	
+steaminess	𐑕𐑑𐑦𐑥𐑦𐑯𐑩𐑕	ˈstiminəs	NN1	RGAM	89	
 steans	𐑕𐑑𐑰𐑯𐑟	stiːnz	NN1	RSSB	89	
 steans	𐑕𐑑𐑦𐑯𐑟	stinz	NN1	RGAM	89	
 stearic	𐑕𐑑𐑦𐑼𐑦𐑒	stiərɪk	AJ0	RSSB	89	
@@ -33527,8 +33523,8 @@ tedisome	𐑑𐑦𐑛𐑦𐑕𐑩𐑥	ˈtidisəm	AJ0	RGAM	89
 teefies	𐑑𐑰𐑓𐑦𐑟	ˈtiːfiz	NN1	RSSB	89	
 teefies	𐑑𐑦𐑓𐑦𐑟	ˈtifiz	NN1	RGAM	89	
 teela	𐑑𐑦𐑤𐑩	ˈtilə	NP0	RGAM	89	
-teenageness	𐑑𐑰𐑯𐑱𐑡𐑯𐑦𐑕	ˈtiːneɪdʒnɪs	NN1	RSSB	89	
-teenageness	𐑑𐑦𐑯𐑱𐑡𐑯𐑦𐑕	ˈtineɪdʒnɪs	NN1	RGAM	89	
+teenageness	𐑑𐑰𐑯𐑱𐑡𐑯𐑩𐑕	ˈtiːneɪdʒnəs	NN1	RSSB	89	
+teenageness	𐑑𐑦𐑯𐑱𐑡𐑯𐑩𐑕	ˈtineɪdʒnəs	NN1	RGAM	89	
 teener	𐑑𐑰𐑯𐑼	tiːnəR	NN1	RSSB	89	
 teenpreneur	𐑑𐑰𐑯𐑐𐑮𐑩𐑯𐑻	tiːnprənɜːR	NN1	RSSB	89	
 teenpreneur	𐑑𐑦𐑯𐑐𐑮𐑩𐑯𐑻	ˌtinprəˈnɜːR	NN1	RGAM	89	
@@ -34161,7 +34157,7 @@ timbuktu	𐑑𐑦𐑥𐑚𐑳𐑒𐑑𐑵	tɪmbʌkˈtuː	NP0	RGAM	89
 time period	𐑑𐑲𐑥 𐑐𐑽𐑦𐑩𐑛	ˈtaɪm pɪəRiəd	NN1	RGAM	89	
 time-out	𐑑𐑲𐑥𐑬𐑑	ˈtaɪmaʊt	NN1	RSSB	89	
 timelessness	𐑑𐑲𐑥𐑤𐑩𐑕𐑯𐑩𐑕	ˈtaɪmləsnəs	NN1	RSSB	89	
-timelessness	𐑑𐑲𐑥𐑤𐑦𐑕𐑯𐑦𐑕	ˈtaɪmlɪsnɪs	NN1	RGAM	89	
+timelessness	𐑑𐑲𐑥𐑤𐑦𐑕𐑯𐑩𐑕	ˈtaɪmlɪsnəs	NN1	RGAM	89	
 timese	𐑑𐑲𐑥𐑰𐑟	taɪˈmiːz	NP0	RSSB	89	
 timolol	𐑑𐑦𐑥𐑩𐑤𐑪𐑤	ˈtɪməlɒl	NN1	RSSB	89	
 timolol	𐑑𐑲𐑥𐑩𐑤𐑷𐑤	ˈtaɪməˌlɔːl	NN1	RGAM	89	
@@ -36729,7 +36725,6 @@ wokel	𐑢𐑴𐑒𐑩𐑤	ˈwəʊkəl	NN1	RSSB	89
 wokel	𐑢𐑩𐑢𐑒𐑩𐑤	ˈwəwkəl	NN1	RSSB	89	
 wokeland	𐑢𐑴𐑒𐑤𐑩𐑯𐑛	ˈwoʊklənd	NP0	RGAM	89	
 wokeness	𐑢𐑴𐑒𐑯𐑩𐑕	ˈwəʊknəs	NN1	RSSB	89	
-wokeness	𐑢𐑴𐑒𐑯𐑦𐑕	ˈwoʊknɪs	NN1	RGAM	89	
 wokeness	𐑢𐑴𐑒𐑯𐑧𐑕	ˈwoʊknes	NN1	RGAM	89	
 wokepedia	𐑢𐑴𐑒𐑦𐑐𐑰𐑛𐑦𐑩	ˌwəʊkɪˈpiːdiə	NP0	RSSB	89	
 wokepedia	𐑢𐑴𐑒𐑐𐑰𐑛𐑦𐑩	ˌwəʊkˈpiːdiə	NP0	RSSB	89	
@@ -37706,6 +37701,7 @@ hurrian	𐑣𐑳𐑮𐑾𐑯	hʌrɪən	NN1	RSSB	95	r_gap:spelling=2,ipa=1; shave
 hypercorrection	𐑣𐑲𐑐𐑼𐑒𐑼𐑧𐑒𐑖𐑩𐑯	haɪpəRkərekʃən	NN1	RSSB	95	r_gap:spelling=3,ipa=2; shave_agrees
 irrecognizable	𐑦𐑮𐑧𐑒𐑩𐑜𐑯𐑲𐑟𐑩𐑚𐑩𐑤	ɪrekəɡnaɪzəbəl	AJ0	RSSB	95	r_gap:spelling=2,ipa=1; shave_agrees
 irredentism	𐑦𐑮𐑦𐑛𐑧𐑯𐑑𐑦𐑟𐑩𐑥	ɪrɪdentɪzəm	NN1	RSSB	95	r_gap:spelling=2,ipa=1; shave_agrees
+irregardless	𐑦𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕	ɪrɪɡɑːRdləs	AJ0	RSSB	95	r_gap:spelling=3,ipa=2; shave_agrees
 irrelative	𐑦𐑮𐑧𐑤𐑩𐑑𐑦𐑝	ɪrelətɪv	AJ0	RSSB	95	r_gap:spelling=2,ipa=1; shave_agrees
 irresolvable	𐑦𐑮𐑦𐑟𐑪𐑤𐑝𐑩𐑚𐑩𐑤	ɪrɪzɒlvəbəl	AJ0	RSSB	95	r_gap:spelling=2,ipa=1; shave_agrees
 irresponsibly	𐑦𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑩𐑚𐑤𐑦	ɪrɪspɒnsəbli	AV0	RSSB	95	r_gap:spelling=2,ipa=1; shave_agrees
@@ -37784,7 +37780,6 @@ euroafrican	𐑘𐑫𐑼𐑴𐑨𐑓𐑮𐑦𐑒𐑩𐑯	jəərəʊæfrɪkən	AJ
 eurysome	𐑘𐑫𐑼𐑦𐑕𐑩𐑥	jəərɪsəm	AJ0	RSSB	99	ml_disagrees:𐑘𐑫𐑼𐑦𐑕𐑩𐑥; overridden:was=𐑘𐑩𐑼𐑦𐑕𐑩𐑥; shave+ml_consensus
 fenian	𐑓𐑰𐑯𐑾𐑯	ˈfiːnjən	AJ0	RSSB	99	ml_disagrees:𐑓𐑰𐑯𐑾𐑯; overridden:was=𐑓𐑰𐑯𐑘𐑩𐑯; shave+ml_consensus
 greatest common divisor	𐑜𐑮𐑱𐑑𐑩𐑕𐑑 𐑒𐑪𐑥𐑩𐑯 𐑛𐑦𐑝𐑲𐑟𐑼	ɡreɪtɪst kɒmən dɪvaɪzəR	NN1	RSSB	99	ml_disagrees:𐑜𐑮𐑱𐑑𐑩𐑕𐑑 𐑒𐑪𐑥𐑩𐑯 𐑛𐑦𐑝𐑲𐑟𐑼; overridden:was=𐑜𐑮𐑱𐑑𐑦𐑕𐑑 𐑒𐑪𐑥𐑩𐑯 𐑛𐑦𐑝𐑲𐑟𐑼; shave+ml_consensus
-irregardless	𐑦𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕	ɪrɪɡɑːRdlɪs	AJ0	RSSB	99	ml_disagrees:𐑦𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕; r_gap:spelling=3,ipa=2; overridden:was=𐑦𐑮𐑦𐑜𐑸𐑛𐑤𐑦𐑕; shave+ml_consensus
 job market	𐑡𐑪𐑚 𐑥𐑸𐑒𐑩𐑑	dʒɒb mɑːRkɪt	NN1	RSSB	99	ml_disagrees:𐑡𐑪𐑚 𐑥𐑸𐑒𐑩𐑑; overridden:was=𐑡𐑪𐑚 𐑥𐑸𐑒𐑦𐑑; shave+ml_consensus
 manurial	𐑥𐑩𐑯𐑘𐑫𐑼𐑾𐑤	mənjəərɪəl	AJ0	RSSB	99	ml_disagrees:𐑥𐑩𐑯𐑘𐑫𐑼𐑾𐑤; overridden:was=𐑥𐑩𐑯𐑘𐑩𐑼𐑾𐑤; shave+ml_consensus
 memoried	𐑥𐑧𐑥𐑼𐑦𐑛	memərƏd	AJ0	RSSB	99	ml_disagrees:𐑥𐑧𐑥𐑼𐑦𐑛; overridden:was=𐑥𐑧𐑥𐑼𐑩𐑛; shave+ml_consensus
@@ -37801,7 +37796,6 @@ neurospicy	𐑯𐑘𐑫𐑼𐑴𐑕𐑐𐑲𐑕𐑦	njəərəʊspaɪsi	AJ0	RSSB	
 neurotomy	𐑯𐑘𐑫𐑼𐑪𐑑𐑩𐑥𐑦	njəərɒtəmi	NN1	RSSB	99	ml_disagrees:𐑯𐑘𐑫𐑼𐑪𐑑𐑩𐑥𐑦; overridden:was=𐑯𐑘𐑩𐑼𐑪𐑑𐑩𐑥𐑦; shave+ml_consensus
 neurotypical	𐑯𐑘𐑫𐑼𐑴𐑑𐑦𐑐𐑦𐑒𐑩𐑤	njəərəʊtɪpɪkəl	AJ0	RSSB	99	ml_disagrees:𐑯𐑘𐑫𐑼𐑴𐑑𐑦𐑐𐑦𐑒𐑩𐑤; overridden:was=𐑯𐑘𐑩𐑼𐑴𐑑𐑦𐑐𐑦𐑒𐑩𐑤; shave+ml_consensus
 outmarket	𐑬𐑑𐑥𐑸𐑒𐑩𐑑	aʊtmɑːRkɪt	VVI	RSSB	99	ml_disagrees:𐑬𐑑𐑥𐑸𐑒𐑩𐑑; overridden:was=𐑬𐑑𐑥𐑸𐑒𐑦𐑑; shave+ml_consensus
-outwardness	𐑬𐑑𐑢𐑼𐑛𐑯𐑩𐑕	aʊtwəRdnɪs	NN1	RSSB	99	ml_disagrees:𐑬𐑑𐑢𐑼𐑛𐑯𐑩𐑕; overridden:was=𐑬𐑑𐑢𐑼𐑛𐑯𐑦𐑕; shave+ml_consensus
 overcuriously	𐑴𐑝𐑼𐑒𐑘𐑫𐑼𐑾𐑕𐑤𐑦	əʊvəRkjəərɪəsli	AV0	RSSB	99	ml_disagrees:𐑴𐑝𐑼𐑒𐑘𐑫𐑼𐑾𐑕𐑤𐑦; overridden:was=𐑴𐑝𐑼𐑒𐑘𐑩𐑼𐑾𐑕𐑤𐑦; shave+ml_consensus
 overspecific	𐑴𐑝𐑼𐑕𐑐𐑩𐑕𐑦𐑓𐑦𐑒	əʊvəRspɪsɪfɪk	AJ0	RSSB	99	ml_disagrees:𐑴𐑝𐑼𐑕𐑐𐑩𐑕𐑦𐑓𐑦𐑒; overridden:was=𐑴𐑝𐑼𐑕𐑐𐑦𐑕𐑦𐑓𐑦𐑒; shave+ml_consensus
 panspecific	𐑐𐑨𐑯𐑕𐑐𐑩𐑕𐑦𐑓𐑦𐑒	ˌpanspɪˈsɪfɪk	AJ0	RSSB	99	ml_disagrees:𐑐𐑨𐑯𐑕𐑐𐑩𐑕𐑦𐑓𐑦𐑒; overridden:was=𐑐𐑨𐑯𐑕𐑐𐑦𐑕𐑦𐑓𐑦𐑒; shave+ml_consensus

@@ -34,7 +34,7 @@ theatres	𐑔𐑾𐑑𐑩𐑟	θɪətəz	RSSB	1	𐑔𐑾𐑑𐑼𐑟	ˈθɪətə
 tires	𐑑𐑲𐑩𐑟	taɪəz	RSSB	1	𐑑𐑲𐑼𐑟	ˈtaɪəRz	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑑𐑲𐑼𐑟
 tyres	𐑑𐑲𐑩𐑟	taɪəz	RSSB	1	𐑑𐑲𐑼𐑟	ˈtaɪəRz	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑑𐑲𐑼𐑟
 unsure	𐑳𐑯𐑖𐑷	ʌnʃɔː	RSSB	1	𐑳𐑯𐑖𐑫𐑼	ʌnˈʃʊəR	ml_disagrees:𐑳𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑳𐑯𐑖𐑫𐑼
-wireless	𐑢𐑲𐑩𐑤𐑦𐑕	waɪəlɪs	RSSB	1	𐑢𐑲𐑼𐑤𐑩𐑕	ˈwaɪəRləs	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑢𐑲𐑼𐑤𐑩𐑕
+wireless	𐑢𐑲𐑩𐑤𐑩𐑕	waɪələs	RSSB	1	𐑢𐑲𐑼𐑤𐑩𐑕	ˈwaɪəRləs	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑢𐑲𐑼𐑤𐑩𐑕
 wires	𐑢𐑲𐑩𐑟	waɪəz	RSSB	1	𐑢𐑲𐑼𐑟	ˈwaɪəRz	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑢𐑲𐑼𐑟
 february	𐑓𐑧𐑚𐑘𐑩𐑼𐑦	febjəəri	RSSB	3	𐑓𐑧𐑚𐑮𐑫𐑼𐑦	ˈfebruəri	ml_disagrees:𐑓𐑧𐑚𐑘𐑫𐑼𐑦; r_gap:spelling=2,ipa=1; shave_says:𐑓𐑧𐑚𐑮𐑵𐑺𐑦
 accessibility	𐑨𐑒𐑕𐑧𐑕𐑦𐑚𐑦𐑤𐑦𐑑𐑦	ˌæksesɪbˈɪlɪti	RSSB	5	𐑩𐑒𐑕𐑧𐑕𐑩𐑚𐑦𐑤𐑦𐑑𐑦	əkˌsesəˈbɪlɪti	ml_disagrees:𐑨𐑒𐑕𐑧𐑕𐑩𐑚𐑦𐑤𐑦𐑑𐑦; shave_says:𐑩𐑒𐑕𐑧𐑕𐑩𐑚𐑦𐑤𐑦𐑑𐑦
@@ -45,7 +45,6 @@ annually	𐑨𐑯𐑘𐑩𐑩𐑤𐑦	ˈænjəəli	RSSB	5	𐑨𐑯𐑘𐑫𐑩�
 approximate	𐑩𐑐𐑮𐑪𐑒𐑕𐑦𐑥𐑦𐑑	əprɒksɪmɪt	RSSB	5	𐑩𐑐𐑮𐑪𐑒𐑕𐑦𐑥𐑩𐑑, 𐑩𐑐𐑮𐑪𐑒𐑕𐑦𐑥𐑱𐑑	əˈprɒksɪmət	ml_disagrees:𐑩𐑐𐑮𐑪𐑒𐑕𐑦𐑥𐑩𐑑; shave_says:[𐑩𐑐𐑮𐑪𐑒𐑕𐑦𐑥𐑩𐑑 / 𐑩𐑐𐑮𐑪𐑒𐑕𐑦𐑥𐑱𐑑]
 associate	𐑩𐑕𐑴𐑕𐑦𐑱𐑑	əsˈəʊsɪˌeɪt	RSSB	5	𐑩𐑕𐑴𐑖𐑦𐑱𐑑, 𐑩𐑕𐑴𐑖𐑾𐑑	əˈsəʊʃɪət	ml_disagrees:𐑩𐑕𐑴𐑖𐑦𐑱𐑑; shave_says:[𐑩𐑕𐑴𐑖𐑾𐑑 / 𐑩𐑕𐑴𐑖𐑦𐑱𐑑]
 associates	𐑩𐑕𐑴𐑕𐑦𐑱𐑑𐑕	əsˈəʊsɪˌeɪts	RSSB	5	𐑩𐑕𐑴𐑖𐑦𐑱𐑑𐑕, 𐑩𐑕𐑴𐑖𐑾𐑑𐑕	əˈsəʊʃɪəts	ml_disagrees:𐑩𐑕𐑴𐑖𐑦𐑱𐑑𐑕; shave_says:𐑩𐑕𐑴𐑖𐑾𐑑𐑕
-awareness	𐑼𐑢𐑺𐑯𐑦𐑕	əRweəRnɪs	RSSB	5	𐑩𐑢𐑺𐑯𐑩𐑕	əˈweəRnəs	ml_disagrees:𐑼𐑢𐑺𐑯𐑩𐑕; shave_says:𐑩𐑢𐑺𐑯𐑩𐑕
 bisexual	𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑼𐑤	baɪsˈekʃʊəl	RSSB	5	𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑩𐑤	ˌbaɪˈsekʃuəl	ml_disagrees:𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑩𐑤; shave_says:𐑚𐑲𐑕𐑧𐑒𐑖𐑵𐑩𐑤
 bureaux	𐑚𐑘𐑩𐑼𐑴𐑟	bjəərəʊz	RSSB	5	𐑚𐑘𐑫𐑼𐑴𐑟	ˈbjʊərəʊz	ml_disagrees:𐑚𐑘𐑫𐑼𐑴𐑟; shave_says:𐑚𐑘𐑫𐑼𐑴
 businessman	𐑚𐑦𐑟𐑯𐑦𐑕𐑥𐑩𐑯	bˈɪznɪsmən	RSSB	5	𐑚𐑦𐑟𐑯𐑩𐑕𐑥𐑩𐑯	ˈbɪznəsmən	ml_disagrees:𐑚𐑦𐑟𐑯𐑦𐑕𐑥𐑧𐑯; shave_says:𐑚𐑦𐑟𐑯𐑩𐑕𐑥𐑩𐑯
@@ -309,6 +308,7 @@ award	𐑼𐑢𐑹𐑛	əRwɔːRd	RSSB	89	𐑩𐑢𐑹𐑛	əˈwɔːRd
 awarded	𐑼𐑢𐑹𐑛𐑩𐑛	əRwɔːRdƏd	RSSB	89	𐑩𐑢𐑹𐑛𐑩𐑛	əˈwɔːRdƏd	
 awards	𐑼𐑢𐑹𐑛𐑟	əRwɔːRdz	RSSB	89	𐑩𐑢𐑹𐑛𐑟	əˈwɔːRdz	
 aware	𐑼𐑢𐑺	əRweəR	RSSB	89	𐑩𐑢𐑺	əˈweəR	
+awareness	𐑼𐑢𐑺𐑯𐑩𐑕	əRweəRnəs	RSSB	89	𐑩𐑢𐑺𐑯𐑩𐑕	əˈweəRnəs	
 awfully	𐑷𐑓𐑤𐑦	ˈɔːfli	RSSB	89	𐑷𐑓𐑩𐑤𐑦	ˈɔːfəli	
 awkward	𐑹𐑒𐑢𐑼𐑛	ɔːRkwəRd	RSSB	89	𐑷𐑒𐑢𐑼𐑛	ˈɔːkwəRd	
 bachelor	𐑚𐑨𐑗𐑼𐑤𐑼	bætʃəRləR	RSSB	89	𐑚𐑨𐑗𐑩𐑤𐑼	ˈbætʃələR	
@@ -373,7 +373,6 @@ buffet	𐑚𐑳𐑓𐑱	bˈʌfeɪ	RSSB	89	𐑚𐑫𐑓𐑱, 𐑚𐑳𐑓𐑩𐑑
 bullet	𐑚𐑫𐑤𐑦𐑑	bˈʊlɪt	RSSB	89	𐑚𐑫𐑤𐑩𐑑	ˈbʊlIt	
 bulletin	𐑚𐑫𐑤𐑦𐑑𐑦𐑯	bˈʊlɪtɪn	RSSB	89	𐑚𐑫𐑤𐑩𐑑𐑦𐑯	ˈbʊlətɪn	
 bullets	𐑚𐑫𐑤𐑦𐑑𐑕	bˈʊlɪts	RSSB	89	𐑚𐑫𐑤𐑩𐑑𐑕	ˈbʊlIts	
-business	𐑚𐑦𐑟𐑯𐑦𐑕	bˈɪznɪs	RSSB	89	𐑚𐑦𐑟𐑯𐑩𐑕	ˈbɪznəs	
 businesses	𐑚𐑦𐑟𐑯𐑦𐑕𐑩𐑟	bˈɪznɪsƏz	RSSB	89	𐑚𐑦𐑟𐑯𐑩𐑕𐑩𐑟	ˈbɪznəsƏz	
 businessman	𐑚𐑦𐑟𐑯𐑦𐑕𐑥𐑨𐑯	bˈɪznɪsmˌæn	RSSB	89	𐑚𐑦𐑟𐑯𐑩𐑕𐑥𐑩𐑯	ˈbɪznəsmən	
 bye-bye	𐑚𐑲𐑚𐑲	bˈaɪbˌaɪ	RSSB	89	𐑚𐑲-𐑚𐑲	ˌbaɪ-ˈbaɪ	
@@ -507,7 +506,6 @@ configuring	𐑒𐑩𐑯𐑓𐑦𐑜𐑮𐑦𐑙	kənfɪɡrɪŋ	RSSB	89	𐑒𐑩
 confine	𐑒𐑪𐑯𐑓𐑲𐑯	kˈɒnfaɪn	RSSB	89	𐑒𐑩𐑯𐑓𐑲𐑯	kənˈfaɪn	
 confrontation	𐑒𐑪𐑯𐑓𐑮𐑳𐑯𐑑𐑱𐑖𐑩𐑯	kɒnfrʌnteɪʃən	RSSB	89	𐑒𐑪𐑯𐑓𐑮𐑩𐑯𐑑𐑱𐑖𐑩𐑯	ˌkɒnfrənˈteɪʃən	
 connoisseur	𐑒𐑪𐑯𐑦𐑕𐑻	kɒnɪsɜːR	RSSB	89	𐑒𐑪𐑯𐑩𐑕𐑻	ˌkɒnəˈsɜːR	
-consciousness	𐑒𐑪𐑯𐑖𐑩𐑕𐑯𐑦𐑕	kˈɒnʃəsnɪs	RSSB	89	𐑒𐑪𐑯𐑖𐑩𐑕𐑯𐑩𐑕	ˈkɒnʃəsnəs	
 conservative	𐑒𐑼𐑯𐑕𐑻𐑝𐑩𐑑𐑦𐑝	kəRnsɜːRvətɪv	RSSB	89	𐑒𐑩𐑯𐑕𐑻𐑝𐑩𐑑𐑦𐑝	kənˈsɜːRvətɪv	
 conservatives	𐑒𐑼𐑯𐑕𐑻𐑝𐑩𐑑𐑦𐑝𐑟	kəRnsɜːRvətɪvz	RSSB	89	𐑒𐑩𐑯𐑕𐑻𐑝𐑩𐑑𐑦𐑝𐑟	kənˈsɜːRvətɪvz	
 conservatory	𐑒𐑩𐑯𐑕𐑻𐑝𐑼𐑑𐑼𐑦	kənsɜːRvəRtəri	RSSB	89	𐑒𐑩𐑯𐑕𐑻𐑝𐑩𐑑𐑼𐑦	kənˈsɜːRvətəri	
@@ -662,7 +660,6 @@ dorothy	𐑛𐑪𐑮𐑼𐑔𐑦	dɒrəRθi	RSSB	89	𐑛𐑪𐑮𐑩𐑔𐑦	ˈd
 dorset	𐑛𐑹𐑕𐑦𐑑	dɔːRsɪt	RSSB	89	𐑛𐑹𐑕𐑩𐑑	ˈdɔːRsət	
 dos	𐑛𐑪𐑕	dˈɒs	RSSB	89	𐑛𐑵𐑟	duːz	
 doth	𐑛𐑵𐑔	dˈuːθ	RSSB	89	𐑛𐑳𐑔	dʌθ	
-doubtless	𐑛𐑬𐑑𐑤𐑦𐑕	dˈaʊtlɪs	RSSB	89	𐑛𐑬𐑑𐑤𐑩𐑕	ˈdaʊtləs	
 dour	𐑛𐑬𐑼	daʊəR	RSSB	89	𐑛𐑫𐑼	dʊəR	
 dowry	𐑛𐑬𐑮𐑦	daʊri	RSSB	89	𐑛𐑬𐑼𐑦	ˈdaʊəri	
 dramatically	𐑛𐑮𐑩𐑥𐑨𐑑𐑦𐑒𐑩𐑤𐑦	drəmætɪkəli	RSSB	89	𐑛𐑮𐑩𐑥𐑨𐑑𐑦𐑒𐑤𐑦	drəˈmætɪkli	
@@ -683,7 +680,6 @@ economics	𐑧𐑒𐑩𐑯𐑪𐑥𐑦𐑒𐑕	ˌekənˈɒmɪks	RSSB	89	𐑰𐑒
 ecstatic	𐑧𐑒𐑕𐑑𐑨𐑑𐑦𐑒	ekstˈætɪk	RSSB	89	𐑦𐑒𐑕𐑑𐑨𐑑𐑦𐑒	ɪkˈstætɪk	
 ecuador	𐑧𐑒𐑢𐑼𐑛𐑹	ekwəRdɔːR	RSSB	89	𐑧𐑒𐑢𐑩𐑛𐑹	ˈekwədɔːR	
 edinburgh	𐑧𐑛𐑦𐑯𐑚𐑮𐑩	edɪnbrə	RSSB	89	𐑧𐑛𐑦𐑯𐑚𐑼𐑩	ˈedɪnbərə	
-effectiveness	𐑦𐑓𐑧𐑒𐑑𐑦𐑝𐑯𐑦𐑕	ɪfˈektɪvnɪs	RSSB	89	𐑦𐑓𐑧𐑒𐑑𐑦𐑝𐑯𐑩𐑕	ɪˈfektɪvnəs	
 either	𐑰𐑞𐑼	iːðəR	RSSB	89	𐑲𐑞𐑼	ˈaɪðəR	
 elaine	𐑩𐑤𐑱𐑯	əlˈeɪn	RSSB	89	𐑦𐑤𐑱𐑯	ɪˈleɪn	
 elasticity	𐑰𐑤𐑨𐑕𐑑𐑦𐑕𐑦𐑑𐑦	ˌiːlæstˈɪsɪti	RSSB	89	𐑦𐑤𐑨𐑕𐑑𐑦𐑕𐑦𐑑𐑦	ˌɪlæˈstɪsɪti	
@@ -794,7 +790,6 @@ finest	𐑓𐑲𐑯𐑦𐑕𐑑	fˈaɪnɪst	RSSB	89	𐑓𐑲𐑯𐑩𐑕𐑑	ˈf
 fiona	𐑓𐑰𐑴𐑯𐑩	fiːˈəʊnə	RSSB	89	𐑓𐑦𐑴𐑯𐑩	fɪˈəʊnə	
 fisherman	𐑓𐑦𐑖𐑼𐑥𐑼𐑯	fɪʃəRməRn	RSSB	89	𐑓𐑦𐑖𐑼𐑥𐑩𐑯	ˈfɪʃəRmən	
 fishermen	𐑓𐑦𐑖𐑼𐑥𐑼𐑯	fɪʃəRməRn	RSSB	89	𐑓𐑦𐑖𐑼𐑥𐑧𐑯	ˈfɪʃəRmen	
-fitness	𐑓𐑦𐑑𐑯𐑦𐑕	fˈɪtnɪs	RSSB	89	𐑓𐑦𐑑𐑯𐑩𐑕	ˈfɪtnəs	
 flexibility	𐑓𐑤𐑧𐑒𐑕𐑦𐑚𐑦𐑤𐑦𐑑𐑦	flˌeksɪbˈɪlɪti	RSSB	89	𐑓𐑤𐑧𐑒𐑕𐑩𐑚𐑦𐑤𐑦𐑑𐑦	ˌfleksəˈbɪlɪti	
 floral	𐑓𐑤𐑹𐑼𐑤	flɔːrəRl	RSSB	89	𐑓𐑤𐑹𐑩𐑤	ˈflɔːrəl	
 florence	𐑓𐑤𐑪𐑮𐑼𐑯𐑕	flɒrəRns	RSSB	89	𐑓𐑤𐑪𐑮𐑩𐑯𐑕	ˈflɒrəns	
@@ -805,7 +800,6 @@ forbid	𐑓𐑼𐑚𐑩𐑛	fəRbƏd	RSSB	89	𐑓𐑼𐑚𐑦𐑛	fəRˈbɪd
 forecast	𐑓𐑹𐑒𐑸𐑕𐑑	fɔːRkɑːRst	RSSB	89	𐑓𐑹𐑒𐑨𐑕𐑑, 𐑓𐑹𐑒𐑭𐑕𐑑	ˈfɔːRkⱭːst	
 forecasts	𐑓𐑹𐑒𐑸𐑕𐑑𐑕	fɔːRkɑːRsts	RSSB	89	𐑓𐑹𐑒𐑨𐑕𐑑𐑕, 𐑓𐑹𐑒𐑭𐑕𐑑𐑕	ˈfɔːRkⱭːsts	
 forestry	𐑓𐑪𐑮𐑦𐑕𐑑𐑮𐑦	fɒrɪstri	RSSB	89	𐑓𐑪𐑮𐑩𐑕𐑑𐑮𐑦	ˈfɒrəstri	
-forgiveness	𐑓𐑼𐑜𐑦𐑝𐑯𐑦𐑕	fəRɡɪvnɪs	RSSB	89	𐑓𐑼𐑜𐑦𐑝𐑯𐑩𐑕	fəRˈɡɪvnəs	
 formulae	𐑓𐑹𐑥𐑘𐑩𐑤𐑦	fɔːRmjəli	RSSB	89	𐑓𐑹𐑥𐑘𐑩𐑤𐑰	ˈfɔːRmjəliː	
 forte	𐑓𐑹𐑑	fɔːRt	RSSB	89	𐑓𐑹𐑑𐑱	ˈfɔːRteɪ	
 fortunately	𐑓𐑹𐑗𐑩𐑯𐑦𐑑𐑤𐑦	fɔːRtʃənɪtli	RSSB	89	𐑓𐑹𐑗𐑩𐑯𐑩𐑑𐑤𐑦	ˈfɔːRtʃənətli	
@@ -932,7 +926,6 @@ historically	𐑣𐑦𐑕𐑑𐑪𐑮𐑦𐑒𐑩𐑤𐑦	hɪstɒrɪkəli	RSSB	8
 histories	𐑣𐑦𐑕𐑑𐑮𐑦𐑟	hɪstriz	RSSB	89	𐑣𐑦𐑕𐑑𐑼𐑦𐑟	ˈhɪstəriz	
 history	𐑣𐑦𐑕𐑑𐑮𐑦	hɪstri	RSSB	89	𐑣𐑦𐑕𐑑𐑼𐑦	ˈhɪstəri	
 hm	𐑣𐑥	hm	RSSB	89	𐑱𐑗𐑧𐑥	ˌeɪˈtʃem	
-homeless	𐑣𐑴𐑥𐑤𐑦𐑕	hˈəʊmlɪs	RSSB	89	𐑣𐑴𐑥𐑤𐑩𐑕	ˈhəʊmləs	
 homogeneity	𐑣𐑴𐑥𐑩𐑡𐑦𐑯𐑰𐑦𐑑𐑦	hˌəʊmədʒɪnˈiːɪti	RSSB	89	𐑣𐑴𐑥𐑴𐑡𐑩𐑯𐑱𐑦𐑑𐑦	ˌhəʊməʊdʒəˈneɪɪti	
 homogeneity	𐑣𐑪𐑥𐑩𐑡𐑦𐑯𐑰𐑦𐑑𐑦	hˌɒmədʒɪnˈiːɪti	RSSB	89	𐑣𐑴𐑥𐑴𐑡𐑩𐑯𐑱𐑦𐑑𐑦	ˌhəʊməʊdʒəˈneɪɪti	
 homogeneity	𐑣𐑪𐑥𐑩𐑡𐑦𐑯𐑱𐑦𐑑𐑦	hˌɒmədʒɪnˈeɪɪti	RSSB	89	𐑣𐑴𐑥𐑴𐑡𐑩𐑯𐑱𐑦𐑑𐑦	ˌhəʊməʊdʒəˈneɪɪti	
@@ -949,7 +942,6 @@ ian	𐑰𐑩𐑯	ˈiːən	RSSB	89	𐑾𐑯	ˈɪən
 ice-cream	𐑲𐑕𐑒𐑮𐑰𐑥	aɪskriːm	RSSB	89	𐑲𐑕-𐑒𐑮𐑰𐑥	aɪs-ˈkriːm	
 ignorance	𐑦𐑜𐑯𐑼𐑼𐑯𐑕	ɪɡnərəRns	RSSB	89	𐑦𐑜𐑯𐑼𐑩𐑯𐑕	ˈɪɡnərəns	
 ignorant	𐑦𐑜𐑯𐑼𐑼𐑯𐑑	ɪɡnərəRnt	RSSB	89	𐑦𐑜𐑯𐑼𐑩𐑯𐑑	ˈɪɡnərənt	
-illness	𐑦𐑤𐑯𐑦𐑕	ˈɪlnɪs	RSSB	89	𐑦𐑤𐑯𐑩𐑕	ˈɪlnəs	
 imagery	𐑦𐑥𐑦𐑡𐑮𐑦	ɪmɪdʒri	RSSB	89	𐑦𐑥𐑦𐑡𐑼𐑦	ˈɪmɪdʒəri	
 immunology	𐑦𐑥𐑿𐑯𐑪𐑤𐑩𐑡𐑦	ˌɪmjuːnˈɒlədʒi	RSSB	89	𐑦𐑥𐑘𐑩𐑯𐑪𐑤𐑩𐑡𐑦	ˌɪmjəˈnɒlədʒi	
 impasse	𐑨𐑥𐑐𐑭𐑕	æmpˈɑːs	RSSB	89	𐑦𐑥𐑐𐑨𐑕	ˈɪmpæs	
@@ -1336,7 +1328,6 @@ poems	𐑐𐑴𐑦𐑥𐑟	pˈəʊɪmz	RSSB	89	𐑐𐑴𐑩𐑥𐑟	ˈpəʊəmz
 poet	𐑐𐑴𐑦𐑑	pˈəʊɪt	RSSB	89	𐑐𐑴𐑩𐑑	ˈpəʊət	
 poetry	𐑐𐑴𐑦𐑑𐑮𐑦	pəʊɪtri	RSSB	89	𐑐𐑴𐑩𐑑𐑮𐑦	ˈpəʊətri	
 poets	𐑐𐑴𐑦𐑑𐑕	pˈəʊɪts	RSSB	89	𐑐𐑴𐑩𐑑𐑕	ˈpəʊəts	
-pointless	𐑐𐑶𐑯𐑑𐑤𐑦𐑕	pˈɔɪntlɪs	RSSB	89	𐑐𐑶𐑯𐑑𐑤𐑩𐑕	ˈpɔɪntləs	
 policies	𐑐𐑪𐑤𐑦𐑕𐑦𐑟	pˈɒlɪsiz	RSSB	89	𐑐𐑪𐑤𐑩𐑕𐑦𐑟	ˈpɒləsiz	
 policy	𐑐𐑪𐑤𐑦𐑕𐑦	pˈɒlɪsi	RSSB	89	𐑐𐑪𐑤𐑩𐑕𐑦	ˈpɒləsi	
 polio	𐑐𐑴𐑤𐑾𐑫	pˈəʊlɪəʊ	RSSB	89	𐑐𐑴𐑤𐑦𐑴	ˈpəʊliəʊ	
@@ -1579,7 +1570,6 @@ squirrel	𐑕𐑒𐑢𐑦𐑮𐑼𐑤	skwɪrəRl	RSSB	89	𐑕𐑒𐑢𐑦𐑮�
 sri lanka	𐑕𐑮𐑰𐑤𐑨𐑙𐑒𐑩	sriːlæŋkə	RSSB	89	𐑕𐑮𐑦 𐑤𐑨𐑙𐑒𐑩	ˌsrɪ ˈlæŋkə	
 stabilise	𐑕𐑑𐑱𐑚𐑦𐑤𐑲𐑟	stˈeɪbɪlˌaɪz	RSSB	89	𐑕𐑑𐑱𐑚𐑩𐑤𐑲𐑟	ˈsteɪbəlaɪz	
 stabilize	𐑕𐑑𐑱𐑚𐑦𐑤𐑲𐑟	stˈeɪbɪlˌaɪz	RSSB	89	𐑕𐑑𐑱𐑚𐑩𐑤𐑲𐑟	ˈsteɪbəlaɪz	
-stainless	𐑕𐑑𐑱𐑯𐑤𐑦𐑕	stˈeɪnlɪs	RSSB	89	𐑕𐑑𐑱𐑯𐑤𐑩𐑕	ˈsteɪnləs	
 stationery	𐑕𐑑𐑱𐑖𐑼𐑯𐑼𐑦	steɪʃəRnəri	RSSB	89	𐑕𐑑𐑱𐑖𐑩𐑯𐑼𐑦	ˈsteɪʃənəri	
 statue	𐑕𐑑𐑨𐑑𐑿	stˈætjuː	RSSB	89	𐑕𐑑𐑨𐑗𐑵	ˈstætʃuː	
 statutory	𐑕𐑑𐑨𐑗𐑫𐑑𐑼𐑦	stætʃʊtəri	RSSB	89	𐑕𐑑𐑨𐑗𐑩𐑑𐑼𐑦	ˈstætʃətəri	
@@ -1730,7 +1720,6 @@ until	𐑳𐑯𐑑𐑦𐑤	ʌntˈɪl	RSSB	89	𐑩𐑯𐑑𐑦𐑤	ənˈtɪl
 uranium	𐑘𐑼𐑱𐑯𐑾𐑥	jəreɪnɪəm	RSSB	89	𐑘𐑫𐑼𐑱𐑯𐑾𐑥	jʊəˈreɪnɪəm	
 uranus	𐑘𐑼𐑱𐑯𐑩𐑕	jəreɪnəs	RSSB	89	𐑘𐑫𐑼𐑩𐑯𐑩𐑕	jʊəˈrenəs	
 uranus	𐑘𐑼𐑼𐑯𐑩𐑕	jərəRnəs	RSSB	89	𐑘𐑫𐑼𐑩𐑯𐑩𐑕	jʊəˈrenəs	
-useless	𐑿𐑕𐑤𐑦𐑕	jˈuːslɪs	RSSB	89	𐑿𐑕𐑤𐑩𐑕	ˈjuːsləs	
 usurp	𐑿𐑕𐑻𐑐	juːsɜːRp	RSSB	89	𐑿𐑟𐑻𐑐	juːˈzɜːRp	
 utah	𐑿𐑑𐑷	jˈuːtˌɔː	RSSB	89	𐑿𐑑𐑭	ˈjuːtɑː	
 uterus	𐑿𐑑𐑼𐑼𐑕	juːtərəRs	RSSB	89	𐑿𐑑𐑼𐑩𐑕	ˈjuːtərəs	
@@ -1792,7 +1781,6 @@ weaknesses	𐑢𐑰𐑒𐑯𐑦𐑕𐑩𐑟	wˈiːknɪsƏz	RSSB	89	𐑢𐑰𐑒�
 wednesday	𐑢𐑧𐑯𐑟𐑛𐑦	wˈenzdi	RSSB	89	𐑢𐑧𐑯𐑟𐑛𐑱	ˈwenzdeɪ	
 wednesdays	𐑢𐑧𐑯𐑟𐑛𐑦𐑟	wˈenzdiz	RSSB	89	𐑢𐑧𐑯𐑟𐑛𐑱𐑟	ˈwenzdeɪz	
 well-known	𐑢𐑧𐑤𐑯𐑴𐑯	wˌelnˈəʊn	RSSB	89	𐑢𐑧𐑤-𐑯𐑴𐑯	ˈwel-nəʊn	
-wellness	𐑢𐑧𐑤𐑯𐑦𐑕	wˈelnɪs	RSSB	89	𐑢𐑧𐑤𐑯𐑩𐑕	ˈwelnəs	
 whereabouts	𐑢𐑺𐑼𐑚𐑬𐑑𐑕	weərəRbaʊts	RSSB	89	𐑢𐑺𐑩𐑚𐑬𐑑𐑕	ˈʍeərəbaʊts	
 wholly	𐑣𐑴𐑤𐑦	hˈəʊli	RSSB	89	𐑣𐑴𐑤𐑤𐑦	ˈhəʊl+li	
 whoop	𐑢𐑵𐑐	wˈuːp	RSSB	89	𐑣𐑵𐑐	huːp	
@@ -1803,20 +1791,17 @@ wildebeest	𐑢𐑦𐑤𐑛𐑩𐑚𐑰𐑕𐑑	wˈɪldəbiːst	RSSB	89	𐑢𐑦
 will	𐑢𐑩𐑤	wəl	RSSB	89	𐑢𐑦𐑤	wɪl	
 william	𐑢𐑦𐑤𐑘𐑩𐑥	wˈɪljəm	RSSB	89	𐑢𐑦𐑤𐑾𐑥	ˈwɪlɪəm	
 williams	𐑢𐑦𐑤𐑘𐑩𐑥𐑟	wˈɪljəmz	RSSB	89	𐑢𐑦𐑤𐑾𐑥𐑟	ˈwɪliəmz	
-willingness	𐑢𐑦𐑤𐑦𐑙𐑯𐑦𐑕	wˈɪlɪŋnɪs	RSSB	89	𐑢𐑦𐑤𐑦𐑙𐑯𐑩𐑕	ˈwɪlɪŋnəs	
 wiltshire	𐑢𐑦𐑤𐑗𐑼	wɪltʃəR	RSSB	89	𐑢𐑦𐑤𐑑𐑖𐑼	ˈwɪltʃəR	
 windy	𐑢𐑲𐑯𐑛𐑦	wˈaɪndi	RSSB	89	𐑢𐑦𐑯𐑛𐑦	ˈwɪndi	
 wiring	𐑢𐑲𐑮𐑦𐑙	waɪrɪŋ	RSSB	89	𐑢𐑲𐑼𐑦𐑙	ˈwaɪərɪŋ	
 wiry	𐑢𐑲𐑮𐑦	waɪri	RSSB	89	𐑢𐑲𐑼𐑦	ˈwaɪəri	
 within	𐑢𐑦𐑔𐑦𐑯	wɪθˈɪn	RSSB	89	𐑢𐑦𐑞𐑦𐑯	wɪðˈɪn	
 without	𐑢𐑦𐑔𐑬𐑑	wɪθˈaʊt	RSSB	89	𐑢𐑦𐑞𐑬𐑑	wɪðˈaʊt	
-witness	𐑢𐑦𐑑𐑯𐑦𐑕	wˈɪtnɪs	RSSB	89	𐑢𐑦𐑑𐑯𐑩𐑕	ˈwɪtnəs	
 witnesses	𐑢𐑦𐑑𐑯𐑦𐑕𐑩𐑟	wˈɪtnɪsƏz	RSSB	89	𐑢𐑦𐑑𐑯𐑩𐑕𐑩𐑟	ˈwɪtnəsƏz	
 won	𐑢𐑪𐑯	wˈɒn	RSSB	89	𐑢𐑳𐑯	wʌn	
 wonderful	𐑢𐑳𐑯𐑛𐑼𐑓𐑼𐑤	wʌndəRfəRl	RSSB	89	𐑢𐑳𐑯𐑛𐑼𐑓𐑩𐑤	ˈwʌndəRfəl	
 woof	𐑢𐑵𐑓	wˈuːf	RSSB	89	𐑢𐑫𐑓	wʊf	
 working-class	𐑢𐑻𐑒𐑦𐑙𐑒𐑤𐑸𐑕	wɜːRkɪŋklɑːRs	RSSB	89	𐑢𐑻𐑒𐑦𐑙-𐑒𐑤𐑨𐑕, 𐑢𐑻𐑒𐑦𐑙-𐑒𐑤𐑭𐑕	ˈwɜːRkɪŋ-klⱭːs	
-worthless	𐑢𐑻𐑔𐑤𐑦𐑕	wɜːRθlɪs	RSSB	89	𐑢𐑻𐑔𐑤𐑩𐑕	ˈwɜːRθləs	
 would-be	𐑢𐑫𐑛𐑚𐑦	wˈʊdbi	RSSB	89	𐑢𐑫𐑛-𐑚𐑰	ˈwʊd-biː	
 wymondham	𐑢𐑦𐑯𐑛𐑩𐑥	wˈɪndəm	RSSB	89	𐑢𐑦𐑥𐑩𐑯𐑛𐑩𐑥	ˈwɪməndəm	
 x-ray	𐑧𐑒𐑕𐑮𐑱	eksreɪ	RSSB	89	𐑧𐑒𐑕-𐑮𐑱	ˈeks-reɪ	

@@ -1689,8 +1689,8 @@
       "ipa": "eɪkəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑱𐑒𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑱𐑒𐑼𐑟"
     }
   ],
   "acrobat_UNC_𐑨𐑒𐑮𐑩𐑚𐑨𐑑": [
@@ -5591,8 +5591,8 @@
       "ipa": "ɒlskɒt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑨𐑤𐑝𐑼𐑛𐑦𐑕𐑒𐑪𐑑"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑨𐑤𐑝𐑼𐑛𐑦𐑕𐑒𐑪𐑑"
     },
     {
       "Latn": "alverdiscott",
@@ -5601,8 +5601,8 @@
       "ipa": "ɔːlskɒt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑨𐑤𐑝𐑼𐑛𐑦𐑕𐑒𐑪𐑑"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑨𐑤𐑝𐑼𐑛𐑦𐑕𐑒𐑪𐑑"
     }
   ],
   "always_UNC_𐑷𐑤𐑢𐑩𐑟": [
@@ -10653,7 +10653,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": "low",
-      "review": "ml_disagrees:𐑩𐑖𐑷𐑮; r_gap:spelling=1,ipa=0; shave_says:𐑩𐑖𐑫𐑼"
+      "review": "ml_disagrees:𐑩𐑖𐑷𐑮; r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑩𐑖𐑫𐑼"
     }
   ],
   "assured_UNC_𐑩𐑖𐑷𐑛": [
@@ -10664,8 +10664,8 @@
       "ipa": "əʃɔːd",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑩𐑖𐑫𐑼𐑛"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑩𐑖𐑫𐑼𐑛"
     },
     {
       "Latn": "assured",
@@ -15745,8 +15745,8 @@
       "ipa": "bɑːkli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑚𐑸𐑒𐑤𐑦"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑚𐑸𐑒𐑤𐑦"
     }
   ],
   "berkshire_UNC_𐑚𐑭𐑒𐑖𐑼": [
@@ -25482,8 +25482,8 @@
       "ipa": "sentəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑕𐑧𐑯𐑑𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑕𐑧𐑯𐑑𐑼𐑟"
     }
   ],
   "cents_UNC_𐑕𐑧𐑯𐑑𐑕": [
@@ -29240,8 +29240,8 @@
       "ipa": "klɑːk",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑒𐑤𐑸𐑒"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑒𐑤𐑸𐑒"
     }
   ],
   "cleveland_UNC_𐑒𐑤𐑰𐑝𐑤𐑩𐑯𐑛": [
@@ -43734,8 +43734,8 @@
       "ipa": "dɑːbi",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑛𐑸𐑚𐑦"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑛𐑸𐑚𐑦"
     },
     {
       "Latn": "derby",
@@ -44128,8 +44128,8 @@
       "ipa": "dɪzaɪəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑛𐑦𐑟𐑲𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑛𐑦𐑟𐑲𐑼𐑟"
     }
   ],
   "desk_UNC_𐑛𐑧𐑕𐑒": [
@@ -54462,7 +54462,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": "low",
-      "review": "ml_disagrees:𐑧𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; shave_says:𐑦𐑯𐑖𐑫𐑼"
+      "review": "ml_disagrees:𐑧𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑖𐑫𐑼"
     },
     {
       "Latn": "ensure",
@@ -54472,7 +54472,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": "low",
-      "review": "ml_disagrees:𐑦𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; shave_says:𐑦𐑯𐑖𐑫𐑼"
+      "review": "ml_disagrees:𐑦𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑖𐑫𐑼"
     }
   ],
   "ensures_UNC_𐑦𐑯𐑖𐑷𐑟": [
@@ -54483,8 +54483,8 @@
       "ipa": "ɪnʃɔːz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑦𐑯𐑖𐑫𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑖𐑫𐑼𐑟"
     },
     {
       "Latn": "ensures",
@@ -54493,8 +54493,8 @@
       "ipa": "enʃɔːz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑦𐑯𐑖𐑫𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑖𐑫𐑼𐑟"
     }
   ],
   "ensuring_UNC_𐑧𐑯𐑖𐑹𐑦𐑙": [
@@ -54701,8 +54701,8 @@
       "ipa": "ɪntaɪəli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑦𐑯𐑑𐑲𐑼𐑤𐑦"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑑𐑲𐑼𐑤𐑦"
     }
   ],
   "entities_UNC_𐑧𐑯𐑑𐑦𐑑𐑦𐑟": [
@@ -57648,8 +57648,8 @@
       "ipa": "ɪkspaɪəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑦𐑒𐑕𐑐𐑲𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑒𐑕𐑐𐑲𐑼𐑟"
     }
   ],
   "explain_UNC_𐑦𐑒𐑕𐑐𐑤𐑱𐑯": [
@@ -60468,8 +60468,8 @@
       "ipa": "faɪbəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑓𐑲𐑚𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑓𐑲𐑚𐑼𐑟"
     }
   ],
   "fiction_UNC_𐑓𐑦𐑒𐑖𐑩𐑯": [
@@ -61326,8 +61326,8 @@
       "ipa": "faɪəfɒks",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑓𐑲𐑼𐑓𐑪𐑒𐑕"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑓𐑲𐑼𐑓𐑪𐑒𐑕"
     }
   ],
   "fireplace_UNC_𐑓𐑲𐑩𐑐𐑤𐑱𐑕": [
@@ -61338,8 +61338,8 @@
       "ipa": "faɪəpleɪs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑓𐑲𐑼𐑐𐑤𐑱𐑕"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑓𐑲𐑼𐑐𐑤𐑱𐑕"
     }
   ],
   "fires_UNC_𐑓𐑲𐑩𐑟": [
@@ -61350,8 +61350,8 @@
       "ipa": "faɪəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑓𐑲𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑓𐑲𐑼𐑟"
     }
   ],
   "firewall_UNC_𐑓𐑲𐑢𐑷𐑤": [
@@ -61362,8 +61362,8 @@
       "ipa": "faɪwɔːl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑓𐑲𐑼𐑢𐑷𐑤"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑓𐑲𐑼𐑢𐑷𐑤"
     }
   ],
   "firing_UNC_𐑓𐑲𐑼𐑦𐑙": [
@@ -64270,8 +64270,8 @@
       "ipa": "fɔɪeɪ",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "high",
-      "review": "r_gap:spelling=1,ipa=0; shave_agrees"
+      "confidence": "medium",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_agrees"
     }
   ],
   "fraction_UNC_𐑓𐑮𐑨𐑒𐑖𐑩𐑯": [
@@ -82084,7 +82084,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": "low",
-      "review": "ml_disagrees:𐑦𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; shave_says:𐑦𐑯𐑖𐑫𐑼"
+      "review": "ml_disagrees:𐑦𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑖𐑫𐑼"
     }
   ],
   "insured_UNC_𐑦𐑯𐑖𐑷𐑛": [
@@ -82095,8 +82095,8 @@
       "ipa": "ɪnʃɔːd",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑦𐑯𐑖𐑫𐑼𐑛"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑖𐑫𐑼𐑛"
     }
   ],
   "intact_UNC_𐑦𐑯𐑑𐑨𐑒𐑑": [
@@ -83687,8 +83687,8 @@
       "ipa": "aɪələnd",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑲𐑼𐑤𐑩𐑯𐑛"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑲𐑼𐑤𐑩𐑯𐑛"
     }
   ],
   "irene_UNC_𐑲𐑮𐑰𐑯": [
@@ -83743,8 +83743,8 @@
       "ipa": "aɪən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑲𐑼𐑯"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑲𐑼𐑯"
     }
   ],
   "ironic_UNC_𐑲𐑮𐑪𐑯𐑦𐑒": [
@@ -83777,8 +83777,8 @@
       "ipa": "aɪənɪŋ",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑲𐑼𐑯𐑦𐑙"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑲𐑼𐑯𐑦𐑙"
     }
   ],
   "irony_UNC_𐑲𐑮𐑼𐑯𐑦": [
@@ -87096,8 +87096,8 @@
       "ipa": "kɪləmiːtəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑒𐑦𐑤𐑩𐑥𐑰𐑑𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑒𐑦𐑤𐑩𐑥𐑰𐑑𐑼𐑟"
     },
     {
       "Latn": "kilometres",
@@ -87106,8 +87106,8 @@
       "ipa": "kɪlɒmɪtəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑒𐑦𐑤𐑩𐑥𐑰𐑑𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑒𐑦𐑤𐑩𐑥𐑰𐑑𐑼𐑟"
     }
   ],
   "kilos_UNC_𐑒𐑰𐑤𐑴𐑟": [
@@ -98680,8 +98680,8 @@
       "ipa": "mesəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑥𐑧𐑕𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑥𐑧𐑕𐑼𐑟"
     }
   ],
   "messy_UNC_𐑥𐑧𐑕𐑦": [
@@ -98868,8 +98868,8 @@
       "ipa": "miːtəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑥𐑰𐑑𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑥𐑰𐑑𐑼𐑟"
     }
   ],
   "metric_UNC_𐑥𐑧𐑑𐑮𐑦𐑒": [
@@ -99529,8 +99529,8 @@
       "ipa": "mɪlɪmiːtəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑥𐑦𐑤𐑦𐑥𐑰𐑑𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑥𐑦𐑤𐑦𐑥𐑰𐑑𐑼𐑟"
     }
   ],
   "million_UNC_𐑥𐑦𐑤𐑘𐑩𐑯": [
@@ -105880,8 +105880,8 @@
       "ipa": "nɪəvɑːnə",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑯𐑼𐑝𐑭𐑯𐑩"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑯𐑼𐑝𐑭𐑯𐑩"
     }
   ],
   "nissan_UNC_𐑯𐑦𐑕𐑨𐑯": [
@@ -139483,8 +139483,8 @@
       "ipa": "sɑːdʒənt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑕𐑸𐑡𐑩𐑯𐑑"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑕𐑸𐑡𐑩𐑯𐑑"
     }
   ],
   "serial_UNC_𐑕𐑽𐑾𐑤": [
@@ -153332,7 +153332,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": "low",
-      "review": "ml_disagrees:𐑖𐑷𐑮; r_gap:spelling=1,ipa=0; shave_says:𐑖𐑫𐑼"
+      "review": "ml_disagrees:𐑖𐑷𐑮; r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑖𐑫𐑼"
     }
   ],
   "surely_UNC_𐑖𐑷𐑤𐑦": [
@@ -153343,8 +153343,8 @@
       "ipa": "ʃɔːli",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑖𐑫𐑼𐑤𐑦"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑖𐑫𐑼𐑤𐑦"
     }
   ],
   "surf_UNC_𐑕𐑻𐑓": [
@@ -157892,8 +157892,8 @@
       "ipa": "θɪətəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑔𐑾𐑑𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑔𐑾𐑑𐑼𐑟"
     }
   ],
   "thee_UNC_𐑞𐑰": [
@@ -159838,8 +159838,8 @@
       "ipa": "taɪəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑑𐑲𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑑𐑲𐑼𐑟"
     }
   ],
   "tissue_UNC_𐑑𐑦𐑖𐑵": [
@@ -164424,8 +164424,8 @@
       "ipa": "taɪəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑑𐑲𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑑𐑲𐑼𐑟"
     }
   ],
   "u_UNC_𐑿": [
@@ -165741,7 +165741,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": "low",
-      "review": "ml_disagrees:𐑳𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; shave_says:𐑳𐑯𐑖𐑫𐑼"
+      "review": "ml_disagrees:𐑳𐑯𐑖𐑼; r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑳𐑯𐑖𐑫𐑼"
     }
   ],
   "until_UNC_𐑳𐑯𐑑𐑦𐑤": [
@@ -173487,8 +173487,8 @@
       "ipa": "waɪəlɪs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑢𐑲𐑼𐑤𐑩𐑕"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑢𐑲𐑼𐑤𐑩𐑕"
     }
   ],
   "wires_UNC_𐑢𐑲𐑩𐑟": [
@@ -173499,8 +173499,8 @@
       "ipa": "waɪəz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": "medium",
-      "review": "r_gap:spelling=1,ipa=0; shave_says:𐑢𐑲𐑼𐑟"
+      "confidence": "low",
+      "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑢𐑲𐑼𐑟"
     }
   ],
   "wiring_UNC_𐑢𐑲𐑮𐑦𐑙": [

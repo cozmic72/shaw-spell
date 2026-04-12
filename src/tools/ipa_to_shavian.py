@@ -561,6 +561,28 @@ def _convert_stripped(ipa: str) -> str:
     return "".join(result)
 
 
+# All Shavian letters that contain an 'r' sound
+SHAVIAN_R_LETTERS = set("𐑮𐑼𐑻𐑺𐑽𐑸𐑹")
+
+
+def check_missing_r(word: str, shaw: str) -> str | None:
+    """Check if a word has 'r' in its Latin spelling but no r-sound in Shavian.
+
+    Returns a warning string if there's a likely missing r, or None if OK.
+    This is a confidence penalty signal, not a fix.
+    """
+    word_lower = word.lower()
+    if 'r' not in word_lower:
+        return None
+
+    has_shavian_r = bool(set(shaw) & SHAVIAN_R_LETTERS)
+    if has_shavian_r:
+        return None
+
+    # Word has 'r' in spelling but zero r-sounds in Shavian output
+    return f"missing_r:spelling_has_r_but_shaw_has_none"
+
+
 def validate_against_readlex(readlex_path: str, verbose: bool = False) -> dict:
     """Validate the converter against all ReadLex entries.
 

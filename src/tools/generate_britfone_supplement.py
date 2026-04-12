@@ -28,7 +28,7 @@ from pathlib import Path
 TOOLS_DIR = Path(__file__).parent
 sys.path.insert(0, str(TOOLS_DIR))
 
-from ipa_to_shavian import ipa_to_shavian, normalize_ipa
+from ipa_to_shavian import ipa_to_shavian, normalize_ipa, check_missing_r
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -123,6 +123,11 @@ def _score_confidence(word: str, ipa: str, shaw_rules: str,
         if spelling_r_count > ipa_r_count:
             notes.append(f"r_gap:spelling={spelling_r_count},ipa={ipa_r_count}")
 
+    # Signal 2b: word has 'r' in spelling but Shavian has NO r-sound at all
+    missing_r = check_missing_r(word, shaw_rules)
+    if missing_r:
+        notes.append(missing_r)
+
     # Signal 3: unknown characters passed through
     known_shaw = set("𐑐𐑚𐑑𐑛𐑒𐑜𐑓𐑝𐑔𐑞𐑕𐑟𐑖𐑠𐑗𐑡𐑥𐑯𐑙𐑤𐑮𐑢𐑣𐑘𐑨𐑧𐑦𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿 -.'")
     unknown = set(shaw_rules) - known_shaw
@@ -136,6 +141,8 @@ def _score_confidence(word: str, ipa: str, shaw_rules: str,
     if not notes:
         return "high", ""
     elif any(n.startswith("unknown_chars") for n in notes):
+        return "low", "; ".join(notes)
+    elif any(n.startswith("missing_r") for n in notes):
         return "low", "; ".join(notes)
     elif any(n.startswith("ml_disagrees") for n in notes) and any(n.startswith("r_gap") for n in notes):
         return "low", "; ".join(notes)

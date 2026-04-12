@@ -11,6 +11,7 @@ Outputs:
 import sys
 import json
 import re
+import subprocess
 from pathlib import Path
 from glob import glob
 
@@ -19,6 +20,7 @@ import yaml
 # Add tools dir so we can import the IPA-to-Shavian converter
 sys.path.insert(0, str(Path(__file__).parent))
 from ipa_to_shavian import ipa_to_shavian, normalize_ipa
+from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_DIR = ROOT / "external" / "english-wordnet" / "src" / "yaml"
@@ -96,6 +98,72 @@ def load_readlex_keys() -> set[str]:
     return keys
 
 
+def _batch_shave(words: list[str]) -> dict[str, str]:
+    """Run words through the `shave` tool and return word->shavian mapping."""
+    try:
+        input_text = "\n".join(words)
+        result = subprocess.run(
+            ["shave", "-q"],
+            input=input_text,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        lines = result.stdout.strip().split("\n")
+        mapping = {}
+        for word, shaw_line in zip(words, lines):
+            shaw = shaw_line.strip()
+            if shaw:
+                mapping[word] = shaw
+        return mapping
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        print(f"  Warning: shave tool unavailable: {e}", file=sys.stderr)
+        return {}
+
+
+def _score_confidence(word: str, ipa: str, shaw_rules: str,
+                      have_ml: bool, ml_model) -> tuple[str, str]:
+    """Score conversion confidence based on multiple signals.
+
+    Returns (confidence_level, review_notes) where:
+        confidence_level: "high", "medium", or "low"
+        review_notes: human-readable explanation of concerns (empty if high)
+    """
+    notes = []
+
+    # Signal 1: ML model disagrees with rules
+    if have_ml and ml_model:
+        ipa_stripped = strip_stress(ipa)
+        ml_ipa = ml_normalize_ipa(ipa_stripped, word, ml_model)
+        shaw_ml = ipa_to_shavian(ml_ipa)
+        if shaw_ml != shaw_rules:
+            notes.append(f"ml_disagrees:{shaw_ml}")
+
+    # Signal 2: word has 'r' in spelling -- r-restoration may be incomplete
+    word_lower = word.lower()
+    if 'r' in word_lower:
+        spelling_r_count = word_lower.count('r')
+        ipa_r_count = ipa.count('r') + ipa.count('R')
+        if spelling_r_count > ipa_r_count:
+            notes.append(f"r_gap:spelling={spelling_r_count},ipa={ipa_r_count}")
+
+    # Signal 3: unknown characters passed through
+    known_shaw = set("𐑐𐑚𐑑𐑛𐑒𐑜𐑓𐑝𐑔𐑞𐑕𐑟𐑖𐑠𐑗𐑡𐑥𐑯𐑙𐑤𐑮𐑢𐑣𐑘𐑨𐑧𐑦𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿 -.'")
+    unknown = set(shaw_rules) - known_shaw
+    if unknown:
+        notes.append(f"unknown_chars:{''.join(unknown)}")
+
+    # Determine confidence level
+    if not notes:
+        return "high", ""
+    elif any(n.startswith("unknown_chars") for n in notes):
+        return "low", "; ".join(notes)
+    elif any(n.startswith("ml_disagrees") for n in notes) and any(n.startswith("r_gap") for n in notes):
+        return "low", "; ".join(notes)
+    else:
+        return "medium", "; ".join(notes)
+
+
 def main():
     yaml_files = sorted(glob(str(YAML_DIR / "entries-*.yaml")))
     if not yaml_files:
@@ -115,6 +183,17 @@ def main():
     skipped_multi = 0
     overlap_count = 0
     conversion_errors = 0
+    confidence_counts = {"high": 0, "medium": 0, "low": 0}
+
+    # Load ML model for confidence comparison
+    try:
+        ml_model = load_model()
+        have_ml = True
+        print("Loaded ML model for confidence scoring")
+    except FileNotFoundError:
+        ml_model = None
+        have_ml = False
+        print("  Warning: ML model not found, skipping ML confidence comparison")
 
     for yf in yaml_files:
         print(f"  Processing {Path(yf).name}...")
@@ -151,6 +230,12 @@ def main():
                         ipa = ""
 
                     if shaw:
+                        # Score confidence
+                        confidence, review_notes = _score_confidence(
+                            word_lower, ipa, shaw, have_ml, ml_model
+                        )
+                        confidence_counts[confidence] += 1
+
                         key = f"{word_lower}_{c5_pos}_{shaw}"
                         entry = {
                             "Latn": word_lower,
@@ -159,7 +244,10 @@ def main():
                             "ipa": ipa,
                             "freq": 0,
                             "var": "RRP",
+                            "confidence": confidence,
                         }
+                        if review_notes:
+                            entry["review"] = review_notes
                         if key not in reliable:
                             reliable[key] = [entry]
                             with_ipa_count += 1
@@ -194,6 +282,68 @@ def main():
 
                 if (word_lower, c5_pos) in readlex_keys:
                     overlap_count += 1
+
+    # Consult `shave` tool for medium/low confidence entries
+    review_words = set()
+    for key, entries in reliable.items():
+        for e in entries:
+            if e.get("confidence") in ("medium", "low"):
+                review_words.add(e["Latn"])
+
+    if review_words:
+        print(f"\n  Consulting `shave` tool for {len(review_words)} review words...")
+        shave_results = _batch_shave(sorted(review_words))
+        shave_upgraded = 0
+        shave_overridden = 0
+        for key, entries in reliable.items():
+            for e in entries:
+                if e.get("confidence") not in ("medium", "low"):
+                    continue
+                w = e["Latn"]
+                if w not in shave_results:
+                    continue
+                shave_shaw = shave_results[w]
+                review = e.get("review", "")
+
+                if shave_shaw == e["Shaw"]:
+                    # shave agrees with our rules -- upgrade confidence
+                    e["confidence"] = "medium" if e["confidence"] == "low" else "high"
+                    e["review"] = review + "; shave_agrees"
+                    shave_upgraded += 1
+                else:
+                    # Check if shave agrees with ML
+                    ml_shaw = None
+                    if "ml_disagrees:" in review:
+                        ml_shaw = review.split("ml_disagrees:")[1].split(";")[0].strip()
+
+                    if ml_shaw and shave_shaw == ml_shaw:
+                        # shave + ML consensus overrides rules
+                        old_shaw = e["Shaw"]
+                        e["Shaw"] = shave_shaw
+                        e["confidence"] = "high"
+                        e["review"] = f"overridden:was={old_shaw}; shave+ml_consensus"
+                        shave_overridden += 1
+                    else:
+                        e["review"] = review + f"; shave_says:{shave_shaw}"
+
+        # Fix keys for overridden entries
+        new_reliable = {}
+        for key, entries in reliable.items():
+            new_key = f"{entries[0]['Latn']}_{entries[0]['pos']}_{entries[0]['Shaw']}"
+            new_reliable[new_key] = entries
+        reliable = new_reliable
+
+        print(f"  Upgraded {shave_upgraded} entries based on shave agreement")
+        print(f"  Overrode {shave_overridden} entries based on shave+ML consensus")
+
+        # Recount confidence after shave adjustments
+        confidence_counts = {"high": 0, "medium": 0, "low": 0}
+        for key, entries in reliable.items():
+            for e in entries:
+                confidence_counts[e.get("confidence", "high")] += 1
+
+    print(f"\n  Confidence: high={confidence_counts['high']}, "
+          f"medium={confidence_counts['medium']}, low={confidence_counts['low']}")
 
     # Write outputs
     OUT_RELIABLE.parent.mkdir(parents=True, exist_ok=True)

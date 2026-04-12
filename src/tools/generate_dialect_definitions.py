@@ -283,6 +283,23 @@ def main():
     wordnet_defs = extract_definitions_from_wordnet(wordnet_cache, readlex_lemmas)
     print()
 
+    # Merge Wiktionary definitions if available
+    wiktionary_defs_path = project_dir / 'data/definitions-wiktionary.json'
+    if wiktionary_defs_path.exists():
+        print("Loading Wiktionary definitions...")
+        with open(wiktionary_defs_path, 'r', encoding='utf-8') as f:
+            wikt_defs = json.load(f)
+        print(f"  Loaded {len(wikt_defs)} Wiktionary definition entries")
+
+        # Merge: Wiktionary entries use keys like "word|wikt-N"
+        # Add them directly to the definitions dict
+        for key, defs_list in wikt_defs.items():
+            wordnet_defs[key] = defs_list
+
+        wikt_words = set(k.split('|')[0] for k in wikt_defs)
+        print(f"  Added definitions for {len(wikt_words)} words from Wiktionary")
+        print()
+
     # Build spelling conversion maps
     us_to_gb, gb_to_us = build_spelling_maps(wordnet_cache)
     print()

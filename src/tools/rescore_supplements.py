@@ -30,14 +30,20 @@ SUPPLEMENTS = [
 ]
 
 
-def batch_shave(words: list[str], chunk_size: int = 5000) -> dict[str, str]:
-    """Run words through shave -q in batches."""
+def batch_shave(words: list[str], dialect: str = "british",
+                chunk_size: int = 5000) -> dict[str, str]:
+    """Run words through shave -q in batches.
+
+    Args:
+        dialect: "british" or "american" — selects shave's readlex flag
+    """
+    flag = "--readlex-british" if dialect == "british" else "--readlex-american"
     results = {}
     for i in range(0, len(words), chunk_size):
         chunk = words[i:i + chunk_size]
         try:
             proc = subprocess.run(
-                ["shave", "-q"],
+                ["shave", "-q", flag],
                 input="\n".join(chunk),
                 capture_output=True, text=True, timeout=120,
             )
@@ -87,26 +93,35 @@ def rescore_file(filepath: Path, ml_model, full_shave: bool) -> dict:
             e["_ml_shaw"] = ml_shaw
             stats["rescored"] += 1
 
-    # Phase 2: shave consultation
+    # Phase 2: shave consultation — British for RSSB/RRP, American for RGAM/GAM
     shave_threshold = 100 if full_shave else 89
-    review_words = set()
-    for key, entries in data.items():
-        for e in entries:
-            if e.get("confidence", 89) < shave_threshold:
-                # Only shave RSSB/RRP entries (shave is UK-trained)
-                if e.get("var", "") in ("RSSB", "RRP", "UNC"):
-                    review_words.add(e["Latn"])
 
-    if review_words:
-        print(f"  Consulting shave for {len(review_words):,} words...")
-        shave_results = batch_shave(sorted(review_words))
+    british_vars = {"RSSB", "RRP", "UNC", "TrapBath", "SSB"}
+    american_vars = {"RGAM", "GAM", "GenAm"}
+
+    for dialect_label, dialect_flag, target_vars in [
+        ("British", "british", british_vars),
+        ("American", "american", american_vars),
+    ]:
+        review_words = set()
+        for key, entries in data.items():
+            for e in entries:
+                if e.get("confidence", 89) < shave_threshold:
+                    if e.get("var", "") in target_vars:
+                        review_words.add(e["Latn"])
+
+        if not review_words:
+            continue
+
+        print(f"  Consulting shave ({dialect_label}) for {len(review_words):,} words...")
+        shave_results = batch_shave(sorted(review_words), dialect=dialect_flag)
         print(f"  Got {len(shave_results):,} results")
 
         for key, entries in data.items():
             for e in entries:
                 if e.get("confidence", 89) >= shave_threshold:
                     continue
-                if e.get("var", "") not in ("RSSB", "RRP", "UNC"):
+                if e.get("var", "") not in target_vars:
                     continue
                 w = e["Latn"]
                 if w not in shave_results:

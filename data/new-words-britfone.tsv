@@ -2,8 +2,8 @@ word	shaw	ipa	pos	var	confidence	notes
 'cos	𐑒𐑩𐑟	kˈəz	UNC	RSSB	89	shave_says:'𐑒𐑪𐑕
 'd	𐑛	d	UNC	RSSB	89	shave_says:'𐑛
 'd	𐑩𐑛	əd	UNC	RSSB	89	shave_says:'𐑛
-'ll	𐑤	l	UNC	RSSB	89	shave_says:'ll
-'ll	𐑩𐑤	əl	UNC	RSSB	89	shave_says:'ll
+'ll	𐑤	l	UNC	RSSB	89	shave_says:'𐑤𐑲𐑯𐑟
+'ll	𐑩𐑤	əl	UNC	RSSB	89	shave_says:'𐑤𐑲𐑯𐑟
 'm	𐑩𐑥	əm	UNC	RSSB	89	shave_says:'𐑥
 're	𐑼	əR	UNC	RSSB	89	shave_says:'𐑮𐑰
 's	𐑟	z	UNC	RSSB	89	shave_says:'𐑟
@@ -207,7 +207,7 @@ quinoa	𐑒𐑰𐑯𐑢𐑭	kˈiːnwɑː	UNC	RSSB	89	shave_says:𐑒𐑢𐑰𐑯
 quinoa	𐑒𐑰𐑯𐑴𐑩	kˈiːnəʊə	UNC	RSSB	89	shave_says:𐑒𐑢𐑰𐑯𐑴𐑩
 raleigh	𐑮𐑷𐑤𐑦	rɔːli	UNC	RSSB	89	shave_says:𐑮𐑭𐑤𐑦
 ramen	𐑮𐑭𐑥𐑩𐑯	rɑːmən	UNC	RSSB	89	shave_says:𐑮𐑭𐑥𐑧𐑯
-re-sign	𐑮𐑰𐑕𐑲𐑯	riːsaɪn	UNC	RSSB	89	shave_says:𐑮𐑰-𐑕𐑲𐑯
+re-sign	𐑮𐑰𐑕𐑲𐑯	riːsaɪn	UNC	RSSB	89	shave_says:𐑮𐑱-𐑕𐑲𐑯
 re-sort	𐑮𐑰𐑕𐑹𐑑	riːsɔːRt	UNC	RSSB	89	shave_says:𐑮𐑰-𐑕𐑹𐑑
 redcurrant	𐑮𐑧𐑛𐑒𐑳𐑮𐑼𐑯𐑑	redkʌrəRnt	UNC	RSSB	89	shave_says:𐑮𐑧𐑛𐑒𐑳𐑮𐑩𐑯𐑑
 refinance	𐑮𐑰𐑓𐑦𐑯𐑨𐑯𐑕	riːfɪnæns	UNC	RSSB	89	shave_says:𐑮𐑰𐑓𐑲𐑯𐑨𐑯𐑕
@@ -241,7 +241,7 @@ torfaen	𐑑𐑹𐑝𐑨𐑯	tɔːRvæn	UNC	RSSB	89	shave_says:𐑑𐑹𐑓𐑩�
 toyota	𐑑𐑴𐑘𐑴𐑑𐑩	təʊjˈəʊtə	UNC	RSSB	89	shave_says:𐑑𐑶𐑴𐑑𐑩
 transexual	𐑑𐑮𐑨𐑯𐑟𐑕𐑧𐑒𐑖𐑫𐑼𐑤	trænzsekʃʊəRl	UNC	RSSB	89	shave_says:𐑑𐑮𐑨𐑯𐑟𐑕𐑧𐑒𐑖𐑵𐑩𐑤
 tuple	𐑑𐑳𐑐𐑩𐑤	tˈʌpəl	UNC	RSSB	89	shave_says:𐑑𐑿𐑐𐑩𐑤
-un-parentheses	𐑳𐑯𐑐𐑼𐑧𐑯𐑔𐑦𐑕𐑰𐑟	ʌnpərenθɪsiːz	UNC	RSSB	89	shave_says:𐑳𐑯-𐑐𐑼𐑧𐑯𐑔𐑩𐑕𐑰𐑟
+un-parentheses	𐑳𐑯𐑐𐑼𐑧𐑯𐑔𐑦𐑕𐑰𐑟	ʌnpərenθɪsiːz	UNC	RSSB	89	shave_says:𐑿𐑧𐑯-𐑐𐑼𐑧𐑯𐑔𐑩𐑕𐑰𐑟
 upskirt	𐑳𐑐𐑕𐑒𐑻𐑑	ʌpskɜːRt	UNC	RSSB	89	shave_says:𐑿𐑐𐑕𐑒𐑻𐑑
 uzbekistan	𐑫𐑟𐑚𐑧𐑒𐑦𐑕𐑑𐑭𐑯	ʊzbˌekɪstˈɑːn	UNC	RSSB	89	shave_says:𐑵𐑟𐑚𐑧𐑒𐑦𐑕𐑑𐑭𐑯
 uzbekistan	𐑳𐑟𐑚𐑧𐑒𐑦𐑕𐑑𐑭𐑯	ʌzbˌekɪstˈɑːn	UNC	RSSB	89	shave_says:𐑵𐑟𐑚𐑧𐑒𐑦𐑕𐑑𐑭𐑯
@@ -253,7 +253,7 @@ waltham	𐑢𐑷𐑤𐑔𐑩𐑥	wˈɔːlθəm	UNC	RSSB	89	shave_says:𐑢𐑷�
 warcraft	𐑢𐑹𐑒𐑮𐑸𐑓𐑑	wɔːRkrɑːRft	UNC	RSSB	89	shave_says:𐑢𐑹𐑒𐑮𐑭𐑓𐑑
 wesley	𐑢𐑧𐑟𐑤𐑦	wˈezli	UNC	RSSB	89	shave_says:𐑢𐑧𐑕𐑤𐑦
 wherewhithal	𐑢𐑺𐑢𐑦𐑞𐑷𐑤	weəRwɪðɔːl	UNC	RSSB	89	shave_says:𐑢𐑺𐑢𐑦𐑔𐑩𐑤
-whoops-a-daisy	𐑢𐑵𐑐𐑕𐑩𐑛𐑱𐑟𐑦	wˈuːpsədˌeɪzi	UNC	RSSB	89	shave_says:𐑣𐑢𐑵𐑐𐑕-𐑩-𐑛𐑱𐑟𐑦
+whoops-a-daisy	𐑢𐑵𐑐𐑕𐑩𐑛𐑱𐑟𐑦	wˈuːpsədˌeɪzi	UNC	RSSB	89	shave_says:𐑣𐑵𐑐𐑕-𐑩-𐑛𐑱𐑟𐑦
 wichita	𐑢𐑦𐑗𐑦𐑑𐑷	wˈɪtʃɪtˌɔː	UNC	RSSB	89	shave_says:𐑢𐑦𐑗𐑦𐑑𐑭
 widecombe	𐑢𐑦𐑛𐑦𐑒𐑩𐑥	wˈɪdɪkəm	UNC	RSSB	89	shave_says:𐑢𐑲𐑛𐑒𐑩𐑥
 wies	𐑢𐑲𐑟	wˈaɪz	UNC	RSSB	89	shave_says:𐑢𐑦𐑟

@@ -68,13 +68,20 @@ def extract_readlex_words(readlex_data: Dict, target_dialect: str) -> Set[str]:
     """
     words = set()
 
-    # Map dialect codes
+    # Map dialect codes — include all variants for maximum acceptance
+    # RSSB = Rhotic Standard Southern British (supplement)
+    # RRPVar/RRPvar = variant RP pronunciations; SSB = Standard Southern British
+    # RGAM = Rhotic General American (supplement)
+    # GenAus = General Australian (included in both for maximum acceptance)
     if target_dialect.lower() == 'gb':
-        target_variants = ['RRP', 'GB']  # Received Pronunciation and GB
+        target_variants = ['RRP', 'GB', 'RSSB', 'TrapBath', 'RRPVar', 'RRPvar', 'SSB', 'GenAus']
     else:
-        target_variants = ['GenAm']  # General American
+        target_variants = ['GenAm', 'RSSB', 'RGAM', 'GenAus']
 
     for key, entries in readlex_data.items():
+        # Normalize: supplement entries may be single dicts
+        if isinstance(entries, dict):
+            entries = [entries]
         for entry in entries:
             latn = entry.get('Latn', '').strip()
             var = entry.get('var', '')
@@ -461,8 +468,8 @@ def main():
     parser.add_argument(
         '--readlex',
         type=Path,
-        default=Path(__file__).parent.parent.parent / 'external/readlex/readlex.json',
-        help='Path to Readlex data file'
+        default=Path(__file__).parent.parent.parent / 'data/readlex.json',
+        help='Path to Readlex data file (supplemented)'
     )
     parser.add_argument(
         '--output-dir',

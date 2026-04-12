@@ -133,10 +133,12 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff, dialect='gb',
     namer_dot = '·'  # U+00B7 MIDDLE DOT
 
     # Map dialect codes to Readlex variants
+    # RSSB = Rhotic Standard Southern British (supplement data). Include in
+    # both dialects since a spellchecker should accept any valid Shavian spelling.
     if dialect == 'gb':
-        target_variants = {'RRP', 'GB'}  # Received Pronunciation and GB
+        target_variants = {'RRP', 'GB', 'RSSB', 'TrapBath'}
     else:
-        target_variants = {'GenAm'}  # General American
+        target_variants = {'GenAm', 'RSSB', 'RGAM', 'GAM'}
 
     # First pass: collect all words and track their POS patterns
     for key, entries in readlex_data.items():
@@ -260,17 +262,21 @@ def main():
     # Paths
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent.parent
-    readlex_path = project_dir / 'external/readlex/readlex.json'
+    readlex_path = project_dir / 'data/readlex.json'
     wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     build_dir = project_dir / 'build'
 
     # Ensure build directory exists
     build_dir.mkdir(exist_ok=True)
 
-    # Load readlex data
+    # Load readlex data (may contain supplement entries as single dicts)
     print("Loading readlex data...")
     with open(readlex_path, 'r', encoding='utf-8') as f:
-        readlex_data = json.load(f)
+        readlex_raw = json.load(f)
+    # Normalize: supplement entries are single dicts; wrap them in lists
+    readlex_data = {}
+    for key, value in readlex_raw.items():
+        readlex_data[key] = [value] if isinstance(value, dict) else value
     print(f"Loaded {len(readlex_data)} readlex entries\n")
 
     # Load WordNet comprehensive cache (required for dialect filtering)

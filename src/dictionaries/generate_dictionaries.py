@@ -253,20 +253,48 @@ def get_all_spelling_variants(word, dialect, wordnet_cache):
     return [v for v in dialect_variants if v != word_lower]
 
 
-def normalize_readlex_ipa(ipa):
+def normalize_readlex_ipa(ipa, dialect='gb'):
     """
-    Normalize Readlex IPA transcription.
-    Readlex uses 'R' to denote '(r)' (optional r in non-rhotic accents).
+    Normalize Readlex IPA transcription for display.
+
+    Decodes ReadLex IPA shorthands into standard IPA, with dialect-aware
+    rendering for GB (RP) vs US (GenAm).
 
     Args:
         ipa: IPA transcription string from Readlex
+        dialect: 'gb' or 'us'
 
     Returns:
-        Normalized IPA string with R replaced by (r)
+        Normalized IPA string suitable for display
     """
     if not ipa:
         return ipa
-    return ipa.replace('R', '(r)')
+
+    # Remove affix boundary marker
+    ipa = ipa.replace('+', '')
+
+    # Dialect-aware TRAP-BATH split: Ɑː and Ɑ before Æ (Ɑː is more specific)
+    if dialect == 'gb':
+        ipa = ipa.replace('Ɑː', 'ɑː')
+        ipa = ipa.replace('Ɑ', 'ɑː')
+        ipa = ipa.replace('Æ', 'ɑː')
+    else:
+        ipa = ipa.replace('Ɑː', 'æ')
+        ipa = ipa.replace('Ɑ', 'æ')
+        ipa = ipa.replace('Æ', 'æ')
+
+    # Dialect-aware linking R
+    if dialect == 'gb':
+        ipa = ipa.replace('R', '(r)')
+    else:
+        ipa = ipa.replace('R', 'r')
+
+    # Simple lowercase mappings (not dialect-dependent)
+    ipa = ipa.replace('Ə', 'ə')
+    ipa = ipa.replace('I', 'ɪ')
+    ipa = ipa.replace('L', 'l')
+
+    return ipa
 
 
 def extract_lemma_from_key(key):
@@ -347,6 +375,10 @@ def process_readlex_with_lemmas(readlex_data):
     processed = {}
 
     for key, entries in readlex_data.items():
+        # Supplement entries are single dicts; wrap them in a list
+        if isinstance(entries, dict):
+            entries = [entries]
+
         # Extract lemma from key
         lemma = extract_lemma_from_key(key)
         if not lemma and entries:
@@ -874,7 +906,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             shaw = entry['Shaw']
             latn = entry['Latn']
             pos = entry.get('pos', '')
-            ipa = normalize_readlex_ipa(entry.get('ipa', ''))
+            ipa = normalize_readlex_ipa(entry.get('ipa', ''), dialect=dialect)
             var = entry.get('var', '')
 
             # Detect spelling variant using comprehensive cache
@@ -1526,7 +1558,7 @@ def main():
     # Paths
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent.parent
-    readlex_path = project_dir / 'external/readlex/readlex.json'
+    readlex_path = project_dir / 'data/readlex.json'
     latin_defs_path = project_dir / f'data/definitions-latin-{dialect}.json'
     wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     shavian_defs_path = project_dir / f'data/definitions-shavian-{dialect}.json'

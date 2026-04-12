@@ -345,6 +345,29 @@ def _normalize_to_readlex_dialect(ipa: str, word: str) -> str:
     ipa = re.sub(r'(' + cons + r')ɪz$', r'\1Əz', ipa)
     ipa = re.sub(r'(' + cons + r')ɪdli$', r'\1Ədli', ipa)
 
+    # --- Grammatical suffix ɪ → ə ---
+    # ReadLex uses ə (not ɪ) specifically in grammatical suffixes.
+    # These are ONLY the inflectional/derivational endings, NOT all word-final
+    # -ɪt/-ɪs/-ɪn patterns (those could be stressed or lexical).
+    # We rely on spelling patterns to identify grammatical suffixes.
+    word_lower = word.lower()
+
+    # -ness → -nəs (always grammatical)
+    if word_lower.endswith('ness') or word_lower.endswith('nesses'):
+        ipa = re.sub(r'nɪs$', 'nəs', ipa)
+        ipa = re.sub(r'nɪsɪz$', 'nəsɪz', ipa)
+    # -ment → -mənt (always grammatical)
+    if word_lower.endswith('ment') or word_lower.endswith('ments'):
+        ipa = re.sub(r'mɪnt$', 'mənt', ipa)
+        ipa = re.sub(r'mɪnts$', 'mənts', ipa)
+    # -less → -ləs (always grammatical)
+    if word_lower.endswith('less'):
+        ipa = re.sub(r'lɪs$', 'ləs', ipa)
+    # -ble/-bly (derivational suffix)
+    if word_lower.endswith('ble') or word_lower.endswith('bly'):
+        ipa = re.sub(r'bɪl$', 'bəl', ipa)
+        ipa = re.sub(r'blɪ$', 'bli', ipa)  # -bly keeps ɪ→i actually
+
     # --- Unstressed jʊ → jə ---
     # ReadLex prefers ə where modern pronunciation has reduced ʊ after j
     result = list(ipa)
@@ -563,6 +586,41 @@ def _convert_stripped(ipa: str) -> str:
 
 # All Shavian letters that contain an 'r' sound
 SHAVIAN_R_LETTERS = set("𐑮𐑼𐑻𐑺𐑽𐑸𐑹")
+
+# Known acceptable Shavian alternation pairs (either direction).
+# These represent genuine dialect/editorial differences that are valid
+# alternative spellings, not errors.
+ACCEPTABLE_ALTERNATIONS = {
+    ('𐑦', '𐑩'),  # kit/schwa: RP speakers may use either in weak syllables
+    ('𐑨', '𐑩'),  # trap/schwa: unstressed initial syllables
+    ('𐑫', '𐑩'),  # foot/schwa: modern pronunciation shift
+    ('𐑼', '𐑩'),  # schwa-r/schwa: r-related alternation
+    ('𐑼', '𐑦'),  # schwa-r/kit: r-related alternation
+}
+# Make bidirectional
+ACCEPTABLE_ALTERNATIONS |= {(b, a) for a, b in ACCEPTABLE_ALTERNATIONS}
+
+
+def classify_shaw_difference(our_shaw: str, readlex_shaw: str) -> str:
+    """Classify the difference between our Shavian and ReadLex's.
+
+    Returns:
+        "match" — identical
+        "acceptable_alternation" — differs only in known acceptable vowel alternations
+        "different" — substantive difference
+    """
+    if our_shaw == readlex_shaw:
+        return "match"
+
+    if len(our_shaw) != len(readlex_shaw):
+        return "different"
+
+    for i in range(len(our_shaw)):
+        if our_shaw[i] != readlex_shaw[i]:
+            if (our_shaw[i], readlex_shaw[i]) not in ACCEPTABLE_ALTERNATIONS:
+                return "different"
+
+    return "acceptable_alternation"
 
 # Valid Shavian characters (for unknown-char detection)
 KNOWN_SHAVIAN = set("𐑐𐑚𐑑𐑛𐑒𐑜𐑓𐑝𐑔𐑞𐑕𐑟𐑖𐑠𐑗𐑡𐑥𐑯𐑙𐑤𐑮𐑢𐑣𐑘𐑨𐑧𐑦𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿 -.'")

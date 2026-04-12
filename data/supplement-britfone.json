@@ -12235,16 +12235,15 @@
       "confidence": 89
     }
   ],
-  "awareness_UNC_𐑼𐑢𐑺𐑯𐑦𐑕": [
+  "awareness_UNC_𐑼𐑢𐑺𐑯𐑩𐑕": [
     {
       "Latn": "awareness",
-      "Shaw": "𐑼𐑢𐑺𐑯𐑦𐑕",
+      "Shaw": "𐑼𐑢𐑺𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "əRweəRnɪs",
+      "ipa": "əRweəRnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 5,
-      "review": "ml_disagrees:𐑼𐑢𐑺𐑯𐑩𐑕; shave_says:𐑩𐑢𐑺𐑯𐑩𐑕"
+      "confidence": 89
     }
   ],
   "awash_UNC_𐑩𐑢𐑪𐑖": [
@@ -21885,12 +21884,12 @@
       "confidence": 89
     }
   ],
-  "business_UNC_𐑚𐑦𐑟𐑯𐑦𐑕": [
+  "business_UNC_𐑚𐑦𐑟𐑯𐑩𐑕": [
     {
       "Latn": "business",
-      "Shaw": "𐑚𐑦𐑟𐑯𐑦𐑕",
+      "Shaw": "𐑚𐑦𐑟𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "bˈɪznɪs",
+      "ipa": "bˈɪznəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -34146,12 +34145,12 @@
       "confidence": 89
     }
   ],
-  "consciousness_UNC_𐑒𐑪𐑯𐑖𐑩𐑕𐑯𐑦𐑕": [
+  "consciousness_UNC_𐑒𐑪𐑯𐑖𐑩𐑕𐑯𐑩𐑕": [
     {
       "Latn": "consciousness",
-      "Shaw": "𐑒𐑪𐑯𐑖𐑩𐑕𐑯𐑦𐑕",
+      "Shaw": "𐑒𐑪𐑯𐑖𐑩𐑕𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "kˈɒnʃəsnɪs",
+      "ipa": "kˈɒnʃəsnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -36554,11 +36553,10 @@
       "Latn": "cordless",
       "Shaw": "𐑒𐑹𐑛𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "kɔːRdlɪs",
+      "ipa": "kɔːRdləs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑹𐑛𐑤𐑩𐑕; overridden:was=𐑒𐑹𐑛𐑤𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "corduroy_UNC_𐑒𐑹𐑛𐑼𐑶": [
@@ -40807,11 +40805,10 @@
       "Latn": "darkness",
       "Shaw": "𐑛𐑸𐑒𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "dɑːRknɪs",
+      "ipa": "dɑːRknəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑛𐑸𐑒𐑯𐑩𐑕; overridden:was=𐑛𐑸𐑒𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "darling_UNC_𐑛𐑸𐑤𐑦𐑙": [
@@ -48731,12 +48728,12 @@
       "confidence": 89
     }
   ],
-  "doubtless_UNC_𐑛𐑬𐑑𐑤𐑦𐑕": [
+  "doubtless_UNC_𐑛𐑬𐑑𐑤𐑩𐑕": [
     {
       "Latn": "doubtless",
-      "Shaw": "𐑛𐑬𐑑𐑤𐑦𐑕",
+      "Shaw": "𐑛𐑬𐑑𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "dˈaʊtlɪs",
+      "ipa": "dˈaʊtləs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -51603,12 +51600,12 @@
       "confidence": 89
     }
   ],
-  "effectiveness_UNC_𐑦𐑓𐑧𐑒𐑑𐑦𐑝𐑯𐑦𐑕": [
+  "effectiveness_UNC_𐑦𐑓𐑧𐑒𐑑𐑦𐑝𐑯𐑩𐑕": [
     {
       "Latn": "effectiveness",
-      "Shaw": "𐑦𐑓𐑧𐑒𐑑𐑦𐑝𐑯𐑦𐑕",
+      "Shaw": "𐑦𐑓𐑧𐑒𐑑𐑦𐑝𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "ɪfˈektɪvnɪs",
+      "ipa": "ɪfˈektɪvnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -53718,11 +53715,10 @@
       "Latn": "endless",
       "Shaw": "𐑧𐑯𐑛𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "ˈendlɪs",
+      "ipa": "ˈendləs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑧𐑯𐑛𐑤𐑩𐑕; overridden:was=𐑧𐑯𐑛𐑤𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "endorse_UNC_𐑧𐑯𐑛𐑹𐑕": [
@@ -61564,12 +61560,12 @@
       "confidence": 89
     }
   ],
-  "fitness_UNC_𐑓𐑦𐑑𐑯𐑦𐑕": [
+  "fitness_UNC_𐑓𐑦𐑑𐑯𐑩𐑕": [
     {
       "Latn": "fitness",
-      "Shaw": "𐑓𐑦𐑑𐑯𐑦𐑕",
+      "Shaw": "𐑓𐑦𐑑𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "fˈɪtnɪs",
+      "ipa": "fˈɪtnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -63530,12 +63526,12 @@
       "confidence": 89
     }
   ],
-  "forgiveness_UNC_𐑓𐑼𐑜𐑦𐑝𐑯𐑦𐑕": [
+  "forgiveness_UNC_𐑓𐑼𐑜𐑦𐑝𐑯𐑩𐑕": [
     {
       "Latn": "forgiveness",
-      "Shaw": "𐑓𐑼𐑜𐑦𐑝𐑯𐑦𐑕",
+      "Shaw": "𐑓𐑼𐑜𐑦𐑝𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "fəRɡɪvnɪs",
+      "ipa": "fəRɡɪvnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -68913,11 +68909,10 @@
       "Latn": "goodness",
       "Shaw": "𐑜𐑫𐑛𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "ɡˈʊdnɪs",
+      "ipa": "ɡˈʊdnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑜𐑫𐑛𐑯𐑩𐑕; overridden:was=𐑜𐑫𐑛𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "goodnight_UNC_𐑜𐑫𐑛𐑯𐑲𐑑": [
@@ -71211,11 +71206,10 @@
       "Latn": "guinness",
       "Shaw": "𐑜𐑦𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "ɡˈɪnɪs",
+      "ipa": "ɡˈɪnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑜𐑦𐑯𐑩𐑕; overridden:was=𐑜𐑦𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "guise_UNC_𐑜𐑲𐑟": [
@@ -72456,11 +72450,10 @@
       "Latn": "happiness",
       "Shaw": "𐑣𐑨𐑐𐑦𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "hˈæpɪnɪs",
+      "ipa": "hˈæpɪnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑨𐑐𐑦𐑯𐑩𐑕; overridden:was=𐑣𐑨𐑐𐑦𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "happisburgh_UNC_𐑣𐑱𐑟𐑚𐑮𐑩": [
@@ -72750,11 +72743,10 @@
       "Latn": "harness",
       "Shaw": "𐑣𐑸𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "hɑːRnɪs",
+      "ipa": "hɑːRnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑸𐑯𐑩𐑕; overridden:was=𐑣𐑸𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "harold_UNC_𐑣𐑨𐑮𐑼𐑤𐑛": [
@@ -74260,11 +74252,10 @@
       "Latn": "helpless",
       "Shaw": "𐑣𐑧𐑤𐑐𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "hˈelplɪs",
+      "ipa": "hˈelpləs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑧𐑤𐑐𐑤𐑩𐑕; overridden:was=𐑣𐑧𐑤𐑐𐑤𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "helps_UNC_𐑣𐑧𐑤𐑐𐑕": [
@@ -74962,11 +74953,10 @@
       "Latn": "highness",
       "Shaw": "𐑣𐑲𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "hˈaɪnɪs",
+      "ipa": "hˈaɪnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑲𐑯𐑩𐑕; overridden:was=𐑣𐑲𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "highs_UNC_𐑣𐑲𐑟": [
@@ -75894,12 +75884,12 @@
       "confidence": 89
     }
   ],
-  "homeless_UNC_𐑣𐑴𐑥𐑤𐑦𐑕": [
+  "homeless_UNC_𐑣𐑴𐑥𐑤𐑩𐑕": [
     {
       "Latn": "homeless",
-      "Shaw": "𐑣𐑴𐑥𐑤𐑦𐑕",
+      "Shaw": "𐑣𐑴𐑥𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "hˈəʊmlɪs",
+      "ipa": "hˈəʊmləs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -76432,11 +76422,10 @@
       "Latn": "hopeless",
       "Shaw": "𐑣𐑴𐑐𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "hˈəʊplɪs",
+      "ipa": "hˈəʊpləs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑣𐑴𐑐𐑤𐑩𐑕; overridden:was=𐑣𐑴𐑐𐑤𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "hopes_UNC_𐑣𐑴𐑐𐑕": [
@@ -78475,12 +78464,12 @@
       "confidence": 89
     }
   ],
-  "illness_UNC_𐑦𐑤𐑯𐑦𐑕": [
+  "illness_UNC_𐑦𐑤𐑯𐑩𐑕": [
     {
       "Latn": "illness",
-      "Shaw": "𐑦𐑤𐑯𐑦𐑕",
+      "Shaw": "𐑦𐑤𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "ˈɪlnɪs",
+      "ipa": "ˈɪlnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -87203,11 +87192,10 @@
       "Latn": "kindness",
       "Shaw": "𐑒𐑲𐑯𐑛𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "kˈaɪndnɪs",
+      "ipa": "kˈaɪndnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑒𐑲𐑯𐑛𐑯𐑩𐑕; overridden:was=𐑒𐑲𐑯𐑛𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "kinds_UNC_𐑒𐑲𐑯𐑛𐑟": [
@@ -94569,11 +94557,10 @@
       "Latn": "madness",
       "Shaw": "𐑥𐑨𐑛𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "mˈædnɪs",
+      "ipa": "mˈædnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑥𐑨𐑛𐑯𐑩𐑕; overridden:was=𐑥𐑨𐑛𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "madonna_UNC_𐑥𐑩𐑛𐑪𐑯𐑩": [
@@ -104509,11 +104496,10 @@
       "Latn": "needless",
       "Shaw": "𐑯𐑰𐑛𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "nˈiːdlɪs",
+      "ipa": "nˈiːdləs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑯𐑰𐑛𐑤𐑩𐑕; overridden:was=𐑯𐑰𐑛𐑤𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "needn't_UNC_𐑯𐑰𐑛𐑩𐑯𐑑": [
@@ -118234,12 +118220,12 @@
       "confidence": 89
     }
   ],
-  "pointless_UNC_𐑐𐑶𐑯𐑑𐑤𐑦𐑕": [
+  "pointless_UNC_𐑐𐑶𐑯𐑑𐑤𐑩𐑕": [
     {
       "Latn": "pointless",
-      "Shaw": "𐑐𐑶𐑯𐑑𐑤𐑦𐑕",
+      "Shaw": "𐑐𐑶𐑯𐑑𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "pˈɔɪntlɪs",
+      "ipa": "pˈɔɪntləs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -129191,11 +129177,10 @@
       "Latn": "regardless",
       "Shaw": "𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "rɪɡɑːRdlɪs",
+      "ipa": "rɪɡɑːRdləs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑮𐑦𐑜𐑸𐑛𐑤𐑩𐑕; overridden:was=𐑮𐑦𐑜𐑸𐑛𐑤𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "regards_UNC_𐑮𐑦𐑜𐑸𐑛𐑟": [
@@ -135452,11 +135437,10 @@
       "Latn": "sadness",
       "Shaw": "𐑕𐑨𐑛𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "sˈædnɪs",
+      "ipa": "sˈædnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑕𐑨𐑛𐑯𐑩𐑕; overridden:was=𐑕𐑨𐑛𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "safari_UNC_𐑕𐑩𐑓𐑸𐑦": [
@@ -141950,11 +141934,10 @@
       "Latn": "sickness",
       "Shaw": "𐑕𐑦𐑒𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "sˈɪknɪs",
+      "ipa": "sˈɪknəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑕𐑦𐑒𐑯𐑩𐑕; overridden:was=𐑕𐑦𐑒𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "sid_UNC_𐑕𐑦𐑛": [
@@ -148618,12 +148601,12 @@
       "confidence": 89
     }
   ],
-  "stainless_UNC_𐑕𐑑𐑱𐑯𐑤𐑦𐑕": [
+  "stainless_UNC_𐑕𐑑𐑱𐑯𐑤𐑩𐑕": [
     {
       "Latn": "stainless",
-      "Shaw": "𐑕𐑑𐑱𐑯𐑤𐑦𐑕",
+      "Shaw": "𐑕𐑑𐑱𐑯𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "stˈeɪnlɪs",
+      "ipa": "stˈeɪnləs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -158314,11 +158297,10 @@
       "Latn": "thickness",
       "Shaw": "𐑔𐑦𐑒𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "θˈɪknɪs",
+      "ipa": "θˈɪknəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑔𐑦𐑒𐑯𐑩𐑕; overridden:was=𐑔𐑦𐑒𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "thief_UNC_𐑔𐑰𐑓": [
@@ -160662,11 +160644,10 @@
       "Latn": "topless",
       "Shaw": "𐑑𐑪𐑐𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "tˈɒplɪs",
+      "ipa": "tˈɒpləs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑑𐑪𐑐𐑤𐑩𐑕; overridden:was=𐑑𐑪𐑐𐑤𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "tops_UNC_𐑑𐑪𐑐𐑕": [
@@ -166384,12 +166365,12 @@
       "confidence": 89
     }
   ],
-  "useless_UNC_𐑿𐑕𐑤𐑦𐑕": [
+  "useless_UNC_𐑿𐑕𐑤𐑩𐑕": [
     {
       "Latn": "useless",
-      "Shaw": "𐑿𐑕𐑤𐑦𐑕",
+      "Shaw": "𐑿𐑕𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "jˈuːslɪs",
+      "ipa": "jˈuːsləs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -171126,11 +171107,10 @@
       "Latn": "weakness",
       "Shaw": "𐑢𐑰𐑒𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "wˈiːknɪs",
+      "ipa": "wˈiːknəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑢𐑰𐑒𐑯𐑩𐑕; overridden:was=𐑢𐑰𐑒𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "weaknesses_UNC_𐑢𐑰𐑒𐑯𐑦𐑕𐑩𐑟": [
@@ -171745,12 +171725,12 @@
       "confidence": 89
     }
   ],
-  "wellness_UNC_𐑢𐑧𐑤𐑯𐑦𐑕": [
+  "wellness_UNC_𐑢𐑧𐑤𐑯𐑩𐑕": [
     {
       "Latn": "wellness",
-      "Shaw": "𐑢𐑧𐑤𐑯𐑦𐑕",
+      "Shaw": "𐑢𐑧𐑤𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "wˈelnɪs",
+      "ipa": "wˈelnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -172973,11 +172953,10 @@
       "Latn": "wilderness",
       "Shaw": "𐑢𐑦𐑤𐑛𐑼𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "wɪldəRnɪs",
+      "ipa": "wɪldəRnəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 99,
-      "review": "ml_disagrees:𐑢𐑦𐑤𐑛𐑼𐑯𐑩𐑕; overridden:was=𐑢𐑦𐑤𐑛𐑼𐑯𐑦𐑕; shave+ml_consensus"
+      "confidence": 89
     }
   ],
   "wildlife_UNC_𐑢𐑲𐑤𐑛𐑤𐑲𐑓": [
@@ -173077,12 +173056,12 @@
       "confidence": 89
     }
   ],
-  "willingness_UNC_𐑢𐑦𐑤𐑦𐑙𐑯𐑦𐑕": [
+  "willingness_UNC_𐑢𐑦𐑤𐑦𐑙𐑯𐑩𐑕": [
     {
       "Latn": "willingness",
-      "Shaw": "𐑢𐑦𐑤𐑦𐑙𐑯𐑦𐑕",
+      "Shaw": "𐑢𐑦𐑤𐑦𐑙𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "wˈɪlɪŋnɪs",
+      "ipa": "wˈɪlɪŋnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -173479,12 +173458,12 @@
       "confidence": 89
     }
   ],
-  "wireless_UNC_𐑢𐑲𐑩𐑤𐑦𐑕": [
+  "wireless_UNC_𐑢𐑲𐑩𐑤𐑩𐑕": [
     {
       "Latn": "wireless",
-      "Shaw": "𐑢𐑲𐑩𐑤𐑦𐑕",
+      "Shaw": "𐑢𐑲𐑩𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "waɪəlɪs",
+      "ipa": "waɪələs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 1,
@@ -173808,12 +173787,12 @@
       "confidence": 89
     }
   ],
-  "witness_UNC_𐑢𐑦𐑑𐑯𐑦𐑕": [
+  "witness_UNC_𐑢𐑦𐑑𐑯𐑩𐑕": [
     {
       "Latn": "witness",
-      "Shaw": "𐑢𐑦𐑑𐑯𐑦𐑕",
+      "Shaw": "𐑢𐑦𐑑𐑯𐑩𐑕",
       "pos": "UNC",
-      "ipa": "wˈɪtnɪs",
+      "ipa": "wˈɪtnəs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89
@@ -174604,12 +174583,12 @@
       "confidence": 89
     }
   ],
-  "worthless_UNC_𐑢𐑻𐑔𐑤𐑦𐑕": [
+  "worthless_UNC_𐑢𐑻𐑔𐑤𐑩𐑕": [
     {
       "Latn": "worthless",
-      "Shaw": "𐑢𐑻𐑔𐑤𐑦𐑕",
+      "Shaw": "𐑢𐑻𐑔𐑤𐑩𐑕",
       "pos": "UNC",
-      "ipa": "wɜːRθlɪs",
+      "ipa": "wɜːRθləs",
       "freq": 0,
       "var": "RSSB",
       "confidence": 89

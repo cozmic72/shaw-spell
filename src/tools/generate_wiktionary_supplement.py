@@ -19,7 +19,7 @@ from collections import Counter
 
 # Add tools directory to path for ipa_to_shavian
 sys.path.insert(0, str(Path(__file__).parent))
-from ipa_to_shavian import ipa_to_shavian
+from ipa_to_shavian import ipa_to_shavian, normalize_ipa
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 WIKTIONARY_JSONL = PROJECT_ROOT / "external" / "wiktionary" / "kaikki.org-dictionary-English.jsonl"
@@ -141,9 +141,21 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
 
         stats["with_ipa"] += 1
 
+        # Determine dialect for normalization source
+        dialect = classify_dialect(tags)
+        if dialect == "RSSB":
+            norm_source = "wiktionary_rp"
+        elif dialect == "RGAM":
+            norm_source = "wiktionary_gam"
+        else:
+            norm_source = "wiktionary_rp"  # default guess for unlabelled
+
+        # Normalize IPA to ReadLex conventions
+        ipa_normalized = normalize_ipa(ipa_clean, word=word, source=norm_source)
+
         # Generate Shavian
         try:
-            shaw = ipa_to_shavian(ipa_clean)
+            shaw = ipa_to_shavian(ipa_normalized)
         except Exception:
             stats["shavian_errors"] += 1
             continue
@@ -151,13 +163,11 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
         if not shaw:
             continue
 
-        dialect = classify_dialect(tags)
-
         entry_data = {
             "Latn": word,
             "Shaw": shaw,
             "pos": pos,
-            "ipa": ipa_clean,
+            "ipa": ipa_normalized,
             "freq": 0,
             "var": dialect if dialect else "UNC",
         }

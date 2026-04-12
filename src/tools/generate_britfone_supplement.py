@@ -27,7 +27,7 @@ from pathlib import Path
 TOOLS_DIR = Path(__file__).parent
 sys.path.insert(0, str(TOOLS_DIR))
 
-from ipa_to_shavian import ipa_to_shavian
+from ipa_to_shavian import ipa_to_shavian, normalize_ipa
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 BRITFONE_CSV = PROJECT_ROOT / "external" / "britfone" / "britfone.main.3.0.1.csv"
@@ -58,21 +58,17 @@ def parse_britfone_word(raw_word: str) -> tuple[str, int]:
     return word, variant
 
 
-def britfone_ipa_to_readlex(phonemes_str: str) -> str:
+def britfone_ipa_to_readlex(phonemes_str: str, word: str = "") -> str:
     """Convert Britfone space-separated IPA to a ReadLex-style IPA string.
 
     Steps:
     1. Join space-separated phonemes into a single string
-    2. Convert: ɐ→ʌ, ɹ→r (ɛ stays as-is since the converter handles it)
+    2. Normalize to ReadLex conventions (symbol conversion + r-restoration)
     """
     # Join phonemes (remove spaces)
     ipa = phonemes_str.replace(' ', '')
-
-    # Symbol conversions
-    ipa = ipa.replace('ɐ', 'ʌ')
-    ipa = ipa.replace('ɹ', 'r')
-
-    return ipa
+    # Use normalize_ipa for proper dialect conversion
+    return normalize_ipa(ipa, word=word, source="britfone")
 
 
 def main():
@@ -116,7 +112,7 @@ def main():
             phonemes_str = parts[1].strip()
 
             word, _variant = parse_britfone_word(raw_word)
-            ipa = britfone_ipa_to_readlex(phonemes_str)
+            ipa = britfone_ipa_to_readlex(phonemes_str, word=word)
 
             if word not in word_pronunciations:
                 word_pronunciations[word] = []

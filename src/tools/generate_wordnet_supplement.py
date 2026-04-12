@@ -18,7 +18,7 @@ import yaml
 
 # Add tools dir so we can import the IPA-to-Shavian converter
 sys.path.insert(0, str(Path(__file__).parent))
-from ipa_to_shavian import ipa_to_shavian
+from ipa_to_shavian import ipa_to_shavian, normalize_ipa
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_DIR = ROOT / "external" / "english-wordnet" / "src" / "yaml"
@@ -140,6 +140,8 @@ def main():
                 word_lower = word.lower()
 
                 if ipa:
+                    # Normalize IPA to ReadLex conventions (GB = non-rhotic RP-like)
+                    ipa = normalize_ipa(ipa, word=word_lower, source="wiktionary_rp")
                     # Try Shavian conversion
                     try:
                         shaw = ipa_to_shavian(ipa)

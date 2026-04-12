@@ -21,9 +21,194 @@ Usage:
     python3 ipa_to_shavian.py [--validate] [--verbose]
 """
 
+import re
 import sys
 import json
 from pathlib import Path
+
+
+def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
+    """Normalize IPA from various sources to ReadLex conventions.
+
+    ReadLex uses a specific "Rhotic RP" dialect with conventions like:
+      - lowercase 'r' (not ɹ) for the rhotic approximant
+      - Capital 'R' for linking/intrusive r
+      - 'e' (not ɛ) for the DRESS vowel
+      - 'ə' + 'r' compounding into r-colored vowels (ər → 𐑼)
+      - No syllabic marks (ən not n̩)
+
+    Args:
+        ipa: IPA string from the source
+        word: Latin spelling of the word (needed for r-restoration)
+        source: one of "readlex", "britfone", "wiktionary_rp", "wiktionary_gam"
+
+    Returns:
+        IPA string normalized to ReadLex conventions
+    """
+    if source == "readlex":
+        return ipa  # already in ReadLex format
+
+    # --- Common normalizations across all non-ReadLex sources ---
+
+    # Strip IPA slashes/brackets
+    ipa = ipa.strip("/[] ")
+
+    # Remove syllable dots
+    ipa = ipa.replace(".", "")
+
+    # Remove tie bars
+    ipa = ipa.replace("\u0361", "")  # combining double inverted breve
+    ipa = ipa.replace("‿", "")
+
+    # Remove non-syllabic diacritics (e.g. i̯)
+    ipa = ipa.replace("\u032F", "")  # combining inverted breve below
+
+    # Convert syllabic consonants: n̩ → ən, l̩ → əl, m̩ → əm
+    ipa = ipa.replace("n\u0329", "ən")
+    ipa = ipa.replace("l\u0329", "əl")
+    ipa = ipa.replace("m\u0329", "əm")
+    # Also handle standalone syllabic mark if it survived
+    ipa = ipa.replace("\u0329", "")
+
+    # Convert strict IPA symbols to ReadLex conventions
+    ipa = ipa.replace("ɹ", "r")    # alveolar approximant → r
+    ipa = ipa.replace("ɛː", "ɜː") # long open-e → NURSE (rare)
+
+    # Handle ɛ carefully: ɛə should become eə (SQUARE), standalone ɛ → e (DRESS)
+    # But ɛː is NURSE (already handled above)
+    ipa = ipa.replace("ɛ", "e")
+
+    # Britfone-specific: ɐ → ʌ (STRUT vowel)
+    ipa = ipa.replace("ɐ", "ʌ")
+
+    # Wiktionary narrow transcription conventions → ReadLex broad
+    ipa = ipa.replace("ɫ", "l")    # dark l → plain l
+    ipa = ipa.replace("ɒʊ", "əʊ")  # GOAT: Wiktionary sometimes uses ɒʊ, ReadLex uses əʊ
+    ipa = ipa.replace("ɪi", "iː")  # happy tensing narrow form → broad iː
+    ipa = ipa.replace("i̯", "iː")  # another narrow happy form
+
+    # Remove parenthesized optional segments like (ɹ)
+    ipa = re.sub(r'\([^)]*\)', '', ipa)
+
+    # --- R-restoration for non-rhotic sources ---
+    if source in ("britfone", "wiktionary_rp"):
+        ipa = _restore_rhoticity(ipa, word)
+
+    return ipa
+
+
+def _restore_rhoticity(ipa: str, word: str) -> str:
+    """Restore linking/intrusive R for non-rhotic IPA using spelling alignment.
+
+    Non-rhotic dialects drop r after vowels except before another vowel.
+    ReadLex's "Rhotic RP" convention adds capital R where the spelling has
+    an 'r' but the non-rhotic transcription omits it.
+
+    Strategy: align spelling to IPA to find where 'r' in spelling corresponds
+    to a missing r in the IPA, then insert R at those positions.
+    """
+    if not word:
+        return ipa
+
+    word_lower = word.lower().replace("_", " ")
+    if 'r' not in word_lower:
+        return ipa
+
+    # Strip stress marks for alignment
+    stripped = re.sub('[ˈˌ]', '', ipa)
+
+    # Build a simple spelling-to-IPA alignment using the r positions.
+    # We scan both the spelling and IPA left-to-right, advancing through
+    # both. When we hit 'r' in spelling and the IPA doesn't have 'r' at
+    # the corresponding position, we insert R.
+
+    # First: the high-confidence patterns.
+    # NURSE: ɜː always gets R (it's always r-colored in the spelling)
+    stripped = re.sub(r'ɜː(?!r|R)', 'ɜːR', stripped)
+
+    # Word-final ə → əR when the word ends in 'r' or 're' or 'er' etc.
+    if re.search(r'r[es]*$', word_lower):
+        stripped = re.sub(r'ə$', 'əR', stripped)
+        # Also handle ə before word-boundary space/hyphen
+        stripped = re.sub(r'ə(?=[ -])', 'əR', stripped)
+
+    # Note: mid-word ə before consonant (like "aberdeen" əd → əRd) is NOT
+    # handled here because heuristic alignment between spelling and IPA is
+    # too error-prone. These cases are accepted as dialect differences.
+
+    # Now handle the harder cases using a spelling-IPA alignment approach.
+    # We extract the consonant/vowel skeleton of the spelling to find where
+    # 'r' sits relative to other sounds, then match against IPA patterns.
+    result = _align_and_insert_r(stripped, word_lower)
+    return result
+
+
+def _align_and_insert_r(ipa: str, word: str) -> str:
+    """Align spelling to IPA and insert R where spelling has 'r' but IPA doesn't.
+
+    Uses a greedy forward scan: walk through IPA and spelling simultaneously.
+    When spelling has 'r' and IPA has no 'r' at the aligned position,
+    check if we're after a vowel that could be r-colored.
+    """
+    # IPA vowel characters (the ones that can precede linking R)
+    ipa_vowels = set("ɪiɛeæɑɒɔəʊʌɐuaoyː")
+    ipa_consonants = set("pbtdkɡgfvθðszʃʒhmnŋlrwjʍ")
+
+    # Build a list of 'r' positions in the spelling, relative to vowel/consonant
+    # structure. We care about r's that come after vowels in the spelling.
+    # We'll just check: for each long vowel pattern in the IPA (ɑː, ɔː, eə, ɪə, ʊə)
+    # that doesn't already have R/r after it, if the word spelling suggests
+    # there should be an r there, add R.
+
+    # Pattern approach: scan for specific vowel+consonant sequences where
+    # a missing 'r' would be expected
+
+    result = list(ipa)
+    i = len(result) - 1
+
+    # Process right-to-left to not invalidate indices
+    while i >= 0:
+        # ɑː before consonant (START: car, far, park)
+        if i >= 1 and ''.join(result[i-1:i+1]) == "ɑː":
+            if i+1 >= len(result) or result[i+1] not in ('r', 'R') and result[i+1] not in set("ɑɒɔəeɪʊiuaoyː"):
+                # Check if word has 'r' — use a simple heuristic:
+                # START words almost always have 'r' in spelling
+                if 'r' in word and _r_likely_after_vowel(word, 'ar', 'or', 'our', 'oor'):
+                    result.insert(i+1, 'R')
+        # ɔː before consonant (FORCE/NORTH: for, more, port)
+        elif i >= 1 and ''.join(result[i-1:i+1]) == "ɔː":
+            if i+1 >= len(result) or result[i+1] not in ('r', 'R') and result[i+1] not in set("ɑɒɔəeɪʊiuaoyː"):
+                if 'r' in word and _r_likely_after_vowel(word, 'or', 'our', 'oor', 'oar', 'ore', 'ar', 'aur'):
+                    result.insert(i+1, 'R')
+        # eə (SQUARE: air, care, there)
+        elif i >= 1 and ''.join(result[i-1:i+1]) == "eə":
+            if i+1 >= len(result) or result[i+1] not in ('r', 'R'):
+                if 'r' in word:
+                    result.insert(i+1, 'R')
+        # ɪə (NEAR: here, dear, beer)
+        elif i >= 1 and ''.join(result[i-1:i+1]) == "ɪə":
+            if i+1 >= len(result) or result[i+1] not in ('r', 'R'):
+                if 'r' in word and _r_likely_after_vowel(word, 'ear', 'eer', 'ere', 'ier', 'eir'):
+                    result.insert(i+1, 'R')
+        # ʊə (CURE: poor, sure, tour)
+        elif i >= 1 and ''.join(result[i-1:i+1]) == "ʊə":
+            if i+1 >= len(result) or result[i+1] not in ('r', 'R'):
+                if 'r' in word:
+                    result.insert(i+1, 'R')
+
+        i -= 1
+
+    return ''.join(result)
+
+
+def _r_likely_after_vowel(word: str, *patterns: str) -> bool:
+    """Check if word contains any of the given spelling patterns with 'r'."""
+    word_lower = word.lower()
+    for pat in patterns:
+        if pat in word_lower:
+            return True
+    return False
+
 
 # IPA-to-Shavian mapping rules, ordered longest-first for greedy matching.
 # R-colored vowels and diphthongs (with capital R = ReadLex linking r)

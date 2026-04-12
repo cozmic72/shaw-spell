@@ -71,7 +71,7 @@ SRC_IMAGES := src/images
 SRC_TEST := src/test
 
 # External dependencies
-READLEX_PATH := external/readlex/readlex.json
+READLEX_PATH := data/readlex.json
 WORDNET_CACHE := data/wordnet-comprehensive.json
 
 # Common tools

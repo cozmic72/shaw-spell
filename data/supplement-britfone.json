@@ -169943,16 +169943,16 @@
       "review": "shave_agrees"
     }
   ],
-  "tears_UNC_𐑑𐑺𐑟": [
+  "tears_UNC_𐑑𐑽𐑟": [
     {
       "Latn": "tears",
-      "Shaw": "𐑑𐑺𐑟",
+      "Shaw": "𐑑𐑽𐑟",
       "pos": "UNC",
       "ipa": "tɪəRz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:[𐑑𐑺𐑟 / 𐑑𐑽𐑟]"
+      "confidence": 5,
+      "review": "ml_disagrees:𐑑𐑺𐑟; shave_says:[𐑑𐑺𐑟 / 𐑑𐑽𐑟]"
     },
     {
       "Latn": "tears",
@@ -188451,16 +188451,16 @@
       "review": "shave_agrees"
     }
   ],
-  "winchester_UNC_𐑢𐑦𐑯𐑗𐑧𐑕𐑑𐑼": [
+  "winchester_UNC_𐑢𐑦𐑯𐑗𐑦𐑕𐑑𐑼": [
     {
       "Latn": "winchester",
-      "Shaw": "𐑢𐑦𐑯𐑗𐑧𐑕𐑑𐑼",
+      "Shaw": "𐑢𐑦𐑯𐑗𐑦𐑕𐑑𐑼",
       "pos": "UNC",
       "ipa": "wɪntʃɪstəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑢𐑦𐑯𐑗𐑩𐑕𐑑𐑼"
+      "confidence": 5,
+      "review": "ml_disagrees:𐑢𐑦𐑯𐑗𐑧𐑕𐑑𐑼; shave_says:𐑢𐑦𐑯𐑗𐑩𐑕𐑑𐑼"
     }
   ],
   "wind_UNC_𐑢𐑦𐑯𐑛": [

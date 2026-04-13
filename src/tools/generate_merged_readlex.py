@@ -151,6 +151,59 @@ def main():
               f"({source_stats['new']:,} new words, {source_stats['overlap']:,} overlapping)")
         print(f"  Skipped {source_stats['skipped']:,} (below confidence / filtered)")
 
+    # --- CotCaught variant generation ---
+    # For every entry with 𐑪 (LOT) in Shaw, generate a variant with 𐑪→𐑷 (THOUGHT)
+    LOT = "𐑪"
+    THOUGHT = "𐑷"
+    print(f"\nGenerating CotCaught variants (𐑪 → 𐑷)...")
+
+    # Build a set of existing (Latn_lower, Shaw) pairs for dedup
+    existing_shaw_pairs = set()
+    for key, entries in merged.items():
+        for e in entries:
+            existing_shaw_pairs.add((e["Latn"].lower(), e["Shaw"]))
+
+    cot_caught_count = 0
+    cot_caught_new_entries = []  # collect (key, entry) tuples to add after iteration
+
+    for key, entries in list(merged.items()):
+        for e in entries:
+            shaw = e.get("Shaw", "")
+            if LOT not in shaw:
+                continue
+
+            variant_shaw = shaw.replace(LOT, THOUGHT)
+
+            # Skip if this exact Shaw spelling already exists for this word
+            if (e["Latn"].lower(), variant_shaw) in existing_shaw_pairs:
+                continue
+
+            # Build CotCaught variant entry
+            variant_entry = {
+                "Latn": e["Latn"],
+                "Shaw": variant_shaw,
+                "pos": e.get("pos", "UNC"),
+                "ipa": e.get("ipa", ""),
+                "freq": e.get("freq", 0),
+                "var": "CotCaught",
+                "confidence": e.get("confidence", 100),
+                "source": e.get("source", "derived"),
+                "status": "supplement",
+            }
+
+            variant_key = f"{e['Latn']}_{e.get('pos', 'UNC')}_{variant_shaw}"
+            cot_caught_new_entries.append((variant_key, variant_entry))
+            existing_shaw_pairs.add((e["Latn"].lower(), variant_shaw))
+            cot_caught_count += 1
+
+    # Add all CotCaught entries to merged
+    for variant_key, variant_entry in cot_caught_new_entries:
+        if variant_key not in merged:
+            merged[variant_key] = []
+        merged[variant_key].append(variant_entry)
+
+    print(f"  Generated {cot_caught_count:,} CotCaught variant entries")
+
     # Write output
     print(f"\nWriting merged readlex to {OUTPUT_PATH}...")
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -175,6 +228,17 @@ def main():
     print()
     for source, ss in stats["by_source"].items():
         print(f"  {source}: +{ss['added']:,} ({ss['new']:,} new, {ss['overlap']:,} overlap, {ss['skipped']:,} skipped)")
+
+    # Var distribution
+    var_counts = {}
+    for key, entries in merged.items():
+        for e in entries:
+            v = e.get("var", "")
+            var_counts[v] = var_counts.get(v, 0) + 1
+    print(f"\nVar distribution:")
+    for v in sorted(var_counts.keys()):
+        label = v if v else "(none)"
+        print(f"  {label:16s} {var_counts[v]:,}")
 
 
 if __name__ == "__main__":

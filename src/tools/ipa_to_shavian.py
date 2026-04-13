@@ -146,9 +146,11 @@ def _normalize_genam(ipa: str) -> str:
     # And ɑːR is already handled above
     ipa = re.sub(r'ɑ(?!ː)', 'ɒ', ipa)
 
-    # GenAm bare ɔ (without length mark) before consonant → ɔː (THOUGHT)
-    # But don't touch ɔː or ɔɪ
-    ipa = re.sub(r'ɔ(?!ː|ɪ|ʊ|R|r)', 'ɔː', ipa)
+    # GenAm bare ɔ (without length mark, not in diphthongs) → ɒ (LOT)
+    # GenAm IPA from Wiktionary uses ɔ for the merged cot-caught vowel;
+    # ReadLex canonical form is LOT (𐑪), not THOUGHT (𐑷).
+    # Don't touch ɔː (explicit THOUGHT) or ɔɪ/ɔʊ (diphthongs) or ɔR/ɔr (FORCE).
+    ipa = re.sub(r'ɔ(?!ː|ɪ|ʊ|R|r)', 'ɒ', ipa)
 
     return ipa
 

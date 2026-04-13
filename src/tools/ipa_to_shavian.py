@@ -147,21 +147,20 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
         ipa = _normalize_genam(ipa)
 
     # --- R-restoration for non-rhotic sources ---
-    # Apply per-word for phrases so word-boundary heuristics scope correctly
+    # Apply per-word for phrases so alignment works correctly
     if source in ("britfone", "wiktionary_rp"):
         if " " in word and " " in ipa:
             ipa_words = ipa.split(" ")
             latin_words = word.split(" ")
             if len(ipa_words) == len(latin_words):
                 ipa = " ".join(
-                    _restore_rhoticity(iw, lw)
+                    _restore_rhoticity_ml(iw, lw)
                     for iw, lw in zip(ipa_words, latin_words)
                 )
             else:
-                # Word counts don't match — fall back to whole-string
-                ipa = _restore_rhoticity(ipa, word)
+                ipa = _restore_rhoticity_ml(ipa, word)
         else:
-            ipa = _restore_rhoticity(ipa, word)
+            ipa = _restore_rhoticity_ml(ipa, word)
 
     # --- Dialect normalization toward ReadLex conventions ---
     if source in ("britfone", "wiktionary_rp", "wiktionary_gam"):
@@ -214,15 +213,15 @@ def _normalize_genam(ipa: str) -> str:
     return ipa
 
 
-def _restore_rhoticity(ipa: str, word: str) -> str:
-    """Restore linking/intrusive R for non-rhotic IPA using spelling alignment.
+def _restore_rhoticity_ml(ipa: str, word: str) -> str:
+    """Restore linking/intrusive R for non-rhotic IPA using a trained classifier.
 
     Non-rhotic dialects drop r after vowels except before another vowel.
     ReadLex's "Rhotic RP" convention adds capital R where the spelling has
     an 'r' but the non-rhotic transcription omits it.
 
-    Strategy: align spelling to IPA to find where 'r' in spelling corresponds
-    to a missing r in the IPA, then insert R at those positions.
+    Uses a gradient-boosted classifier trained on ReadLex to predict which
+    vowel positions need R insertion, based on IPA context and spelling alignment.
     """
     if not word:
         return ipa
@@ -231,164 +230,193 @@ def _restore_rhoticity(ipa: str, word: str) -> str:
     if 'r' not in word_lower:
         return ipa
 
-    # Strip stress marks for alignment
+    # Strip stress marks for processing
     stripped = re.sub('[ˈˌ]', '', ipa)
 
-    # Build a simple spelling-to-IPA alignment using the r positions.
-    # We scan both the spelling and IPA left-to-right, advancing through
-    # both. When we hit 'r' in spelling and the IPA doesn't have 'r' at
-    # the corresponding position, we insert R.
-
-    # First: the high-confidence patterns.
-    # NURSE: ɜː always gets R (it's always r-colored in the spelling)
-    stripped = re.sub(r'ɜː(?!r|R)', 'ɜːR', stripped)
-
-    # Word-final ə → əR when the word ends in 'r' or 're' or 'er' etc.
-    if re.search(r'r[es]*$', word_lower):
-        stripped = re.sub(r'ə$', 'əR', stripped)
-        # Also handle ə before word-boundary space/hyphen
-        stripped = re.sub(r'ə(?=[ -])', 'əR', stripped)
-
-    # Inflected forms: word ends in Vr + inflectional suffix (s, ed, d, ly, ing).
-    # Insert R after word-final ə that's followed by suffix consonant(s).
-    # e.g., actors (Vr+s), filtered (Vr+ed), mastered, pictured,
-    # fatherly, wandering, etc.
-    # Only strip true inflectional endings to find the stem.
-    stem = re.sub(r'(ed|ing|ly|s)$', '', word_lower)
-    if re.search(r'[aeiouy]r[^aeiouy]*$', stem) and len(stem) > 1:
-        stripped = re.sub(r'ə([pbtdkɡfvθðszʃʒhmnŋlwjʍ]+)$', r'əR\1', stripped)
-
-    # Mid-word ə before consonant: check if spelling has 'r' at aligned position.
-    # Handles words like yesterday (jestədeɪ), saturday (sætədeɪ), butterfly (bʌtəflaɪ).
-    stripped = _restore_midword_schwa_r(stripped, word_lower)
-
-    # Now handle the harder cases using a spelling-IPA alignment approach.
-    # We extract the consonant/vowel skeleton of the spelling to find where
-    # 'r' sits relative to other sounds, then match against IPA patterns.
-    result = _align_and_insert_r(stripped, word_lower)
-    return result
-
-
-def _restore_midword_schwa_r(ipa: str, word: str) -> str:
-    """Insert R after mid-word ə when the spelling has 'r' at the aligned position.
-
-    Uses ratio-based position mapping: if ə is at position i in the IPA,
-    look for 'r' near position i/len(ipa) * len(word) in the spelling.
-
-    Only targets ə followed by a consonant (not word-final, not before a vowel,
-    not already followed by R/r, and not part of eə/ɪə/ʊə diphthongs).
-    """
-    if 'r' not in word:
+    # Load model (cached after first call)
+    model_data = _load_rhoticity_model()
+    if model_data is None:
+        # Fallback: just return as-is if model not available
         return ipa
 
-    ipa_vowels = set("ɪiɛeæɑɒɔəʊʌɐuaoyː")
-    ipa_consonants = set("pbtdkɡgfvθðszʃʒhmnŋlwjʍ")
+    model = model_data['model']
+    char_vocab = model_data['char_vocab']
+    r_vowels = model_data['r_vowels']
 
-    result = list(ipa)
-    ipa_len = len(result)
-    word_len = len(word)
-    insertions = []  # collect (index, 'R') to insert, applied right-to-left
+    # Find all vowel sites that could potentially take R
+    sites = _find_r_sites(stripped, r_vowels)
+    if not sites:
+        return ipa
 
-    for i, ch in enumerate(result):
-        if ch != 'ə':
-            continue
-        # Skip word-final ə (already handled)
-        if i == ipa_len - 1:
-            continue
-        # Skip if already followed by R or r
-        if result[i + 1] in ('R', 'r'):
-            continue
-        # Skip if followed by a vowel (linking position, not r-colored)
-        if result[i + 1] in ipa_vowels:
-            continue
-        # Must be followed by a consonant
-        if result[i + 1] not in ipa_consonants:
-            continue
-        # Skip if this ə is part of eə, ɪə, or ʊə diphthong
-        if i >= 1 and result[i - 1] in ('e', 'ɪ', 'ʊ'):
-            continue
+    # Predict for each site
+    import numpy as np
+    insertions = []
+    for site_pos, vowel in sites:
+        features = _extract_r_features(stripped, word, site_pos, vowel, r_vowels)
+        vec = _features_to_vector(features, char_vocab, r_vowels).reshape(1, -1)
+        pred = model.predict(vec)[0]
+        insert_pos = site_pos + len(vowel)
+        if pred:
+            insertions.append(insert_pos)
 
-        # Ratio-based alignment: where in the spelling does this ə sit?
-        ratio = (i + 1) / ipa_len  # position just after the ə
-        spelling_pos = int(ratio * word_len)
-
-        # Search for 'r' in a window around the aligned position
-        # Window size scales with word length but at least ±2
-        window = max(2, word_len // 4)
-        lo = max(0, spelling_pos - window)
-        hi = min(word_len, spelling_pos + window + 1)
-        spelling_slice = word[lo:hi]
-
-        if 'r' in spelling_slice:
-            # Extra guard: the 'r' in spelling should follow a vowel letter
-            # (to avoid matching initial 'r' or 'r' in consonant clusters like 'str')
-            r_idx = word.find('r', lo)
-            if r_idx is not None and r_idx > 0 and word[r_idx - 1] in 'aeiouy':
-                insertions.append(i + 1)
-
-    # Apply insertions right-to-left to preserve indices
-    for idx in reversed(insertions):
-        result.insert(idx, 'R')
+    # Insert R at predicted positions (reverse order to preserve indices)
+    result = list(stripped)
+    for pos in sorted(insertions, reverse=True):
+        result.insert(pos, 'R')
 
     return ''.join(result)
 
 
-def _align_and_insert_r(ipa: str, word: str) -> str:
-    """Align spelling to IPA and insert R where spelling has 'r' but IPA doesn't.
+_rhoticity_model_cache = None
 
-    Uses a greedy forward scan: walk through IPA and spelling simultaneously.
-    When spelling has 'r' and IPA has no 'r' at the aligned position,
-    check if we're after a vowel that could be r-colored.
-    """
-    # IPA vowel characters (the ones that can precede linking R)
-    ipa_vowels = set("ɪiɛeæɑɒɔəʊʌɐuaoyː")
-    ipa_consonants = set("pbtdkɡgfvθðszʃʒhmnŋlrwjʍ")
 
-    # Build a list of 'r' positions in the spelling, relative to vowel/consonant
-    # structure. We care about r's that come after vowels in the spelling.
-    # We'll just check: for each long vowel pattern in the IPA (ɑː, ɔː, eə, ɪə, ʊə)
-    # that doesn't already have R/r after it, if the word spelling suggests
-    # there should be an r there, add R.
+def _load_rhoticity_model():
+    """Load the rhoticity model, caching after first call."""
+    global _rhoticity_model_cache
+    if _rhoticity_model_cache is not None:
+        return _rhoticity_model_cache
 
-    # Pattern approach: scan for specific vowel+consonant sequences where
-    # a missing 'r' would be expected
+    import pickle
+    model_path = Path(__file__).parent.parent.parent / "data" / "rhoticity-model.pkl"
+    if not model_path.exists():
+        print(f"Warning: rhoticity model not found at {model_path}", file=sys.stderr)
+        return None
 
-    result = list(ipa)
-    i = len(result) - 1
+    with open(model_path, 'rb') as f:
+        _rhoticity_model_cache = pickle.load(f)
+    return _rhoticity_model_cache
 
-    # Process right-to-left to not invalidate indices
-    while i >= 0:
-        # ɑː before consonant (START: car, far, park)
-        if i >= 1 and ''.join(result[i-1:i+1]) == "ɑː":
-            if i+1 >= len(result) or result[i+1] not in ('r', 'R') and result[i+1] not in set("ɑɒɔəeɪʊiuaoyː"):
-                # Check if word has 'r' — use a simple heuristic:
-                # START words almost always have 'r' in spelling
-                if 'r' in word and _r_likely_after_vowel(word, 'ar', 'or', 'our', 'oor'):
-                    result.insert(i+1, 'R')
-        # ɔː before consonant (FORCE/NORTH: for, more, port)
-        elif i >= 1 and ''.join(result[i-1:i+1]) == "ɔː":
-            if i+1 >= len(result) or result[i+1] not in ('r', 'R') and result[i+1] not in set("ɑɒɔəeɪʊiuaoyː"):
-                if 'r' in word and _r_likely_after_vowel(word, 'or', 'our', 'oor', 'oar', 'ore', 'ar', 'aur'):
-                    result.insert(i+1, 'R')
-        # eə (SQUARE: air, care, there)
-        elif i >= 1 and ''.join(result[i-1:i+1]) == "eə":
-            if i+1 >= len(result) or result[i+1] not in ('r', 'R'):
-                if 'r' in word:
-                    result.insert(i+1, 'R')
-        # ɪə (NEAR: here, dear, beer)
-        elif i >= 1 and ''.join(result[i-1:i+1]) == "ɪə":
-            if i+1 >= len(result) or result[i+1] not in ('r', 'R'):
-                if 'r' in word and _r_likely_after_vowel(word, 'ear', 'eer', 'ere', 'ier', 'eir'):
-                    result.insert(i+1, 'R')
-        # ʊə (CURE: poor, sure, tour)
-        elif i >= 1 and ''.join(result[i-1:i+1]) == "ʊə":
-            if i+1 >= len(result) or result[i+1] not in ('r', 'R'):
-                if 'r' in word:
-                    result.insert(i+1, 'R')
 
-        i -= 1
+def _find_r_sites(ipa: str, r_vowels: list) -> list:
+    """Find all vowel positions in IPA that could potentially take R."""
+    sites = []
+    i = 0
+    while i < len(ipa):
+        matched = False
+        for vowel in r_vowels:
+            vlen = len(vowel)
+            if ipa[i:i + vlen] == vowel:
+                next_pos = i + vlen
+                # Skip əʊ diphthong
+                if vowel == 'ə' and next_pos < len(ipa) and ipa[next_pos] == 'ʊ':
+                    i += 1
+                    matched = True
+                    break
+                sites.append((i, vowel))
+                i += vlen
+                matched = True
+                break
+        if not matched:
+            i += 1
+    return sites
 
-    return ''.join(result)
+
+def _extract_r_features(ipa: str, word: str, site_pos: int, vowel: str, r_vowels: list) -> dict:
+    """Extract features for a vowel position that may need R insertion."""
+    word_lower = word.lower()
+    ipa_len = len(ipa)
+    word_len = len(word_lower)
+    vlen = len(vowel)
+    after_pos = site_pos + vlen
+
+    ctx_before = ipa[max(0, site_pos - 3):site_pos].rjust(3, '_')
+    ctx_after = ipa[after_pos:after_pos + 3].ljust(3, '_')
+    next_char = ipa[after_pos] if after_pos < ipa_len else '_'
+    prev_char = ipa[site_pos - 1] if site_pos > 0 else '_'
+
+    norm_pos = site_pos / max(ipa_len - 1, 1)
+    is_final = after_pos >= ipa_len
+
+    aligned_pos = int(norm_pos * (word_len - 1)) if word_len > 1 else 0
+    aligned_pos = min(aligned_pos, word_len - 1)
+
+    spell_at = word_lower[aligned_pos] if aligned_pos < word_len else '_'
+
+    r_positions = [i for i, c in enumerate(word_lower) if c == 'r']
+    if r_positions:
+        min_r_dist = min(abs(aligned_pos - rp) for rp in r_positions)
+        nearest_r_pos = min(r_positions, key=lambda rp: abs(aligned_pos - rp))
+        r_before = nearest_r_pos < aligned_pos
+        r_after = nearest_r_pos >= aligned_pos
+    else:
+        min_r_dist = 99
+        r_before = False
+        r_after = False
+
+    r_at_aligned = spell_at == 'r'
+    r_near_aligned = 'r' in word_lower[max(0, aligned_pos - 1):aligned_pos + 2]
+
+    consonants = set('pbtdkɡfvθðszʃʒhmnŋlrwjʍ')
+    ipa_vowels_set = set('iɪeɛæɑɒɔʊuəʌɜaɐoɵʉɨ')
+
+    return {
+        'prev_char': prev_char,
+        'next_char': next_char,
+        'spell_at': spell_at,
+        'ctx_before_1': ctx_before[-1],
+        'ctx_before_2': ctx_before[-2] if len(ctx_before) >= 2 else '_',
+        'ctx_after_1': ctx_after[0],
+        'ctx_after_2': ctx_after[1] if len(ctx_after) >= 2 else '_',
+        'norm_pos': norm_pos,
+        'is_final': is_final,
+        'r_at_aligned': r_at_aligned,
+        'r_near_aligned': r_near_aligned,
+        'min_r_dist': min_r_dist,
+        'r_before': r_before,
+        'r_after': r_after,
+        'ends_er': word_lower[-2:] in ('er', 're'),
+        'ends_or': word_lower[-2:] == 'or',
+        'ends_ar': word_lower[-2:] == 'ar',
+        'ends_r': word_lower.endswith('r'),
+        'ends_re': word_lower.endswith('re'),
+        'r_count': word_lower.count('r'),
+        'word_len': word_len,
+        'ipa_len': ipa_len,
+        'next_is_consonant': next_char in consonants,
+        'next_is_vowel': next_char in ipa_vowels_set,
+        'vowel_type': r_vowels.index(vowel) if vowel in r_vowels else -1,
+        'syllable_index': sum(1 for c in ipa[:site_pos] if c in ipa_vowels_set),
+        'vowel_count': sum(1 for c in ipa if c in ipa_vowels_set),
+    }
+
+
+def _features_to_vector(features: dict, char_vocab: dict, r_vowels: list):
+    """Convert feature dict to numpy vector for the rhoticity model."""
+    import numpy as np
+
+    def ci(c):
+        return char_vocab.get(c, 0)
+
+    vec = [
+        ci(features['prev_char']),
+        ci(features['next_char']),
+        ci(features['spell_at']),
+        ci(features['ctx_before_1']),
+        ci(features['ctx_before_2']),
+        ci(features['ctx_after_1']),
+        ci(features['ctx_after_2']),
+        features['norm_pos'],
+        float(features['is_final']),
+        float(features['r_at_aligned']),
+        float(features['r_near_aligned']),
+        min(features['min_r_dist'], 20) / 20.0,
+        float(features['r_before']),
+        float(features['r_after']),
+        float(features['ends_er']),
+        float(features['ends_or']),
+        float(features['ends_ar']),
+        float(features['ends_r']),
+        float(features['ends_re']),
+        features['r_count'] / 5.0,
+        features['word_len'] / 20.0,
+        features['ipa_len'] / 20.0,
+        float(features['next_is_consonant']),
+        float(features['next_is_vowel']),
+        features['vowel_type'] / len(r_vowels),
+        features['syllable_index'] / 5.0,
+        features['vowel_count'] / 8.0,
+    ]
+    return np.array(vec, dtype=np.float32)
 
 
 def _normalize_to_readlex_dialect(ipa: str, word: str) -> str:
@@ -448,14 +476,6 @@ def _normalize_to_readlex_dialect(ipa: str, word: str) -> str:
 
     return ipa
 
-
-def _r_likely_after_vowel(word: str, *patterns: str) -> bool:
-    """Check if word contains any of the given spelling patterns with 'r'."""
-    word_lower = word.lower()
-    for pat in patterns:
-        if pat in word_lower:
-            return True
-    return False
 
 
 # IPA-to-Shavian mapping rules, ordered longest-first for greedy matching.

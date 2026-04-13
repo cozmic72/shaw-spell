@@ -19,8 +19,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.tsv"
 
 COLUMNS = [
-    "word", "pos", "var", "shaw", "ipa", "confidence", "source", "status",
-    "readlex_var", "shaw_override", "pos_override", "var_override", "verdict", "notes",
+    "word", "pos", "var", "shaw", "ipa", "verdict",
+    "shaw_override", "pos_override", "var_override",
+    "source", "status", "confidence", "notes",
 ]
 
 

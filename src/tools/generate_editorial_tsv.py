@@ -38,8 +38,9 @@ DROPS_PATH = PROJECT_ROOT / "data" / "editorial-drops.tsv"
 REFERENCE_PATH = PROJECT_ROOT / "data" / "readlex-reference.tsv"
 
 COLUMNS = [
-    "word", "pos", "var", "shaw", "ipa", "confidence", "source", "status",
-    "readlex_var", "shaw_override", "pos_override", "var_override", "verdict", "notes",
+    "word", "pos", "var", "shaw", "ipa", "verdict",
+    "shaw_override", "pos_override", "var_override",
+    "source", "status", "confidence", "notes",
 ]
 
 
@@ -178,8 +179,7 @@ def generate_editorial(rebuild=False):
                 var = entry.get("var", "")
                 status = classify_status(word, shaw, readlex_words)
 
-                rl_vars = readlex_shaw_vars.get((word.lower(), shaw))
-                readlex_var = ", ".join(sorted(rl_vars)) if rl_vars else ""
+                is_readlex_dup = (word.lower(), shaw) in readlex_shaw_vars
 
                 # Check if already in any existing file
                 identity = (word.lower(), pos, shaw)
@@ -194,13 +194,12 @@ def generate_editorial(rebuild=False):
                     "shaw": shaw,
                     "ipa": entry.get("ipa", ""),
                     "confidence": entry.get("confidence", 0),
-                    "source": source_name,
-                    "status": status,
-                    "readlex_var": readlex_var,
+                    "verdict": "",
                     "shaw_override": "",
                     "pos_override": "",
                     "var_override": "",
-                    "verdict": "",
+                    "source": source_name,
+                    "status": status,
                     "notes": entry.get("review", ""),
                 }
 
@@ -208,7 +207,7 @@ def generate_editorial(rebuild=False):
                 if status in ("affix", "fragment"):
                     row["verdict"] = "drop"
                     new_drops.append(row)
-                elif readlex_var:
+                elif is_readlex_dup:
                     row["verdict"] = "duplicate"
                     new_duplicates.append(row)
                 elif " " in word and "shave_agrees" in row.get("notes", ""):
@@ -244,13 +243,12 @@ def generate_editorial(rebuild=False):
             "shaw": variant_shaw,
             "ipa": row["ipa"],
             "confidence": row["confidence"],
-            "source": row["source"],
-            "status": row["status"],
-            "readlex_var": "",
+            "verdict": "",
             "shaw_override": "",
             "pos_override": "",
             "var_override": "",
-            "verdict": "",
+            "source": row["source"],
+            "status": row["status"],
             "notes": "cot-caught variant of GenAm " + row["shaw"],
         })
     new_editorial.extend(cot_caught_entries)
@@ -345,13 +343,12 @@ def generate_readlex_reference():
                 "shaw": entry.get("Shaw", ""),
                 "ipa": entry.get("ipa", ""),
                 "confidence": 100,
-                "source": "readlex",
-                "status": "readlex",
-                "readlex_var": "",
+                "verdict": var,
                 "shaw_override": "",
                 "pos_override": "",
                 "var_override": "",
-                "verdict": var,
+                "source": "readlex",
+                "status": "readlex",
                 "notes": "",
             })
 

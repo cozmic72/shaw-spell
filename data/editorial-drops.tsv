@@ -1,36 +1,36 @@
-word	pos	var	shaw	ipa	confidence	source	status	readlex_var	shaw_override	pos_override	var_override	verdict	notes
-abstract algebra	NN1	RSSB	𐑨𐑚𐑕𐑑𐑮𐑨𐑒𐑑 𐑨𐑤𐑡𐑦𐑚𐑮𐑩	ˈæbˌstrækt ældʒɪbrə	95	wiktionary	new					drop	ml_disagrees:𐑨𐑚𐑕𐑑𐑮𐑨𐑒𐑑 𐑨𐑤𐑡𐑩𐑚𐑮𐑩; shave_agrees
-baby carrot	NN1	GenAm	𐑚𐑱𐑚𐑦 𐑒𐑨𐑮𐑩𐑑	ˈbeɪbi ˈkærət	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-baby carrot	NN1	RSSB	𐑚𐑱𐑚𐑦 𐑒𐑨𐑮𐑩𐑑	ˈbeɪbi kærət	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-barracks emperor	NN1	GenAm	𐑚𐑨𐑮𐑩𐑒𐑕 𐑧𐑥𐑐𐑼𐑼	ˈbærəks ˈempərəR	95	wiktionary	new					drop	"r_gap:spelling=4,ipa=3; shave_agrees"
-barracks emperor	NN1	RSSB	𐑚𐑨𐑮𐑩𐑒𐑕 𐑧𐑥𐑐𐑼𐑼	bærəks empərəR	95	wiktionary	new					drop	"r_gap:spelling=4,ipa=3; shave_agrees"
-carrier wave	NN1	GenAm	𐑒𐑨𐑮𐑽 𐑢𐑱𐑝	ˈkærɪəR weɪv	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-carry on	NN1	GenAm	𐑒𐑨𐑮𐑦 𐑪𐑯	ˈkæri ˈɒn	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-carry on	VVI	GenAm	𐑒𐑨𐑮𐑦 𐑪𐑯	ˈkæri ˈɒn	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-cellulite	NN1	GenAm	-𐑤𐑦𐑑	ˌ-lit	89	wiktionary	fragment					drop	
-cellulite	NN1	RSSB	-𐑤𐑰𐑑	ˌ-liːt	89	wiktionary	fragment					drop	
-cherry on top	NN1	GenAm	𐑗𐑧𐑮𐑦 𐑪𐑯 𐑑𐑪𐑐	ˌtʃeri ɒn ˈtɒp	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-cherry on top	NN1	RSSB	𐑗𐑧𐑮𐑦 𐑪𐑯 𐑑𐑪𐑐	ˌtʃeri ɒn ˈtɒp	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-chromatic aberration	NN1	GenAm	𐑒𐑮𐑴𐑥𐑨𐑑𐑦𐑒 𐑨𐑚𐑼𐑱𐑖𐑩𐑯	kroʊˈmætɪk ˌæbəˈreɪʃən	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-embarrassingly parallel	AJ0	RSSB	𐑦𐑥𐑚𐑨𐑮𐑩𐑕𐑦𐑙𐑤𐑦 𐑐𐑨𐑮𐑩𐑤𐑧𐑤	ɪmbærəsɪŋli pærəlel	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-Ember day	NN1	RSSB	𐑧𐑥𐑚𐑼 𐑛𐑱	embəR ˌdeɪ	95	wiktionary	new					drop	ml_disagrees:𐑦𐑥𐑚𐑼 𐑛𐑱; shave_agrees
-enhanced interrogation	NN1	GenAm	𐑦𐑯𐑣𐑨𐑯𐑕𐑑 𐑦𐑯𐑑𐑧𐑮𐑩𐑜𐑱𐑖𐑩𐑯	ɪnˈhænst ɪnˌterəˌɡeɪʃən	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-enhanced interrogation	NN1	RSSB	𐑦𐑯𐑣𐑭𐑯𐑕𐑑 𐑦𐑯𐑑𐑧𐑮𐑩𐑜𐑱𐑖𐑩𐑯	ɪnˈhɑːnst ɪnterəɡeɪʃən	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-fay gurry	NN1	GenAm	𐑓𐑱 𐑜𐑻𐑦	ˌfeɪ ˈɡɜːRi	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-fay gurry	NN1	RSSB	𐑓𐑱 𐑜𐑻𐑦	ˌfeɪ ɡɜːri	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-Ferris wheel	NN1	RSSB	𐑓𐑧𐑮𐑦𐑕 𐑢𐑰𐑤	ˈferɪs ʍiːl	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-Ferris wheel	NN1	RSSB	𐑓𐑧𐑮𐑦𐑕 𐑢𐑰𐑤	ˈferɪs wiːl	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-four hundred	CRD	RSSB	𐑓𐑹 𐑣𐑳𐑯𐑛𐑮𐑩𐑛	fɔːR ˈhʌndrƏd	95	wiktionary	new					drop	ml_disagrees:𐑓𐑹 𐑣𐑳𐑯𐑛𐑮𐑦𐑛; shave_agrees
-goji berry	NN1	RSSB	𐑜𐑴𐑡𐑦 𐑚𐑧𐑮𐑦	ˈɡəʊdʒi ˌberi	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-good morrow	ITJ	RSSB	𐑜𐑫𐑛 𐑥𐑪𐑮𐑴	ɡʊd ˈmɒrəʊ	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-good morrow	NN1	RSSB	𐑜𐑫𐑛 𐑥𐑪𐑮𐑴	ɡʊd ˈmɒrəʊ	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-gossip mirror	NN1	RSSB	𐑜𐑪𐑕𐑦𐑐 𐑥𐑦𐑮𐑼	ˈɡɒsɪp mɪrəR	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-hawthorn berry	NN1	RSSB	𐑣𐑷𐑔𐑹𐑯 𐑚𐑧𐑮𐑦	hɔːθɔːRn ˌberi	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-lackadaisical	AJ0	RSSB	𐑤𐑨𐑒𐑕𐑩-	læksə-	89	wordnet	fragment					drop	
-lateral aberration	NN1	GenAm	𐑤𐑨𐑑𐑼𐑩𐑤 𐑨𐑚𐑼𐑱𐑖𐑩𐑯	ˈlætəRəl ˌæbəˈreɪʃən	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-narrow escape	NN1	RSSB	𐑯𐑨𐑮𐑴 𐑦𐑕𐑒𐑱𐑐	ˌnærəʊ ɪˈskeɪp	95	wiktionary	new					drop	"r_gap:spelling=2,ipa=1; shave_agrees"
-purry forn	NN1	GenAm	𐑐𐑻𐑦 𐑓𐑹𐑯	ˌpɜːRi ˈfɔːRn	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-purry forn	NN1	RSSB	𐑐𐑻𐑦 𐑓𐑹𐑯	pɜːri fɔːRn	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-stochastic terrorism	NN1	RSSB	𐑕𐑑𐑩𐑒𐑨𐑕𐑑𐑦𐑒 𐑑𐑧𐑮𐑼𐑦𐑟𐑩𐑥	stəˈkastɪk terərɪzəm	95	wiktionary	new					drop	"r_gap:spelling=3,ipa=2; shave_agrees"
-tier list	NN1	RSSB	𐑑𐑽 𐑤𐑦𐑕𐑑	tɪəR ˌlɪst	95	wiktionary	new					drop	ml_disagrees:𐑑𐑺 𐑤𐑦𐑕𐑑; shave_agrees
-world egg	NN1	GenAm	𐑢𐑻𐑤𐑛 𐑧𐑜	wɜːld ˌeɡ	95	wiktionary	new					drop	"r_gap:spelling=1,ipa=0; shave_agrees"
+word	pos	var	shaw	ipa	verdict	shaw_override	pos_override	var_override	source	status	confidence	notes
+abstract algebra	NN1	RSSB	𐑨𐑚𐑕𐑑𐑮𐑨𐑒𐑑 𐑨𐑤𐑡𐑦𐑚𐑮𐑩	ˈæbˌstrækt ældʒɪbrə	drop				wiktionary	new	95	ml_disagrees:𐑨𐑚𐑕𐑑𐑮𐑨𐑒𐑑 𐑨𐑤𐑡𐑩𐑚𐑮𐑩; shave_agrees
+baby carrot	NN1	GenAm	𐑚𐑱𐑚𐑦 𐑒𐑨𐑮𐑩𐑑	ˈbeɪbi ˈkærət	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+baby carrot	NN1	RSSB	𐑚𐑱𐑚𐑦 𐑒𐑨𐑮𐑩𐑑	ˈbeɪbi kærət	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+barracks emperor	NN1	GenAm	𐑚𐑨𐑮𐑩𐑒𐑕 𐑧𐑥𐑐𐑼𐑼	ˈbærəks ˈempərəR	drop				wiktionary	new	95	"r_gap:spelling=4,ipa=3; shave_agrees"
+barracks emperor	NN1	RSSB	𐑚𐑨𐑮𐑩𐑒𐑕 𐑧𐑥𐑐𐑼𐑼	bærəks empərəR	drop				wiktionary	new	95	"r_gap:spelling=4,ipa=3; shave_agrees"
+carrier wave	NN1	GenAm	𐑒𐑨𐑮𐑽 𐑢𐑱𐑝	ˈkærɪəR weɪv	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+carry on	NN1	GenAm	𐑒𐑨𐑮𐑦 𐑪𐑯	ˈkæri ˈɒn	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+carry on	VVI	GenAm	𐑒𐑨𐑮𐑦 𐑪𐑯	ˈkæri ˈɒn	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+cellulite	NN1	GenAm	-𐑤𐑦𐑑	ˌ-lit	drop				wiktionary	fragment	89	
+cellulite	NN1	RSSB	-𐑤𐑰𐑑	ˌ-liːt	drop				wiktionary	fragment	89	
+cherry on top	NN1	GenAm	𐑗𐑧𐑮𐑦 𐑪𐑯 𐑑𐑪𐑐	ˌtʃeri ɒn ˈtɒp	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+cherry on top	NN1	RSSB	𐑗𐑧𐑮𐑦 𐑪𐑯 𐑑𐑪𐑐	ˌtʃeri ɒn ˈtɒp	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+chromatic aberration	NN1	GenAm	𐑒𐑮𐑴𐑥𐑨𐑑𐑦𐑒 𐑨𐑚𐑼𐑱𐑖𐑩𐑯	kroʊˈmætɪk ˌæbəˈreɪʃən	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+embarrassingly parallel	AJ0	RSSB	𐑦𐑥𐑚𐑨𐑮𐑩𐑕𐑦𐑙𐑤𐑦 𐑐𐑨𐑮𐑩𐑤𐑧𐑤	ɪmbærəsɪŋli pærəlel	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+Ember day	NN1	RSSB	𐑧𐑥𐑚𐑼 𐑛𐑱	embəR ˌdeɪ	drop				wiktionary	new	95	ml_disagrees:𐑦𐑥𐑚𐑼 𐑛𐑱; shave_agrees
+enhanced interrogation	NN1	GenAm	𐑦𐑯𐑣𐑨𐑯𐑕𐑑 𐑦𐑯𐑑𐑧𐑮𐑩𐑜𐑱𐑖𐑩𐑯	ɪnˈhænst ɪnˌterəˌɡeɪʃən	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+enhanced interrogation	NN1	RSSB	𐑦𐑯𐑣𐑭𐑯𐑕𐑑 𐑦𐑯𐑑𐑧𐑮𐑩𐑜𐑱𐑖𐑩𐑯	ɪnˈhɑːnst ɪnterəɡeɪʃən	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+fay gurry	NN1	GenAm	𐑓𐑱 𐑜𐑻𐑦	ˌfeɪ ˈɡɜːRi	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+fay gurry	NN1	RSSB	𐑓𐑱 𐑜𐑻𐑦	ˌfeɪ ɡɜːri	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+Ferris wheel	NN1	RSSB	𐑓𐑧𐑮𐑦𐑕 𐑢𐑰𐑤	ˈferɪs ʍiːl	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+Ferris wheel	NN1	RSSB	𐑓𐑧𐑮𐑦𐑕 𐑢𐑰𐑤	ˈferɪs wiːl	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+four hundred	CRD	RSSB	𐑓𐑹 𐑣𐑳𐑯𐑛𐑮𐑩𐑛	fɔːR ˈhʌndrƏd	drop				wiktionary	new	95	ml_disagrees:𐑓𐑹 𐑣𐑳𐑯𐑛𐑮𐑦𐑛; shave_agrees
+goji berry	NN1	RSSB	𐑜𐑴𐑡𐑦 𐑚𐑧𐑮𐑦	ˈɡəʊdʒi ˌberi	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+good morrow	ITJ	RSSB	𐑜𐑫𐑛 𐑥𐑪𐑮𐑴	ɡʊd ˈmɒrəʊ	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+good morrow	NN1	RSSB	𐑜𐑫𐑛 𐑥𐑪𐑮𐑴	ɡʊd ˈmɒrəʊ	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+gossip mirror	NN1	RSSB	𐑜𐑪𐑕𐑦𐑐 𐑥𐑦𐑮𐑼	ˈɡɒsɪp mɪrəR	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+hawthorn berry	NN1	RSSB	𐑣𐑷𐑔𐑹𐑯 𐑚𐑧𐑮𐑦	hɔːθɔːRn ˌberi	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+lackadaisical	AJ0	RSSB	𐑤𐑨𐑒𐑕𐑩-	læksə-	drop				wordnet	fragment	89	
+lateral aberration	NN1	GenAm	𐑤𐑨𐑑𐑼𐑩𐑤 𐑨𐑚𐑼𐑱𐑖𐑩𐑯	ˈlætəRəl ˌæbəˈreɪʃən	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+narrow escape	NN1	RSSB	𐑯𐑨𐑮𐑴 𐑦𐑕𐑒𐑱𐑐	ˌnærəʊ ɪˈskeɪp	drop				wiktionary	new	95	"r_gap:spelling=2,ipa=1; shave_agrees"
+purry forn	NN1	GenAm	𐑐𐑻𐑦 𐑓𐑹𐑯	ˌpɜːRi ˈfɔːRn	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+purry forn	NN1	RSSB	𐑐𐑻𐑦 𐑓𐑹𐑯	pɜːri fɔːRn	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+stochastic terrorism	NN1	RSSB	𐑕𐑑𐑩𐑒𐑨𐑕𐑑𐑦𐑒 𐑑𐑧𐑮𐑼𐑦𐑟𐑩𐑥	stəˈkastɪk terərɪzəm	drop				wiktionary	new	95	"r_gap:spelling=3,ipa=2; shave_agrees"
+tier list	NN1	RSSB	𐑑𐑽 𐑤𐑦𐑕𐑑	tɪəR ˌlɪst	drop				wiktionary	new	95	ml_disagrees:𐑑𐑺 𐑤𐑦𐑕𐑑; shave_agrees
+world egg	NN1	GenAm	𐑢𐑻𐑤𐑛 𐑧𐑜	wɜːld ˌeɡ	drop				wiktionary	new	95	"r_gap:spelling=1,ipa=0; shave_agrees"

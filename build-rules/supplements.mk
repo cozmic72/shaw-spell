@@ -1,21 +1,16 @@
 # Supplement generation rules
-# Generates supplementary dictionary data from Britfone, WordNet, and Wiktionary
+# Generates supplementary dictionary data from WordNet and Wiktionary
 
 ###########################################
 # Source data paths
 ###########################################
 
-BRITFONE_CSV := external/britfone/britfone.main.3.0.1.csv
 WIKTIONARY_JSONL := external/wiktionary/kaikki.org-dictionary-English.jsonl
 WORDNET_YAML := external/english-wordnet/src/yaml
 
 ###########################################
 # Supplement generation (from source data)
 ###########################################
-
-data/supplement-britfone.json: $(SRC_TOOLS)/generate_britfone_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(BRITFONE_CSV)
-	@echo "Generating Britfone supplement..."
-	$(RUN) python3 $(SRC_TOOLS)/generate_britfone_supplement.py
 
 data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json: $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WORDNET_CACHE)
 	@echo "Generating WordNet supplement..."
@@ -30,11 +25,11 @@ data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.
 ###########################################
 
 .PHONY: rescore rescore-full
-rescore: data/supplement-britfone.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+rescore: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring supplement confidence..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py
 
-rescore-full: data/supplement-britfone.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+rescore-full: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring supplement confidence (full shave consultation)..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
 
@@ -42,11 +37,20 @@ rescore-full: data/supplement-britfone.json data/supplement-wordnet-reliable.jso
 # Merged readlex (combines original + supplements)
 ###########################################
 
-SUPPLEMENT_DEPS := data/supplement-britfone.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+SUPPLEMENT_DEPS := data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 
 $(READLEX_PATH): $(SRC_TOOLS)/generate_merged_readlex.py external/readlex/readlex.json $(SUPPLEMENT_DEPS)
 	@echo "Generating merged readlex..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_merged_readlex.py
+
+###########################################
+# Editorial review
+###########################################
+
+.PHONY: editorial
+editorial: $(SUPPLEMENT_DEPS)
+	@echo "Updating editorial TSV files..."
+	$(RUN) python3 $(SRC_TOOLS)/generate_editorial_tsv.py
 
 ###########################################
 # Wiktionary definitions
@@ -73,7 +77,7 @@ review-files: $(SUPPLEMENT_DEPS) $(READLEX_PATH)
 supplements: $(READLEX_PATH)
 	@echo "✓ All supplements and merged readlex up to date"
 
-supplements-from-source: data/supplement-britfone.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+supplements-from-source: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring with full shave..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
 	@echo "Merging into readlex..."

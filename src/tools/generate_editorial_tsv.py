@@ -28,7 +28,6 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 READLEX_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 
 SUPPLEMENTS = [
-    ("britfone", PROJECT_ROOT / "data" / "supplement-britfone.json"),
     ("wordnet", PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
     ("wiktionary", PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json"),
 ]

@@ -27,7 +27,6 @@ OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex.json"
 EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.tsv"
 
 SUPPLEMENTS = [
-    ("britfone", PROJECT_ROOT / "data" / "supplement-britfone.json"),
     ("wordnet", PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
     ("wiktionary", PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json"),
 ]

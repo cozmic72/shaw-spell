@@ -23,7 +23,7 @@ The editorial process reviews all supplement entries before they are merged into
 | `shaw` | Pipeline-generated Shavian spelling |
 | `ipa` | Source IPA pronunciation |
 | `confidence` | Pipeline confidence percentage |
-| `source` | Data source: `britfone`, `wordnet`, `wiktionary`, or `britfone+wiktionary` etc. for collapsed entries |
+| `source` | Data source: `wordnet`, `wiktionary`, or `wordnet+wiktionary` for collapsed entries |
 | `status` | Relationship to ReadLex (see below) |
 | `readlex_var` | If this (word, shaw) pair exists in ReadLex, shows ReadLex's var tag(s). Blank if not in ReadLex |
 | `shaw_override` | Editorial: corrected Shavian spelling. Blank = accept pipeline `shaw` |
@@ -88,7 +88,6 @@ The `editorial-drops.tsv` file contains fragments and affixes pre-tagged with `v
 | File | Description |
 |------|-------------|
 | `readlex.json` | Merged ReadLex — the build output used by dictionaries and spell checker |
-| `supplement-britfone.json` | Britfone supplement (SSB pronunciations) |
 | `supplement-wordnet-reliable.json` | WordNet supplement (GB+US IPA, definitions) |
 | `supplement-wiktionary-reliable.json` | Wiktionary supplement (RP, GenAm IPA, definitions) |
 | `definitions-*.json` | Transliterated definition caches for dictionary builds |

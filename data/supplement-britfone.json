@@ -68865,8 +68865,8 @@
       "ipa": "fɔːRkɑːRst",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑓𐑹𐑒𐑭𐑕𐑑"
+      "confidence": 5,
+      "review": "ml_disagrees:𐑓𐑹𐑒𐑭𐑮𐑕𐑑; shave_says:𐑓𐑹𐑒𐑭𐑕𐑑"
     }
   ],
   "forecasts_UNC_𐑓𐑹𐑒𐑸𐑕𐑑𐑕": [
@@ -68877,8 +68877,8 @@
       "ipa": "fɔːRkɑːRsts",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑓𐑹𐑒𐑭𐑕𐑑𐑕"
+      "confidence": 5,
+      "review": "ml_disagrees:𐑓𐑹𐑒𐑭𐑮𐑕𐑑𐑕; shave_says:𐑓𐑹𐑒𐑭𐑕𐑑𐑕"
     }
   ],
   "forego_UNC_𐑓𐑹𐑜𐑴": [
@@ -71533,8 +71533,8 @@
       "ipa": "fɜːRnɪs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 95,
-      "review": "ml_disagrees:𐑓𐑻𐑯𐑩𐑕; shave_agrees"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "furnish_UNC_𐑓𐑻𐑯𐑦𐑖": [
@@ -105275,8 +105275,8 @@
       "ipa": "mɑːRstəRkɑːRd",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑥𐑭𐑕𐑑𐑼𐑒𐑸𐑛"
+      "confidence": 5,
+      "review": "ml_disagrees:𐑥𐑸𐑕𐑑𐑼𐑒𐑭𐑮𐑛; shave_says:𐑥𐑭𐑕𐑑𐑼𐑒𐑸𐑛"
     }
   ],
   "masters_UNC_𐑥𐑭𐑕𐑑𐑼𐑟": [

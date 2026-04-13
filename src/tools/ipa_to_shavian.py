@@ -134,12 +134,11 @@ def _normalize_genam(ipa: str) -> str:
     # Flap
     ipa = ipa.replace("ɾ", "t")      # alveolar flap → t
 
-    # GenAm ɑɹ → ɑːR (START) — must come before bare ɑ mapping
-    ipa = ipa.replace("ɑɹ", "ɑːR")
+    # GenAm ɑr → ɑːR (START) — must come before bare ɑ mapping
+    # (ɹ→r already done by normalize_ipa before this function is called)
     ipa = ipa.replace("ɑr", "ɑːR")
 
-    # GenAm ɔɹ → ɔːR (FORCE)
-    ipa = ipa.replace("ɔɹ", "ɔːR")
+    # GenAm ɔr → ɔːR (FORCE)
     ipa = ipa.replace("ɔr", "ɔːR")
 
     # GenAm bare ɑ → ɒ (LOT vowel)

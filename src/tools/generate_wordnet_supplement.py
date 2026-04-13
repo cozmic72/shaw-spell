@@ -44,20 +44,31 @@ def is_single_word(word: str) -> bool:
 
 
 def strip_ipa(raw: str) -> str:
-    """Strip surrounding slashes and whitespace from IPA value."""
+    """Strip surrounding slashes and whitespace from IPA value.
+
+    WordNet IPA is space-separated (e.g. 'ə ˈset əl ˌin' for acetylene).
+    These spaces are NOT word boundaries — they must be removed so they
+    don't leak through to the Shavian output.
+    """
     raw = raw.strip()
     if raw.startswith("/") and raw.endswith("/"):
         raw = raw[1:-1]
+    # Remove internal spaces — WordNet uses them between syllables/phones,
+    # not between words.  Multi-word phrases are already filtered out by
+    # is_single_word() before we ever reach this point.
+    raw = raw.replace(" ", "")
     return raw
 
 
-def pick_pronunciation(pron_list: list) -> str | None:
-    """Pick the best IPA pronunciation from a list of pronunciation dicts.
+def pick_pronunciations(pron_list: list) -> list[tuple[str, str]]:
+    """Pick IPA pronunciations from a list of pronunciation dicts.
 
-    Prefer GB variety, then no-variety, then US, then first available.
+    Returns a list of (ipa, variety) tuples where variety is one of
+    "GB", "US", or "plain".  When both GB and US are available, both
+    are returned so separate ReadLex entries can be created.
     """
     if not pron_list:
-        return None
+        return []
 
     gb = None
     us = None
@@ -75,16 +86,23 @@ def pick_pronunciation(pron_list: list) -> str | None:
         elif variety is None:
             plain = val
 
-    # Prefer GB (closer to RP which ReadLex targets), then plain, then US
-    chosen = gb or plain or us
-    if chosen is None and pron_list:
-        # Fallback: first entry with a value
+    results: list[tuple[str, str]] = []
+
+    if gb:
+        results.append((strip_ipa(gb), "GB"))
+    if us:
+        results.append((strip_ipa(us), "US"))
+    if plain and not gb and not us:
+        results.append((strip_ipa(plain), "plain"))
+
+    # Fallback: first entry with a value
+    if not results:
         for p in pron_list:
             if p.get("value"):
-                return strip_ipa(p["value"])
-    if chosen is not None:
-        return strip_ipa(chosen)
-    return None
+                results.append((strip_ipa(p["value"]), "plain"))
+                break
+
+    return results
 
 
 def load_readlex_keys() -> set[str]:
@@ -98,12 +116,18 @@ def load_readlex_keys() -> set[str]:
     return keys
 
 
-def _batch_shave(words: list[str]) -> dict[str, str]:
-    """Run words through the `shave` tool and return word->shavian mapping."""
+def _batch_shave(words: list[str], dialect: str = "british") -> dict[str, str]:
+    """Run words through the `shave` tool and return word->shavian mapping.
+
+    Args:
+        words: list of words to transliterate
+        dialect: "british" or "american" — selects the shave readlex dialect
+    """
     try:
         input_text = "\n".join(words)
+        flag = "--readlex-british" if dialect == "british" else "--readlex-american"
         result = subprocess.run(
-            ["shave", "-q"],
+            ["shave", "-q", flag],
             input=input_text,
             capture_output=True,
             text=True,
@@ -179,61 +203,71 @@ def main():
                     continue
 
                 pron_list = pos_data.get("pronunciation", [])
-                ipa = pick_pronunciation(pron_list) if pron_list else None
+                prons = pick_pronunciations(pron_list) if pron_list else []
 
                 total_entries += 1
                 word_lower = word.lower()
 
-                if ipa:
-                    # Normalize IPA to ReadLex conventions (GB = non-rhotic RP-like)
-                    ipa = normalize_ipa(ipa, word=word_lower, source="wiktionary_rp")
-                    # Try Shavian conversion
-                    try:
-                        shaw = ipa_to_shavian(ipa)
-                    except Exception as e:
-                        conversion_errors += 1
-                        shaw = ""
-                        ipa = ""
+                if prons:
+                    for ipa, variety in prons:
+                        # Map variety to normalize_ipa source and ReadLex var
+                        if variety == "US":
+                            norm_source = "wiktionary_gam"
+                            var = "GenAm"
+                        else:
+                            # GB or plain — treat as RP, apply r-restoration
+                            norm_source = "wiktionary_rp"
+                            var = "RSSB"
 
-                    if shaw:
-                        # Get ML prediction for confidence comparison
-                        ml_shaw = _compute_ml_shaw(word_lower, ipa, have_ml, ml_model)
+                        # Normalize IPA to ReadLex conventions
+                        ipa_norm = normalize_ipa(ipa, word=word_lower, source=norm_source)
+                        # Try Shavian conversion
+                        try:
+                            shaw = ipa_to_shavian(ipa_norm)
+                        except Exception as e:
+                            conversion_errors += 1
+                            shaw = ""
+                            ipa_norm = ""
 
-                        # Score confidence as percentage
-                        conf_pct, notes = score_confidence(word_lower, ipa, shaw, ml_shaw)
+                        if shaw:
+                            # Get ML prediction for confidence comparison
+                            ml_shaw = _compute_ml_shaw(word_lower, ipa_norm, have_ml, ml_model)
 
-                        key = f"{word_lower}_{c5_pos}_{shaw}"
-                        entry = {
-                            "Latn": word_lower,
-                            "Shaw": shaw,
-                            "pos": c5_pos,
-                            "ipa": ipa,
-                            "freq": 0,
-                            "var": "RRP",
-                            "confidence": conf_pct,
-                        }
-                        if notes:
-                            entry["review"] = "; ".join(notes)
-                        # Stash ml_shaw for shave consultation later
-                        entry["_ml_shaw"] = ml_shaw
-                        if key not in reliable:
-                            reliable[key] = [entry]
-                            with_ipa_count += 1
-                        # else: duplicate, skip
-                    else:
-                        # Conversion produced empty string, treat as speculative
-                        key = f"{word_lower}_{c5_pos}_"
-                        entry = {
-                            "Latn": word_lower,
-                            "Shaw": "",
-                            "pos": c5_pos,
-                            "ipa": "",
-                            "freq": 0,
-                            "var": "UNC",
-                        }
-                        if key not in speculative:
-                            speculative[key] = [entry]
-                            without_ipa_count += 1
+                            # Score confidence as percentage
+                            conf_pct, notes = score_confidence(word_lower, ipa_norm, shaw, ml_shaw)
+
+                            key = f"{word_lower}_{c5_pos}_{shaw}_{var}"
+                            entry = {
+                                "Latn": word_lower,
+                                "Shaw": shaw,
+                                "pos": c5_pos,
+                                "ipa": ipa_norm,
+                                "freq": 0,
+                                "var": var,
+                                "confidence": conf_pct,
+                            }
+                            if notes:
+                                entry["review"] = "; ".join(notes)
+                            # Stash ml_shaw for shave consultation later
+                            entry["_ml_shaw"] = ml_shaw
+                            if key not in reliable:
+                                reliable[key] = [entry]
+                                with_ipa_count += 1
+                            # else: duplicate, skip
+                        else:
+                            # Conversion produced empty string, treat as speculative
+                            key = f"{word_lower}_{c5_pos}_"
+                            entry = {
+                                "Latn": word_lower,
+                                "Shaw": "",
+                                "pos": c5_pos,
+                                "ipa": "",
+                                "freq": 0,
+                                "var": "UNC",
+                            }
+                            if key not in speculative:
+                                speculative[key] = [entry]
+                                without_ipa_count += 1
                 else:
                     key = f"{word_lower}_{c5_pos}_"
                     entry = {
@@ -252,15 +286,27 @@ def main():
                     overlap_count += 1
 
     # Consult `shave` tool for entries below 89% confidence
-    review_words = set()
+    # Batch separately by dialect so shave uses the right readlex
+    review_british = set()
+    review_american = set()
     for key, entries in reliable.items():
         for e in entries:
             if e.get("confidence", 89) < 89:
-                review_words.add(e["Latn"])
+                if e["var"] == "GenAm":
+                    review_american.add(e["Latn"])
+                else:
+                    review_british.add(e["Latn"])
 
-    if review_words:
-        print(f"\n  Consulting `shave` tool for {len(review_words)} review words...")
-        shave_results = _batch_shave(sorted(review_words))
+    shave_results_british = {}
+    shave_results_american = {}
+    if review_british:
+        print(f"\n  Consulting `shave --readlex-british` for {len(review_british)} review words...")
+        shave_results_british = _batch_shave(sorted(review_british), dialect="british")
+    if review_american:
+        print(f"  Consulting `shave --readlex-american` for {len(review_american)} review words...")
+        shave_results_american = _batch_shave(sorted(review_american), dialect="american")
+
+    if review_british or review_american:
         shave_upgraded = 0
         shave_overridden = 0
         for key, entries in reliable.items():
@@ -268,6 +314,7 @@ def main():
                 if e.get("confidence", 89) >= 89:
                     continue
                 w = e["Latn"]
+                shave_results = shave_results_american if e["var"] == "GenAm" else shave_results_british
                 if w not in shave_results:
                     continue
                 shave_shaw = shave_results[w]
@@ -288,7 +335,7 @@ def main():
         # Fix keys for overridden entries
         new_reliable = {}
         for key, entries in reliable.items():
-            new_key = f"{entries[0]['Latn']}_{entries[0]['pos']}_{entries[0]['Shaw']}"
+            new_key = f"{entries[0]['Latn']}_{entries[0]['pos']}_{entries[0]['Shaw']}_{entries[0]['var']}"
             new_reliable[new_key] = entries
         reliable = new_reliable
 

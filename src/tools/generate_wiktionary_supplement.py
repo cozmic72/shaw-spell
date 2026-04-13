@@ -54,12 +54,18 @@ POS_MAP = {
     "punct": "UNC",
 }
 
-def _batch_shave(words: list[str]) -> dict[str, str]:
-    """Run words through the `shave` tool and return word->shavian mapping."""
+def _batch_shave(words: list[str], dialect: str = "british") -> dict[str, str]:
+    """Run words through the `shave` tool and return word->shavian mapping.
+
+    Args:
+        words: list of words to transliterate
+        dialect: "british" or "american" — selects the shave readlex dialect
+    """
     try:
         input_text = "\n".join(words)
+        flag = "--readlex-british" if dialect == "british" else "--readlex-american"
         result = subprocess.run(
-            ["shave", "-q"],
+            ["shave", "-q", flag],
             input=input_text,
             capture_output=True,
             text=True,
@@ -300,35 +306,57 @@ def main():
     print(f"  Initial confidence: high={stats['confidence_high']:,}, "
           f"medium={stats['confidence_medium']:,}, low={stats['confidence_low']:,}")
 
-    # Consult `shave` tool for RSSB entries below 89% confidence in reliable dict
-    review_words = set()
+    # Consult `shave` tool for entries below 89% confidence in reliable dict
+    review_british = set()
+    review_american = set()
     for key, entries in reliable.items():
         for e in entries:
-            if e.get("confidence", 89) < 89 and e.get("var") == "RSSB":
-                review_words.add(e["Latn"])
+            if e.get("confidence", 89) < 89:
+                if e.get("var") == "RSSB":
+                    review_british.add(e["Latn"])
+                elif e.get("var") == "GenAm":
+                    review_american.add(e["Latn"])
 
-    if review_words:
-        print(f"\n  Consulting `shave` tool for {len(review_words):,} RSSB review words...")
-        # Batch in chunks to avoid overwhelming subprocess
-        review_list = sorted(review_words)
-        shave_results = {}
+    shave_results_british = {}
+    shave_results_american = {}
+
+    if review_british:
+        print(f"\n  Consulting `shave` tool for {len(review_british):,} RSSB review words...")
+        review_list = sorted(review_british)
         BATCH_SIZE = 5000
         for batch_start in range(0, len(review_list), BATCH_SIZE):
             batch = review_list[batch_start:batch_start + BATCH_SIZE]
-            batch_results = _batch_shave(batch)
-            shave_results.update(batch_results)
+            batch_results = _batch_shave(batch, dialect="british")
+            shave_results_british.update(batch_results)
             if batch_start > 0 and batch_start % 10000 == 0:
                 print(f"    ...shave processed {batch_start:,}/{len(review_list):,}")
+        print(f"  Got shave results for {len(shave_results_british):,} RSSB words.")
 
-        print(f"  Got shave results for {len(shave_results):,} words.")
+    if review_american:
+        print(f"\n  Consulting `shave` tool for {len(review_american):,} GenAm review words...")
+        review_list = sorted(review_american)
+        BATCH_SIZE = 5000
+        for batch_start in range(0, len(review_list), BATCH_SIZE):
+            batch = review_list[batch_start:batch_start + BATCH_SIZE]
+            batch_results = _batch_shave(batch, dialect="american")
+            shave_results_american.update(batch_results)
+            if batch_start > 0 and batch_start % 10000 == 0:
+                print(f"    ...shave processed {batch_start:,}/{len(review_list):,}")
+        print(f"  Got shave results for {len(shave_results_american):,} GenAm words.")
 
+    if review_british or review_american:
         shave_upgraded = 0
         shave_overridden = 0
         for key, entries in reliable.items():
             for e in entries:
                 if e.get("confidence", 89) >= 89:
                     continue
-                if e.get("var") != "RSSB":
+                var = e.get("var")
+                if var == "RSSB":
+                    shave_results = shave_results_british
+                elif var == "GenAm":
+                    shave_results = shave_results_american
+                else:
                     continue
                 w = e["Latn"]
                 if w not in shave_results:

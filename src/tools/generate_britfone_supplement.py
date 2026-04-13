@@ -6,9 +6,8 @@ Britfone provides Standard Southern British (SSB) IPA pronunciations.
 This script converts them to ReadLex format with Shavian transliterations.
 
 Limitations:
-- Britfone is non-rhotic, so linking/intrusive R is not restored.
-  We convert ɹ→r but do not attempt to add capital R where the spelling
-  has 'r' but Britfone omits it (e.g., "water" = wɔːtə, not wɔːtəR).
+- Britfone is non-rhotic; linking/intrusive R is restored via
+  normalize_ipa()'s _restore_rhoticity() using spelling alignment.
   The variant field "RSSB" signals this is SSB-based data.
 - POS is always "UNC" (unclassified) since Britfone has no POS data.
 - Frequency is always 0 since Britfone has no frequency data.
@@ -78,7 +77,7 @@ def _batch_shave(words: list[str]) -> dict[str, str]:
     try:
         input_text = "\n".join(words)
         result = subprocess.run(
-            ["shave", "-q"],
+            ["shave", "-q", "--readlex-british"],
             input=input_text,
             capture_output=True,
             text=True,

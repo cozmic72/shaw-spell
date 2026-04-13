@@ -631,18 +631,18 @@ def pos_to_readable(pos_code):
         'TO0': 'infinitive marker',
         'UNC': '',
         'VBB': 'verb (base form of "be")', 'VBD': 'verb (past tense of "be")',
-        'VBG': 'verb (-ing form of "be")', 'VBI': 'verb (infinitive of "be")',
+        'VBG': 'verb (present participle of "be")', 'VBI': 'verb (infinitive of "be")',
         'VBN': 'verb (past participle of "be")', 'VBZ': 'verb ("is")',
         'VDB': 'verb (base form of "do")', 'VDD': 'verb (past tense of "do")',
-        'VDG': 'verb (-ing form of "do")', 'VDI': 'verb (infinitive of "do")',
+        'VDG': 'verb (present participle of "do")', 'VDI': 'verb (infinitive of "do")',
         'VDN': 'verb (past participle of "do")', 'VDZ': 'verb ("does")',
         'VHB': 'verb (base form of "have")', 'VHD': 'verb (past tense of "have")',
-        'VHG': 'verb (-ing form of "have")', 'VHI': 'verb (infinitive of "have")',
+        'VHG': 'verb (present participle of "have")', 'VHI': 'verb (infinitive of "have")',
         'VHN': 'verb (past participle of "have")', 'VHZ': 'verb ("has")',
         'VM0': 'modal verb',
         'VVB': 'verb (base form)', 'VVD': 'verb (past tense)',
-        'VVG': 'verb (-ing form)', 'VVI': 'verb (infinitive)',
-        'VVN': 'verb (past participle)', 'VVZ': 'verb (3rd person singular)',
+        'VVG': 'verb (present participle)', 'VVI': 'verb (infinitive)',
+        'VVN': 'verb (past participle)', 'VVZ': 'verb (third person singular)',
         'XX0': 'negation',
         'ZZ0': 'letter of the alphabet',
         'POS': 'possessive',
@@ -681,7 +681,7 @@ def pos_to_grammatical_form(pos_code, lemma, lemma_ipa='', shavian_lookup=None):
     elif pos_code == 'VVB':
         return t('base form')
     elif pos_code == 'VVZ':
-        return f'{t("3rd person singular of")} {lemma_ref}'
+        return f'{t("third person singular of")} {lemma_ref}'
     elif pos_code == 'VVD':
         return f'{t("past tense of")} {lemma_ref}'
     elif pos_code == 'VVN':

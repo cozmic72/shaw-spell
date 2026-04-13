@@ -90,6 +90,55 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     ipa = ipa.replace("ɪi", "iː")  # happy tensing narrow form → broad iː
     ipa = ipa.replace("i̯", "iː")  # another narrow happy form
 
+    # Strip narrow phonetic diacritics that don't affect Shavian spelling
+    # Combining diacritics
+    for cp in ("\u0303", "\u0308", "\u0325", "\u031E", "\u031A", "\u0320",
+               "\u031D", "\u031F", "\u032A", "\u0306", "\u032C", "\u030A"):
+        ipa = ipa.replace(cp, "")
+    # Modifier letters and allophonic symbols
+    ipa = ipa.replace("ʰ", "")      # aspiration
+    ipa = ipa.replace("ʷ", "")      # labialization
+    ipa = ipa.replace("ʔ", "")      # glottal stop (allophonic in English)
+    ipa = ipa.replace("ˑ", "")      # half-long
+    ipa = ipa.replace("˔", "")      # raised modifier
+    ipa = ipa.replace("~", "")      # nasalization (ASCII tilde variant)
+    ipa = ipa.replace("ᵊ", "")      # superscript schwa
+
+    # Narrow vowel allophones → broad equivalents
+    ipa = ipa.replace("ə˞", "əR")   # rhotacized schwa → schwa + R
+    ipa = ipa.replace("˞", "")       # any remaining rhoticity hook
+    ipa = ipa.replace("ʉ", "uː")    # close central rounded → GOOSE
+    ipa = ipa.replace("ɵ", "ʊ")     # close-mid central rounded → FOOT
+    ipa = ipa.replace("ɨ", "ɪ")     # close central unrounded → KIT
+    ipa = ipa.replace("ᵻ", "ɪ")     # superscript barred i → KIT
+    ipa = ipa.replace("ɘ", "ə")     # close-mid central → schwa
+    ipa = ipa.replace("ɱ", "m")     # labiodental nasal → m
+    ipa = ipa.replace("ɻ", "r")     # retroflex approximant → r
+    ipa = ipa.replace("ç", "h")     # voiceless palatal fricative → h (anglicized)
+    ipa = ipa.replace("ä", "a")     # centralized a → a
+    ipa = ipa.replace("ã", "a")     # nasalized a → a
+    ipa = ipa.replace("ĩ", "i")     # nasalized i → i
+    ipa = ipa.replace("õ", "o")     # nasalized o → o
+
+    # R-colored vowels that may appear in any source (not just GenAm)
+    ipa = ipa.replace("ɝː", "ɜːR")  # long r-colored NURSE
+    ipa = ipa.replace("ɝ", "ɜːR")   # r-colored NURSE
+    ipa = ipa.replace("ɚ", "əR")    # r-colored schwa
+    ipa = ipa.replace("ɜr", "ɜːR")  # NURSE without length mark (GenAm style)
+    ipa = ipa.replace("ɑr", "ɑːR")  # START: bare ɑr → ɑːR (any source)
+
+    # Bare ɑ without length mark → ɑː (PALM) for non-GenAm sources
+    # (GenAm bare ɑ is handled separately in _normalize_genam as LOT)
+    if source not in ("wiktionary_gam",):
+        ipa = re.sub(r'ɑ(?!ː|R|r)', 'ɑː', ipa)
+
+    # Bare ɜ without length mark → ɜː (NURSE)
+    ipa = re.sub(r'ɜ(?!ː)', 'ɜː', ipa)
+
+    # Voiceless velar fricative → 𐑒 (anglicized)
+    # But only IPA x (which is ASCII), not when it's part of a word
+    # This is handled by leaving it for the PHONEME_MAP; add mapping there
+
     # Remove parenthesized optional segments like (ɹ)
     ipa = re.sub(r'\([^)]*\)', '', ipa)
 
@@ -98,8 +147,21 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
         ipa = _normalize_genam(ipa)
 
     # --- R-restoration for non-rhotic sources ---
+    # Apply per-word for phrases so word-boundary heuristics scope correctly
     if source in ("britfone", "wiktionary_rp"):
-        ipa = _restore_rhoticity(ipa, word)
+        if " " in word and " " in ipa:
+            ipa_words = ipa.split(" ")
+            latin_words = word.split(" ")
+            if len(ipa_words) == len(latin_words):
+                ipa = " ".join(
+                    _restore_rhoticity(iw, lw)
+                    for iw, lw in zip(ipa_words, latin_words)
+                )
+            else:
+                # Word counts don't match — fall back to whole-string
+                ipa = _restore_rhoticity(ipa, word)
+        else:
+            ipa = _restore_rhoticity(ipa, word)
 
     # --- Dialect normalization toward ReadLex conventions ---
     if source in ("britfone", "wiktionary_rp", "wiktionary_gam"):
@@ -126,10 +188,7 @@ def _normalize_genam(ipa: str) -> str:
     ReadLex is designed as a universal compromise. GenAm entries in
     ReadLex only exist for genuine exceptions (yod-dropping, etc.).
     """
-    # R-colored vowels (must come before bare ɚ/ɝ and before ɑ→ɒ)
-    ipa = ipa.replace("ɝː", "ɜːR")   # long r-colored NURSE (rare variant)
-    ipa = ipa.replace("ɝ", "ɜːR")    # r-colored NURSE: bird, her
-    ipa = ipa.replace("ɚ", "əR")     # r-colored schwa: better, water
+    # R-colored vowels and bare ɜ now handled in common normalize_ipa() section.
 
     # Flap
     ipa = ipa.replace("ɾ", "t")      # alveolar flap → t
@@ -509,6 +568,7 @@ PHONEME_MAP = [
     ("w", "𐑢"),
     ("i", "𐑦"),    # allophonic short i (happy tensing)
     ("u", "𐑫"),    # allophonic weak u (ReadLex convention: bare u = 𐑫)
+    ("x", "𐑒"),    # voiceless velar fricative → anglicized as k (loch, Bach)
     ("y", "𐑘"),    # rare: used in some foreign words
     ("a", "𐑨"),    # rare standalone
     ("o", "𐑪"),    # rare standalone
@@ -578,6 +638,11 @@ def _convert_stripped(ipa: str) -> str:
                 break
 
         if not matched:
+            # Skip orphaned length marks (ː consumed by vowel+ː patterns,
+            # but left over when the vowel was matched without it)
+            if char == 'ː':
+                pos += 1
+                continue
             # Unknown character — pass through
             result.append(char)
             pos += 1
@@ -714,6 +779,10 @@ def upgrade_confidence_shave(pct: int, notes: list[str],
 
     Returns (new_pct, updated_notes, override_shaw_or_None).
     """
+    # Strip Shavian naming dot (·) — shave adds it for proper nouns,
+    # but ReadLex stores spellings without it.
+    shave_shaw = shave_shaw.lstrip("·")
+
     if shave_shaw == shaw:
         # Shave agrees with rules
         new_pct = max(pct, 95) if pct < 89 else max(pct, 97)

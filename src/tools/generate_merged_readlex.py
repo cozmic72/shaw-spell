@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 Generate a merged readlex.json that includes the original ReadLex entries
-plus high-confidence supplement entries, appropriately flagged.
+plus editorially approved supplement entries.
+
+When an editorial.tsv exists, only entries with verdict "keep" or "supplemental"
+are included. Override columns (shaw_override, pos_override, var_override) are
+applied. When no editorial.tsv exists, falls back to confidence-based filtering.
 
 Original ReadLex entries: untouched (no new fields)
 Supplement entries: tagged with source, confidence, status="supplement"
@@ -10,20 +14,57 @@ Usage:
     python3 src/tools/generate_merged_readlex.py [--min-confidence N]
 """
 
+import csv
 import json
 import argparse
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 READLEX_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex.json"
+EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.tsv"
 
 SUPPLEMENTS = [
     ("britfone", PROJECT_ROOT / "data" / "supplement-britfone.json"),
     ("wordnet", PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
     ("wiktionary", PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json"),
 ]
+
+
+def load_editorial():
+    """Load editorial verdicts from TSV. Returns dict keyed by (word_lower, pos, shaw)."""
+    if not EDITORIAL_PATH.exists():
+        return None
+
+    editorial = {}
+    with open(EDITORIAL_PATH, "r", encoding="utf-8", newline="") as f:
+        content = f.read()
+    lines = content.split("\n")
+    reader = csv.DictReader(lines, delimiter="\t")
+    for row in reader:
+        # Clean CRLF artifacts
+        cleaned = {}
+        for k, v in row.items():
+            if k is None:
+                continue
+            k = k.strip().rstrip("\r")
+            cleaned[k] = v.strip().rstrip("\r") if v else ""
+
+        word = cleaned.get("word", "")
+        pos = cleaned.get("pos", "")
+        shaw = cleaned.get("shaw", "")
+        key = (word.lower(), pos, shaw)
+
+        editorial[key] = {
+            "verdict": cleaned.get("verdict", ""),
+            "shaw_override": cleaned.get("shaw_override", ""),
+            "pos_override": cleaned.get("pos_override", ""),
+            "var_override": cleaned.get("var_override", ""),
+        }
+
+    return editorial
 
 
 def main():
@@ -47,6 +88,16 @@ def main():
         for e in entries:
             existing_words.add(e['Latn'].lower())
 
+    # Load editorial verdicts
+    editorial = load_editorial()
+    if editorial is not None:
+        reviewed = sum(1 for e in editorial.values() if e["verdict"])
+        print(f"  Editorial: {len(editorial):,} entries, {reviewed:,} reviewed")
+        use_editorial = True
+    else:
+        print(f"  Editorial: not found, using confidence-based filtering")
+        use_editorial = False
+
     # Track stats
     stats = {
         "added_keys": 0,
@@ -54,9 +105,12 @@ def main():
         "skipped_low_confidence": 0,
         "skipped_numeral": 0,
         "skipped_unknown_chars": 0,
+        "skipped_editorial": 0,
+        "skipped_unreviewed": 0,
         "overlap_entries": 0,
         "new_word_entries": 0,
         "by_source": {},
+        "by_verdict": defaultdict(int),
     }
 
     # Valid Shavian chars (for filtering)
@@ -77,22 +131,50 @@ def main():
         for key, entries in supplement.items():
             for entry in entries:
                 confidence = entry.get("confidence", 0)
+                word = entry.get("Latn", "")
+                shaw = entry.get("Shaw", "")
+                pos = entry.get("pos", "UNC")
+                var = entry.get("var", "UNC")
 
-                # Filter: minimum confidence
-                if confidence < args.min_confidence:
-                    stats["skipped_low_confidence"] += 1
-                    source_stats["skipped"] += 1
-                    continue
+                # Editorial filtering (when editorial.tsv exists)
+                if use_editorial:
+                    ed_key = (word.lower(), pos, shaw)
+                    ed = editorial.get(ed_key)
+                    if ed is None:
+                        # Not in editorial — skip (it's in drops or duplicates)
+                        stats["skipped_editorial"] += 1
+                        source_stats["skipped"] += 1
+                        continue
+                    verdict = ed["verdict"]
+                    if verdict not in ("keep", "supplemental"):
+                        if verdict == "":
+                            stats["skipped_unreviewed"] += 1
+                        else:
+                            stats["skipped_editorial"] += 1
+                        source_stats["skipped"] += 1
+                        continue
+                    stats["by_verdict"][verdict] += 1
+                    # Apply overrides
+                    if ed["shaw_override"]:
+                        shaw = ed["shaw_override"]
+                    if ed["pos_override"]:
+                        pos = ed["pos_override"]
+                    if ed["var_override"]:
+                        var = ed["var_override"]
+                else:
+                    # Fallback: confidence-based filtering
+                    if confidence < args.min_confidence:
+                        stats["skipped_low_confidence"] += 1
+                        source_stats["skipped"] += 1
+                        continue
 
                 # Filter: skip numerals
-                word = entry.get("Latn", "")
                 if word and word[0].isdigit():
                     stats["skipped_numeral"] += 1
                     source_stats["skipped"] += 1
                     continue
 
                 # Filter: skip entries with unconverted IPA chars in Shavian
-                shaw = entry.get("Shaw", "")
                 if set(shaw) - known_shaw:
                     stats["skipped_unknown_chars"] += 1
                     source_stats["skipped"] += 1
@@ -100,12 +182,12 @@ def main():
 
                 # Build the merged entry
                 merged_entry = {
-                    "Latn": entry["Latn"],
-                    "Shaw": entry["Shaw"],
-                    "pos": entry.get("pos", "UNC"),
+                    "Latn": word,
+                    "Shaw": shaw,
+                    "pos": pos,
                     "ipa": entry.get("ipa", ""),
                     "freq": entry.get("freq", 0),
-                    "var": entry.get("var", "UNC"),
+                    "var": var,
                     "confidence": confidence,
                     "source": source_name,
                     "status": "supplement",
@@ -117,7 +199,7 @@ def main():
                     merged_entry["review"] = review
 
                 # Build key matching ReadLex convention
-                merged_key = f"{entry['Latn']}_{entry.get('pos', 'UNC')}_{entry['Shaw']}"
+                merged_key = f"{word}_{pos}_{shaw}"
 
                 # Add to merged dict
                 if merged_key not in merged:
@@ -130,7 +212,6 @@ def main():
                     if (existing.get("Latn", "").lower() == merged_entry["Latn"].lower()
                             and existing.get("Shaw") == merged_entry["Shaw"]
                             and existing.get("var") == merged_entry["var"]):
-                        # Same word+shaw+var — redundant regardless of source
                         is_dup = True
                         break
 
@@ -149,60 +230,7 @@ def main():
         stats["by_source"][source_name] = source_stats
         print(f"  Added {source_stats['added']:,} entries "
               f"({source_stats['new']:,} new words, {source_stats['overlap']:,} overlapping)")
-        print(f"  Skipped {source_stats['skipped']:,} (below confidence / filtered)")
-
-    # --- CotCaught variant generation ---
-    # For every entry with 𐑪 (LOT) in Shaw, generate a variant with 𐑪→𐑷 (THOUGHT)
-    LOT = "𐑪"
-    THOUGHT = "𐑷"
-    print(f"\nGenerating CotCaught variants (𐑪 → 𐑷)...")
-
-    # Build a set of existing (Latn_lower, Shaw) pairs for dedup
-    existing_shaw_pairs = set()
-    for key, entries in merged.items():
-        for e in entries:
-            existing_shaw_pairs.add((e["Latn"].lower(), e["Shaw"]))
-
-    cot_caught_count = 0
-    cot_caught_new_entries = []  # collect (key, entry) tuples to add after iteration
-
-    for key, entries in list(merged.items()):
-        for e in entries:
-            shaw = e.get("Shaw", "")
-            if LOT not in shaw:
-                continue
-
-            variant_shaw = shaw.replace(LOT, THOUGHT)
-
-            # Skip if this exact Shaw spelling already exists for this word
-            if (e["Latn"].lower(), variant_shaw) in existing_shaw_pairs:
-                continue
-
-            # Build CotCaught variant entry
-            variant_entry = {
-                "Latn": e["Latn"],
-                "Shaw": variant_shaw,
-                "pos": e.get("pos", "UNC"),
-                "ipa": e.get("ipa", ""),
-                "freq": e.get("freq", 0),
-                "var": "CotCaught",
-                "confidence": e.get("confidence", 100),
-                "source": e.get("source", "derived"),
-                "status": "supplement",
-            }
-
-            variant_key = f"{e['Latn']}_{e.get('pos', 'UNC')}_{variant_shaw}"
-            cot_caught_new_entries.append((variant_key, variant_entry))
-            existing_shaw_pairs.add((e["Latn"].lower(), variant_shaw))
-            cot_caught_count += 1
-
-    # Add all CotCaught entries to merged
-    for variant_key, variant_entry in cot_caught_new_entries:
-        if variant_key not in merged:
-            merged[variant_key] = []
-        merged[variant_key].append(variant_entry)
-
-    print(f"  Generated {cot_caught_count:,} CotCaught variant entries")
+        print(f"  Skipped {source_stats['skipped']:,}")
 
     # Write output
     print(f"\nWriting merged readlex to {OUTPUT_PATH}...")
@@ -221,10 +249,16 @@ def main():
     print(f"  New words:         {stats['new_word_entries']:,}")
     print(f"  Overlap entries:   {stats['overlap_entries']:,}")
     print(f"Skipped:")
-    print(f"  Low confidence:    {stats['skipped_low_confidence']:,}")
+    if use_editorial:
+        print(f"  Not in editorial:  {stats['skipped_editorial']:,}")
+        print(f"  Unreviewed:        {stats['skipped_unreviewed']:,}")
+        print(f"  By verdict:")
+        for v, c in sorted(stats["by_verdict"].items()):
+            print(f"    {v:16s}   {c:,}")
+    else:
+        print(f"  Low confidence:    {stats['skipped_low_confidence']:,}")
     print(f"  Numerals:          {stats['skipped_numeral']:,}")
     print(f"  Unknown chars:     {stats['skipped_unknown_chars']:,}")
-    print(f"Min confidence:      {args.min_confidence}%")
     print()
     for source, ss in stats["by_source"].items():
         print(f"  {source}: +{ss['added']:,} ({ss['new']:,} new, {ss['overlap']:,} overlap, {ss['skipped']:,} skipped)")

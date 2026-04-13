@@ -166,6 +166,11 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
     if not word or not sounds:
         return
 
+    # Skip affix entries (e.g. "-ity", "giga-") — these aren't real words
+    if word.startswith("-") or word.endswith("-"):
+        stats["skipped_affix"] += 1
+        return
+
     pos = POS_MAP.get(pos_raw, "UNC")
     stats["total_entries"] += 1
 
@@ -180,6 +185,13 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
         # Prefer broad transcription (slashes) over narrow (brackets)
         # but accept narrow if that's all we have
         is_broad = is_broad_transcription(ipa_raw)
+
+        # Skip fragment IPA (e.g. "-di", "ə-", "-ˌbiːoʊ-") — Wiktionary uses
+        # leading/trailing hyphens to indicate partial pronunciations
+        ipa_stripped = strip_ipa_delimiters(ipa_raw)
+        if ipa_stripped.startswith("-") or ipa_stripped.endswith("-"):
+            stats["skipped_fragment_ipa"] += 1
+            continue
 
         ipa_clean = clean_ipa(ipa_raw)
         if not ipa_clean:
@@ -422,6 +434,8 @@ def main():
     print(f"Non-English skipped:        {stats['non_english']:,}")
     print(f"English entries with sounds: {stats['total_entries']:,}")
     print(f"Sound items with IPA:       {stats['with_ipa']:,}")
+    print(f"Skipped affix words:        {stats['skipped_affix']:,}")
+    print(f"Skipped fragment IPA:       {stats['skipped_fragment_ipa']:,}")
     print(f"Shavian conversion errors:  {stats['shavian_errors']:,}")
     print(f"JSON parse errors:          {stats['json_errors']:,}")
     print()

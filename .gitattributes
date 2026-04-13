@@ -1,0 +1,3 @@
+# Preserve CRLF line endings for TSVs that round-trip through Apple Numbers
+data/editorial.tsv text eol=crlf
+data/readlex-reference.tsv text eol=crlf

@@ -31,63 +31,84 @@ _normalize_gb_cache = {}
 
 class ShyphenateSession:
     """
-    Persistent shyphenate subprocess for efficient hyphenation.
+    Shavian hyphenation using the shyphenate tool.
 
-    Keeps a single shyphenate process running and communicates
-    via stdin/stdout to avoid fork overhead.
+    Uses batch mode (communicate) since shyphenate reads all input
+    before producing output, so interactive line-by-line mode does not work.
+    Batches multiple texts per subprocess invocation for efficiency.
     """
-    def __init__(self):
-        self.process = None
-        self._start_process()
+    BATCH_SIZE = 500  # Number of texts to batch per subprocess call
 
-    def _start_process(self):
-        """Start the shyphenate subprocess."""
+    def __init__(self):
+        self.available = True
+        self._cache = {}
+        self._pending = []  # Texts waiting to be hyphenated
+        self._pending_set = set()  # For dedup
+        # Check if shyphenate is available
         try:
-            self.process = subprocess.Popen(
-                ['shyphenate'],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1  # Line buffered
-            )
-        except FileNotFoundError:
+            subprocess.run(['shyphenate', '--version'], capture_output=True, check=True)
+        except (FileNotFoundError, subprocess.CalledProcessError):
             print("Warning: shyphenate not found on PATH", file=sys.stderr)
-            self.process = None
+            self.available = False
+
+    def _flush_batch(self):
+        """Process all pending texts through shyphenate in one batch."""
+        if not self._pending:
+            return
+
+        batch = self._pending
+        self._pending = []
+        self._pending_set = set()
+
+        try:
+            input_text = '\n'.join(batch) + '\n'
+            proc = subprocess.run(
+                ['shyphenate'],
+                input=input_text,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            results = proc.stdout.rstrip('\n').split('\n')
+            for text, result in zip(batch, results):
+                self._cache[text] = result
+        except (subprocess.TimeoutExpired, OSError) as e:
+            print(f"Warning: shyphenate batch failed: {e}", file=sys.stderr)
+            # Cache original texts as fallback
+            for text in batch:
+                self._cache[text] = text
+
+    def enqueue(self, text):
+        """Add a text to the pending batch. Call flush_batch() before reading results."""
+        if not self.available or text in self._cache or text in self._pending_set:
+            return
+        self._pending.append(text)
+        self._pending_set.add(text)
+        if len(self._pending) >= self.BATCH_SIZE:
+            self._flush_batch()
 
     def hyphenate(self, text):
         """
-        Hyphenate a single text using the persistent subprocess.
+        Hyphenate a single text.
 
         Args:
             text: String to hyphenate
 
         Returns:
-            Hyphenated text, or original if process isn't available
+            Hyphenated text, or original if shyphenate isn't available
         """
-        if self.process is None:
+        if not self.available:
             return text
 
-        try:
-            # Write text with newline
-            self.process.stdin.write(text + '\n')
-            self.process.stdin.flush()
+        if text not in self._cache:
+            self.enqueue(text)
+            self._flush_batch()
 
-            # Read response
-            result = self.process.stdout.readline()
-            return result.rstrip('\n')
-        except (BrokenPipeError, OSError) as e:
-            print(f"Warning: shyphenate process failed: {e}", file=sys.stderr)
-            return text
+        return self._cache.get(text, text)
 
     def close(self):
-        """Close the subprocess."""
-        if self.process:
-            self.process.stdin.close()
-            self.process.stdout.close()
-            self.process.stderr.close()
-            self.process.wait()
-            self.process = None
+        """Flush any remaining batch."""
+        self._flush_batch()
 
 def normalize_to_us_with_cache(word, wordnet_cache):
     """

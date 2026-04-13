@@ -1134,9 +1134,16 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 if key not in index_to_entries[index_word]:
                     index_to_entries[index_word].append(key)
 
-    # Initialize hyphenation session if needed
+    # Initialize hyphenation session if needed and pre-hyphenate all definitions
     if config.get('use_shavian_cache', False):
         shyphenate_session = ShyphenateSession()
+        if shyphenate_session.available:
+            print("Pre-collecting definition texts for batch hyphenation...")
+            for data in merged_entries.values():
+                for def_data in data.get('definitions', [])[:20]:
+                    shyphenate_session.enqueue(def_data['definition'])
+            shyphenate_session._flush_batch()
+            print(f"Pre-hyphenated {len(shyphenate_session._cache)} unique definition texts")
 
     # Write XML
     try:

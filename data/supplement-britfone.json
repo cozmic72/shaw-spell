@@ -8,7 +8,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 89,
-      "review": "shave_says:'𐑒𐑪𐑕"
+      "review": "shave_says:'𐑒𐑩𐑟"
     }
   ],
   "'d_UNC_𐑛": [
@@ -2517,8 +2517,8 @@
       "ipa": "ədˈept",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑨𐑛𐑧𐑐𐑑"
     }
   ],
   "adequate_UNC_𐑨𐑛𐑦𐑒𐑢𐑦𐑑": [
@@ -3861,8 +3861,8 @@
       "ipa": "ɑːftəRnuːn",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑨𐑓𐑑𐑼𐑯𐑵𐑯"
     }
   ],
   "afternoons_UNC_𐑭𐑓𐑑𐑼𐑯𐑵𐑯𐑟": [
@@ -15441,8 +15441,8 @@
       "ipa": "bɑːθruːm",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑚𐑨𐑔𐑮𐑵𐑥"
     }
   ],
   "bathrooms_UNC_𐑚𐑭𐑔𐑮𐑵𐑥𐑟": [
@@ -26351,8 +26351,8 @@
       "ipa": "kærɪəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 30,
-      "review": "r_gap:spelling=3,ipa=2; shave_says:𐑒𐑨𐑮𐑦𐑼"
+      "confidence": 95,
+      "review": "r_gap:spelling=3,ipa=2; shave_agrees"
     }
   ],
   "carriers_UNC_𐑒𐑨𐑮𐑽𐑟": [
@@ -34631,16 +34631,16 @@
       "review": "shave_agrees"
     }
   ],
-  "communion_UNC_𐑒𐑩𐑥𐑿𐑯𐑘𐑩𐑯": [
+  "communion_UNC_𐑒𐑩𐑥𐑿𐑯𐑾𐑯": [
     {
       "Latn": "communion",
-      "Shaw": "𐑒𐑩𐑥𐑿𐑯𐑘𐑩𐑯",
+      "Shaw": "𐑒𐑩𐑥𐑿𐑯𐑾𐑯",
       "pos": "UNC",
       "ipa": "kəmjˈuːnjən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 5,
-      "review": "ml_disagrees:𐑒𐑩𐑥𐑿𐑯𐑾𐑯; shave_says:[𐑒𐑩𐑥𐑿𐑯𐑘𐑩𐑯 / 𐑒𐑩𐑥𐑿𐑯𐑾𐑯]"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "communism_UNC_𐑒𐑪𐑥𐑘𐑩𐑯𐑦𐑟𐑩𐑥": [
@@ -40273,8 +40273,8 @@
       "ipa": "kˈɒs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑒𐑩𐑟"
     }
   ],
   "cosmetic_UNC_𐑒𐑪𐑟𐑥𐑧𐑑𐑦𐑒": [
@@ -50507,16 +50507,16 @@
       "review": "shave_agrees"
     }
   ],
-  "disciplinary_UNC_𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑼𐑦": [
+  "disciplinary_UNC_𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦": [
     {
       "Latn": "disciplinary",
-      "Shaw": "𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑼𐑦",
+      "Shaw": "𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦",
       "pos": "UNC",
       "ipa": "dɪsɪplɪnəri",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 5,
-      "review": "ml_disagrees:𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦; shave_says:[𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑼𐑦 / 𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦]"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "discipline_UNC_𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯": [
@@ -53369,8 +53369,8 @@
       "ipa": "drɑːft",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑛𐑮𐑨𐑓𐑑"
     }
   ],
   "drag_UNC_𐑛𐑮𐑨𐑜": [
@@ -62965,8 +62965,8 @@
       "ipa": "ekspɔːRt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑦𐑒𐑕𐑐𐑹𐑑"
     },
     {
       "Latn": "export",
@@ -62975,8 +62975,8 @@
       "ipa": "ɪkspɔːRt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑧𐑒𐑕𐑐𐑹𐑑"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "exports_UNC_𐑧𐑒𐑕𐑐𐑹𐑑𐑕": [
@@ -68913,8 +68913,8 @@
       "ipa": "fɔːRhed",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑓𐑪𐑮𐑦𐑛"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "foreign_UNC_𐑓𐑪𐑮𐑦𐑯": [
@@ -76085,8 +76085,8 @@
       "ipa": "ɡrɑːf",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 95,
-      "review": "ml_disagrees:𐑜𐑮ɑ𐑨𐑓; shave_agrees"
+      "confidence": 5,
+      "review": "ml_disagrees:𐑜𐑮ɑ𐑨𐑓; shave_says:𐑜𐑮𐑨𐑓"
     }
   ],
   "graphic_UNC_𐑜𐑮𐑨𐑓𐑦𐑒": [
@@ -78805,8 +78805,8 @@
       "ipa": "hæpɪəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑣𐑨𐑐𐑦𐑼"
     }
   ],
   "happily_UNC_𐑣𐑨𐑐𐑦𐑤𐑦": [
@@ -80319,8 +80319,8 @@
       "ipa": "hevɪəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑣𐑧𐑝𐑦𐑼"
     }
   ],
   "heavily_UNC_𐑣𐑧𐑝𐑦𐑤𐑦": [
@@ -83296,7 +83296,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 30,
-      "review": "r_gap:spelling=2,ipa=1; shave_says:[𐑣𐑪𐑮𐑦𐑚𐑩𐑤 / 𐑣𐑪𐑮𐑩𐑚𐑩𐑤]"
+      "review": "r_gap:spelling=2,ipa=1; shave_says:𐑣𐑪𐑮𐑩𐑚𐑩𐑤"
     }
   ],
   "horrid_UNC_𐑣𐑪𐑮𐑦𐑛": [
@@ -87359,8 +87359,8 @@
       "ipa": "ɪndjˈuːst",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑦𐑯𐑛𐑿𐑕𐑑 / 𐑦𐑯𐑛𐑵𐑕𐑑]"
     }
   ],
   "induction_UNC_𐑦𐑯𐑛𐑳𐑒𐑖𐑩𐑯": [
@@ -88855,16 +88855,16 @@
       "review": "shave_agrees"
     }
   ],
-  "inspiration_UNC_𐑦𐑯𐑕𐑐𐑦𐑮𐑱𐑖𐑩𐑯": [
+  "inspiration_UNC_𐑦𐑯𐑕𐑐𐑼𐑱𐑖𐑩𐑯": [
     {
       "Latn": "inspiration",
-      "Shaw": "𐑦𐑯𐑕𐑐𐑦𐑮𐑱𐑖𐑩𐑯",
+      "Shaw": "𐑦𐑯𐑕𐑐𐑼𐑱𐑖𐑩𐑯",
       "pos": "UNC",
       "ipa": "ɪnspɪreɪʃən",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 5,
-      "review": "ml_disagrees:𐑦𐑯𐑕𐑐𐑼𐑱𐑖𐑩𐑯; shave_says:[𐑦𐑯𐑕𐑐𐑦𐑮𐑱𐑖𐑩𐑯 / 𐑦𐑯𐑕𐑐𐑼𐑱𐑖𐑩𐑯]"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "inspire_UNC_𐑦𐑯𐑕𐑐𐑲𐑼": [
@@ -89079,8 +89079,8 @@
       "ipa": "ˌɪnstɪtjˈuːʃənəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑦𐑯𐑕𐑑𐑦𐑑𐑵𐑖𐑩𐑯𐑩𐑤"
     }
   ],
   "institutions_UNC_𐑦𐑯𐑕𐑑𐑦𐑑𐑿𐑖𐑩𐑯𐑟": [
@@ -89091,8 +89091,8 @@
       "ipa": "ˌɪnstɪtjˈuːʃənz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑦𐑯𐑕𐑑𐑦𐑑𐑿𐑖𐑩𐑯𐑟 / 𐑦𐑯𐑕𐑑𐑦𐑑𐑵𐑖𐑩𐑯𐑟]"
     }
   ],
   "instruct_UNC_𐑦𐑯𐑕𐑑𐑮𐑳𐑒𐑑": [
@@ -90319,8 +90319,8 @@
       "ipa": "ɪntrədjuːsɪŋ",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑦𐑯𐑑𐑮𐑩𐑛𐑿𐑕𐑦𐑙 / 𐑦𐑯𐑑𐑮𐑩𐑛𐑵𐑕𐑦𐑙]"
     }
   ],
   "introduction_UNC_𐑦𐑯𐑑𐑮𐑩𐑛𐑳𐑒𐑖𐑩𐑯": [
@@ -92663,8 +92663,8 @@
       "ipa": "dʒˈɒb",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑡𐑴𐑚"
     },
     {
       "Latn": "job",
@@ -92673,8 +92673,8 @@
       "ipa": "dʒˈəʊb",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑡𐑪𐑚"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "jobs_UNC_𐑡𐑪𐑚𐑟": [
@@ -95253,8 +95253,8 @@
       "ipa": "njˈuː",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑯𐑿 / 𐑯𐑵]"
     }
   ],
   "knickers_UNC_𐑯𐑦𐑒𐑼𐑟": [
@@ -104289,8 +104289,8 @@
       "ipa": "mɑːR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑥𐑸𐑗"
     }
   ],
   "marathon_UNC_𐑥𐑨𐑮𐑼𐑔𐑩𐑯": [
@@ -114281,8 +114281,8 @@
       "ipa": "njˈuː",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑯𐑵"
     }
   ],
   "newark_UNC_𐑯𐑿𐑼𐑒": [
@@ -114471,8 +114471,8 @@
       "ipa": "njuːzpeɪpəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑯𐑵𐑟𐑐𐑱𐑐𐑼"
     }
   ],
   "newspapers_UNC_𐑯𐑿𐑟𐑐𐑱𐑐𐑼𐑟": [
@@ -114483,8 +114483,8 @@
       "ipa": "njuːzpeɪpəRz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑯𐑿𐑟𐑐𐑱𐑐𐑼𐑟 / 𐑯𐑵𐑟𐑐𐑱𐑐𐑼𐑟]"
     }
   ],
   "newt_UNC_𐑯𐑿𐑑": [
@@ -114495,8 +114495,8 @@
       "ipa": "njˈuːt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑯𐑵𐑑"
     }
   ],
   "newton_UNC_𐑯𐑿𐑑𐑩𐑯": [
@@ -116441,8 +116441,8 @@
       "ipa": "njuːklɪəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑯𐑵𐑒𐑤𐑽"
     }
   ],
   "nucleus_UNC_𐑯𐑿𐑒𐑤𐑾𐑕": [
@@ -116609,8 +116609,8 @@
       "ipa": "njuːmərəs",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑯𐑵𐑥𐑼𐑩𐑕"
     }
   ],
   "nun_UNC_𐑯𐑳𐑯": [
@@ -116991,8 +116991,8 @@
       "ipa": "əbdʒˈekt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑪𐑚𐑡𐑧𐑒𐑑"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "object",
@@ -117001,8 +117001,8 @@
       "ipa": "ˈɒbdʒekt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑩𐑚𐑡𐑧𐑒𐑑"
     }
   ],
   "objection_UNC_𐑩𐑚𐑡𐑧𐑒𐑖𐑩𐑯": [
@@ -118977,8 +118977,8 @@
       "ipa": "ɒpəRtjuːnɪtiz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑪𐑐𐑼𐑑𐑿𐑯𐑦𐑑𐑦𐑟 / 𐑪𐑐𐑼𐑑𐑵𐑯𐑦𐑑𐑦𐑟]"
     }
   ],
   "opportunity_UNC_𐑪𐑐𐑼𐑑𐑿𐑯𐑦𐑑𐑦": [
@@ -124875,8 +124875,8 @@
       "ipa": "pɜːRm",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑐𐑘𐑧𐑮𐑥"
     }
   ],
   "permalink_UNC_𐑐𐑻𐑥𐑩𐑤𐑦𐑙𐑒": [
@@ -124969,8 +124969,8 @@
       "ipa": "pɜːRmɪts",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑐𐑻𐑥𐑦𐑑𐑕 / 𐑐𐑼𐑥𐑦𐑑𐑕]"
     },
     {
       "Latn": "permits",
@@ -124980,7 +124980,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 89,
-      "review": "shave_says:𐑐𐑻𐑥𐑦𐑑𐑕"
+      "review": "shave_says:[𐑐𐑻𐑥𐑦𐑑𐑕 / 𐑐𐑼𐑥𐑦𐑑𐑕]"
     }
   ],
   "permitted_UNC_𐑐𐑼𐑥𐑦𐑑𐑩𐑛": [
@@ -126006,7 +126006,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 5,
-      "review": "ml_disagrees:𐑓𐑴𐑑𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:[𐑓𐑴𐑑𐑩𐑜𐑮𐑨𐑓 / 𐑓𐑴𐑑𐑩𐑜𐑮𐑭𐑓]"
+      "review": "ml_disagrees:𐑓𐑴𐑑𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:𐑓𐑴𐑑𐑩𐑜𐑮𐑨𐑓"
     }
   ],
   "photographer_UNC_𐑓𐑩𐑑𐑪𐑜𐑮𐑩𐑓𐑼": [
@@ -132343,16 +132343,16 @@
       "review": "shave_agrees"
     }
   ],
-  "principal_UNC_𐑐𐑮𐑦𐑯𐑕𐑦𐑐𐑩𐑤": [
+  "principal_UNC_𐑐𐑮𐑦𐑯𐑕𐑩𐑐𐑩𐑤": [
     {
       "Latn": "principal",
-      "Shaw": "𐑐𐑮𐑦𐑯𐑕𐑦𐑐𐑩𐑤",
+      "Shaw": "𐑐𐑮𐑦𐑯𐑕𐑩𐑐𐑩𐑤",
       "pos": "UNC",
       "ipa": "prɪnsɪpəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 5,
-      "review": "ml_disagrees:𐑐𐑮𐑦𐑯𐑕𐑩𐑐𐑩𐑤; shave_says:[𐑐𐑮𐑦𐑯𐑕𐑦𐑐𐑩𐑤 / 𐑐𐑮𐑦𐑯𐑕𐑩𐑐𐑩𐑤]"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "principally_UNC_𐑐𐑮𐑦𐑯𐑕𐑦𐑐𐑤𐑦": [
@@ -132975,8 +132975,8 @@
       "ipa": "prəʊses",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑐𐑮𐑪𐑕𐑧𐑕"
     }
   ],
   "processed_UNC_𐑐𐑮𐑴𐑕𐑧𐑕𐑑": [
@@ -133153,8 +133153,8 @@
       "ipa": "prədjuːsɪŋ",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑐𐑮𐑩𐑛𐑿𐑕𐑦𐑙 / 𐑐𐑮𐑩𐑛𐑵𐑕𐑦𐑙]"
     }
   ],
   "product_UNC_𐑐𐑮𐑪𐑛𐑳𐑒𐑑": [
@@ -138278,7 +138278,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 89,
-      "review": "shave_says:𐑮𐑱-𐑕𐑲𐑯"
+      "review": "shave_says:[𐑮𐑰 / 𐑮𐑱]-𐑕𐑲𐑯"
     }
   ],
   "re-sort_UNC_𐑮𐑰𐑕𐑹𐑑": [
@@ -139829,8 +139829,8 @@
       "ipa": "rɪdjuːst",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑮𐑦𐑛𐑿𐑕𐑑 / 𐑮𐑦𐑛𐑵𐑕𐑑]"
     }
   ],
   "reduces_UNC_𐑮𐑦𐑛𐑿𐑕𐑩𐑟": [
@@ -139853,8 +139853,8 @@
       "ipa": "rɪdjuːsɪŋ",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑮𐑦𐑛𐑿𐑕𐑦𐑙 / 𐑮𐑦𐑛𐑵𐑕𐑦𐑙]"
     }
   ],
   "reduction_UNC_𐑮𐑦𐑛𐑳𐑒𐑖𐑩𐑯": [
@@ -141869,8 +141869,8 @@
       "ipa": "rɪnjuː",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑮𐑦𐑯𐑵"
     }
   ],
   "renewable_UNC_𐑮𐑦𐑯𐑿𐑩𐑚𐑩𐑤": [
@@ -141881,8 +141881,8 @@
       "ipa": "rɪnjuːəbəl",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑮𐑦𐑯𐑵𐑩𐑚𐑩𐑤"
     }
   ],
   "renewal_UNC_𐑮𐑦𐑯𐑿𐑩𐑤": [
@@ -144157,8 +144157,8 @@
       "ipa": "revənjuːz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑮𐑧𐑝𐑩𐑯𐑿𐑟 / 𐑮𐑧𐑝𐑩𐑯𐑵𐑟]"
     }
   ],
   "reverend_UNC_𐑮𐑧𐑝𐑮𐑼𐑯𐑛": [
@@ -145785,8 +145785,8 @@
       "ipa": "rəʊmæns",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑮𐑩𐑥𐑨𐑯𐑕"
     },
     {
       "Latn": "romance",
@@ -145795,8 +145795,8 @@
       "ipa": "rəmæns",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑮𐑴𐑥𐑨𐑯𐑕"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "romania_UNC_𐑮𐑴𐑥𐑱𐑯𐑾": [
@@ -150901,8 +150901,8 @@
       "ipa": "sˈeɡmənt",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑕𐑧𐑜𐑥𐑧𐑯𐑑"
+      "confidence": 97,
+      "review": "shave_agrees"
     },
     {
       "Latn": "segment",
@@ -150911,8 +150911,8 @@
       "ipa": "sˌeɡmˈent",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑕𐑧𐑜𐑥𐑩𐑯𐑑"
     }
   ],
   "segments_UNC_𐑕𐑧𐑜𐑥𐑩𐑯𐑑𐑕": [
@@ -164713,8 +164713,8 @@
       "ipa": "stjˈuːdənts",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑕𐑑𐑿𐑛𐑩𐑯𐑑𐑕 / 𐑕𐑑𐑵𐑛𐑩𐑯𐑑𐑕]"
     }
   ],
   "studied_UNC_𐑕𐑑𐑳𐑛𐑦𐑛": [
@@ -166987,8 +166987,8 @@
       "ipa": "sɜːRmaɪz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 89,
-      "review": "shave_says:𐑕𐑼𐑥𐑲𐑟"
+      "confidence": 97,
+      "review": "shave_agrees"
     }
   ],
   "surname_UNC_𐑕𐑻𐑯𐑱𐑥": [
@@ -170343,8 +170343,8 @@
       "ipa": "telɪɡrɑːf",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 95,
-      "review": "ml_disagrees:𐑑𐑧𐑤𐑦𐑜𐑮ɑ𐑨𐑓; shave_agrees"
+      "confidence": 5,
+      "review": "ml_disagrees:𐑑𐑧𐑤𐑦𐑜𐑮ɑ𐑨𐑓; shave_says:𐑑𐑧𐑤𐑦𐑜𐑮𐑨𐑓"
     }
   ],
   "telephone_UNC_𐑑𐑧𐑤𐑦𐑓𐑴𐑯": [
@@ -171154,7 +171154,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 30,
-      "review": "r_gap:spelling=2,ipa=1; shave_says:[𐑑𐑧𐑮𐑦𐑚𐑤𐑦 / 𐑑𐑧𐑮𐑩𐑚𐑤𐑦]"
+      "review": "r_gap:spelling=2,ipa=1; shave_says:𐑑𐑧𐑮𐑩𐑚𐑤𐑦"
     }
   ],
   "terrier_UNC_𐑑𐑧𐑮𐑽": [
@@ -172053,8 +172053,8 @@
       "ipa": "ðeərɑːftəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑞𐑺𐑨𐑓𐑑𐑼"
     }
   ],
   "thereby_UNC_𐑞𐑺𐑚𐑲": [
@@ -181091,8 +181091,8 @@
       "ipa": "jˈuːsƏz",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:[𐑿𐑕𐑩𐑟 / 𐑿𐑟𐑩𐑟]"
     },
     {
       "Latn": "uses",
@@ -181102,7 +181102,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 89,
-      "review": "shave_says:𐑿𐑕𐑩𐑟"
+      "review": "shave_says:[𐑿𐑕𐑩𐑟 / 𐑿𐑟𐑩𐑟]"
     }
   ],
   "usher_UNC_𐑳𐑖𐑼": [
@@ -185312,7 +185312,7 @@
       "freq": 0,
       "var": "RSSB",
       "confidence": 89,
-      "review": "shave_says:𐑢𐑹𐑒𐑮𐑭𐑓𐑑"
+      "review": "shave_says:𐑢𐑹𐑒𐑮𐑨𐑓𐑑"
     }
   ],
   "ward_UNC_𐑢𐑹𐑛": [
@@ -185897,8 +185897,8 @@
       "ipa": "wɔːtəRkrɑːft",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑢𐑷𐑑𐑼𐑒𐑮𐑨𐑓𐑑"
     }
   ],
   "watermelon_UNC_𐑢𐑷𐑑𐑼𐑥𐑧𐑤𐑩𐑯": [
@@ -186425,8 +186425,8 @@
       "ipa": "webmɑːstəR",
       "freq": 0,
       "var": "RSSB",
-      "confidence": 97,
-      "review": "shave_agrees"
+      "confidence": 89,
+      "review": "shave_says:𐑢𐑧𐑚𐑥𐑨𐑕𐑑𐑼"
     }
   ],
   "webmasters_UNC_𐑢𐑧𐑚𐑥𐑭𐑕𐑑𐑼𐑟": [

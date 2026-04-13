@@ -14,7 +14,7 @@ cornpone	𐑒𐑷𐑯𐑐𐑴𐑯	kɔnpəʊn	RSSB	1	𐑒𐑹𐑯𐑐𐑴𐑯	ˈk
 denture	𐑛𐑧𐑯𐑗𐑩	ˈdentʃə	GenAm	1	𐑛𐑧𐑯𐑗𐑼	ˈdentʃəR	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑛𐑧𐑯𐑗𐑼
 derby	𐑛𐑭𐑚𐑦	dɑːbi	RSSB	1	𐑛𐑸𐑚𐑦, 𐑛𐑻𐑚𐑦	ˈdɑːRbi	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑛𐑸𐑚𐑦
 differentiable	𐑛𐑦𐑓𐑩𐑧𐑯𐑖𐑩𐑚𐑩𐑤	dɪfəenʃəbəl	RSSB	1	𐑛𐑦𐑓𐑼𐑧𐑯𐑖𐑦𐑩𐑚𐑩𐑤	ˌdɪfəˈrenʃiəbəl	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑛𐑦𐑓𐑼𐑧𐑯𐑖𐑾𐑚𐑩𐑤
-dossier	𐑛𐑷𐑕𐑘𐑱	ˈdɔːsjeɪ	GenAm	1	𐑛𐑪𐑕𐑦𐑱	ˈdɒsieɪ	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑛𐑪𐑕𐑦𐑱
+dossier	𐑛𐑪𐑕𐑘𐑱	ˈdɒsjeɪ	GenAm	1	𐑛𐑪𐑕𐑦𐑱	ˈdɒsieɪ	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑛𐑪𐑕𐑦𐑱
 entirely	𐑦𐑯𐑑𐑲𐑩𐑤𐑦	ɪntaɪəli	RSSB	1	𐑦𐑯𐑑𐑲𐑼𐑤𐑦	ɪnˈtaɪəRli	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑦𐑯𐑑𐑲𐑼𐑤𐑦
 fearlessness	𐑓𐑾𐑤𐑦𐑕𐑯𐑩𐑕	ˈfɪəlɪsnəs	GenAm	1	𐑓𐑽𐑤𐑩𐑕𐑯𐑩𐑕	ˈfɪəRləsnəs	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑓𐑽𐑤𐑩𐑕𐑯𐑩𐑕
 fibreglass	𐑓𐑲𐑚𐑩𐑜𐑤𐑭𐑕	faɪbəɡlɑːs	RSSB	1	𐑓𐑲𐑚𐑼𐑜𐑤𐑨𐑕, 𐑓𐑲𐑚𐑼𐑜𐑤𐑭𐑕	ˈfaɪbəRɡlⱭːs	r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑓𐑲𐑚𐑼𐑜𐑤𐑭𐑕
@@ -54,7 +54,6 @@ wireless	𐑢𐑲𐑩𐑤𐑩𐑕	waɪələs	RSSB	1	𐑢𐑲𐑼𐑤𐑩𐑕	ˈw
 diarrhea	𐑛𐑲𐑼𐑰𐑩	daɪəriːə	RSSB	3	𐑛𐑲𐑼𐑾	ˌdaɪəˈrɪə	ml_disagrees:𐑛𐑲𐑼𐑦ː𐑩; r_gap:spelling=2,ipa=1; shave_says:𐑛𐑲𐑼𐑾
 actually	𐑨𐑒𐑖𐑫𐑼𐑤𐑦	ˈakʃʊəli	RSSB	5	𐑨𐑒𐑗𐑫𐑩𐑤𐑦	ˈæktʃuəli	ml_disagrees:𐑨𐑒𐑖𐑫𐑩𐑤𐑦; shave_says:𐑨𐑒𐑗𐑫𐑩𐑤𐑦
 bayonet	𐑚𐑱𐑩𐑯𐑦𐑑	ˈbeɪənɪt	RSSB	5	𐑚𐑱𐑩𐑯𐑧𐑑	ˈbeɪənet	ml_disagrees:𐑚𐑱𐑩𐑯𐑩𐑑; shave_says:𐑚𐑱𐑩𐑯𐑧𐑑
-communion	𐑒𐑩𐑥𐑿𐑯𐑘𐑩𐑯	kəˈmjuːnjən	RSSB	5	𐑒𐑩𐑥𐑿𐑯𐑾𐑯	kəˈmjuːnɪən	ml_disagrees:𐑒𐑩𐑥𐑿𐑯𐑾𐑯; shave_says:[𐑒𐑩𐑥𐑿𐑯𐑘𐑩𐑯 / 𐑒𐑩𐑥𐑿𐑯𐑾𐑯]
 comprehensible	𐑒𐑪𐑥𐑐𐑮𐑩𐑣𐑧𐑯𐑕𐑦𐑚𐑩𐑤	kɒmprəhensɪbəl	RSSB	5	𐑒𐑪𐑥𐑐𐑮𐑦𐑣𐑧𐑯𐑕𐑩𐑚𐑩𐑤	ˌkɒmprɪˈhensəbəl	ml_disagrees:𐑒𐑪𐑥𐑐𐑮𐑩𐑣𐑧𐑯𐑕𐑩𐑚𐑩𐑤; shave_says:𐑒𐑪𐑥𐑐𐑮𐑦𐑣𐑧𐑯𐑕𐑩𐑚𐑩𐑤
 continuation	𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑩𐑱𐑖𐑯	kəntɪnjəˈeɪʃn	RSSB	5	𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑫𐑱𐑖𐑩𐑯	kənˌtɪnjuˈeɪʃən	ml_disagrees:𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑫𐑱𐑖𐑯; shave_says:𐑒𐑩𐑯𐑑𐑦𐑯𐑘𐑫𐑱𐑖𐑩𐑯
 cure-all	𐑒𐑘𐑩𐑼𐑷𐑤	kjəərɔːl	RSSB	5	𐑒𐑘𐑫𐑼-𐑷𐑤	ˈkjʊər-ɔːl	ml_disagrees:𐑒𐑘𐑫𐑼𐑷𐑤; shave_says:𐑒𐑘𐑫𐑼-𐑷𐑤
@@ -63,8 +62,6 @@ curiously	𐑒𐑘𐑩𐑼𐑦𐑩𐑕𐑤𐑦	kjəəriəsli	RSSB	5	𐑒𐑘𐑫
 davit	𐑛𐑱𐑝𐑦𐑑	ˈdeɪvɪt	RSSB	5	𐑛𐑨𐑝𐑦𐑑	ˈdævɪt	ml_disagrees:𐑛𐑱𐑝𐑩𐑑; shave_says:𐑛𐑨𐑝𐑦𐑑
 debenture	𐑛𐑦𐑚𐑧𐑯𐑑𐑘𐑩𐑼	dɪbentjəəR	RSSB	5	𐑛𐑦𐑚𐑧𐑯𐑗𐑼	dɪˈbentʃəR	ml_disagrees:𐑛𐑦𐑚𐑧𐑯𐑑𐑘ː𐑼; shave_says:𐑛𐑦𐑚𐑧𐑯𐑗𐑼
 deciduous	𐑛𐑦𐑕𐑦𐑡𐑫𐑼𐑕	dɪˈsɪdʒʊəs	RSSB	5	𐑛𐑦𐑕𐑦𐑛𐑘𐑫𐑩𐑕	dɪˈsɪdjuəs	ml_disagrees:𐑛𐑦𐑕𐑦𐑡𐑫𐑩𐑕; shave_says:𐑛𐑦𐑕𐑦𐑛𐑘𐑫𐑩𐑕
-disciplinary	𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑼𐑦	dɪsɪplɪnəri	RSSB	5	𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦	ˈdɪsəplɪnəri	ml_disagrees:𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦; shave_says:[𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑼𐑦 / 𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦]
-disciplined	𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑛	ˈdɪsɪplɪnd	RSSB	5	𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑛	ˈdɪsəplɪnd	ml_disagrees:𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑛; shave_says:[𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑛 / 𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑛]
 empress	𐑧𐑥𐑐𐑮𐑩𐑕	emprəs	RSSB	5	𐑧𐑥𐑐𐑮𐑧𐑕	ˈempres	ml_disagrees:𐑦𐑥𐑐𐑮𐑩𐑕; shave_says:𐑧𐑥𐑐𐑮𐑧𐑕
 empyrean	𐑧𐑥𐑐𐑲𐑮𐑰𐑩𐑯	empaɪriːən	RSSB	5	𐑧𐑥𐑐𐑲𐑼𐑾𐑯	ˌempaɪəˈriən	ml_disagrees:𐑦𐑥𐑐𐑲𐑮𐑰𐑩𐑯; shave_says:𐑧𐑥𐑐𐑲𐑼𐑾𐑯
 enquiry	𐑧𐑯𐑒𐑢𐑲𐑮𐑦	enkwaɪri	RSSB	5	𐑦𐑯𐑒𐑢𐑲𐑼𐑦	ɪnˈkwaɪəri	ml_disagrees:𐑦𐑯𐑒𐑢𐑲𐑮𐑦; shave_says:𐑦𐑯𐑒𐑢𐑲𐑼𐑦
@@ -73,8 +70,10 @@ european	𐑘𐑩𐑼𐑼𐑐𐑰𐑩𐑯	jəərəRpiːən	RSSB	5	𐑘𐑫𐑼�
 eventual	𐑦𐑝𐑧𐑯𐑖𐑫𐑼𐑤	ɪˈvenʃʊəl	RSSB	5	𐑦𐑝𐑧𐑯𐑗𐑫𐑩𐑤	ɪˈventʃuəl	ml_disagrees:𐑦𐑝𐑧𐑯𐑖𐑫𐑩𐑤; shave_says:𐑦𐑝𐑧𐑯𐑗𐑫𐑩𐑤
 extenuation	𐑧𐑒𐑕𐑑𐑧𐑯𐑘𐑩𐑱𐑖𐑩𐑯	eksˌtenjəˈeɪʃən	RSSB	5	𐑦𐑒𐑕𐑑𐑧𐑯𐑘𐑫𐑱𐑖𐑩𐑯	ɪkˌstenjuˈeɪʃən	ml_disagrees:𐑧𐑒𐑕𐑑𐑧𐑯𐑘𐑫𐑱𐑖𐑩𐑯; shave_says:𐑦𐑒𐑕𐑑𐑧𐑯𐑘𐑫𐑱𐑖𐑩𐑯
 factual	𐑓𐑨𐑒𐑖𐑫𐑼𐑤	ˈfakʃʊəl	RSSB	5	𐑓𐑨𐑒𐑗𐑫𐑩𐑤	ˈfæktʃuəl	ml_disagrees:𐑓𐑨𐑒𐑖𐑫𐑩𐑤; shave_says:𐑓𐑨𐑒𐑗𐑫𐑩𐑤
+forecast	𐑓𐑹𐑒𐑸𐑕𐑑	fɔːRkɑːRst	RSSB	5	𐑓𐑹𐑒𐑨𐑕𐑑, 𐑓𐑹𐑒𐑭𐑕𐑑	ˈfɔːRkⱭːst	ml_disagrees:𐑓𐑹𐑒𐑭𐑮𐑕𐑑; shave_says:𐑓𐑹𐑒𐑭𐑕𐑑
 gibbet	𐑡𐑦𐑚𐑦𐑑	ˈdʒɪbɪt	RSSB	5	𐑡𐑦𐑚𐑩𐑑	ˈdʒɪbIt	ml_disagrees:𐑡𐑩𐑚𐑦𐑑; shave_says:𐑡𐑦𐑚𐑩𐑑
 gibraltarian	𐑡𐑦𐑚𐑮𐑹𐑤𐑑𐑺𐑦𐑼𐑯	dʒɪbrɔːRlteəriəRn	RSSB	5	𐑡𐑦𐑚𐑮𐑷𐑤𐑑𐑺𐑾𐑯	ˌdʒɪbrɔːlˈteərɪən	ml_disagrees:𐑡𐑩𐑚𐑮𐑹𐑤𐑑𐑺𐑦𐑼𐑯; shave_says:𐑡𐑦𐑚𐑮𐑷𐑤𐑑𐑺𐑾𐑯
+graph	𐑜𐑮𐑭𐑓	ɡrɑːf	RSSB	5	𐑜𐑮𐑨𐑓	ɡræf	ml_disagrees:𐑜𐑮ɑ𐑨𐑓; shave_says:𐑜𐑮𐑨𐑓
 immature	𐑦𐑥𐑩𐑑𐑘𐑩𐑼	ɪmətjəəR	RSSB	5	𐑦𐑥𐑩𐑗𐑫𐑼	ˌɪməˈtʃʊəR	ml_disagrees:𐑦𐑥𐑩𐑑𐑘ː𐑼; shave_says:𐑦𐑥𐑩𐑗𐑫𐑼
 incurable	𐑦𐑯𐑒𐑘𐑩𐑼𐑩𐑚𐑤	ɪnkjəərəbl	RSSB	5	𐑦𐑯𐑒𐑘𐑫𐑼𐑩𐑚𐑩𐑤	ɪnˈkjʊərəbəl	ml_disagrees:𐑦𐑯𐑒𐑘𐑫𐑼𐑩𐑚𐑤; shave_says:𐑦𐑯𐑒𐑘𐑫𐑼𐑩𐑚𐑩𐑤
 intangible	𐑦𐑯𐑑𐑨𐑯𐑡𐑦𐑚𐑤	ɪnˈtandʒɪbl	RSSB	5	𐑦𐑯𐑑𐑨𐑯𐑡𐑩𐑚𐑩𐑤	ɪnˈtændʒəbəl	ml_disagrees:𐑦𐑯𐑑𐑨𐑯𐑡𐑩𐑚𐑤; shave_says:𐑦𐑯𐑑𐑨𐑯𐑡𐑩𐑚𐑩𐑤
@@ -85,15 +84,13 @@ neural	𐑯𐑘𐑩𐑼𐑼𐑤	njəərəRl	RSSB	5	𐑯𐑘𐑫𐑼𐑩𐑤	ˈnj
 neurasthenia	𐑯𐑘𐑩𐑼𐑼𐑕𐑔𐑰𐑯𐑦𐑩	njəərəRsθiːniə	RSSB	5	𐑯𐑘𐑫𐑼𐑩𐑕𐑔𐑰𐑯𐑾	ˌnjʊərəsˈθiːnɪə	ml_disagrees:𐑯𐑘𐑫𐑼𐑼𐑕𐑔𐑰𐑯𐑦𐑩; shave_says:𐑯𐑘𐑫𐑼𐑩𐑕𐑔𐑰𐑯𐑾
 neurasthenic	𐑯𐑘𐑩𐑼𐑼𐑕𐑔𐑧𐑯𐑦𐑒	njəərəRsθenɪk	RSSB	5	𐑯𐑘𐑫𐑼𐑩𐑕𐑔𐑧𐑯𐑦𐑒	ˌnjʊərəsˈθenɪk	ml_disagrees:𐑯𐑘𐑫𐑼𐑼𐑕𐑔𐑧𐑯𐑦𐑒; shave_says:𐑯𐑘𐑫𐑼𐑩𐑕𐑔𐑧𐑯𐑦𐑒
 overture	𐑴𐑝𐑼𐑑𐑘𐑩𐑼	əʊvəRtjəəR	RSSB	5	𐑴𐑝𐑼𐑗𐑫𐑼	ˈəʊvəRtʃʊəR	ml_disagrees:𐑴𐑝𐑼𐑑𐑘ː𐑼; shave_says:𐑴𐑝𐑼𐑗𐑫𐑼
-pantograph	𐑐𐑨𐑯𐑑𐑩𐑜𐑮𐑭𐑓	pantəɡrɑːf	RSSB	5	𐑐𐑨𐑯𐑑𐑩𐑜𐑮𐑨𐑓	ˈpæntəɡræf	ml_disagrees:𐑐𐑨𐑯𐑑𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:[𐑐𐑨𐑯𐑑𐑩𐑜𐑮𐑨𐑓 / 𐑐𐑨𐑯𐑑𐑩𐑜𐑮𐑭𐑓]
-phonograph	𐑓𐑴𐑯𐑩𐑜𐑮𐑭𐑓	fəʊnəɡrɑːf	RSSB	5	𐑓𐑴𐑯𐑩𐑜𐑮𐑨𐑓	ˈfəʊnəɡræf	ml_disagrees:𐑓𐑴𐑯𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:[𐑓𐑴𐑯𐑩𐑜𐑮𐑨𐑓 / 𐑓𐑴𐑯𐑩𐑜𐑮𐑭𐑓]
-photograph	𐑓𐑴𐑑𐑩𐑜𐑮𐑭𐑓	fəʊtəɡrɑːf	RSSB	5	𐑓𐑴𐑑𐑩𐑜𐑮𐑨𐑓	ˈfəʊtəɡræf	ml_disagrees:𐑓𐑴𐑑𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:[𐑓𐑴𐑑𐑩𐑜𐑮𐑨𐑓 / 𐑓𐑴𐑑𐑩𐑜𐑮𐑭𐑓]
+pantograph	𐑐𐑨𐑯𐑑𐑩𐑜𐑮𐑭𐑓	pantəɡrɑːf	RSSB	5	𐑐𐑨𐑯𐑑𐑩𐑜𐑮𐑨𐑓	ˈpæntəɡræf	ml_disagrees:𐑐𐑨𐑯𐑑𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:𐑐𐑨𐑯𐑑𐑩𐑜𐑮𐑨𐑓
+phonograph	𐑓𐑴𐑯𐑩𐑜𐑮𐑭𐑓	fəʊnəɡrɑːf	RSSB	5	𐑓𐑴𐑯𐑩𐑜𐑮𐑨𐑓	ˈfəʊnəɡræf	ml_disagrees:𐑓𐑴𐑯𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:𐑓𐑴𐑯𐑩𐑜𐑮𐑨𐑓
+photograph	𐑓𐑴𐑑𐑩𐑜𐑮𐑭𐑓	fəʊtəɡrɑːf	RSSB	5	𐑓𐑴𐑑𐑩𐑜𐑮𐑨𐑓	ˈfəʊtəɡræf	ml_disagrees:𐑓𐑴𐑑𐑩𐑜𐑮ɑ𐑨𐑓; shave_says:𐑓𐑴𐑑𐑩𐑜𐑮𐑨𐑓
 pizzeria	𐑐𐑰𐑑𐑕𐑼𐑰𐑩	piːtsəriːə	RSSB	5	𐑐𐑰𐑑𐑕𐑼𐑾	ˌpiːtsəˈriːə	ml_disagrees:𐑐𐑰𐑑𐑕𐑼𐑦ː𐑩; shave_says:𐑐𐑰𐑑𐑕𐑼𐑾
 portraiture	𐑐𐑹𐑑𐑮𐑦𐑑𐑘𐑩𐑼	pɔːRtrɪtjəəR	RSSB	5	𐑐𐑹𐑑𐑮𐑦𐑗𐑼	ˈpɔːRtrɪtʃəR	ml_disagrees:𐑐𐑹𐑑𐑮𐑦𐑑𐑘ː𐑼; shave_says:𐑐𐑹𐑑𐑮𐑦𐑗𐑼
 postman	𐑐𐑴𐑕𐑥𐑩𐑯	ˈpəʊsmən	RSSB	5	𐑐𐑴𐑕𐑑𐑥𐑩𐑯	ˈpəʊstmən	ml_disagrees:𐑐𐑴𐑕𐑥𐑧𐑯; shave_says:𐑐𐑴𐑕𐑑𐑥𐑩𐑯
 premature	𐑐𐑮𐑧𐑥𐑩𐑑𐑘𐑩𐑼	premətjəəR	RSSB	5	𐑐𐑮𐑧𐑥𐑩𐑗𐑫𐑼	ˈpremətʃʊəR	ml_disagrees:𐑐𐑮𐑧𐑥𐑩𐑑𐑘ː𐑼; shave_says:𐑐𐑮𐑧𐑥𐑩𐑗𐑫𐑼
-principal	𐑐𐑮𐑦𐑯𐑕𐑦𐑐𐑩𐑤	prɪnsɪpəl	RSSB	5	𐑐𐑮𐑦𐑯𐑕𐑩𐑐𐑩𐑤	ˈprɪnsəpəl	ml_disagrees:𐑐𐑮𐑦𐑯𐑕𐑩𐑐𐑩𐑤; shave_says:[𐑐𐑮𐑦𐑯𐑕𐑦𐑐𐑩𐑤 / 𐑐𐑮𐑦𐑯𐑕𐑩𐑐𐑩𐑤]
-respiration	𐑮𐑧𐑕𐑐𐑦𐑮𐑱𐑖𐑩𐑯	respɪreɪʃən	RSSB	5	𐑮𐑧𐑕𐑐𐑼𐑱𐑖𐑩𐑯	ˌrespəˈreɪʃən	ml_disagrees:𐑮𐑧𐑕𐑐𐑼𐑱𐑖𐑩𐑯; shave_says:[𐑮𐑧𐑕𐑐𐑦𐑮𐑱𐑖𐑩𐑯 / 𐑮𐑧𐑕𐑐𐑼𐑱𐑖𐑩𐑯]
 seamstress	𐑕𐑧𐑥𐑕𐑑𐑮𐑦𐑕	semstrɪs	RSSB	5	𐑕𐑰𐑥𐑕𐑑𐑮𐑩𐑕	ˈsiːmstrƏs	ml_disagrees:𐑕𐑧𐑥𐑕𐑑𐑮𐑩𐑕; shave_says:𐑕𐑰𐑥𐑕𐑑𐑮𐑩𐑕
 secure	𐑕𐑩𐑒𐑘𐑩𐑼	səkjəəR	RSSB	5	𐑕𐑦𐑒𐑘𐑫𐑼	sɪˈkjʊəR	ml_disagrees:𐑕𐑩𐑒𐑘𐑫𐑼; shave_says:𐑕𐑦𐑒𐑘𐑫𐑼
 securely	𐑕𐑼𐑒𐑘𐑩𐑼𐑤𐑦	səRkjəəRli	RSSB	5	𐑕𐑦𐑒𐑘𐑫𐑼𐑤𐑦	sɪˈkjʊəRli	ml_disagrees:𐑕𐑼𐑒𐑘𐑫𐑼𐑤𐑦; shave_says:𐑕𐑦𐑒𐑘𐑫𐑼𐑤𐑦
@@ -116,7 +113,6 @@ bilberry	𐑚𐑦𐑤𐑚𐑮𐑦	bɪlbrɪ	RSSB	30	𐑚𐑦𐑤𐑚𐑼𐑦	ˈb�
 blackberry	𐑚𐑤𐑨𐑒𐑚𐑧𐑮𐑦	ˈblækberi	GenAm	30	𐑚𐑤𐑨𐑒𐑚𐑼𐑦	ˈblækbəri	r_gap:spelling=2,ipa=1; shave_says:𐑚𐑤𐑨𐑒𐑚𐑼𐑦
 blaeberry	𐑚𐑤𐑱𐑚𐑮𐑦	bleɪbri	RSSB	30	𐑚𐑤𐑱𐑚𐑼𐑦	ˈbleɪbəri	r_gap:spelling=2,ipa=1; shave_says:𐑚𐑤𐑱𐑚𐑼𐑦
 borrower	𐑚𐑷𐑮𐑩𐑫𐑼	bɔrəuəR	RSSB	30	𐑚𐑪𐑮𐑴𐑼	ˈbɒrəʊəR	r_gap:spelling=3,ipa=2; shave_says:𐑚𐑪𐑮𐑴𐑼
-carrier	𐑒𐑨𐑮𐑽	ˈkærɪəR	GenAm	30	𐑒𐑨𐑮𐑦𐑼	ˈkærɪəR	r_gap:spelling=3,ipa=2; shave_says:𐑒𐑨𐑮𐑦𐑼
 carrion	𐑒𐑨𐑮𐑦𐑩𐑯	kæriən	RSSB	30	𐑒𐑨𐑮𐑾𐑯	ˈkærɪən	r_gap:spelling=2,ipa=1; shave_says:𐑒𐑨𐑮𐑾𐑯
 carrot	𐑒𐑧𐑮𐑩𐑑	ˈkerət	GenAm	30	𐑒𐑨𐑮𐑩𐑑	ˈkærət	r_gap:spelling=2,ipa=1; shave_says:𐑒𐑨𐑮𐑩𐑑
 carry	𐑒𐑧𐑮𐑦	keri	RSSB	30	𐑒𐑨𐑮𐑦	ˈkæri	r_gap:spelling=2,ipa=1; shave_says:𐑒𐑨𐑮𐑦
@@ -145,7 +141,7 @@ ferrule	𐑓𐑧𐑮𐑤	ferl	RSSB	30	𐑓𐑧𐑮𐑵𐑤	ˈferuːl	r_gap:spell
 ferrule	𐑓𐑧𐑮𐑩𐑤	ˈferəl	GenAm	30	𐑓𐑧𐑮𐑵𐑤	ˈferuːl	r_gap:spelling=2,ipa=1; shave_says:𐑓𐑧𐑮𐑵𐑤
 firebrand	𐑓𐑲𐑩𐑚𐑮𐑨𐑯𐑛	faɪəbrænd	RSSB	30	𐑓𐑲𐑼𐑚𐑮𐑨𐑯𐑛	ˈfaɪəRbrænd	r_gap:spelling=2,ipa=1; shave_says:𐑓𐑲𐑼𐑚𐑮𐑨𐑯𐑛
 firefighter	𐑓𐑲𐑩𐑓𐑲𐑑𐑼	faɪəfaɪtəR	RSSB	30	𐑓𐑲𐑼𐑓𐑲𐑑𐑼	ˈfaɪəRfaɪtəR	r_gap:spelling=2,ipa=1; shave_says:𐑓𐑲𐑼𐑓𐑲𐑑𐑼
-freeborn	𐑓𐑮𐑦𐑚𐑷𐑯	ˈfriˌbɔːn	GenAm	30	𐑓𐑮𐑰𐑚𐑹𐑯	ˈfriːbɔːRn	r_gap:spelling=2,ipa=1; shave_says:𐑓𐑮𐑰𐑚𐑹𐑯
+freeborn	𐑓𐑮𐑦𐑚𐑪𐑯	ˈfriˌbɒn	GenAm	30	𐑓𐑮𐑰𐑚𐑹𐑯	ˈfriːbɔːRn	r_gap:spelling=2,ipa=1; shave_says:𐑓𐑮𐑰𐑚𐑹𐑯
 fruiterer	𐑓𐑮𐑫𐑑𐑼𐑩	ˈfrutərə	GenAm	30	𐑓𐑮𐑵𐑑𐑼𐑼	ˈfruːtərəR	r_gap:spelling=3,ipa=2; shave_says:𐑓𐑮𐑵𐑑𐑼𐑼
 garret	𐑜𐑨𐑮𐑦𐑑	ˈɡærɪt	GenAm	30	𐑜𐑨𐑮𐑩𐑑	ˈɡærət	r_gap:spelling=2,ipa=1; shave_says:𐑜𐑨𐑮𐑩𐑑
 garrulity	𐑜𐑼𐑫𐑤𐑦𐑑𐑦	ɡərulɪti	RSSB	30	𐑜𐑨𐑮𐑵𐑤𐑦𐑑𐑦	ɡæˈruːlɪti	r_gap:spelling=2,ipa=1; shave_says:𐑜𐑨𐑮𐑵𐑤𐑦𐑑𐑦
@@ -156,8 +152,8 @@ gooseberry	𐑜𐑫𐑟𐑚𐑮𐑦	ɡʊzbri	RSSB	30	𐑜𐑫𐑟𐑚𐑼𐑦	ˈ
 gooseberry	𐑜𐑫𐑕𐑚𐑧𐑮𐑦	ˈɡusˌberi	GenAm	30	𐑜𐑫𐑟𐑚𐑼𐑦	ˈɡʊzbəri	r_gap:spelling=2,ipa=1; shave_says:𐑜𐑫𐑟𐑚𐑼𐑦
 headquarters	𐑣𐑧𐑛𐑒𐑢𐑹𐑑𐑩𐑟	ˈhedˌkwɔːRtəz	GenAm	30	𐑣𐑧𐑛𐑒𐑢𐑹𐑑𐑼𐑟	hedˈkwɔːRtəRz	r_gap:spelling=2,ipa=1; shave_says:𐑣𐑧𐑛𐑒𐑢𐑹𐑑𐑼𐑟
 hemorrhage	𐑣𐑧𐑥𐑮𐑦𐑡	hemrɪdʒ	RSSB	30	𐑣𐑧𐑥𐑼𐑦𐑡	ˈhemərɪdʒ	r_gap:spelling=2,ipa=1; shave_says:𐑣𐑧𐑥𐑼𐑦𐑡
-horrible	𐑣𐑪𐑮𐑦𐑚𐑩𐑤	hɒrɪbəl	RSSB	30	𐑣𐑪𐑮𐑩𐑚𐑩𐑤	ˈhɒrəbəl	r_gap:spelling=2,ipa=1; shave_says:[𐑣𐑪𐑮𐑦𐑚𐑩𐑤 / 𐑣𐑪𐑮𐑩𐑚𐑩𐑤]
-horrible	𐑣𐑹𐑦𐑚𐑩𐑤	ˈhɔːRɪbəl	GenAm	30	𐑣𐑪𐑮𐑩𐑚𐑩𐑤	ˈhɒrəbəl	r_gap:spelling=2,ipa=1; shave_says:[𐑣𐑪𐑮𐑦𐑚𐑩𐑤 / 𐑣𐑪𐑮𐑩𐑚𐑩𐑤]
+horrible	𐑣𐑪𐑮𐑦𐑚𐑩𐑤	hɒrɪbəl	RSSB	30	𐑣𐑪𐑮𐑩𐑚𐑩𐑤	ˈhɒrəbəl	r_gap:spelling=2,ipa=1; shave_says:𐑣𐑪𐑮𐑩𐑚𐑩𐑤
+horrible	𐑣𐑹𐑦𐑚𐑩𐑤	ˈhɔːRɪbəl	GenAm	30	𐑣𐑪𐑮𐑩𐑚𐑩𐑤	ˈhɒrəbəl	r_gap:spelling=2,ipa=1; shave_says:𐑣𐑪𐑮𐑩𐑚𐑩𐑤
 horrid	𐑣𐑹𐑩𐑛	ˈhɔːRƏd	GenAm	30	𐑣𐑪𐑮𐑦𐑛	ˈhɒrɪd	r_gap:spelling=2,ipa=1; shave_says:𐑣𐑪𐑮𐑦𐑛
 horrify	𐑣𐑹𐑩𐑓𐑲	ˈhɔːRəfaɪ	GenAm	30	𐑣𐑪𐑮𐑦𐑓𐑲	ˈhɒrɪfaɪ	r_gap:spelling=2,ipa=1; shave_says:𐑣𐑪𐑮𐑦𐑓𐑲
 horror	𐑣𐑹𐑼	ˈhɔːRəR	GenAm	30	𐑣𐑪𐑮𐑼	ˈhɒrəR	r_gap:spelling=3,ipa=2; shave_says:𐑣𐑪𐑮𐑼
@@ -217,7 +213,7 @@ sporran	𐑕𐑐𐑹𐑩𐑯	ˈspɔːRən	GenAm	30	𐑕𐑐𐑪𐑮𐑩𐑯	ˈsp
 squirrel	𐑕𐑒𐑢𐑻𐑤	ˈskwɜːRl	GenAm	30	𐑕𐑒𐑢𐑦𐑮𐑩𐑤	ˈskwɪrəl	r_gap:spelling=2,ipa=1; shave_says:𐑕𐑒𐑢𐑦𐑮𐑩𐑤
 stirrup	𐑕𐑑𐑻𐑩𐑐	ˈstɜːRəp	GenAm	30	𐑕𐑑𐑦𐑮𐑩𐑐	ˈstɪrəp	r_gap:spelling=2,ipa=1; shave_says:𐑕𐑑𐑦𐑮𐑩𐑐
 strawberry	𐑕𐑑𐑮𐑷𐑚𐑮𐑦	strɔːbri	RSSB	30	𐑕𐑑𐑮𐑷𐑚𐑼𐑦	ˈstrɔːbəri	r_gap:spelling=3,ipa=2; shave_says:𐑕𐑑𐑮𐑷𐑚𐑼𐑦
-strawberry	𐑕𐑗𐑮𐑷𐑚𐑧𐑮𐑦	ˈstʃrɔːˌberi	GenAm	30	𐑕𐑑𐑮𐑷𐑚𐑼𐑦	ˈstrɔːbəri	r_gap:spelling=3,ipa=2; shave_says:𐑕𐑑𐑮𐑷𐑚𐑼𐑦
+strawberry	𐑕𐑗𐑮𐑪𐑚𐑧𐑮𐑦	ˈstʃrɒˌberi	GenAm	30	𐑕𐑑𐑮𐑷𐑚𐑼𐑦	ˈstrɔːbəri	r_gap:spelling=3,ipa=2; shave_says:𐑕𐑑𐑮𐑷𐑚𐑼𐑦
 subterranean	𐑕𐑳𐑚𐑑𐑼𐑱𐑯𐑦𐑩𐑯	sʌbtəreɪniən	RSSB	30	𐑕𐑳𐑚𐑑𐑼𐑱𐑯𐑾𐑯	ˌsʌbtəˈreɪnɪən	r_gap:spelling=2,ipa=1; shave_says:𐑕𐑳𐑚𐑑𐑼𐑱𐑯𐑾𐑯
 superiority	𐑕𐑫𐑫𐑐𐑾𐑦𐑪𐑮𐑦𐑑𐑦	sʊupɪəiɒrɪti	RSSB	30	𐑕𐑵𐑐𐑽𐑦𐑪𐑮𐑦𐑑𐑦	suːˌpɪərɪˈɒrɪti	r_gap:spelling=2,ipa=1; shave_says:𐑕𐑵𐑐𐑽𐑦𐑪𐑮𐑦𐑑𐑦
 surreal	𐑕𐑼𐑰𐑤	səriːl	RSSB	30	𐑕𐑼𐑾𐑤	səˈrɪəl	r_gap:spelling=2,ipa=1; shave_says:𐑕𐑼𐑾𐑤
@@ -228,14 +224,14 @@ surreptitious	𐑕𐑼𐑧𐑐𐑑𐑦𐑖𐑩𐑕	səˌrepˈtɪʃəs	GenAm	30	�
 surrogate	𐑕𐑳𐑮𐑩𐑜𐑦𐑑	sʌrəɡɪt	RSSB	30	𐑕𐑳𐑮𐑩𐑜𐑩𐑑	ˈsʌrəɡət	r_gap:spelling=2,ipa=1; shave_says:𐑕𐑳𐑮𐑩𐑜𐑩𐑑
 surrogate	𐑕𐑻𐑩𐑜𐑦𐑑	ˈsɜːRəɡɪt	GenAm	30	𐑕𐑳𐑮𐑩𐑜𐑩𐑑	ˈsʌrəɡət	r_gap:spelling=2,ipa=1; shave_says:𐑕𐑳𐑮𐑩𐑜𐑩𐑑
 terrestrial	𐑑𐑼𐑧𐑕𐑑𐑮𐑦𐑩𐑤	tərestriəl	RSSB	30	𐑑𐑦𐑮𐑧𐑕𐑑𐑮𐑾𐑤	tɪˈrestrɪəl	r_gap:spelling=3,ipa=2; shave_says:𐑑𐑦𐑮𐑧𐑕𐑑𐑮𐑾𐑤
-terribly	𐑑𐑧𐑮𐑦𐑚𐑤𐑦	terɪbli	RSSB	30	𐑑𐑧𐑮𐑩𐑚𐑤𐑦	ˈterəbli	r_gap:spelling=2,ipa=1; shave_says:[𐑑𐑧𐑮𐑦𐑚𐑤𐑦 / 𐑑𐑧𐑮𐑩𐑚𐑤𐑦]
+terribly	𐑑𐑧𐑮𐑦𐑚𐑤𐑦	terɪbli	RSSB	30	𐑑𐑧𐑮𐑩𐑚𐑤𐑦	ˈterəbli	r_gap:spelling=2,ipa=1; shave_says:𐑑𐑧𐑮𐑩𐑚𐑤𐑦
 territorial	𐑑𐑧𐑮𐑦𐑑𐑹𐑦𐑩𐑤	terɪtɔːriəl	RSSB	30	𐑑𐑧𐑮𐑦𐑑𐑹𐑾𐑤	ˌterɪˈtɔːrɪəl	r_gap:spelling=3,ipa=2; shave_says:𐑑𐑧𐑮𐑦𐑑𐑹𐑾𐑤
 territory	𐑑𐑧𐑮𐑦𐑑𐑮𐑦	terɪtri	RSSB	30	𐑑𐑧𐑮𐑦𐑑𐑼𐑦	ˈterɪtəri	r_gap:spelling=3,ipa=2; shave_says:𐑑𐑧𐑮𐑦𐑑𐑼𐑦
 territory	𐑑𐑧𐑮𐑦𐑑𐑹𐑦	ˈterɪˌtɔːRi	GenAm	30	𐑑𐑧𐑮𐑦𐑑𐑼𐑦	ˈterɪtəri	r_gap:spelling=3,ipa=2; shave_says:𐑑𐑧𐑮𐑦𐑑𐑼𐑦
 terror	𐑑𐑺	ˈteəR	GenAm	30	𐑑𐑧𐑮𐑼	ˈterəR	r_gap:spelling=3,ipa=1; shave_says:𐑑𐑧𐑮𐑼
 tomorrow	𐑑𐑩𐑥𐑸𐑴	təˈmɑːRoʊ	GenAm	30	𐑑𐑩𐑥𐑪𐑮𐑴	təˈmɒrəʊ	r_gap:spelling=2,ipa=1; shave_says:𐑑𐑩𐑥𐑪𐑮𐑴
 torrential	𐑑𐑼𐑧𐑯𐑗𐑩𐑤	tərentʃəl	RSSB	30	𐑑𐑼𐑧𐑯𐑖𐑩𐑤	təˈrenʃəl	r_gap:spelling=2,ipa=1; shave_says:𐑑𐑼𐑧𐑯𐑖𐑩𐑤
-torrential	𐑑𐑹𐑧𐑯𐑗𐑩𐑤	tɔːˈrentʃəl	GenAm	30	𐑑𐑼𐑧𐑯𐑖𐑩𐑤	təˈrenʃəl	r_gap:spelling=2,ipa=1; shave_says:𐑑𐑼𐑧𐑯𐑖𐑩𐑤
+torrential	𐑑𐑪𐑮𐑧𐑯𐑗𐑩𐑤	tɒˈrentʃəl	GenAm	30	𐑑𐑼𐑧𐑯𐑖𐑩𐑤	təˈrenʃəl	r_gap:spelling=2,ipa=1; shave_says:𐑑𐑼𐑧𐑯𐑖𐑩𐑤
 torrid	𐑑𐑹𐑩𐑛	ˈtɔːRƏd	GenAm	30	𐑑𐑪𐑮𐑦𐑛	ˈtɒrɪd	r_gap:spelling=2,ipa=1; shave_says:𐑑𐑪𐑮𐑦𐑛
 turret	𐑑𐑳𐑮𐑦𐑑	tʌrɪt	RSSB	30	𐑑𐑳𐑮𐑩𐑑	ˈtʌrIt	r_gap:spelling=2,ipa=1; shave_says:𐑑𐑳𐑮𐑩𐑑
 undercarriage	𐑳𐑯𐑛𐑼𐑒𐑧𐑮𐑦𐑡	ˈʌndəRˌkerɪdʒ	GenAm	30	𐑳𐑯𐑛𐑼𐑒𐑨𐑮𐑦𐑡	ˈʌndəRkærɪdʒ	r_gap:spelling=3,ipa=2; shave_says:𐑳𐑯𐑛𐑼𐑒𐑨𐑮𐑦𐑡
@@ -277,6 +273,7 @@ abortive	𐑼𐑚𐑹𐑑𐑦𐑝	əRbɔːRtɪv	RSSB	89	𐑩𐑚𐑹𐑑𐑦𐑝
 about-face	𐑩𐑚𐑬𐑑𐑓𐑱𐑕	əˈbaʊtˌfeɪs	GenAm	89	𐑩𐑚𐑬𐑑-𐑓𐑱𐑕	əˌbaʊt-ˈfeɪs	shave_says:𐑩𐑚𐑬𐑑-𐑓𐑱𐑕
 above-mentioned	𐑩𐑚𐑳𐑝𐑥𐑧𐑯𐑖𐑩𐑯𐑛	əˈbʌvˌmenʃənd	GenAm	89	𐑩𐑚𐑳𐑝-𐑥𐑧𐑯𐑖𐑩𐑯𐑛	ˌəbʌv-ˈmenʃənd	shave_says:𐑩𐑚𐑳𐑝-𐑥𐑧𐑯𐑖𐑩𐑯𐑛
 above-named	𐑩𐑚𐑳𐑝𐑯𐑱𐑥𐑛	əˈbʌvˌneɪmd	GenAm	89	𐑩𐑚𐑳𐑝-𐑯𐑱𐑥𐑛	ˌəbʌv-ˈneɪmd	shave_says:𐑩𐑚𐑳𐑝-𐑯𐑱𐑥𐑛
+abroad	𐑩𐑚𐑮𐑪𐑛	əˈbrɒd	GenAm	89	𐑩𐑚𐑮𐑷𐑛	əˈbrɔːd	shave_says:𐑩𐑚𐑮𐑷𐑛
 abrogate	𐑨𐑚𐑮𐑩𐑜𐑩𐑑	ˈæbrəˌɡət	GenAm	89	𐑨𐑚𐑮𐑩𐑜𐑱𐑑	ˈæbrəɡeɪt	shave_says:𐑨𐑚𐑮𐑩𐑜𐑱𐑑
 abruptly	𐑩𐑚𐑮𐑳𐑐𐑤𐑦	əˈbrʌpli	GenAm	89	𐑩𐑚𐑮𐑳𐑐𐑑𐑤𐑦	əˈbrʌptli	shave_says:𐑩𐑚𐑮𐑳𐑐𐑑𐑤𐑦
 abruptness	𐑩𐑚𐑮𐑳𐑐𐑯𐑩𐑕	əˈbrʌpnəs	GenAm	89	𐑩𐑚𐑮𐑳𐑐𐑑𐑯𐑩𐑕	əˈbrʌptnəs	shave_says:𐑩𐑚𐑮𐑳𐑐𐑑𐑯𐑩𐑕
@@ -346,7 +343,6 @@ accomplish	𐑩𐑒𐑪𐑥𐑐𐑤𐑦𐑖	əˈkɒmplɪʃ	GenAm	89	𐑩𐑒𐑳
 accomplished	𐑩𐑒𐑪𐑥𐑐𐑤𐑦𐑖𐑑	əˈkɒmplɪʃt	GenAm	89	𐑩𐑒𐑳𐑥𐑐𐑤𐑦𐑖𐑑	əˈkʌmplɪʃt	shave_says:𐑩𐑒𐑳𐑥𐑐𐑤𐑦𐑖𐑑
 accomplishment	𐑩𐑒𐑪𐑥𐑐𐑤𐑦𐑖𐑥𐑩𐑯𐑑	əˈkɒmplɪʃmənt	GenAm	89	𐑩𐑒𐑳𐑥𐑐𐑤𐑦𐑖𐑥𐑩𐑯𐑑	əˈkʌmplɪʃmənt	shave_says:𐑩𐑒𐑳𐑥𐑐𐑤𐑦𐑖𐑥𐑩𐑯𐑑
 accordion	𐑩𐑒𐑹𐑛𐑦𐑩𐑯	əˈkɔːRdiən	GenAm	89	𐑩𐑒𐑹𐑛𐑾𐑯	əˈkɔːRdɪən	shave_says:𐑩𐑒𐑹𐑛𐑾𐑯
-accost	𐑩𐑒𐑷𐑕𐑑	əˈkɔːst	GenAm	89	𐑩𐑒𐑪𐑕𐑑	əˈkɒst	shave_says:𐑩𐑒𐑪𐑕𐑑
 accouchement	𐑩𐑒𐑵𐑖𐑥𐑩𐑯𐑑	əˈkuːʃmənt	RSSB	89	𐑩𐑒𐑵𐑖𐑥𐑭𐑙	əˈkuːʃmɑːŋ	shave_says:𐑩𐑒𐑵𐑖𐑥𐑭𐑙
 accountability	𐑩𐑒𐑬𐑯𐑑𐑩𐑚𐑦𐑤𐑩𐑑𐑦	əˌkaʊntəˈbɪləti	GenAm	89	𐑩𐑒𐑬𐑯𐑑𐑩𐑚𐑦𐑤𐑦𐑑𐑦	əˌkaʊntəˈbɪlɪti	shave_says:𐑩𐑒𐑬𐑯𐑑𐑩𐑚𐑦𐑤𐑦𐑑𐑦
 accretion	𐑩𐑒𐑮𐑦𐑖𐑩𐑯	əˈkriʃən	GenAm	89	𐑩𐑒𐑮𐑰𐑖𐑩𐑯	əˈkriːʃən	shave_says:𐑩𐑒𐑮𐑰𐑖𐑩𐑯
@@ -373,8 +369,6 @@ acquittal	𐑩𐑒𐑢𐑦𐑑𐑤	əˈkwɪtl	RSSB	89	𐑩𐑒𐑢𐑦𐑑𐑩�
 acquittal	𐑩𐑒𐑢𐑦𐑛𐑤	əˈkwɪdl	GenAm	89	𐑩𐑒𐑢𐑦𐑑𐑩𐑤	əˈkwɪtəl	shave_says:𐑩𐑒𐑢𐑦𐑑𐑩𐑤
 acreage	𐑱𐑒𐑮𐑦𐑡	eɪkrɪdʒ	RSSB	89	𐑱𐑒𐑼𐑦𐑡	ˈeɪkərɪdʒ	shave_says:𐑱𐑒𐑼𐑦𐑡
 acrimonious	𐑨𐑒𐑮𐑦𐑥𐑴𐑯𐑦𐑩𐑕	ˌækrɪˈmoʊniəs	GenAm	89	𐑨𐑒𐑮𐑦𐑥𐑴𐑯𐑾𐑕	ˌækrɪˈməʊnɪəs	shave_says:𐑨𐑒𐑮𐑦𐑥𐑴𐑯𐑾𐑕
-across	𐑩𐑒𐑮𐑷𐑕	əˈkrɔːs	GenAm	89	𐑩𐑒𐑮𐑪𐑕	əˈkrɒs	shave_says:𐑩𐑒𐑮𐑪𐑕
-acrostic	𐑩𐑒𐑮𐑷𐑕𐑑𐑦𐑒	əˈkrɔːstɪk	GenAm	89	𐑩𐑒𐑮𐑪𐑕𐑑𐑦𐑒	əˈkrɒstɪk	shave_says:𐑩𐑒𐑮𐑪𐑕𐑑𐑦𐑒
 activation	𐑨𐑒𐑑𐑩𐑝𐑱𐑖𐑩𐑯	ˌæktəˈveɪʃən	GenAm	89	𐑨𐑒𐑑𐑦𐑝𐑱𐑖𐑩𐑯	ˌæktɪˈveɪʃən	shave_says:𐑨𐑒𐑑𐑦𐑝𐑱𐑖𐑩𐑯
 actual	𐑨𐑒𐑖𐑘𐑩𐑤	ˈakʃjəl	RSSB	89	𐑨𐑒𐑗𐑫𐑩𐑤	ˈæktʃuəl	shave_says:𐑨𐑒𐑗𐑫𐑩𐑤
 actual	𐑨𐑒𐑖𐑩𐑤	ˈækʃəl	GenAm	89	𐑨𐑒𐑗𐑫𐑩𐑤	ˈæktʃuəl	shave_says:𐑨𐑒𐑗𐑫𐑩𐑤
@@ -446,7 +440,7 @@ aeronaut	𐑺𐑼𐑯𐑷𐑑	eərəRnɔːt	RSSB	89	𐑺𐑩𐑯𐑷𐑑	ˈeər�
 aeronaut	𐑧𐑮𐑩𐑯𐑪𐑑	ˈerəˌnɒt	GenAm	89	𐑺𐑩𐑯𐑷𐑑	ˈeərənɔːt	shave_says:𐑺𐑩𐑯𐑷𐑑
 aeroplane	𐑺𐑼𐑐𐑤𐑱𐑯	eərəRpleɪn	RSSB	89	𐑺𐑩𐑐𐑤𐑱𐑯	ˈeərəpleɪn	shave_says:𐑺𐑩𐑐𐑤𐑱𐑯
 aerosol	𐑺𐑼𐑕𐑪𐑤	eərəRsɒl	RSSB	89	𐑺𐑩𐑕𐑪𐑤	ˈeərəsɒl	shave_says:𐑺𐑩𐑕𐑪𐑤
-aerosol	𐑧𐑮𐑩𐑕𐑷𐑤	ˈerəsɔːl	GenAm	89	𐑺𐑩𐑕𐑪𐑤	ˈeərəsɒl	shave_says:𐑺𐑩𐑕𐑪𐑤
+aerosol	𐑧𐑮𐑩𐑕𐑪𐑤	ˈerəsɒl	GenAm	89	𐑺𐑩𐑕𐑪𐑤	ˈeərəsɒl	shave_says:𐑺𐑩𐑕𐑪𐑤
 aery	𐑧𐑮𐑰	ˈeriː	GenAm	89	𐑽𐑦	ˈɪəri	shave_says:𐑽𐑦
 aesthete	𐑧𐑕𐑔𐑰𐑑	ˈesθiːt	RSSB	89	𐑰𐑕𐑔𐑰𐑑	ˈiːsθiːt	shave_says:𐑰𐑕𐑔𐑰𐑑
 aesthetic	𐑦𐑕𐑔𐑧𐑑𐑦𐑒	ɪsˈθetɪk	RSSB	89	𐑰𐑕𐑔𐑧𐑑𐑦𐑒	iːsˈθetɪk	shave_says:𐑰𐑕𐑔𐑧𐑑𐑦𐑒
@@ -465,6 +459,7 @@ affordable	𐑩𐑓𐑹𐑛𐑼𐑚𐑩𐑤	əfɔːRdəRbəl	RSSB	89	𐑩𐑓�
 afforest	𐑩𐑓𐑹𐑦𐑕𐑑	əˈfɔːRɪst	GenAm	89	𐑩𐑓𐑪𐑮𐑦𐑕𐑑	əˈfɒrɪst	shave_says:𐑩𐑓𐑪𐑮𐑦𐑕𐑑
 aforesaid	𐑼𐑓𐑷𐑮𐑕𐑧𐑛	əRfɔrsed	RSSB	89	𐑩𐑓𐑹𐑕𐑧𐑛	əˈfɔːRsed	shave_says:𐑩𐑓𐑹𐑕𐑧𐑛
 aforethought	𐑼𐑓𐑹𐑔𐑹𐑑	əRfɔːRθɔːRt	RSSB	89	𐑩𐑓𐑹𐑔𐑷𐑑	əˈfɔːRθɔːt	shave_says:𐑩𐑓𐑹𐑔𐑷𐑑
+aforethought	𐑩𐑓𐑹𐑔𐑪𐑑	əˈfɔːRθɒt	GenAm	89	𐑩𐑓𐑹𐑔𐑷𐑑	əˈfɔːRθɔːt	shave_says:𐑩𐑓𐑹𐑔𐑷𐑑
 afresh	𐑳𐑓𐑮𐑧𐑖	ʌˈfreʃ	GenAm	89	𐑩𐑓𐑮𐑧𐑖	əˈfreʃ	shave_says:𐑩𐑓𐑮𐑧𐑖
 afrikaans	𐑭𐑓𐑮𐑦𐑒𐑭𐑯𐑟	ɑːfrɪkɑːnz	RSSB	89	𐑨𐑓𐑮𐑦𐑒𐑭𐑯𐑕	ˌæfrɪˈkɑːns	shave_says:𐑨𐑓𐑮𐑦𐑒𐑭𐑯𐑕
 aftercare	𐑸𐑓𐑑𐑼𐑒𐑺	ɑːRftəRkeəR	RSSB	89	𐑨𐑓𐑑𐑼𐑒𐑺, 𐑭𐑓𐑑𐑼𐑒𐑺	ˈⱭːftəRkeəR	shave_says:𐑭𐑓𐑑𐑼𐑒𐑺
@@ -472,6 +467,7 @@ aftercare	𐑨𐑓𐑑𐑼𐑒𐑧𐑮	ˈæftəRker	GenAm	89	𐑨𐑓𐑑𐑼�
 aftereffect	𐑨𐑓𐑑𐑼𐑩𐑓𐑧𐑒𐑑	ˈæftərəˌfekt	GenAm	89	𐑨𐑓𐑑𐑼𐑦𐑓𐑧𐑒𐑑, 𐑭𐑓𐑑𐑼𐑦𐑓𐑧𐑒𐑑	ˈⱭːftərɪfekt	shave_says:𐑨𐑓𐑑𐑼𐑦𐑓𐑧𐑒𐑑
 aftermath	𐑭𐑓𐑑𐑼𐑥𐑭𐑔	ɑːftəRmɑːθ	RSSB	89	𐑨𐑓𐑑𐑼𐑥𐑨𐑔, 𐑭𐑓𐑑𐑼𐑥𐑨𐑔	ˈⱭːftəRmæθ	shave_says:𐑭𐑓𐑑𐑼𐑥𐑨𐑔
 afternoon	𐑨𐑓𐑑𐑼𐑯𐑫𐑯	ˌæftəRˈnun	GenAm	89	𐑨𐑓𐑑𐑼𐑯𐑵𐑯, 𐑭𐑓𐑑𐑼𐑯𐑵𐑯	ˌⱭːftəRˈnuːn	shave_says:𐑨𐑓𐑑𐑼𐑯𐑵𐑯
+afterthought	𐑨𐑓𐑑𐑼𐑔𐑪𐑑	ˈæftəRθɒt	GenAm	89	𐑨𐑓𐑑𐑼𐑔𐑷𐑑, 𐑭𐑓𐑑𐑼𐑔𐑷𐑑	ˈⱭːftəRθɔːt	shave_says:𐑨𐑓𐑑𐑼𐑔𐑷𐑑
 afterward	𐑸𐑓𐑑𐑼𐑢𐑼𐑛	ɑːRftəRwəRd	RSSB	89	𐑨𐑓𐑑𐑼𐑢𐑼𐑛, 𐑭𐑓𐑑𐑼𐑢𐑼𐑛	ˈⱭːftəRwəRd	shave_says:𐑭𐑓𐑑𐑼𐑢𐑼𐑛
 afterwards	𐑸𐑓𐑑𐑼𐑢𐑼𐑛𐑟	ɑːRftəRwəRdz	RSSB	89	𐑨𐑓𐑑𐑼𐑢𐑼𐑛𐑟, 𐑭𐑓𐑑𐑼𐑢𐑼𐑛𐑟	ˈⱭːftəRwəRdz	shave_says:𐑭𐑓𐑑𐑼𐑢𐑼𐑛𐑟
 agape	𐑩𐑜𐑭𐑐𐑱	əˈɡɑːpeɪ	RSSB	89	𐑩𐑜𐑱𐑐	əˈɡeɪp	shave_says:𐑩𐑜𐑱𐑐
@@ -503,14 +499,10 @@ alarmed	𐑼𐑤𐑸𐑥𐑛	əRlɑːRmd	RSSB	89	𐑩𐑤𐑸𐑥𐑛	əˈlɑːR
 alarming	𐑼𐑤𐑸𐑥𐑦𐑙	əRlɑːRmɪŋ	RSSB	89	𐑩𐑤𐑸𐑥𐑦𐑙	əˈlɑːRmɪŋ	shave_says:𐑩𐑤𐑸𐑥𐑦𐑙
 alarmingly	𐑼𐑤𐑸𐑥𐑦𐑙𐑤𐑦	əRlɑːRmɪŋli	RSSB	89	𐑩𐑤𐑸𐑥𐑦𐑙𐑤𐑦	əˈlɑːRmɪŋli	shave_says:𐑩𐑤𐑸𐑥𐑦𐑙𐑤𐑦
 albanian	𐑨𐑤𐑚𐑱𐑯𐑦𐑩𐑯	ælˈbeɪniən	RSSB	89	𐑨𐑤𐑚𐑱𐑯𐑾𐑯	ælˈbeɪnɪən	shave_says:𐑨𐑤𐑚𐑱𐑯𐑾𐑯
-albatross	𐑨𐑤𐑚𐑩𐑑𐑮𐑷𐑕	ˈælbəˌtrɔːs	GenAm	89	𐑨𐑤𐑚𐑩𐑑𐑮𐑪𐑕	ˈælbətrɒs	shave_says:𐑨𐑤𐑚𐑩𐑑𐑮𐑪𐑕
 albino	𐑨𐑤𐑚𐑲𐑯𐑴	ælˈbaɪnoʊ	GenAm	89	𐑨𐑤𐑚𐑰𐑯𐑴	ælˈbiːnəʊ	shave_says:𐑨𐑤𐑚𐑰𐑯𐑴
 albumen	𐑨𐑤𐑚𐑘𐑩𐑥𐑩𐑯	ˈælbjəmən	RSSB	89	𐑨𐑤𐑚𐑘𐑫𐑥𐑩𐑯	ˈælbjʊmən	shave_says:𐑨𐑤𐑚𐑘𐑫𐑥𐑩𐑯
 alchemist	𐑨𐑤𐑒𐑩𐑥𐑦𐑕𐑑	ˈælkəmɪst	GenAm	89	𐑨𐑤𐑒𐑧𐑥𐑦𐑕𐑑	ˈælkemɪst	shave_says:𐑨𐑤𐑒𐑧𐑥𐑦𐑕𐑑
 alchemy	𐑨𐑤𐑒𐑩𐑥𐑦	ˈælkəmi	GenAm	89	𐑨𐑤𐑒𐑧𐑥𐑦	ˈælkemi	shave_says:𐑨𐑤𐑒𐑧𐑥𐑦
-alcohol	𐑨𐑤𐑒𐑩𐑣𐑷𐑤	ˈælkəhɔːl	GenAm	89	𐑨𐑤𐑒𐑩𐑣𐑪𐑤	ˈælkəhɒl	shave_says:𐑨𐑤𐑒𐑩𐑣𐑪𐑤
-alcoholic	𐑨𐑤𐑒𐑩𐑣𐑷𐑤𐑦𐑒	ˌælkəˈhɔːlɪk	GenAm	89	𐑨𐑤𐑒𐑩𐑣𐑪𐑤𐑦𐑒	ˌælkəˈhɒlɪk	shave_says:𐑨𐑤𐑒𐑩𐑣𐑪𐑤𐑦𐑒
-alcoholism	𐑨𐑤𐑒𐑩𐑣𐑷𐑤𐑦𐑟𐑩𐑥	ˈælkəhɔːlˌɪzəm	GenAm	89	𐑨𐑤𐑒𐑩𐑣𐑪𐑤𐑦𐑟𐑩𐑥	ˈælkəhɒlɪzəm	shave_says:𐑨𐑤𐑒𐑩𐑣𐑪𐑤𐑦𐑟𐑩𐑥
 alexia	𐑩𐑤𐑧𐑒𐑕𐑦𐑩	əˈleksiə	GenAm	89	𐑩𐑤𐑧𐑒𐑕𐑾	əˈleksɪə	shave_says:𐑩𐑤𐑧𐑒𐑕𐑾
 algae	𐑨𐑤𐑡𐑦	ˈældʒi	GenAm	89	𐑨𐑤𐑜𐑰	ˈælɡiː	shave_says:𐑨𐑤𐑜𐑰
 algerian	𐑨𐑤𐑡𐑦𐑮𐑦𐑩𐑯	ældʒɪriən	RSSB	89	𐑨𐑤𐑡𐑽𐑾𐑯	ælˈdʒɪərɪən	shave_says:𐑨𐑤𐑡𐑽𐑾𐑯
@@ -520,36 +512,42 @@ alien	𐑱𐑤𐑦𐑩𐑯	ˈeɪliən	RSSB	89	𐑱𐑤𐑾𐑯	ˈeɪlɪən	shave
 alienate	𐑱𐑤𐑦𐑩𐑯𐑱𐑑	ˈeɪliəneɪt	RSSB	89	𐑱𐑤𐑾𐑯𐑱𐑑	ˈeɪlɪəneɪt	shave_says:𐑱𐑤𐑾𐑯𐑱𐑑
 alimentary	𐑨𐑤𐑦𐑥𐑧𐑯𐑑𐑮𐑦	ælɪmentri	RSSB	89	𐑨𐑤𐑦𐑥𐑧𐑯𐑑𐑼𐑦	ˌælɪˈmentəri	shave_says:𐑨𐑤𐑦𐑥𐑧𐑯𐑑𐑼𐑦
 alimony	𐑨𐑤𐑦𐑥𐑴𐑯𐑦	ˈælɪmoʊni	GenAm	89	𐑨𐑤𐑦𐑥𐑩𐑯𐑦	ˈælɪməni	shave_says:𐑨𐑤𐑦𐑥𐑩𐑯𐑦
+all	𐑪𐑤	ɒl	GenAm	89	𐑷𐑤	ɔːl	shave_says:𐑷𐑤
 allah	𐑩𐑤𐑭	əˈlɑː	RSSB	89	𐑨𐑤𐑩	ˈælə	shave_says:𐑨𐑤𐑩
 allegorical	𐑨𐑤𐑦𐑜𐑹𐑦𐑒𐑩𐑤	ˌælɪˈɡɔːRɪkəl	GenAm	89	𐑨𐑤𐑦𐑜𐑪𐑮𐑦𐑒𐑩𐑤	ˌælɪˈɡɒrɪkəl	shave_says:𐑨𐑤𐑦𐑜𐑪𐑮𐑦𐑒𐑩𐑤
 allegro	𐑩𐑤𐑱𐑜𐑮𐑴	əˈleɪɡroʊ	GenAm	89	𐑩𐑤𐑧𐑜𐑮𐑴	əˈleɡrəʊ	shave_says:𐑩𐑤𐑧𐑜𐑮𐑴
 alleviate	𐑩𐑤𐑦𐑝𐑦𐑱𐑑	əˈlivieɪt	RSSB	89	𐑩𐑤𐑰𐑝𐑦𐑱𐑑	əˈliːvieɪt	shave_says:𐑩𐑤𐑰𐑝𐑦𐑱𐑑
 allometry	𐑨𐑤𐑩𐑥𐑧𐑑𐑮𐑦	æləmetrɪ	RSSB	89	𐑩𐑤𐑪𐑥𐑩𐑑𐑮𐑦	əˈlɒmətri	shave_says:𐑩𐑤𐑪𐑥𐑩𐑑𐑮𐑦
 allophone	𐑨𐑤𐑩𐑓𐑴𐑯	ˈæləˌfoʊn	GenAm	89	𐑨𐑤𐑴𐑓𐑴𐑯	ˈæləʊfəʊn	shave_says:𐑨𐑤𐑴𐑓𐑴𐑯
-allotment	𐑩𐑤𐑷𐑑𐑥𐑧𐑯𐑑	əˈlɔːtment	GenAm	89	𐑩𐑤𐑪𐑑𐑥𐑩𐑯𐑑	əˈlɒtmənt	shave_says:𐑩𐑤𐑪𐑑𐑥𐑩𐑯𐑑
+allotment	𐑩𐑤𐑪𐑑𐑥𐑧𐑯𐑑	əˈlɒtment	GenAm	89	𐑩𐑤𐑪𐑑𐑥𐑩𐑯𐑑	əˈlɒtmənt	shave_says:𐑩𐑤𐑪𐑑𐑥𐑩𐑯𐑑
 alluring	𐑼𐑤𐑫𐑼𐑮𐑦𐑙	əRˈluəRrɪŋ	GenAm	89	𐑩𐑤𐑫𐑼𐑦𐑙	əˈlʊərɪŋ	shave_says:𐑩𐑤𐑫𐑼𐑦𐑙
 allusion	𐑩𐑤𐑫𐑠𐑩𐑯	əˈluʒən	GenAm	89	𐑩𐑤𐑵𐑠𐑩𐑯	əˈluːʒən	shave_says:𐑩𐑤𐑵𐑠𐑩𐑯
 alluvial	𐑩𐑤𐑵𐑝𐑦𐑩𐑤	əˈluːviəl	RSSB	89	𐑩𐑤𐑵𐑝𐑾𐑤	əˈluːvɪəl	shave_says:𐑩𐑤𐑵𐑝𐑾𐑤
 almond	𐑪𐑥𐑩𐑯𐑛	ˈɒmənd	GenAm	89	𐑭𐑥𐑩𐑯𐑛	ˈɑːmənd	shave_says:𐑭𐑥𐑩𐑯𐑛
 almoner	𐑨𐑤𐑥𐑩𐑯𐑼	ˈælmənəR	GenAm	89	𐑭𐑥𐑩𐑯𐑼	ˈɑːmənəR	shave_says:𐑭𐑥𐑩𐑯𐑼
+almost	𐑪𐑤𐑥𐑴𐑕𐑑	ˈɒlmoʊst	GenAm	89	𐑷𐑤𐑥𐑴𐑕𐑑	ˈɔːlməʊst	shave_says:𐑷𐑤𐑥𐑴𐑕𐑑
 alms	𐑪𐑥𐑟	ɒmz	GenAm	89	𐑭𐑥𐑟	ɑːmz	shave_says:𐑭𐑥𐑟
 aloe	𐑩𐑤𐑴𐑦	əˈləʊi	RSSB	89	𐑨𐑤𐑴	ˈæləʊ	shave_says:𐑨𐑤𐑴
-aloft	𐑩𐑤𐑷𐑓𐑑	əˈlɔːft	GenAm	89	𐑩𐑤𐑪𐑓𐑑	əˈlɒft	shave_says:𐑩𐑤𐑪𐑓𐑑
-along	𐑩𐑤𐑷𐑙	əˈlɔːŋ	GenAm	89	𐑩𐑤𐑪𐑙	əˈlɒŋ	shave_says:𐑩𐑤𐑪𐑙
-alongside	𐑩𐑤𐑷𐑙𐑕𐑲𐑛	əlɔːŋˈsaɪd	GenAm	89	𐑩𐑤𐑪𐑙𐑕𐑲𐑛	əˌlɒŋˈsaɪd	shave_says:𐑩𐑤𐑪𐑙𐑕𐑲𐑛
+also	𐑪𐑤𐑕𐑴	ˈɒlsoʊ	GenAm	89	𐑷𐑤𐑕𐑴	ˈɔːlsəʊ	shave_says:𐑷𐑤𐑕𐑴
 altar	𐑹𐑤𐑑𐑼	ɔːRltəR	RSSB	89	𐑷𐑤𐑑𐑼	ˈɔːltəR	shave_says:𐑷𐑤𐑑𐑼
+altar	𐑪𐑤𐑑𐑼	ˈɒltəR	GenAm	89	𐑷𐑤𐑑𐑼	ˈɔːltəR	shave_says:𐑷𐑤𐑑𐑼
+alteration	𐑪𐑤𐑑𐑼𐑱𐑖𐑩𐑯	ɒltəRˈeɪʃən	GenAm	89	𐑷𐑤𐑑𐑼𐑱𐑖𐑩𐑯	ˌɔːltəˈreɪʃən	shave_says:𐑷𐑤𐑑𐑼𐑱𐑖𐑩𐑯
+altercation	𐑪𐑤𐑑𐑼𐑒𐑱𐑖𐑩𐑯	ɒltəRˈkeɪʃən	GenAm	89	𐑷𐑤𐑑𐑼𐑒𐑱𐑖𐑩𐑯	ˌɔːltəRˈkeɪʃən	shave_says:𐑷𐑤𐑑𐑼𐑒𐑱𐑖𐑩𐑯
+altered	𐑪𐑤𐑑𐑼𐑛	ˈɒltəRd	GenAm	89	𐑷𐑤𐑑𐑼𐑛	ˈɔːltəRd	shave_says:𐑷𐑤𐑑𐑼𐑛
 alternate	𐑪𐑤𐑑𐑻𐑯𐑩𐑑	ɒltɜːRnət	RSSB	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑, 𐑷𐑤𐑑𐑼𐑯𐑱𐑑	ɔːlˈtɜːRnət	shave_says:[𐑷𐑤𐑑𐑼𐑯𐑩𐑑 / 𐑷𐑤𐑑𐑼𐑯𐑱𐑑]
-alternate	𐑷𐑤𐑑𐑼𐑯𐑩𐑑	ˈɔːltəRnət	GenAm	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑, 𐑷𐑤𐑑𐑼𐑯𐑱𐑑	ɔːlˈtɜːRnət	shave_says:[𐑷𐑤𐑑𐑼𐑯𐑩𐑑 / 𐑷𐑤𐑑𐑼𐑯𐑱𐑑]
-alternately	𐑷𐑤𐑑𐑼𐑯𐑩𐑑𐑤𐑦	ˈɔːltəRnətli	GenAm	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑤𐑦	ɔːlˈtɜːRnətli	shave_says:𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑤𐑦
-alternation	𐑪𐑤𐑑𐑼𐑯𐑱𐑖𐑩𐑯	ɒltəRneɪʃən	RSSB	89	𐑷𐑤𐑑𐑼𐑯𐑱𐑖𐑩𐑯	ˌɔːltəRˈneɪʃən	shave_says:𐑷𐑤𐑑𐑼𐑯𐑱𐑖𐑩𐑯
-alternative	𐑪𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝	ɒltɜːRnətɪv	RSSB	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝	ɔːlˈtɜːRnətɪv	shave_says:𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝
-alternatively	𐑪𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝𐑤𐑦	ɒltɜːRnətɪvli	RSSB	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝𐑤𐑦	ɔːlˈtɜːRnətɪvli	shave_says:𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝𐑤𐑦
-altogether	𐑷𐑤𐑑𐑫𐑜𐑧𐑞𐑼	ɔːltuˈɡeðəR	GenAm	89	𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼	ˌɔːltəˈɡeðəR	shave_says:𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼
+alternate	𐑪𐑤𐑑𐑼𐑯𐑩𐑑	ˈɒltəRnət	GenAm	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑, 𐑷𐑤𐑑𐑼𐑯𐑱𐑑	ɔːlˈtɜːRnət	shave_says:[𐑷𐑤𐑑𐑼𐑯𐑩𐑑 / 𐑷𐑤𐑑𐑼𐑯𐑱𐑑]
+alternately	𐑪𐑤𐑑𐑼𐑯𐑩𐑑𐑤𐑦	ˈɒltəRnətli	GenAm	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑤𐑦	ɔːlˈtɜːRnətli	shave_says:𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑤𐑦
+alternation	𐑪𐑤𐑑𐑼𐑯𐑱𐑖𐑩𐑯	ˈɒltəRˌneɪʃən	GenAm	89	𐑷𐑤𐑑𐑼𐑯𐑱𐑖𐑩𐑯	ˌɔːltəRˈneɪʃən	shave_says:𐑷𐑤𐑑𐑼𐑯𐑱𐑖𐑩𐑯
+alternative	𐑪𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝	ɒlˈtɜːRnətɪv	GenAm	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝	ɔːlˈtɜːRnətɪv	shave_says:𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝
+alternatively	𐑪𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝𐑤𐑦	ɒlˈtɜːRnətɪvli	GenAm	89	𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝𐑤𐑦	ɔːlˈtɜːRnətɪvli	shave_says:𐑷𐑤𐑑𐑻𐑯𐑩𐑑𐑦𐑝𐑤𐑦
+altogether	𐑷𐑤𐑑𐑫𐑜𐑧𐑞𐑼	ɔːltʊɡeðəR	RSSB	89	𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼	ˌɔːltəˈɡeðəR	shave_says:𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼
+altogether	𐑪𐑤𐑑𐑫𐑜𐑧𐑞𐑼	ɒltuˈɡeðəR	GenAm	89	𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼	ˌɔːltəˈɡeðəR	shave_says:𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼
 altruistic	𐑨𐑤𐑑𐑮𐑫𐑦𐑕𐑑𐑦𐑒	ˌæltruˈɪstɪk	GenAm	89	𐑨𐑤𐑑𐑮𐑵𐑦𐑕𐑑𐑦𐑒	ˌæltruːˈɪstɪk	shave_says:𐑨𐑤𐑑𐑮𐑵𐑦𐑕𐑑𐑦𐑒
 aluminium	𐑨𐑤𐑫𐑥𐑦𐑯𐑦𐑩𐑥	ˌæluˈmɪniəm	GenAm	89	𐑨𐑤𐑘𐑩𐑥𐑦𐑯𐑾𐑥	ˌæljəˈmɪnɪəm	shave_says:𐑨𐑤𐑘𐑩𐑥𐑦𐑯𐑾𐑥
 alveolar	𐑨𐑤𐑝𐑰𐑼𐑤𐑼	alviːəRləR	RSSB	89	𐑨𐑤𐑝𐑦𐑴𐑤𐑼	ælˈviəʊləR	shave_says:𐑨𐑤𐑝𐑦𐑴𐑤𐑼
 alveolar	𐑨𐑤𐑝𐑦𐑩𐑤𐑼	ælˈviələR	GenAm	89	𐑨𐑤𐑝𐑦𐑴𐑤𐑼	ælˈviəʊləR	shave_says:𐑨𐑤𐑝𐑦𐑴𐑤𐑼
 always	𐑷𐑢𐑱𐑟	ˈɔːweɪz	RSSB	89	𐑷𐑤𐑢𐑱𐑟	ˈɔːlweɪz	shave_says:𐑷𐑤𐑢𐑱𐑟
+always	𐑪𐑤𐑢𐑱𐑟	ˈɒlweɪz	GenAm	89	𐑷𐑤𐑢𐑱𐑟	ˈɔːlweɪz	shave_says:𐑷𐑤𐑢𐑱𐑟
 amateur	𐑨𐑥𐑩𐑑𐑼	ˈæmətəR	GenAm	89	𐑨𐑥𐑩𐑗𐑼	ˈæmətʃəR	shave_says:𐑨𐑥𐑩𐑗𐑼
 amati	𐑪𐑥𐑪𐑑𐑦	ɒmɒti	GenAm	89	𐑩𐑥𐑭𐑑𐑦	əˈmɑːti	shave_says:𐑩𐑥𐑭𐑑𐑦
 amatory	𐑨𐑥𐑼𐑑𐑼𐑦	aməRtəri	RSSB	89	𐑨𐑥𐑩𐑑𐑼𐑦	ˈæmətəri	shave_says:𐑨𐑥𐑩𐑑𐑼𐑦
@@ -596,7 +594,6 @@ anachronism	𐑩𐑯𐑨𐑒𐑮𐑩𐑯𐑦𐑟𐑥	ənækrənɪzm	RSSB	89	𐑩
 anagrams	𐑨𐑯𐑩𐑜𐑮𐑨𐑥𐑕	ænəɡræms	RSSB	89	𐑨𐑯𐑩𐑜𐑮𐑨𐑥𐑟	ˈænəɡræmz	shave_says:𐑨𐑯𐑩𐑜𐑮𐑨𐑥𐑟
 analgesia	𐑨𐑯𐑩𐑤𐑡𐑰𐑟𐑦𐑩	ˌænəlˈdʒiːziə	RSSB	89	𐑨𐑯𐑩𐑤𐑡𐑰𐑟𐑾	ˌænəlˈdʒiːzɪə	shave_says:𐑨𐑯𐑩𐑤𐑡𐑰𐑟𐑾
 analgesia	𐑨𐑯𐑩𐑤𐑡𐑰𐑠𐑩	ˌænəlˈdʒiːʒə	GenAm	89	𐑨𐑯𐑩𐑤𐑡𐑰𐑟𐑾	ˌænəlˈdʒiːzɪə	shave_says:𐑨𐑯𐑩𐑤𐑡𐑰𐑟𐑾
-analog	𐑨𐑯𐑩𐑤𐑷𐑜	ˈænəlɔːɡ	GenAm	89	𐑨𐑯𐑩𐑤𐑪𐑜	ˈænəlɒɡ	shave_says:𐑨𐑯𐑩𐑤𐑪𐑜
 analysis	𐑩𐑯𐑨𐑤𐑦𐑕𐑦𐑕	əˈnælɪsɪs	RSSB	89	𐑩𐑯𐑨𐑤𐑩𐑕𐑦𐑕	əˈnæləsɪs	shave_says:𐑩𐑯𐑨𐑤𐑩𐑕𐑦𐑕
 analytical	𐑨𐑯𐑩𐑤𐑦𐑑𐑩𐑒𐑩𐑤	ænəˈlɪtəkəl	GenAm	89	𐑨𐑯𐑩𐑤𐑦𐑑𐑦𐑒𐑩𐑤	ˌænəˈlɪtɪkəl	shave_says:𐑨𐑯𐑩𐑤𐑦𐑑𐑦𐑒𐑩𐑤
 analytically	𐑨𐑯𐑩𐑤𐑦𐑑𐑦𐑒𐑩𐑤𐑤𐑦	ænəˈlɪtɪkəlli	GenAm	89	𐑨𐑯𐑩𐑤𐑦𐑑𐑦𐑒𐑤𐑦	ˌænəˈlɪtɪkli	shave_says:𐑨𐑯𐑩𐑤𐑦𐑑𐑦𐑒𐑤𐑦
@@ -683,6 +680,8 @@ appearance	𐑩𐑐𐑦𐑮𐑩𐑯𐑕	əˈpɪrəns	GenAm	89	𐑩𐑐𐑽𐑩�
 append	𐑳𐑐𐑧𐑯𐑛	ʌˈpend	GenAm	89	𐑩𐑐𐑧𐑯𐑛	əˈpend	shave_says:𐑩𐑐𐑧𐑯𐑛
 appendicitis	𐑩𐑐𐑧𐑯𐑛𐑦𐑕𐑲𐑑𐑩𐑕	əˈpendɪsaɪtəs	RSSB	89	𐑩𐑐𐑧𐑯𐑛𐑦𐑕𐑲𐑑𐑦𐑕	əˌpendɪˈsaɪtɪs	shave_says:𐑩𐑐𐑧𐑯𐑛𐑦𐑕𐑲𐑑𐑦𐑕
 appetite	𐑨𐑐𐑦𐑑𐑲𐑑	ˈæpɪtaɪt	RSSB	89	𐑨𐑐𐑩𐑑𐑲𐑑	ˈæpətaɪt	shave_says:𐑨𐑐𐑩𐑑𐑲𐑑
+applaud	𐑩𐑐𐑤𐑪𐑛	əˈplɒd	GenAm	89	𐑩𐑐𐑤𐑷𐑛	əˈplɔːd	shave_says:𐑩𐑐𐑤𐑷𐑛
+applause	𐑩𐑐𐑤𐑪𐑟	əˈplɒz	GenAm	89	𐑩𐑐𐑤𐑷𐑟	əˈplɔːz	shave_says:𐑩𐑐𐑤𐑷𐑟
 applicable	𐑨𐑐𐑤𐑦𐑒𐑩𐑚𐑩𐑤	ˈæplɪkəbəl	RSSB	89	𐑩𐑐𐑤𐑦𐑒𐑩𐑚𐑩𐑤	əˈplɪkəbəl	shave_says:𐑩𐑐𐑤𐑦𐑒𐑩𐑚𐑩𐑤
 applicant	𐑨𐑐𐑤𐑩𐑒𐑦𐑯𐑑	ˈæpləkɪnt	GenAm	89	𐑨𐑐𐑤𐑦𐑒𐑩𐑯𐑑	ˈæplɪkənt	shave_says:𐑨𐑐𐑤𐑦𐑒𐑩𐑯𐑑
 applique	𐑩𐑐𐑤𐑰𐑒𐑱	əˈpliːkeɪ	RSSB	89	𐑨𐑐𐑤𐑰𐑒𐑱	æˈpliːkeɪ	shave_says:𐑨𐑐𐑤𐑰𐑒𐑱
@@ -734,6 +733,7 @@ aries	𐑧𐑮𐑦𐑟	ˈeriz	GenAm	89	𐑺𐑰𐑟	ˈeəriːz	shave_says:𐑺�
 aristocracy	𐑧𐑮𐑦𐑕𐑑𐑪𐑒𐑮𐑩𐑕𐑦	ˌerɪˈstɒkrəsi	GenAm	89	𐑨𐑮𐑦𐑕𐑑𐑪𐑒𐑮𐑩𐑕𐑦	ˌærɪˈstɒkrəsi	shave_says:𐑨𐑮𐑦𐑕𐑑𐑪𐑒𐑮𐑩𐑕𐑦
 aristocrat	𐑼𐑦𐑕𐑑𐑩𐑒𐑮𐑨𐑑	əˈrɪstəkræt	GenAm	89	𐑨𐑮𐑦𐑕𐑑𐑩𐑒𐑮𐑨𐑑	ˈærɪstəkræt	shave_says:𐑨𐑮𐑦𐑕𐑑𐑩𐑒𐑮𐑨𐑑
 arithmetician	𐑼𐑦𐑔𐑥𐑩𐑑𐑦𐑖𐑯	ərɪθmətɪʃn	RSSB	89	𐑼𐑦𐑔𐑥𐑩𐑑𐑦𐑖𐑩𐑯	əˌrɪθməˈtɪʃən	shave_says:𐑼𐑦𐑔𐑥𐑩𐑑𐑦𐑖𐑩𐑯
+arkansas	𐑸𐑒𐑩𐑯𐑕𐑪	ˈɑːRkənsɒ	GenAm	89	𐑸𐑒𐑩𐑯𐑕𐑷	ˈɑːRkənsɔː	shave_says:𐑸𐑒𐑩𐑯𐑕𐑷
 armada	𐑸𐑥𐑸𐑛𐑩	ɑːRmɑːRdə	RSSB	89	𐑸𐑥𐑭𐑛𐑩	ɑːRˈmɑːdə	shave_says:𐑸𐑥𐑭𐑛𐑩
 army	𐑸𐑥𐑰	ɑːRmiː	RSSB	89	𐑸𐑥𐑦	ˈɑːRmi	shave_says:𐑸𐑥𐑦
 aromatic	𐑨𐑮𐑼𐑥𐑨𐑑𐑦𐑒	ærəRmætɪk	RSSB	89	𐑨𐑮𐑩𐑥𐑨𐑑𐑦𐑒	ˌærəˈmætɪk	shave_says:𐑨𐑮𐑩𐑥𐑨𐑑𐑦𐑒
@@ -758,6 +758,7 @@ asparagus	𐑩𐑕𐑐𐑧𐑮𐑩𐑜𐑩𐑕	əˈsperəɡəs	GenAm	89	𐑩𐑕
 aspectual	𐑨𐑕𐑐𐑧𐑒𐑑𐑘𐑩𐑩𐑤	ˌæˈspektjəəl	RSSB	89	𐑩𐑕𐑐𐑧𐑒𐑗𐑫𐑩𐑤	əˈspektʃuəl	shave_says:𐑩𐑕𐑐𐑧𐑒𐑗𐑫𐑩𐑤
 asperity	𐑩𐑕𐑐𐑧𐑮𐑦𐑑𐑦	əˈsperɪti	GenAm	89	𐑨𐑕𐑐𐑧𐑮𐑦𐑑𐑦	æˈsperɪti	shave_says:𐑨𐑕𐑐𐑧𐑮𐑦𐑑𐑦
 asphalt	𐑨𐑕𐑓𐑨𐑤𐑑	ˈæsfælt	RSSB	89	𐑨𐑕𐑓𐑷𐑤𐑑, 𐑨𐑖𐑓𐑧𐑤𐑑	ˈæsfɔːlt	shave_says:𐑨𐑕𐑓𐑷𐑤𐑑
+asphalt	𐑨𐑕𐑓𐑪𐑤𐑑	ˈæsfɒlt	GenAm	89	𐑨𐑕𐑓𐑷𐑤𐑑, 𐑨𐑖𐑓𐑧𐑤𐑑	ˈæsfɔːlt	shave_says:𐑨𐑕𐑓𐑷𐑤𐑑
 aspirant	𐑨𐑕𐑐𐑼𐑼𐑯𐑑	æspərəRnt	RSSB	89	𐑨𐑕𐑐𐑼𐑩𐑯𐑑	ˈæspərənt	shave_says:𐑨𐑕𐑐𐑼𐑩𐑯𐑑
 aspirate	𐑨𐑕𐑐𐑼𐑼𐑑	æspərəRt	RSSB	89	𐑨𐑕𐑐𐑼𐑩𐑑, 𐑨𐑕𐑐𐑼𐑱𐑑	ˈæspərət	shave_says:[𐑨𐑕𐑐𐑦𐑮𐑩𐑑 / 𐑨𐑕𐑐𐑦𐑮𐑱𐑑]
 aspirin	𐑨𐑕𐑐𐑮𐑦𐑯	æsprɪn	RSSB	89	𐑨𐑕𐑐𐑼𐑦𐑯	ˈæspərɪn	shave_says:𐑨𐑕𐑐𐑼𐑦𐑯
@@ -778,6 +779,7 @@ asthma	𐑨𐑟𐑥𐑩	ˈæzmə	GenAm	89	𐑨𐑕𐑥𐑩	ˈæsmə	shave_says:�
 asthmatic	𐑨𐑕𐑔𐑥𐑨𐑑𐑦𐑒	æsˈθmætɪk	RSSB	89	𐑨𐑕𐑥𐑨𐑑𐑦𐑒	æsˈmætɪk	shave_says:𐑨𐑕𐑥𐑨𐑑𐑦𐑒
 asthmatic	𐑨𐑟𐑥𐑨𐑑𐑦𐑒	æzˈmætɪk	GenAm	89	𐑨𐑕𐑥𐑨𐑑𐑦𐑒	æsˈmætɪk	shave_says:𐑨𐑕𐑥𐑨𐑑𐑦𐑒
 astonishment	𐑩𐑕𐑑𐑭𐑯𐑦𐑖𐑥𐑩𐑯𐑑	əˈstɑːnɪʃmənt	GenAm	89	𐑩𐑕𐑑𐑪𐑯𐑦𐑖𐑥𐑩𐑯𐑑	əˈstɒnɪʃmənt	shave_says:𐑩𐑕𐑑𐑪𐑯𐑦𐑖𐑥𐑩𐑯𐑑
+astronaut	𐑨𐑕𐑑𐑮𐑩𐑯𐑪𐑑	ˈæstrəˌnɒt	GenAm	89	𐑨𐑕𐑑𐑮𐑩𐑯𐑷𐑑	ˈæstrənɔːt	shave_says:𐑨𐑕𐑑𐑮𐑩𐑯𐑷𐑑
 astronomer	𐑩𐑕𐑑𐑮𐑪𐑯𐑼𐑥𐑼	əstrɒnəRməR	RSSB	89	𐑩𐑕𐑑𐑮𐑪𐑯𐑩𐑥𐑼	əˈstrɒnəməR	shave_says:𐑩𐑕𐑑𐑮𐑪𐑯𐑩𐑥𐑼
 astronomical	𐑨𐑕𐑑𐑮𐑩𐑯𐑭𐑥𐑦𐑒𐑩𐑤	ˌæstrəˈnɑːmɪkəl	GenAm	89	𐑨𐑕𐑑𐑮𐑩𐑯𐑪𐑥𐑦𐑒𐑩𐑤	ˌæstrəˈnɒmɪkəl	shave_says:𐑨𐑕𐑑𐑮𐑩𐑯𐑪𐑥𐑦𐑒𐑩𐑤
 asymmetry	𐑱𐑕𐑦𐑥𐑦𐑑𐑮𐑦	eɪsɪmɪtri	RSSB	89	𐑱𐑕𐑦𐑥𐑩𐑑𐑮𐑦	eɪˈsɪmətri	shave_says:𐑱𐑕𐑦𐑥𐑩𐑑𐑮𐑦
@@ -787,7 +789,6 @@ athenian	𐑩𐑔𐑰𐑯𐑦𐑩𐑯	əˈθiːniən	RSSB	89	𐑩𐑔𐑰𐑯�
 athlete	𐑨𐑔𐑤𐑦𐑑	ˈæθlit	GenAm	89	𐑨𐑔𐑤𐑰𐑑	ˈæθliːt	shave_says:𐑨𐑔𐑤𐑰𐑑
 atlantic	𐑨𐑑𐑤𐑨𐑯𐑑𐑦𐑒	ætˈlæntɪk	GenAm	89	𐑩𐑑𐑤𐑨𐑯𐑑𐑦𐑒	ətˈlæntɪk	shave_says:𐑩𐑑𐑤𐑨𐑯𐑑𐑦𐑒
 atmosphere	𐑨𐑑𐑥𐑩𐑕𐑓𐑦𐑮	ˈætməsˌfɪr	GenAm	89	𐑨𐑑𐑥𐑩𐑕𐑓𐑽	ˈætməsfɪəR	shave_says:𐑨𐑑𐑥𐑩𐑕𐑓𐑽
-atoll	𐑨𐑑𐑷𐑤	ˈætɔːl	GenAm	89	𐑨𐑑𐑪𐑤	ˈætɒl	shave_says:𐑨𐑑𐑪𐑤
 atomic	𐑩𐑑𐑭𐑥𐑦𐑒	əˈtɑːmɪk	GenAm	89	𐑩𐑑𐑪𐑥𐑦𐑒	əˈtɒmɪk	shave_says:𐑩𐑑𐑪𐑥𐑦𐑒
 atrabilious	𐑨𐑑𐑮𐑩𐑚𐑦𐑤𐑦𐑩𐑕	ætrəbɪliəs	RSSB	89	𐑨𐑑𐑮𐑩𐑚𐑦𐑤𐑾𐑕	ˌætrəˈbɪlɪəs	shave_says:𐑨𐑑𐑮𐑩𐑚𐑦𐑤𐑾𐑕
 attache	𐑨𐑑𐑨𐑖𐑧	ætæˈʃe	GenAm	89	𐑩𐑑𐑨𐑖𐑱	əˈtæʃeɪ	shave_says:𐑩𐑑𐑨𐑖𐑱
@@ -798,32 +799,44 @@ attributive	𐑩𐑑𐑮𐑦𐑚𐑘𐑫𐑑𐑦𐑝	ətrɪbjutɪv	RSSB	89	𐑩�
 attributively	𐑩𐑑𐑮𐑦𐑚𐑘𐑫𐑑𐑦𐑝𐑤𐑦	ətrɪbjutɪvli	RSSB	89	𐑩𐑑𐑮𐑦𐑚𐑘𐑩𐑑𐑦𐑝𐑤𐑦	əˈtrɪbjətɪvli	shave_says:𐑩𐑑𐑮𐑦𐑚𐑘𐑩𐑑𐑦𐑝𐑤𐑦
 attune	𐑩𐑑𐑫𐑯	əˈtun	GenAm	89	𐑩𐑑𐑵𐑯, 𐑩𐑑𐑿𐑯	əˈtjuːn	shave_says:𐑩𐑑𐑵𐑯
 aubergine	𐑴𐑚𐑼𐑠𐑦𐑯	ˈoʊbəRʒin	GenAm	89	𐑴𐑚𐑼𐑠𐑰𐑯	ˈəʊbəRʒiːn	shave_says:𐑴𐑚𐑼𐑠𐑰𐑯
+auburn	𐑪𐑚𐑼𐑯	ˈɒbəRn	GenAm	89	𐑷𐑚𐑼𐑯	ˈɔːbəRn	shave_says:𐑷𐑚𐑼𐑯
+audacious	𐑪𐑛𐑱𐑖𐑩𐑕	ɒˈdeɪʃəs	GenAm	89	𐑷𐑛𐑱𐑖𐑩𐑕	ɔːˈdeɪʃəs	shave_says:𐑷𐑛𐑱𐑖𐑩𐑕
+audacity	𐑪𐑛𐑨𐑕𐑦𐑑𐑦	ɒˈdæsɪti	GenAm	89	𐑷𐑛𐑨𐑕𐑦𐑑𐑦	ɔːˈdæsɪti	shave_says:𐑷𐑛𐑨𐑕𐑦𐑑𐑦
 audible	𐑷𐑛𐑦𐑚𐑩𐑤	ˈɔːdɪbəl	RSSB	89	𐑷𐑛𐑩𐑚𐑩𐑤	ˈɔːdəbəl	shave_says:𐑷𐑛𐑩𐑚𐑩𐑤
 audience	𐑷𐑛𐑦𐑩𐑯𐑕	ˈɔːdiəns	RSSB	89	𐑷𐑛𐑾𐑯𐑕	ˈɔːdɪəns	shave_says:𐑷𐑛𐑾𐑯𐑕
+audio	𐑪𐑛𐑦𐑴	ˈɒdioʊ	GenAm	89	𐑷𐑛𐑦𐑴	ˈɔːdiəʊ	shave_says:𐑷𐑛𐑦𐑴
+audit	𐑪𐑛𐑦𐑑	ˈɒdɪt	GenAm	89	𐑷𐑛𐑦𐑑	ˈɔːdɪt	shave_says:𐑷𐑛𐑦𐑑
 auditor	𐑹𐑛𐑦𐑑𐑼	ɔːRdɪtəR	RSSB	89	𐑷𐑛𐑦𐑑𐑼	ˈɔːdɪtəR	shave_says:𐑷𐑛𐑦𐑑𐑼
 auditorium	𐑹𐑛𐑦𐑑𐑹𐑦𐑩𐑥	ɔːRdɪtɔːriəm	RSSB	89	𐑷𐑛𐑦𐑑𐑹𐑾𐑥	ˌɔːdɪˈtɔːrɪəm	shave_says:𐑷𐑛𐑦𐑑𐑹𐑾𐑥
-auditorium	𐑷𐑛𐑩𐑑𐑹𐑦𐑩𐑥	ˌɔːdəˈtɔːRiəm	GenAm	89	𐑷𐑛𐑦𐑑𐑹𐑾𐑥	ˌɔːdɪˈtɔːrɪəm	shave_says:𐑷𐑛𐑦𐑑𐑹𐑾𐑥
+auditorium	𐑪𐑛𐑩𐑑𐑹𐑦𐑩𐑥	ˌɒdəˈtɔːRiəm	GenAm	89	𐑷𐑛𐑦𐑑𐑹𐑾𐑥	ˌɔːdɪˈtɔːrɪəm	shave_says:𐑷𐑛𐑦𐑑𐑹𐑾𐑥
 augment	𐑪𐑜𐑥𐑧𐑯𐑑	ɒɡˈment	GenAm	89	𐑷𐑜𐑥𐑧𐑯𐑑	ɔːɡˈment	shave_says:𐑷𐑜𐑥𐑧𐑯𐑑
+augur	𐑪𐑜𐑼	ˈɒɡəR	GenAm	89	𐑷𐑜𐑼	ˈɔːɡəR	shave_says:𐑷𐑜𐑼
+augustan	𐑪𐑜𐑳𐑕𐑑𐑩𐑯	ɒˈɡʌstən	GenAm	89	𐑷𐑜𐑳𐑕𐑑𐑩𐑯	ɔːˈɡʌstən	shave_says:𐑷𐑜𐑳𐑕𐑑𐑩𐑯
 augustine	𐑩𐑜𐑳𐑕𐑑𐑦𐑯	əˈɡʌstɪn	GenAm	89	𐑷𐑜𐑳𐑕𐑑𐑦𐑯	ɔːˈɡʌstɪn	shave_says:𐑷𐑜𐑳𐑕𐑑𐑦𐑯
 aunt	𐑪𐑯𐑑	ɒnt	GenAm	89	𐑨𐑯𐑑, 𐑭𐑯𐑑	Ɑːnt	shave_says:𐑨𐑯𐑑
 aureate	𐑹𐑰𐑩𐑑	ɔːriːət	RSSB	89	𐑹𐑾𐑑	ˈɔːriət	shave_says:𐑹𐑾𐑑
 aureole	𐑹𐑰𐑴𐑤	ˈɔːriːoʊl	GenAm	89	𐑹𐑦𐑴𐑤	ˈɔːriəʊl	shave_says:𐑹𐑦𐑴𐑤
 auricle	𐑹𐑩𐑒𐑩𐑤	ˈɔːRəkəl	GenAm	89	𐑹𐑦𐑒𐑩𐑤	ˈɔːrɪkəl	shave_says:𐑹𐑦𐑒𐑩𐑤
+auricular	𐑪𐑮𐑦𐑒𐑘𐑩𐑤𐑼	ɒˈrɪkjələR	GenAm	89	𐑹𐑦𐑒𐑘𐑩𐑤𐑼	ɔːˈrɪkjələR	shave_says:𐑹𐑦𐑒𐑘𐑩𐑤𐑼
 auriferous	𐑹𐑦𐑓𐑼𐑼𐑕	ɔːrɪfərəRs	RSSB	89	𐑹𐑦𐑓𐑼𐑩𐑕	ɔːˈrɪfərəs	shave_says:𐑹𐑦𐑓𐑼𐑩𐑕
 aurora	𐑼𐑹𐑩	ərɔːrə	RSSB	89	𐑹𐑹𐑩	ɔːˈrɔːrə	shave_says:𐑹𐑹𐑩
 auroral	𐑹𐑷𐑼𐑼𐑤	ɔːrɔərəRl	RSSB	89	𐑹𐑹𐑩𐑤	ɔːˈrɔːrəl	shave_says:𐑹𐑹𐑩𐑤
-aussie	𐑷𐑟𐑦	ˈɔːzi	GenAm	89	𐑪𐑟𐑦	ˈɒzi	shave_says:𐑪𐑟𐑦
+auroral	𐑪𐑮𐑹𐑩𐑤	ɒˈrɔːRəl	GenAm	89	𐑹𐑹𐑩𐑤	ɔːˈrɔːrəl	shave_says:𐑹𐑹𐑩𐑤
+auspice	𐑪𐑕𐑐𐑦𐑕	ˈɒspɪs	GenAm	89	𐑷𐑕𐑐𐑦𐑕	ˈɔːspɪs	shave_says:𐑷𐑕𐑐𐑦𐑕
 austere	𐑪𐑕𐑑𐑽	ɒstɪəR	RSSB	89	𐑷𐑕𐑑𐑽	ɔːˈstɪəR	shave_says:𐑷𐑕𐑑𐑽
-austere	𐑷𐑕𐑑𐑦𐑮	ɔːˈstir	GenAm	89	𐑷𐑕𐑑𐑽	ɔːˈstɪəR	shave_says:𐑷𐑕𐑑𐑽
-austerely	𐑷𐑕𐑑𐑦𐑼𐑤𐑦	ɔːˈstiərli	GenAm	89	𐑷𐑕𐑑𐑽𐑤𐑦	ɔːˈstɪəRli	shave_says:𐑷𐑕𐑑𐑽𐑤𐑦
-austin	𐑷𐑕𐑑𐑦𐑯	ˈɔːstɪn	GenAm	89	𐑪𐑕𐑑𐑦𐑯	ˈɒstɪn	shave_says:𐑪𐑕𐑑𐑦𐑯
+austere	𐑪𐑕𐑑𐑦𐑮	ɒˈstir	GenAm	89	𐑷𐑕𐑑𐑽	ɔːˈstɪəR	shave_says:𐑷𐑕𐑑𐑽
+austerely	𐑪𐑕𐑑𐑦𐑼𐑤𐑦	ɒˈstiərli	GenAm	89	𐑷𐑕𐑑𐑽𐑤𐑦	ɔːˈstɪəRli	shave_says:𐑷𐑕𐑑𐑽𐑤𐑦
+austerity	𐑪𐑕𐑑𐑧𐑮𐑦𐑑𐑦	ɒˈsterɪti	GenAm	89	𐑷𐑕𐑑𐑧𐑮𐑦𐑑𐑦	ɔːˈsterɪti	shave_says:𐑷𐑕𐑑𐑧𐑮𐑦𐑑𐑦
 australian	𐑪𐑕𐑑𐑮𐑱𐑤𐑰𐑩𐑯	ɒstreɪliːən	RSSB	89	𐑪𐑕𐑑𐑮𐑱𐑤𐑾𐑯	ɒˈstreɪlɪən	shave_says:𐑪𐑕𐑑𐑮𐑱𐑤𐑾𐑯
-australian	𐑷𐑕𐑑𐑮𐑱𐑤𐑦𐑩𐑯	ɔːˈstreɪliən	GenAm	89	𐑪𐑕𐑑𐑮𐑱𐑤𐑾𐑯	ɒˈstreɪlɪən	shave_says:𐑪𐑕𐑑𐑮𐑱𐑤𐑾𐑯
+australian	𐑪𐑕𐑑𐑮𐑱𐑤𐑦𐑩𐑯	ɒˈstreɪliən	GenAm	89	𐑪𐑕𐑑𐑮𐑱𐑤𐑾𐑯	ɒˈstreɪlɪən	shave_says:𐑪𐑕𐑑𐑮𐑱𐑤𐑾𐑯
 austrian	𐑪𐑕𐑑𐑮𐑦𐑩𐑯	ɒstriən	RSSB	89	𐑪𐑕𐑑𐑮𐑾𐑯	ˈɒstrɪən	shave_says:𐑪𐑕𐑑𐑮𐑾𐑯
 austrian	𐑷𐑕𐑑𐑮𐑦𐑩𐑯	ˈɔːstriən	GenAm	89	𐑪𐑕𐑑𐑮𐑾𐑯	ˈɒstrɪən	shave_says:𐑪𐑕𐑑𐑮𐑾𐑯
 autarchy	𐑹𐑑𐑸𐑒𐑦	ɔːRtɑːRki	RSSB	89	𐑷𐑑𐑸𐑒𐑦	ˈɔːtɑːRki	shave_says:𐑷𐑑𐑸𐑒𐑦
+authentic	𐑪𐑔𐑧𐑯𐑑𐑦𐑒	ɒˈθentɪk	GenAm	89	𐑷𐑔𐑧𐑯𐑑𐑦𐑒	ɔːˈθentɪk	shave_says:𐑷𐑔𐑧𐑯𐑑𐑦𐑒
+authenticate	𐑪𐑔𐑧𐑯𐑑𐑦𐑒𐑱𐑑	ɒˈθentɪkeɪt	GenAm	89	𐑷𐑔𐑧𐑯𐑑𐑦𐑒𐑱𐑑	ɔːˈθentɪkeɪt	shave_says:𐑷𐑔𐑧𐑯𐑑𐑦𐑒𐑱𐑑
 authenticity	𐑪𐑔𐑧𐑯𐑑𐑦𐑕𐑦𐑑𐑦	ɒθenˈtɪsɪti	GenAm	89	𐑷𐑔𐑩𐑯𐑑𐑦𐑕𐑦𐑑𐑦	ˌɔːθənˈtɪsɪti	shave_says:𐑷𐑔𐑩𐑯𐑑𐑦𐑕𐑦𐑑𐑦
 author	𐑹𐑔𐑼	ɔːRθəR	RSSB	89	𐑷𐑔𐑼	ˈɔːθəR	shave_says:𐑷𐑔𐑼
+author	𐑪𐑔𐑼	ˈɒθəR	GenAm	89	𐑷𐑔𐑼	ˈɔːθəR	shave_says:𐑷𐑔𐑼
 authoritarian	𐑹𐑔𐑪𐑮𐑦𐑑𐑻𐑾𐑯	ɔːRθɒrɪtɜːrɪən	RSSB	89	𐑷𐑔𐑪𐑮𐑦𐑑𐑺𐑾𐑯	ɔːˌθɒrɪˈteərɪən	shave_says:𐑷𐑔𐑪𐑮𐑦𐑑𐑺𐑾𐑯
 authoritarian	𐑩𐑔𐑹𐑩𐑑𐑧𐑮𐑦𐑩𐑯	əˌθɔːRəˈteriən	GenAm	89	𐑷𐑔𐑪𐑮𐑦𐑑𐑺𐑾𐑯	ɔːˌθɒrɪˈteərɪən	shave_says:𐑷𐑔𐑪𐑮𐑦𐑑𐑺𐑾𐑯
 authoritative	𐑹𐑔𐑪𐑮𐑦𐑑𐑱𐑑𐑦𐑝	ɔːRθɒrɪteɪtɪv	RSSB	89	𐑷𐑔𐑪𐑮𐑦𐑑𐑩𐑑𐑦𐑝	ɔːˈθɒrɪtətɪv	shave_says:𐑷𐑔𐑪𐑮𐑦𐑑𐑩𐑑𐑦𐑝
@@ -831,17 +844,26 @@ authoritative	𐑩𐑔𐑹𐑦𐑑𐑱𐑑𐑦𐑝	əˈθɔːRɪˌteɪtɪv	GenAm
 authority	𐑹𐑔𐑪𐑮𐑼𐑑𐑦	ɔːRθɒrəRti	RSSB	89	𐑷𐑔𐑪𐑮𐑦𐑑𐑦	ɔːˈθɒrɪti	shave_says:𐑷𐑔𐑪𐑮𐑦𐑑𐑦
 authority	𐑩𐑔𐑹𐑩𐑑𐑦	əˈθɔːRəti	GenAm	89	𐑷𐑔𐑪𐑮𐑦𐑑𐑦	ɔːˈθɒrɪti	shave_says:𐑷𐑔𐑪𐑮𐑦𐑑𐑦
 authorize	𐑹𐑔𐑼𐑲𐑟	ɔːRθəraɪz	RSSB	89	𐑷𐑔𐑼𐑲𐑟	ˈɔːθəraɪz	shave_says:𐑷𐑔𐑼𐑲𐑟
+authorize	𐑪𐑔𐑼𐑲𐑟	ˈɒθəraɪz	GenAm	89	𐑷𐑔𐑼𐑲𐑟	ˈɔːθəraɪz	shave_says:𐑷𐑔𐑼𐑲𐑟
 authorized	𐑹𐑔𐑼𐑲𐑟𐑛	ɔːRθəraɪzd	RSSB	89	𐑷𐑔𐑼𐑲𐑟𐑛	ˈɔːθəraɪzd	shave_says:𐑷𐑔𐑼𐑲𐑟𐑛
+authorized	𐑪𐑔𐑼𐑲𐑟𐑛	ˈɒθəraɪzd	GenAm	89	𐑷𐑔𐑼𐑲𐑟𐑛	ˈɔːθəraɪzd	shave_says:𐑷𐑔𐑼𐑲𐑟𐑛
 autobahn	𐑬𐑑𐑪𐑚𐑭𐑯	ˈaʊtoˌbɑːn	RSSB	89	𐑷𐑑𐑴𐑚𐑭𐑯	ˈɔːtəʊbɑːn	shave_says:𐑷𐑑𐑴𐑚𐑭𐑯
 autobiographic	𐑷𐑑𐑴𐑚𐑲𐑩𐑜𐑮𐑨𐑓𐑦𐑒𐑩𐑤	ɔːtəʊbaɪəɡræfɪkəl	RSSB	89	𐑷𐑑𐑩𐑚𐑲𐑩𐑜𐑮𐑨𐑓𐑦𐑒	ˌɔːtəbaɪəˈɡræfɪk	shave_says:𐑷𐑑𐑩𐑚𐑲𐑩𐑜𐑮𐑨𐑓𐑦𐑒
 autocratically	𐑷𐑑𐑩𐑒𐑮𐑨𐑑𐑦𐑒𐑤𐑰	ɔːtəkrætɪkliː	RSSB	89	𐑷𐑑𐑩𐑒𐑮𐑨𐑑𐑦𐑒𐑤𐑦	ˌɔːtəˈkrætɪkli	shave_says:𐑷𐑑𐑩𐑒𐑮𐑨𐑑𐑦𐑒𐑤𐑦
-automate	𐑷𐑑𐑴𐑥𐑱𐑑	ˈɔːtoʊˌmeɪt	GenAm	89	𐑷𐑑𐑩𐑥𐑱𐑑	ˈɔːtəmeɪt	shave_says:𐑷𐑑𐑩𐑥𐑱𐑑
+automate	𐑪𐑑𐑴𐑥𐑱𐑑	ˈɒtoʊˌmeɪt	GenAm	89	𐑷𐑑𐑩𐑥𐑱𐑑	ˈɔːtəmeɪt	shave_says:𐑷𐑑𐑩𐑥𐑱𐑑
+automatic	𐑪𐑑𐑩𐑥𐑨𐑑𐑦𐑒	ˌɒtəˈmætɪk	GenAm	89	𐑷𐑑𐑩𐑥𐑨𐑑𐑦𐑒	ˌɔːtəˈmætɪk	shave_says:𐑷𐑑𐑩𐑥𐑨𐑑𐑦𐑒
 automatically	𐑷𐑑𐑴𐑥𐑨𐑑𐑦𐑒𐑤𐑦	ˈɔːtəʊˌmætɪkli	RSSB	89	𐑷𐑑𐑩𐑥𐑨𐑑𐑦𐑒𐑤𐑦	ˌɔːtəˈmætɪkli	shave_says:𐑷𐑑𐑩𐑥𐑨𐑑𐑦𐑒𐑤𐑦
 automobile	𐑷𐑑𐑴𐑥𐑴𐑚𐑲𐑤	ˌɔːtəʊˈməʊbaɪl	RSSB	89	𐑷𐑑𐑩𐑥𐑩𐑚𐑰𐑤	ˈɔːtəməbiːl	shave_says:𐑷𐑑𐑩𐑥𐑩𐑚𐑰𐑤
-automobile	𐑷𐑑𐑩𐑥𐑴𐑚𐑦𐑤	ˈɔːtəmoʊˌbil	GenAm	89	𐑷𐑑𐑩𐑥𐑩𐑚𐑰𐑤	ˈɔːtəməbiːl	shave_says:𐑷𐑑𐑩𐑥𐑩𐑚𐑰𐑤
+automobile	𐑪𐑑𐑩𐑥𐑴𐑚𐑦𐑤	ˈɒtəmoʊˌbil	GenAm	89	𐑷𐑑𐑩𐑥𐑩𐑚𐑰𐑤	ˈɔːtəməbiːl	shave_says:𐑷𐑑𐑩𐑥𐑩𐑚𐑰𐑤
+autonomic	𐑪𐑑𐑩𐑯𐑪𐑥𐑦𐑒	ˌɒtəˈnɒmɪk	GenAm	89	𐑷𐑑𐑩𐑯𐑪𐑥𐑦𐑒	ˌɔːtəˈnɒmɪk	shave_says:𐑷𐑑𐑩𐑯𐑪𐑥𐑦𐑒
+autonomous	𐑪𐑑𐑪𐑯𐑩𐑥𐑩𐑕	ɒˈtɒnəməs	GenAm	89	𐑷𐑑𐑪𐑯𐑩𐑥𐑩𐑕	ɔːˈtɒnəməs	shave_says:𐑷𐑑𐑪𐑯𐑩𐑥𐑩𐑕
+autonomy	𐑪𐑑𐑪𐑯𐑩𐑥𐑦	ɒˈtɒnəmi	GenAm	89	𐑷𐑑𐑪𐑯𐑩𐑥𐑦	ɔːˈtɒnəmi	shave_says:𐑷𐑑𐑪𐑯𐑩𐑥𐑦
 autopsy	𐑷𐑑𐑪𐑐𐑕𐑰	ˈɔːtɒpsiː	RSSB	89	𐑷𐑑𐑪𐑐𐑕𐑦	ˈɔːtɒpsi	shave_says:𐑷𐑑𐑪𐑐𐑕𐑦
+autopsy	𐑪𐑑𐑪𐑐𐑕𐑦	ˈɒtɒpsi	GenAm	89	𐑷𐑑𐑪𐑐𐑕𐑦	ˈɔːtɒpsi	shave_says:𐑷𐑑𐑪𐑐𐑕𐑦
+autumn	𐑪𐑑𐑩𐑥	ˈɒtəm	GenAm	89	𐑷𐑑𐑩𐑥	ˈɔːtəm	shave_says:𐑷𐑑𐑩𐑥
+autumnal	𐑪𐑑𐑳𐑥𐑯𐑩𐑤	ɒˈtʌmnəl	GenAm	89	𐑷𐑑𐑳𐑥𐑯𐑩𐑤	ɔːˈtʌmnəl	shave_says:𐑷𐑑𐑳𐑥𐑯𐑩𐑤
 auxiliary	𐑹𐑒𐑕𐑦𐑤𐑘𐑼𐑦	ɔːRksɪljəri	RSSB	89	𐑷𐑜𐑟𐑦𐑤𐑽𐑦	ɔːɡˈzɪlɪəri	shave_says:𐑷𐑜𐑟𐑦𐑤𐑽𐑦
-auxiliary	𐑷𐑜𐑟𐑦𐑤𐑘𐑼𐑦	ɔːɡˈzɪljəri	GenAm	89	𐑷𐑜𐑟𐑦𐑤𐑽𐑦	ɔːɡˈzɪlɪəri	shave_says:𐑷𐑜𐑟𐑦𐑤𐑽𐑦
+auxiliary	𐑪𐑜𐑟𐑦𐑤𐑘𐑼𐑦	ɒɡˈzɪljəri	GenAm	89	𐑷𐑜𐑟𐑦𐑤𐑽𐑦	ɔːɡˈzɪlɪəri	shave_says:𐑷𐑜𐑟𐑦𐑤𐑽𐑦
 available	𐑩𐑝𐑱𐑤𐑩𐑚𐑤	əˈveɪləbl	RSSB	89	𐑩𐑝𐑱𐑤𐑩𐑚𐑩𐑤	əˈveɪləbəl	shave_says:𐑩𐑝𐑱𐑤𐑩𐑚𐑩𐑤
 avalanche	𐑨𐑝𐑩𐑤𐑭𐑯𐑖	ˈævəlɑːnʃ	RSSB	89	𐑨𐑝𐑩𐑤𐑨𐑯𐑗, 𐑨𐑝𐑩𐑤𐑭𐑯𐑗	ˈævəlⱭːntʃ	shave_says:𐑨𐑝𐑩𐑤𐑭𐑯𐑗
 avant-garde	𐑪𐑝𐑪𐑯𐑑𐑜𐑸𐑛	ˌɒˌvɒntˈɡɑːRd	GenAm	89	𐑨𐑝𐑪𐑯-𐑜𐑸𐑛	ˌævɒn-ˈɡɑːRd	shave_says:𐑭𐑝𐑪𐑯-𐑜𐑸𐑛
@@ -860,10 +882,15 @@ award	𐑼𐑢𐑹𐑛	əRwɔːRd	RSSB	89	𐑩𐑢𐑹𐑛	əˈwɔːRd	shave_say
 aware	𐑼𐑢𐑺	əRweəR	RSSB	89	𐑩𐑢𐑺	əˈweəR	shave_says:𐑩𐑢𐑺
 awareness	𐑼𐑢𐑺𐑯𐑩𐑕	əRweəRnəs	RSSB	89	𐑩𐑢𐑺𐑯𐑩𐑕	əˈweəRnəs	shave_says:𐑩𐑢𐑺𐑯𐑩𐑕
 awareness	𐑩𐑢𐑧𐑮𐑯𐑩𐑕	əˈwernəs	GenAm	89	𐑩𐑢𐑺𐑯𐑩𐑕	əˈweəRnəs	shave_says:𐑩𐑢𐑺𐑯𐑩𐑕
+awesome	𐑪𐑕𐑩𐑥	ˈɒsəm	GenAm	89	𐑷𐑕𐑩𐑥	ˈɔːsəm	shave_says:𐑷𐑕𐑩𐑥
 awful	𐑷𐑓𐑫𐑤	ˈɔːfʊl	RSSB	89	𐑷𐑓𐑩𐑤	ˈɔːfəl	shave_says:𐑷𐑓𐑩𐑤
+awful	𐑪𐑓𐑩𐑤	ˈɒfəl	GenAm	89	𐑷𐑓𐑩𐑤	ˈɔːfəl	shave_says:𐑷𐑓𐑩𐑤
 awfully	𐑷𐑓𐑫𐑤𐑦	ˈɔːfʊli	RSSB	89	𐑷𐑓𐑩𐑤𐑦	ˈɔːfəli	shave_says:𐑷𐑓𐑩𐑤𐑦
+awfully	𐑪𐑓𐑩𐑤𐑦	ˈɒfəli	GenAm	89	𐑷𐑓𐑩𐑤𐑦	ˈɔːfəli	shave_says:𐑷𐑓𐑩𐑤𐑦
 awkward	𐑹𐑒𐑢𐑼𐑛	ɔːRkwəRd	RSSB	89	𐑷𐑒𐑢𐑼𐑛	ˈɔːkwəRd	shave_says:𐑷𐑒𐑢𐑼𐑛
-awol	𐑱𐑢𐑷𐑤	ˈeɪwɔːl	GenAm	89	𐑱𐑢𐑪𐑤	ˈeɪwɒl	shave_says:𐑱𐑢𐑪𐑤
+awkward	𐑪𐑒𐑢𐑼𐑛	ˈɒkwəRd	GenAm	89	𐑷𐑒𐑢𐑼𐑛	ˈɔːkwəRd	shave_says:𐑷𐑒𐑢𐑼𐑛
+awl	𐑪𐑤	ɒl	GenAm	89	𐑷𐑤	ɔːl	shave_says:𐑷𐑤
+awning	𐑪𐑯𐑦𐑙	ˈɒnɪŋ	GenAm	89	𐑷𐑯𐑦𐑙	ˈɔːnɪŋ	shave_says:𐑷𐑯𐑦𐑙
 axiom	𐑨𐑒𐑕𐑦𐑩𐑥	ˈæksiəm	GenAm	89	𐑨𐑒𐑕𐑾𐑥	ˈæksɪəm	shave_says:𐑨𐑒𐑕𐑾𐑥
 axiomatic	𐑨𐑒𐑕𐑦𐑩𐑥𐑨𐑑𐑦𐑒	ˌæksiəˈmætɪk	RSSB	89	𐑨𐑒𐑕𐑾𐑥𐑨𐑑𐑦𐑒	ˌæksɪəˈmætɪk	shave_says:𐑨𐑒𐑕𐑾𐑥𐑨𐑑𐑦𐑒
 azalea	𐑩𐑟𐑱𐑤𐑦𐑩	əˈzeɪliə	RSSB	89	𐑩𐑟𐑱𐑤𐑾	əˈzeɪlɪə	shave_says:𐑩𐑟𐑱𐑤𐑾
@@ -874,6 +901,7 @@ baccarat	𐑚𐑨𐑒𐑼𐑸	bækərɑːR	RSSB	89	𐑚𐑨𐑒𐑼𐑭	ˈbækə
 bacchanal	𐑚𐑨𐑒𐑩𐑯𐑩𐑤	ˈbækənəl	RSSB	89	𐑚𐑨𐑒𐑩𐑯𐑨𐑤	ˈbækənæl	shave_says:𐑚𐑨𐑒𐑩𐑯𐑨𐑤
 bachelor	𐑚𐑨𐑗𐑼𐑤𐑼	bætʃəRləR	RSSB	89	𐑚𐑨𐑗𐑩𐑤𐑼	ˈbætʃələR	shave_says:𐑚𐑨𐑗𐑩𐑤𐑼
 bacillus	𐑚𐑨𐑕𐑦𐑤𐑩𐑕	bæˈsɪləs	RSSB	89	𐑚𐑩𐑕𐑦𐑤𐑩𐑕	bəˈsɪləs	shave_says:𐑚𐑩𐑕𐑦𐑤𐑩𐑕
+backtalk	𐑚𐑨𐑒𐑑𐑪𐑒	bæktɒk	GenAm	89	𐑚𐑨𐑒𐑑𐑷𐑒	ˈbæktɔːk	shave_says:𐑚𐑨𐑒𐑑𐑷𐑒
 badinage	𐑚𐑪𐑛𐑦𐑯𐑪𐑠	ˌbɒdɪˈnɒʒ	GenAm	89	𐑚𐑨𐑛𐑦𐑯𐑭𐑠	ˈbædɪnɑːʒ	shave_says:𐑚𐑨𐑛𐑦𐑯𐑭𐑠
 bafflement	𐑚𐑨𐑓𐑤𐑥𐑩𐑯𐑑	ˈbaflmənt	RSSB	89	𐑚𐑨𐑓𐑩𐑤𐑥𐑩𐑯𐑑	ˈbæfəlmənt	shave_says:𐑚𐑨𐑓𐑩𐑤𐑥𐑩𐑯𐑑
 bagel	𐑚𐑧𐑜𐑩𐑤	ˈbeɡəl	GenAm	89	𐑚𐑱𐑜𐑩𐑤	ˈbeɪɡəl	shave_says:𐑚𐑱𐑜𐑩𐑤
@@ -881,10 +909,13 @@ bagnio	𐑚𐑨𐑯𐑦𐑷	ˈbænɪɔ	RSSB	89	𐑚𐑨𐑯𐑘𐑴	ˈbænjəʊ	
 baklava	𐑚𐑨𐑒𐑤𐑩𐑝𐑩	ˈbækləvə	RSSB	89	𐑚𐑨𐑒𐑤𐑩𐑝𐑭	ˈbækləvɑː	shave_says:𐑚𐑨𐑒𐑤𐑩𐑝𐑭
 bald	𐑚𐑴𐑤𐑛	bəʊld	RSSB	89	𐑚𐑷𐑤𐑛	bɔːld	shave_says:𐑚𐑷𐑤𐑛
 bald	𐑚𐑪𐑤𐑛	bɒld	GenAm	89	𐑚𐑷𐑤𐑛	bɔːld	shave_says:𐑚𐑷𐑤𐑛
+balk	𐑚𐑪𐑒	bɒk	GenAm	89	𐑚𐑷𐑒	bɔːk	shave_says:𐑚𐑷𐑒
 balloon	𐑚𐑩𐑤𐑫𐑯	bəˈlun	GenAm	89	𐑚𐑩𐑤𐑵𐑯	bəˈluːn	shave_says:𐑚𐑩𐑤𐑵𐑯
 balm	𐑚𐑪𐑥	bɒm	GenAm	89	𐑚𐑭𐑥	bɑːm	shave_says:𐑚𐑭𐑥
 balsa	𐑚𐑪𐑤𐑕𐑩	ˈbɒlsə	GenAm	89	𐑚𐑷𐑤𐑕𐑩	ˈbɔːlsə	shave_says:𐑚𐑷𐑤𐑕𐑩
+baltic	𐑚𐑪𐑤𐑑𐑦𐑒	ˈbɒltɪk	GenAm	89	𐑚𐑷𐑤𐑑𐑦𐑒	ˈbɔːltɪk	shave_says:𐑚𐑷𐑤𐑑𐑦𐑒
 baltimore	𐑚𐑹𐑤𐑑𐑦𐑥𐑹	bɔːRltɪmɔːR	RSSB	89	𐑚𐑷𐑤𐑑𐑦𐑥𐑹	ˈbɔːltɪmɔːR	shave_says:𐑚𐑷𐑤𐑑𐑦𐑥𐑹
+baltimore	𐑚𐑪𐑤𐑑𐑦𐑥𐑹	ˈbɒltɪˌmɔːR	GenAm	89	𐑚𐑷𐑤𐑑𐑦𐑥𐑹	ˈbɔːltɪmɔːR	shave_says:𐑚𐑷𐑤𐑑𐑦𐑥𐑹
 baluster	𐑚𐑨𐑤𐑳𐑕𐑑𐑮	ˈbælʌstr	GenAm	89	𐑚𐑨𐑤𐑩𐑕𐑑𐑼	ˈbæləstəR	shave_says:𐑚𐑨𐑤𐑩𐑕𐑑𐑼
 bambino	𐑚𐑨𐑥𐑚𐑦𐑯𐑴	bæmˈbinoʊ	GenAm	89	𐑚𐑨𐑥𐑚𐑰𐑯𐑴	bæmˈbiːnəʊ	shave_says:𐑚𐑨𐑥𐑚𐑰𐑯𐑴
 bamboo	𐑚𐑨𐑥𐑚𐑫	bæmˈbu	RSSB	89	𐑚𐑨𐑥𐑚𐑵	bæmˈbuː	shave_says:𐑚𐑨𐑥𐑚𐑵
@@ -922,6 +953,7 @@ barrage	𐑚𐑨𐑮𐑸𐑠	bærɑːRʒ	RSSB	89	𐑚𐑨𐑮𐑭𐑠	ˈbærɑː
 barrel	𐑚𐑨𐑮𐑼𐑤	bærəRl	RSSB	89	𐑚𐑨𐑮𐑩𐑤	ˈbærəl	shave_says:𐑚𐑨𐑮𐑩𐑤
 barren	𐑚𐑨𐑮𐑼𐑯	bærəRn	RSSB	89	𐑚𐑨𐑮𐑩𐑯	ˈbærən	shave_says:𐑚𐑨𐑮𐑩𐑯
 basalt	𐑚𐑨𐑕𐑪𐑤𐑑	ˈbæsɒlt	RSSB	89	𐑚𐑨𐑕𐑷𐑤𐑑	ˈbæsɔːlt	shave_says:𐑚𐑨𐑕𐑷𐑤𐑑
+baseball	𐑚𐑱𐑕𐑚𐑪𐑤	ˈbeɪsbɒl	GenAm	89	𐑚𐑱𐑕𐑚𐑷𐑤	ˈbeɪsbɔːl	shave_says:𐑚𐑱𐑕𐑚𐑷𐑤
 basilica	𐑚𐑩𐑕𐑦𐑤𐑦𐑒𐑩	bəˈsɪlɪkə	RSSB	89	𐑚𐑩𐑟𐑦𐑤𐑦𐑒𐑩	bəˈzɪlɪkə	shave_says:𐑚𐑩𐑟𐑦𐑤𐑦𐑒𐑩
 basin	𐑚𐑱𐑕𐑦𐑯	ˈbeɪsɪn	RSSB	89	𐑚𐑱𐑕𐑩𐑯	ˈbeɪsən	shave_says:𐑚𐑱𐑕𐑩𐑯
 basket	𐑚𐑭𐑕𐑒𐑦𐑑	ˈbɑːskɪt	RSSB	89	𐑚𐑨𐑕𐑒𐑩𐑑, 𐑚𐑭𐑕𐑒𐑩𐑑	ˈbⱭːskIt	shave_says:𐑚𐑭𐑕𐑒𐑩𐑑
@@ -939,6 +971,11 @@ baton	𐑚𐑨𐑑𐑪𐑯	ˈbætɒn	RSSB	89	𐑚𐑨𐑑𐑩𐑯	ˈbætən	shav
 baton	𐑚𐑩𐑑𐑪𐑯	bəˈtɒn	GenAm	89	𐑚𐑨𐑑𐑩𐑯	ˈbætən	shave_says:𐑚𐑨𐑑𐑩𐑯
 battue	𐑚𐑩𐑑𐑵	bəˈtuː	RSSB	89	𐑚𐑨𐑑𐑵	bæˈtuː	shave_says:𐑚𐑨𐑑𐑵
 battue	𐑚𐑨𐑑𐑫	bæˈtu	GenAm	89	𐑚𐑨𐑑𐑵	bæˈtuː	shave_says:𐑚𐑨𐑑𐑵
+bauble	𐑚𐑪𐑚𐑩𐑤	ˈbɒbəl	GenAm	89	𐑚𐑷𐑚𐑩𐑤	ˈbɔːbəl	shave_says:𐑚𐑷𐑚𐑩𐑤
+baulk	𐑚𐑪𐑒	bɒk	GenAm	89	𐑚𐑷𐑒	bɔːk	shave_says:𐑚𐑷𐑒
+bawd	𐑚𐑪𐑛	bɒd	GenAm	89	𐑚𐑷𐑛	bɔːd	shave_says:𐑚𐑷𐑛
+bawdy	𐑚𐑪𐑛𐑦	ˈbɒdi	GenAm	89	𐑚𐑷𐑛𐑦	ˈbɔːdi	shave_says:𐑚𐑷𐑛𐑦
+bawl	𐑚𐑪𐑤	bɒl	GenAm	89	𐑚𐑷𐑤	bɔːl	shave_says:𐑚𐑷𐑤
 bc	𐑚𐑰𐑕𐑰	biːˈsiː	RSSB	89	⸰⁠𐑚𐑒	ˌbiːˈsiː	shave_says:⸰⁠𐑚𐑒
 be	𐑚𐑦	bi	RSSB	89	𐑚𐑰	biː	shave_says:𐑚𐑰
 beach	𐑚𐑦𐑗	bitʃ	GenAm	89	𐑚𐑰𐑗	biːtʃ	shave_says:𐑚𐑰𐑗
@@ -1045,7 +1082,6 @@ blanket	𐑚𐑤𐑨𐑙𐑒𐑦𐑑	ˈblæŋkɪt	RSSB	89	𐑚𐑤𐑨𐑙𐑒�
 blaspheme	𐑚𐑤𐑨𐑕𐑓𐑦𐑥	ˈblæsfim	GenAm	89	𐑚𐑤𐑨𐑕𐑓𐑰𐑥	blæsˈfiːm	shave_says:𐑚𐑤𐑨𐑕𐑓𐑰𐑥
 blenheim	𐑚𐑤𐑧𐑯𐑩𐑥	ˈblenəm	RSSB	89	𐑚𐑤𐑧𐑯𐑦𐑥	ˈblenɪm	shave_says:𐑚𐑤𐑧𐑯𐑦𐑥
 blessedness	𐑚𐑤𐑧𐑕𐑦𐑛𐑯𐑩𐑕	ˈblesɪdnəs	RSSB	89	𐑚𐑤𐑧𐑕𐑩𐑛𐑯𐑩𐑕	ˈblesƏdnəs	shave_says:𐑚𐑤𐑧𐑕𐑩𐑛𐑯𐑩𐑕
-blogger	𐑚𐑤𐑷𐑜𐑼	ˈblɔːɡəR	GenAm	89	𐑚𐑤𐑪𐑜𐑼	ˈblɒɡəR	shave_says:𐑚𐑤𐑪𐑜𐑼
 bloodthirsty	𐑚𐑤𐑳𐑛𐑔𐑼𐑕𐑑𐑦	ˈblʌdˌθəRsti	GenAm	89	𐑚𐑤𐑳𐑛𐑔𐑻𐑕𐑑𐑦	ˈblʌdθɜːRsti	shave_says:𐑚𐑤𐑳𐑛𐑔𐑻𐑕𐑑𐑦
 blooming	𐑚𐑤𐑫𐑥𐑦𐑙	ˈblʊmɪŋ	RSSB	89	𐑚𐑤𐑵𐑥𐑦𐑙	ˈbluːmɪŋ	shave_says:𐑚𐑤𐑵𐑥𐑦𐑙
 blouse	𐑚𐑤𐑬𐑕	blaʊs	RSSB	89	𐑚𐑤𐑬𐑟	blaʊz	shave_says:𐑚𐑤𐑬𐑟
@@ -1059,7 +1095,6 @@ boisterous	𐑚𐑶𐑕𐑑𐑼𐑼𐑕	bɔɪstərəRs	RSSB	89	𐑚𐑶𐑕𐑑�
 bolivian	𐑚𐑩𐑤𐑦𐑝𐑦𐑩𐑯	bəˈlɪviən	RSSB	89	𐑚𐑩𐑤𐑦𐑝𐑾𐑯	bəˈlɪviən	shave_says:𐑚𐑩𐑤𐑦𐑝𐑾𐑯
 boll	𐑚𐑪𐑤	bɒl	RSSB	89	𐑚𐑴𐑤	bəʊl	shave_says:𐑚𐑴𐑤
 bolshevik	𐑚𐑴𐑤𐑖𐑩𐑝𐑦𐑒	ˈboʊlʃəvɪk	GenAm	89	𐑚𐑪𐑤𐑖𐑩𐑝𐑦𐑒	ˈbɒlʃəvɪk	shave_says:𐑚𐑪𐑤𐑖𐑩𐑝𐑦𐑒
-bonfire	𐑚𐑷𐑯𐑓𐑲𐑼	ˈbɔːnˌfaɪəR	GenAm	89	𐑚𐑪𐑯𐑓𐑲𐑼	ˈbɒnfaɪəR	shave_says:𐑚𐑪𐑯𐑓𐑲𐑼
 bonhomie	𐑚𐑴𐑯𐑩𐑥𐑰	boʊnəˈmiː	RSSB	89	𐑚𐑪𐑯𐑩𐑥𐑦	ˈbɒnəmi	shave_says:𐑚𐑪𐑯𐑩𐑥𐑦
 bonnet	𐑚𐑪𐑯𐑦𐑑	ˈbɒnɪt	GenAm	89	𐑚𐑪𐑯𐑩𐑑	ˈbɒnIt	shave_says:𐑚𐑪𐑯𐑩𐑑
 boogie-woogie	𐑚𐑫𐑜𐑦𐑢𐑫𐑜𐑦	ˌbʊɡiˈwʊɡi	RSSB	89	𐑚𐑵𐑜𐑦-𐑢𐑵𐑜𐑦	ˌbuːɡi-ˈwuːɡi	shave_says:𐑚𐑵𐑜𐑦-𐑢𐑵𐑜𐑦
@@ -1071,7 +1106,6 @@ bootee	𐑚𐑵𐑑𐑦	ˈbuːti	RSSB	89	𐑚𐑵𐑑𐑰	buːˈtiː	shave_says:
 boreal	𐑚𐑹𐑦𐑩𐑤	ˈbɔːRiəl	GenAm	89	𐑚𐑹𐑾𐑤	ˈbɔːriəl	shave_says:𐑚𐑹𐑾𐑤
 borough	𐑚𐑳𐑮𐑴	ˈbʌroʊ	GenAm	89	𐑚𐑳𐑮𐑩	ˈbʌrə	shave_says:𐑚𐑳𐑮𐑩
 bosom	𐑚𐑫𐑟𐑥	ˈbʊzm	GenAm	89	𐑚𐑫𐑟𐑩𐑥	ˈbʊzəm	shave_says:𐑚𐑫𐑟𐑩𐑥
-boston	𐑚𐑷𐑕𐑑𐑩𐑯	ˈbɔːstən	GenAm	89	𐑚𐑪𐑕𐑑𐑩𐑯	ˈbɒstən	shave_says:𐑚𐑪𐑕𐑑𐑩𐑯
 botheration	𐑚𐑪𐑞𐑼𐑱𐑖𐑯	ˌbɒðəˈreɪʃn	GenAm	89	𐑚𐑪𐑞𐑼𐑱𐑖𐑩𐑯	ˌbɒðəˈreɪʃən	shave_says:𐑚𐑪𐑞𐑼𐑱𐑖𐑩𐑯
 botulism	𐑚𐑪𐑑𐑘𐑩𐑤𐑦𐑟𐑩𐑥	ˈbɒtjəlɪzəm	RSSB	89	𐑚𐑪𐑗𐑩𐑤𐑦𐑟𐑩𐑥	ˈbɒtʃəlɪzəm	shave_says:𐑚𐑪𐑗𐑩𐑤𐑦𐑟𐑩𐑥
 boucle	𐑚𐑫𐑒𐑤	bukl	RSSB	89	𐑚𐑵𐑒𐑤𐑱	ˈbuːkleɪ	shave_says:𐑚𐑵𐑒𐑤𐑱
@@ -1113,13 +1147,15 @@ brilliance	𐑚𐑮𐑦𐑤𐑘𐑩𐑯𐑕	brɪljəns	RSSB	89	𐑚𐑮𐑦𐑤�
 brilliancy	𐑚𐑮𐑦𐑤𐑘𐑩𐑯𐑕𐑦	brɪljənsi	RSSB	89	𐑚𐑮𐑦𐑤𐑾𐑯𐑕𐑦	ˈbrɪlɪənsi	shave_says:𐑚𐑮𐑦𐑤𐑾𐑯𐑕𐑦
 brilliant	𐑚𐑮𐑦𐑤𐑘𐑩𐑯𐑑	brɪljənt	RSSB	89	𐑚𐑮𐑦𐑤𐑾𐑯𐑑	ˈbrɪlɪənt	shave_says:𐑚𐑮𐑦𐑤𐑾𐑯𐑑
 brisket	𐑚𐑮𐑦𐑕𐑒𐑦𐑑	brɪskɪt	RSSB	89	𐑚𐑮𐑦𐑕𐑒𐑩𐑑	ˈbrɪskIt	shave_says:𐑚𐑮𐑦𐑕𐑒𐑩𐑑
+broad	𐑚𐑮𐑪𐑛	brɒd	GenAm	89	𐑚𐑮𐑷𐑛	brɔːd	shave_says:𐑚𐑮𐑷𐑛
+broadcast	𐑚𐑮𐑪𐑛𐑒𐑨𐑕𐑑	ˈbrɒdkæst	GenAm	89	𐑚𐑮𐑷𐑛𐑒𐑨𐑕𐑑, 𐑚𐑮𐑷𐑛𐑒𐑭𐑕𐑑	ˈbrɔːdkⱭːst	shave_says:𐑚𐑮𐑷𐑛𐑒𐑨𐑕𐑑
 brocade	𐑚𐑮𐑩𐑒𐑱𐑛	brəkeɪd	RSSB	89	𐑚𐑮𐑴𐑒𐑱𐑛	brəʊˈkeɪd	shave_says:𐑚𐑮𐑴𐑒𐑱𐑛
 brochure	𐑚𐑮𐑴𐑖𐑫𐑼	broʊˈʃʊəR	GenAm	89	𐑚𐑮𐑴𐑖𐑼	ˈbrəʊʃəR	shave_says:𐑚𐑮𐑴𐑖𐑼
 bromine	𐑚𐑮𐑴𐑥𐑦𐑯	ˈbroʊmin	GenAm	89	𐑚𐑮𐑴𐑥𐑰𐑯	ˈbrəʊmiːn	shave_says:𐑚𐑮𐑴𐑥𐑰𐑯
 bronchial	𐑚𐑮𐑭𐑯𐑒𐑦𐑩𐑤	ˈbrɑːnkiəl	GenAm	89	𐑚𐑮𐑪𐑙𐑒𐑾𐑤	ˈbrɒŋkɪəl	shave_says:𐑚𐑮𐑪𐑙𐑒𐑾𐑤
 broomstick	𐑚𐑮𐑫𐑥𐑕𐑑𐑦𐑒	brumstɪk	RSSB	89	𐑚𐑮𐑵𐑥𐑕𐑑𐑦𐑒	ˈbruːmstɪk	shave_says:𐑚𐑮𐑵𐑥𐑕𐑑𐑦𐑒
-broth	𐑚𐑮𐑷𐑔	brɔːθ	GenAm	89	𐑚𐑮𐑪𐑔	brɒθ	shave_says:𐑚𐑮𐑪𐑔
-brother-in-law	𐑚𐑮𐑳𐑞𐑼𐑦𐑯𐑤𐑷	ˈbrʌðəRɪnˌlɔː	GenAm	89	𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷	ˈbrʌðər-ɪn-lɔː	shave_says:𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷
+brother-in-law	𐑚𐑮𐑳𐑞𐑼𐑦𐑯𐑤𐑷	brʌðərɪnlɔː	RSSB	89	𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷	ˈbrʌðər-ɪn-lɔː	shave_says:𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷
+brother-in-law	𐑚𐑮𐑳𐑞𐑼𐑦𐑯𐑤𐑪	ˈbrʌðəRɪnˌlɒ	GenAm	89	𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷	ˈbrʌðər-ɪn-lɔː	shave_says:𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷
 bruit	𐑚𐑮𐑫𐑑	brut	GenAm	89	𐑚𐑮𐑵𐑑	bruːt	shave_says:𐑚𐑮𐑵𐑑
 brunette	𐑚𐑮𐑫𐑯𐑧𐑑	bruˈnet	GenAm	89	𐑚𐑮𐑵𐑯𐑧𐑑	bruːˈnet	shave_says:𐑚𐑮𐑵𐑯𐑧𐑑
 brusque	𐑚𐑮𐑳𐑕𐑒	brʌsk	GenAm	89	𐑚𐑮𐑵𐑕𐑒	bruːsk	shave_says:𐑚𐑮𐑵𐑕𐑒
@@ -1127,7 +1163,6 @@ bucket	𐑚𐑳𐑒𐑦𐑑	ˈbʌkɪt	RSSB	89	𐑚𐑳𐑒𐑩𐑑	ˈbʌkIt	shav
 budget	𐑚𐑳𐑡𐑦𐑑	ˈbʌdʒɪt	RSSB	89	𐑚𐑳𐑡𐑩𐑑	ˈbʌdʒət	shave_says:𐑚𐑳𐑡𐑩𐑑
 buffet	𐑚𐑳𐑓𐑦𐑑	ˈbʌfɪt	RSSB	89	𐑚𐑫𐑓𐑱, 𐑚𐑳𐑓𐑩𐑑	ˈbʊfeɪ	shave_says:[𐑚𐑩𐑓𐑱 / 𐑚𐑳𐑓𐑩𐑑]
 bulgarian	𐑚𐑳𐑤𐑜𐑧𐑮𐑦𐑩𐑯	bʌlˈɡeriən	GenAm	89	𐑚𐑳𐑤𐑜𐑺𐑾𐑯	bʌlˈɡeərɪən	shave_says:𐑚𐑳𐑤𐑜𐑺𐑾𐑯
-bulldog	𐑚𐑫𐑤𐑛𐑷𐑜	ˈbʊldɔːɡ	GenAm	89	𐑚𐑫𐑤𐑛𐑪𐑜	ˈbʊldɒɡ	shave_says:𐑚𐑫𐑤𐑛𐑪𐑜
 bullet	𐑚𐑫𐑤𐑦𐑑	ˈbʊlɪt	RSSB	89	𐑚𐑫𐑤𐑩𐑑	ˈbʊlIt	shave_says:𐑚𐑫𐑤𐑩𐑑
 bulletin	𐑚𐑫𐑤𐑦𐑑𐑦𐑯	ˈbʊlɪtɪn	RSSB	89	𐑚𐑫𐑤𐑩𐑑𐑦𐑯	ˈbʊlətɪn	shave_says:𐑚𐑫𐑤𐑩𐑑𐑦𐑯
 bulletproof	𐑚𐑫𐑤𐑦𐑑𐑐𐑮𐑵𐑓	bʊlɪtpruːf	RSSB	89	𐑚𐑫𐑤𐑩𐑑𐑐𐑮𐑵𐑓	ˈbʊlItpruːf	shave_says:𐑚𐑫𐑤𐑩𐑑𐑐𐑮𐑵𐑓
@@ -1148,7 +1183,7 @@ burlesque	𐑚𐑼𐑤𐑧𐑕𐑒	bəRlesk	RSSB	89	𐑚𐑻𐑤𐑧𐑕𐑒	bɜ
 burmese	𐑚𐑻𐑥𐑦𐑟	bɜːRˈmiz	GenAm	89	𐑚𐑻𐑥𐑰𐑟	bɜːRˈmiːz	shave_says:𐑚𐑻𐑥𐑰𐑟
 businessman	𐑚𐑦𐑟𐑯𐑩𐑕𐑥𐑨𐑯	ˈbɪznəsmæn	GenAm	89	𐑚𐑦𐑟𐑯𐑩𐑕𐑥𐑩𐑯	ˈbɪznəsmən	shave_says:𐑚𐑦𐑟𐑯𐑩𐑕𐑥𐑩𐑯
 bye-bye	𐑚𐑲𐑚𐑲	baɪˈbaɪ	RSSB	89	𐑚𐑲-𐑚𐑲	ˌbaɪ-ˈbaɪ	shave_says:𐑚𐑲-𐑚𐑲
-bygone	𐑚𐑲𐑜𐑷𐑯	ˈbaɪɡɔːn	GenAm	89	𐑚𐑲𐑜𐑪𐑯	ˈbaɪɡɒn	shave_says:𐑚𐑲𐑜𐑪𐑯
+bylaw	𐑚𐑲𐑤𐑪	ˈbaɪlɒ	GenAm	89	𐑚𐑲𐑤𐑷	ˈbaɪlɔː	shave_says:𐑚𐑲𐑤𐑷
 byword	𐑚𐑲𐑢𐑼𐑛	ˈbaɪwəRd	GenAm	89	𐑚𐑲𐑢𐑻𐑛	ˈbaɪwɜːRd	shave_says:𐑚𐑲𐑢𐑻𐑛
 cabal	𐑒𐑩𐑚𐑭𐑤	kəˈbɑːl	RSSB	89	𐑒𐑩𐑚𐑨𐑤	kəˈbæl	shave_says:𐑒𐑩𐑚𐑨𐑤
 cabinet	𐑒𐑨𐑚𐑦𐑯𐑦𐑑	ˈkæbɪnɪt	GenAm	89	𐑒𐑨𐑚𐑦𐑯𐑩𐑑	ˈkæbɪnət	shave_says:𐑒𐑨𐑚𐑦𐑯𐑩𐑑
@@ -1169,6 +1204,8 @@ calculation	𐑒𐑨𐑤𐑒𐑘𐑫𐑤𐑱𐑖𐑩𐑯	kælkjuˈleɪʃən	RSSB
 calendar	𐑒𐑨𐑤𐑩𐑯𐑛𐑼	ˈkæləndəR	GenAm	89	𐑒𐑨𐑤𐑦𐑯𐑛𐑼	ˈkælɪndəR	shave_says:𐑒𐑨𐑤𐑦𐑯𐑛𐑼
 calibre	𐑒𐑨𐑤𐑩𐑚𐑼	ˈkæləbəR	GenAm	89	𐑒𐑨𐑤𐑦𐑚𐑼	ˈkælɪbəR	shave_says:𐑒𐑨𐑤𐑦𐑚𐑼
 calk	𐑒𐑨𐑤𐑒	kælk	RSSB	89	𐑒𐑷𐑒	kɔːk	shave_says:𐑒𐑷𐑒
+call	𐑒𐑪𐑤	kɒl	GenAm	89	𐑒𐑷𐑤	kɔːl	shave_says:𐑒𐑷𐑤
+caller	𐑒𐑪𐑤𐑼	ˈkɒləR	GenAm	89	𐑒𐑷𐑤𐑼	ˈkɔːləR	shave_says:𐑒𐑷𐑤𐑼
 calm	𐑒𐑪𐑥	kɒm	GenAm	89	𐑒𐑭𐑥	kɑːm	shave_says:𐑒𐑭𐑥
 calmness	𐑒𐑪𐑥𐑯𐑩𐑕	ˈkɒmnəs	GenAm	89	𐑒𐑭𐑥𐑯𐑩𐑕	ˈkɑːmnəs	shave_says:𐑒𐑭𐑥𐑯𐑩𐑕
 calvinist	𐑒𐑨𐑤𐑝𐑩𐑯𐑦𐑕𐑑	ˈkælvənɪst	RSSB	89	𐑒𐑨𐑤𐑝𐑦𐑯𐑦𐑕𐑑	ˈkælvɪnɪst	shave_says:𐑒𐑨𐑤𐑝𐑦𐑯𐑦𐑕𐑑
@@ -1263,7 +1300,6 @@ casuist	𐑒𐑨𐑟𐑿𐑦𐑕𐑑	ˈkæzjuːɪst	RSSB	89	𐑒𐑨𐑠𐑫𐑦
 casuistic	𐑒𐑨𐑟𐑘𐑫𐑦𐑕𐑑𐑦𐑒	ˌkæzjuˈɪstɪk	RSSB	89	𐑒𐑨𐑠𐑫𐑦𐑕𐑑𐑦𐑒	ˌkæʒuˈɪstɪk	shave_says:𐑒𐑨𐑠𐑫𐑦𐑕𐑑𐑦𐑒
 casuistry	𐑒𐑨𐑠𐑵𐑦𐑕𐑑𐑮𐑦	kæʒuːɪstri	RSSB	89	𐑒𐑨𐑠𐑫𐑦𐑕𐑑𐑮𐑦	ˈkæʒuɪstri	shave_says:𐑒𐑨𐑠𐑫𐑦𐑕𐑑𐑮𐑦
 catacomb	𐑒𐑨𐑑𐑨𐑒𐑴𐑥	ˈkætakoʊm	GenAm	89	𐑒𐑨𐑑𐑩𐑒𐑵𐑥	ˈkætəkuːm	shave_says:𐑒𐑨𐑑𐑩𐑒𐑵𐑥
-catalogue	𐑒𐑨𐑑𐑩𐑤𐑷𐑜	ˈkætəˌlɔːɡ	GenAm	89	𐑒𐑨𐑑𐑩𐑤𐑪𐑜	ˈkætəlɒɡ	shave_says:𐑒𐑨𐑑𐑩𐑤𐑪𐑜
 catamaran	𐑒𐑨𐑑𐑼𐑥𐑼𐑨𐑯	kætəRməræn	RSSB	89	𐑒𐑨𐑑𐑩𐑥𐑼𐑨𐑯	ˌkætəməˈræn	shave_says:𐑒𐑨𐑑𐑩𐑥𐑼𐑨𐑯
 catechism	𐑒𐑨𐑑𐑦𐑒𐑦𐑟𐑩𐑥	ˈkætɪˌkɪzəm	RSSB	89	𐑒𐑨𐑑𐑩𐑒𐑦𐑟𐑩𐑥	ˈkætəkɪzəm	shave_says:𐑒𐑨𐑑𐑩𐑒𐑦𐑟𐑩𐑥
 catechize	𐑒𐑨𐑑𐑦𐑒𐑲𐑟	ˈkætɪkaɪz	GenAm	89	𐑒𐑨𐑑𐑩𐑒𐑲𐑟	ˈkætəkaɪz	shave_says:𐑒𐑨𐑑𐑩𐑒𐑲𐑟
@@ -1273,10 +1309,13 @@ category	𐑒𐑨𐑑𐑦𐑜𐑮𐑦	kætɪɡri	RSSB	89	𐑒𐑨𐑑𐑩𐑜�
 category	𐑒𐑨𐑑𐑩𐑜𐑹𐑦	ˈkætəˌɡɔːRi	GenAm	89	𐑒𐑨𐑑𐑩𐑜𐑼𐑦	ˈkætəɡəri	shave_says:𐑒𐑨𐑑𐑩𐑜𐑼𐑦
 cater	𐑒𐑱𐑛𐑼	ˈkeɪdəR	GenAm	89	𐑒𐑱𐑑𐑼	ˈkeɪtəR	shave_says:𐑒𐑱𐑑𐑼
 catering	𐑒𐑱𐑑𐑮𐑦𐑙	keɪtrɪŋ	RSSB	89	𐑒𐑱𐑑𐑼𐑦𐑙	ˈkeɪtərɪŋ	shave_says:𐑒𐑱𐑑𐑼𐑦𐑙
+caterwaul	𐑒𐑨𐑑𐑼𐑢𐑪𐑤	ˈkætəRwɒl	GenAm	89	𐑒𐑨𐑑𐑼𐑢𐑷𐑤	ˈkætəRwɔːl	shave_says:𐑒𐑨𐑑𐑼𐑢𐑷𐑤
 catholic	𐑒𐑨𐑔𐑤𐑦𐑒	ˈkæθlɪk	GenAm	89	𐑒𐑨𐑔𐑩𐑤𐑦𐑒	ˈkæθəlɪk	shave_says:𐑒𐑨𐑔𐑩𐑤𐑦𐑒
 catholicism	𐑒𐑩𐑔𐑪𐑤𐑦𐑕𐑦𐑟𐑥	kəˈθɒlɪsɪzm	RSSB	89	𐑒𐑩𐑔𐑪𐑤𐑦𐑕𐑦𐑟𐑩𐑥	kəˈθɒlɪsɪzəm	shave_says:𐑒𐑩𐑔𐑪𐑤𐑦𐑕𐑦𐑟𐑩𐑥
 cattle	𐑒𐑨𐑑𐑤	ˈkætl	RSSB	89	𐑒𐑨𐑑𐑩𐑤	ˈkætəl	shave_says:𐑒𐑨𐑑𐑩𐑤
-cauliflower	𐑒𐑷𐑤𐑦𐑓𐑤𐑬𐑼	ˈkɔːlɪˌflaʊəR	GenAm	89	𐑒𐑪𐑤𐑦𐑓𐑤𐑬𐑼	ˈkɒlɪflaʊəR	shave_says:𐑒𐑪𐑤𐑦𐑓𐑤𐑬𐑼
+caucus	𐑒𐑪𐑒𐑩𐑕	ˈkɒkəs	GenAm	89	𐑒𐑷𐑒𐑩𐑕	ˈkɔːkəs	shave_says:𐑒𐑷𐑒𐑩𐑕
+causative	𐑒𐑪𐑟𐑩𐑑𐑦𐑝	ˈkɒzətɪv	GenAm	89	𐑒𐑷𐑟𐑩𐑑𐑦𐑝	ˈkɔːzətɪv	shave_says:𐑒𐑷𐑟𐑩𐑑𐑦𐑝
+cause	𐑒𐑪𐑟	kɒz	GenAm	89	𐑒𐑷𐑟	kɔːz	shave_says:𐑒𐑷𐑟
 caution	𐑒𐑷𐑖𐑯	ˈkɔːʃn	RSSB	89	𐑒𐑷𐑖𐑩𐑯	ˈkɔːʃən	shave_says:𐑒𐑷𐑖𐑩𐑯
 caution	𐑒𐑭𐑖𐑯	ˈkɑːʃn	GenAm	89	𐑒𐑷𐑖𐑩𐑯	ˈkɔːʃən	shave_says:𐑒𐑷𐑖𐑩𐑯
 caveat	𐑒𐑨𐑝𐑦𐑪𐑑	ˈkæviɒt	GenAm	89	𐑒𐑨𐑝𐑦𐑨𐑑	ˈkævɪæt	shave_says:𐑒𐑨𐑝𐑦𐑨𐑑
@@ -1308,6 +1347,7 @@ cerulean	𐑕𐑼𐑵𐑤𐑦𐑩𐑯	səruːliən	RSSB	89	𐑕𐑦𐑮𐑵𐑤�
 ceylon	𐑕𐑱𐑤𐑪𐑯	seɪˈlɒn	GenAm	89	𐑕𐑦𐑤𐑪𐑯	sɪˈlɒn	shave_says:𐑕𐑦𐑤𐑪𐑯
 chagrin	𐑖𐑩𐑜𐑮𐑦𐑯	ʃəˈɡrɪn	GenAm	89	𐑖𐑨𐑜𐑮𐑦𐑯	ˈʃæɡrɪn	shave_says:𐑖𐑨𐑜𐑮𐑦𐑯
 chairman	𐑗𐑻𐑥𐑩𐑯	tʃɜːRmən	RSSB	89	𐑗𐑺𐑥𐑩𐑯	ˈtʃeəRmən	shave_says:𐑗𐑺𐑥𐑩𐑯
+chalk	𐑗𐑪𐑒	tʃɒk	GenAm	89	𐑗𐑷𐑒	tʃɔːk	shave_says:𐑗𐑷𐑒
 chamberlain	𐑗𐑱𐑥𐑚𐑼𐑤𐑦𐑯	ˈtʃeɪmbəRlɪn	GenAm	89	𐑗𐑱𐑥𐑚𐑼𐑤𐑩𐑯	ˈtʃeɪmbəRlIn	shave_says:𐑗𐑱𐑥𐑚𐑼𐑤𐑩𐑯
 chameleon	𐑒𐑩𐑥𐑰𐑤𐑘𐑩𐑯	kəˈmiːljən	RSSB	89	𐑒𐑩𐑥𐑰𐑤𐑾𐑯	kəˈmiːlɪən	shave_says:𐑒𐑩𐑥𐑰𐑤𐑾𐑯
 champion	𐑗𐑨𐑥𐑐𐑦𐑩𐑯	ˈtʃæmpiən	RSSB	89	𐑗𐑨𐑥𐑐𐑾𐑯	ˈtʃæmpɪən	shave_says:𐑗𐑨𐑥𐑐𐑾𐑯
@@ -1368,11 +1408,9 @@ chlorinate	𐑒𐑤𐑪𐑮𐑦𐑯𐑱𐑑	klɒrɪneɪt	RSSB	89	𐑒𐑤𐑹�
 chlorination	𐑒𐑤𐑪𐑮𐑦𐑯𐑱𐑖𐑩𐑯	klɒrɪneɪʃən	RSSB	89	𐑒𐑤𐑹𐑦𐑯𐑱𐑖𐑩𐑯	ˌklɔːrɪˈneɪʃən	shave_says:𐑒𐑤𐑹𐑦𐑯𐑱𐑖𐑩𐑯
 chlorine	𐑒𐑤𐑹𐑦𐑯	ˈklɔːRin	GenAm	89	𐑒𐑤𐑹𐑰𐑯	ˈklɔːriːn	shave_says:𐑒𐑤𐑹𐑰𐑯
 chloroform	𐑒𐑤𐑹𐑼𐑓𐑹𐑥	klɔːrəRfɔːRm	RSSB	89	𐑒𐑤𐑹𐑩𐑓𐑹𐑥	ˈklɔːrəfɔːRm	shave_says:𐑒𐑤𐑹𐑩𐑓𐑹𐑥
-chocolate	𐑗𐑪𐑒𐑤𐑦𐑑	ˈtʃɒklɪt	RSSB	89	𐑗𐑪𐑒𐑩𐑤𐑩𐑑	ˈtʃɒkələt	shave_says:𐑗𐑪𐑒𐑩𐑤𐑩𐑑
-chocolate	𐑗𐑷𐑒𐑤𐑦𐑑	ˈtʃɔːklɪt	GenAm	89	𐑗𐑪𐑒𐑩𐑤𐑩𐑑	ˈtʃɒkələt	shave_says:𐑗𐑪𐑒𐑩𐑤𐑩𐑑
+chocolate	𐑗𐑪𐑒𐑤𐑦𐑑	ˈtʃɒklɪt	GenAm	89	𐑗𐑪𐑒𐑩𐑤𐑩𐑑	ˈtʃɒkələt	shave_says:𐑗𐑪𐑒𐑩𐑤𐑩𐑑
 choleric	𐑒𐑪𐑤𐑮𐑦𐑒	kɒlrɪk	RSSB	89	𐑒𐑪𐑤𐑼𐑦𐑒	ˈkɒlərɪk	shave_says:𐑒𐑪𐑤𐑼𐑦𐑒
 choleric	𐑒𐑪𐑤𐑻𐑦𐑒	ˈkɒlɜːRɪk	GenAm	89	𐑒𐑪𐑤𐑼𐑦𐑒	ˈkɒlərɪk	shave_says:𐑒𐑪𐑤𐑼𐑦𐑒
-chomp	𐑗𐑷𐑥𐑐	tʃɔːmp	GenAm	89	𐑗𐑪𐑥𐑐	tʃɒmp	shave_says:𐑗𐑪𐑥𐑐
 choral	𐑒𐑹𐑼𐑤	kɔːrəRl	RSSB	89	𐑒𐑹𐑩𐑤	ˈkɔːrəl	shave_says:𐑒𐑹𐑩𐑤
 choral	𐑒𐑪𐑮𐑸𐑤	kɒrɑːRl	RSSB	89	𐑒𐑹𐑩𐑤	ˈkɔːrəl	shave_says:𐑒𐑹𐑩𐑤
 chorale	𐑒𐑹𐑸𐑤	kɔːrɑːRl	RSSB	89	𐑒𐑼𐑨𐑤, 𐑒𐑼𐑭𐑤	kəˈrⱭːl	shave_says:𐑒𐑼𐑭𐑤
@@ -1454,9 +1492,6 @@ cock-a-doodle-doo	𐑒𐑪𐑒𐑩𐑛𐑫𐑛𐑩𐑤𐑛𐑫	ˌkɒkəˌdudəl�
 cockerel	𐑒𐑪𐑒𐑼𐑼𐑤	kɒkərəRl	RSSB	89	𐑒𐑪𐑒𐑼𐑩𐑤	ˈkɒkərəl	shave_says:𐑒𐑪𐑒𐑼𐑩𐑤
 codicil	𐑒𐑪𐑛𐑦𐑕𐑦𐑤	ˈkɒdɪsɪl	RSSB	89	𐑒𐑴𐑛𐑦𐑕𐑦𐑤	ˈkəʊdɪsɪl	shave_says:𐑒𐑴𐑛𐑦𐑕𐑦𐑤
 coeval	𐑒𐑴𐑦𐑝𐑩𐑤	koʊˈivəl	GenAm	89	𐑒𐑴𐑰𐑝𐑩𐑤	ˌkəʊˈiːvəl	shave_says:𐑒𐑴𐑰𐑝𐑩𐑤
-coffee	𐑒𐑷𐑓𐑦	ˈkɔːfi	GenAm	89	𐑒𐑪𐑓𐑦	ˈkɒfi	shave_says:𐑒𐑪𐑓𐑦
-coffer	𐑒𐑷𐑓𐑼	ˈkɔːfəR	GenAm	89	𐑒𐑪𐑓𐑼	ˈkɒfəR	shave_says:𐑒𐑪𐑓𐑼
-coffin	𐑒𐑷𐑓𐑦𐑯	ˈkɔːfɪn	GenAm	89	𐑒𐑪𐑓𐑦𐑯	ˈkɒfɪn	shave_says:𐑒𐑪𐑓𐑦𐑯
 cogitate	𐑒𐑴𐑡𐑦𐑑𐑱𐑑	ˈkoʊdʒɪteɪt	GenAm	89	𐑒𐑪𐑡𐑦𐑑𐑱𐑑	ˈkɒdʒɪteɪt	shave_says:𐑒𐑪𐑡𐑦𐑑𐑱𐑑
 cognitively	𐑒𐑪𐑜𐑯𐑩𐑑𐑦𐑝𐑤𐑦	ˈkɒɡnətɪvli	RSSB	89	𐑒𐑪𐑜𐑯𐑦𐑑𐑦𐑝𐑤𐑦	ˈkɒɡnɪtɪvli	shave_says:𐑒𐑪𐑜𐑯𐑦𐑑𐑦𐑝𐑤𐑦
 cohere	𐑒𐑴𐑣𐑦𐑮	koʊhɪr	RSSB	89	𐑒𐑴𐑣𐑽	kəʊˈhɪəR	shave_says:𐑒𐑴𐑣𐑽
@@ -1477,21 +1512,18 @@ collect	𐑒𐑪𐑤𐑦𐑒𐑑	ˈkɒlɪkt	GenAm	89	𐑒𐑩𐑤𐑧𐑒𐑑, �
 collegial	𐑒𐑩𐑤𐑰𐑡𐑩𐑤	kəˈliːdʒəl	RSSB	89	𐑒𐑩𐑤𐑰𐑡𐑾𐑤	kəˈliːdʒiəl	shave_says:𐑒𐑩𐑤𐑰𐑡𐑾𐑤
 collegiate	𐑒𐑩𐑤𐑰𐑡𐑦𐑩𐑑	kəˈliːdʒiət	RSSB	89	𐑒𐑩𐑤𐑰𐑡𐑾𐑑	kəˈliːdʒɪət	shave_says:𐑒𐑩𐑤𐑰𐑡𐑾𐑑
 collier	𐑒𐑪𐑤𐑦𐑼	ˈkɒliəR	GenAm	89	𐑒𐑪𐑤𐑽	ˈkɒlɪəR	shave_says:𐑒𐑪𐑤𐑽
-collocation	𐑒𐑷𐑤𐑩𐑒𐑱𐑖𐑩𐑯	ˌkɔːləˈkeɪʃən	GenAm	89	𐑒𐑪𐑤𐑩𐑒𐑱𐑖𐑩𐑯	ˌkɒləˈkeɪʃən	shave_says:𐑒𐑪𐑤𐑩𐑒𐑱𐑖𐑩𐑯
 colloquial	𐑒𐑩𐑤𐑴𐑒𐑢𐑦𐑩𐑤	kəˈloʊkwiəl	GenAm	89	𐑒𐑩𐑤𐑴𐑒𐑢𐑾𐑤	kəˈləʊkwɪəl	shave_says:𐑒𐑩𐑤𐑴𐑒𐑢𐑾𐑤
 colloquialism	𐑒𐑩𐑤𐑴𐑒𐑢𐑦𐑩𐑤𐑦𐑟𐑩𐑥	kəˈləʊkwiəˌlɪzəm	RSSB	89	𐑒𐑩𐑤𐑴𐑒𐑢𐑾𐑤𐑦𐑟𐑩𐑥	kəˈləʊkwɪəlɪzəm	shave_says:𐑒𐑩𐑤𐑴𐑒𐑢𐑾𐑤𐑦𐑟𐑩𐑥
 colonial	𐑒𐑩𐑤𐑴𐑯𐑦𐑩𐑤	kəˈləʊniəl	RSSB	89	𐑒𐑩𐑤𐑴𐑯𐑾𐑤	kəˈləʊnɪəl	shave_says:𐑒𐑩𐑤𐑴𐑯𐑾𐑤
 colonialism	𐑒𐑩𐑤𐑴𐑯𐑘𐑩𐑤𐑦𐑟𐑩𐑥	kəˈloʊnjəlɪzəm	GenAm	89	𐑒𐑩𐑤𐑴𐑯𐑾𐑤𐑦𐑟𐑩𐑥	kəˈləʊnɪəlɪzəm	shave_says:𐑒𐑩𐑤𐑴𐑯𐑾𐑤𐑦𐑟𐑩𐑥
 colonoscopy	𐑒𐑪𐑤𐑩𐑯𐑪𐑕𐑒𐑩𐑐𐑦	kɒləˈnɒskəpi	GenAm	89	𐑒𐑴𐑤𐑩𐑯𐑪𐑕𐑒𐑩𐑐𐑦	ˌkəʊləˈnɒskəpi	shave_says:𐑒𐑴𐑤𐑩𐑯𐑪𐑕𐑒𐑩𐑐𐑦
-colony	𐑒𐑷𐑤𐑩𐑯𐑦	ˈkɔːləni	GenAm	89	𐑒𐑪𐑤𐑩𐑯𐑦	ˈkɒləni	shave_says:𐑒𐑪𐑤𐑩𐑯𐑦
 coloratura	𐑒𐑪𐑤𐑼𐑼𐑑𐑘𐑼𐑩	kɒlərəRtjərə	RSSB	89	𐑒𐑪𐑤𐑼𐑩𐑑𐑫𐑼𐑩	ˌkɒlərəˈtʊərə	shave_says:𐑒𐑪𐑤𐑼𐑩𐑑𐑫𐑼𐑩
 colorful	𐑒𐑳𐑤𐑼𐑓𐑼𐑤	kʌləRfəRl	RSSB	89	𐑒𐑳𐑤𐑼𐑓𐑩𐑤	ˈkʌləRfəl	shave_says:𐑒𐑳𐑤𐑼𐑓𐑩𐑤
 columnist	𐑒𐑪𐑤𐑩𐑥𐑦𐑕𐑑	ˈkɒləmɪst	RSSB	89	𐑒𐑪𐑤𐑩𐑥𐑯𐑦𐑕𐑑	ˈkɒləmnɪst	shave_says:𐑒𐑪𐑤𐑩𐑥𐑯𐑦𐑕𐑑
 combatant	𐑒𐑪𐑥𐑚𐑩𐑑𐑩𐑯𐑑	ˈkɒmbətənt	RSSB	89	𐑒𐑩𐑥𐑚𐑨𐑑𐑩𐑯𐑑	ˈkəmbætənt	shave_says:𐑒𐑩𐑥𐑚𐑨𐑑𐑩𐑯𐑑
 combative	𐑒𐑪𐑥𐑚𐑩𐑑𐑦𐑝	ˈkɒmbətɪv	RSSB	89	𐑒𐑩𐑥𐑚𐑨𐑑𐑦𐑝	ˈkəmbætɪv	shave_says:𐑒𐑩𐑥𐑚𐑨𐑑𐑦𐑝
 combustible	𐑒𐑩𐑥𐑚𐑳𐑕𐑑𐑦𐑚𐑩𐑤	kəmˈbʌstɪbəl	RSSB	89	𐑒𐑩𐑥𐑚𐑳𐑕𐑑𐑩𐑚𐑩𐑤	kəmˈbʌstəbəl	shave_says:𐑒𐑩𐑥𐑚𐑳𐑕𐑑𐑩𐑚𐑩𐑤
-come-on	𐑒𐑳𐑥𐑪𐑯	ˈkʌmˌɒn	RSSB	89	𐑒𐑳𐑥-𐑪𐑯	ˈkʌm-ɒn	shave_says:𐑒𐑳𐑥-𐑪𐑯
-come-on	𐑒𐑳𐑥𐑷𐑯	ˈkʌmˌɔːn	GenAm	89	𐑒𐑳𐑥-𐑪𐑯	ˈkʌm-ɒn	shave_says:𐑒𐑳𐑥-𐑪𐑯
+come-on	𐑒𐑳𐑥𐑪𐑯	ˈkʌmˌɒn	GenAm	89	𐑒𐑳𐑥-𐑪𐑯	ˈkʌm-ɒn	shave_says:𐑒𐑳𐑥-𐑪𐑯
 comedian	𐑒𐑩𐑥𐑰𐑛𐑦𐑩𐑯	kəˈmiːdiən	GenAm	89	𐑒𐑩𐑥𐑰𐑛𐑾𐑯	kəˈmiːdɪən	shave_says:𐑒𐑩𐑥𐑰𐑛𐑾𐑯
 comfortable	𐑒𐑳𐑥𐑓𐑑𐑼𐑚𐑩𐑤	kʌmftəRbəl	RSSB	89	𐑒𐑳𐑥𐑓𐑼𐑑𐑩𐑚𐑩𐑤	ˈkʌmfəRtəbəl	shave_says:𐑒𐑳𐑥𐑓𐑼𐑑𐑩𐑚𐑩𐑤
 comfortably	𐑒𐑳𐑥𐑓𐑑𐑼𐑚𐑤𐑦	ˈkʌmftəRbli	GenAm	89	𐑒𐑳𐑥𐑓𐑼𐑑𐑩𐑚𐑤𐑦	ˈkʌmfəRtəbli	shave_says:𐑒𐑳𐑥𐑓𐑼𐑑𐑩𐑚𐑤𐑦
@@ -1676,7 +1708,6 @@ coordinate	𐑒𐑴𐑹𐑛𐑩𐑯𐑦𐑑	koʊˈɔːRdənɪt	GenAm	89	𐑒𐑴
 coordination	𐑒𐑴𐑷𐑮𐑛𐑦𐑯𐑱𐑖𐑩𐑯	koʊɔrdɪneɪʃən	RSSB	89	𐑒𐑴𐑹𐑛𐑦𐑯𐑱𐑖𐑩𐑯	ˌkəʊˌɔːRdɪnˈeɪʃən	shave_says:𐑒𐑴𐑹𐑛𐑦𐑯𐑱𐑖𐑩𐑯
 copier	𐑒𐑪𐑐𐑦𐑼	ˈkɒpiəR	GenAm	89	𐑒𐑪𐑐𐑽	ˈkɒpiəR	shave_says:𐑒𐑪𐑐𐑽
 copious	𐑒𐑴𐑐𐑦𐑩𐑕	ˈkoʊpiəs	GenAm	89	𐑒𐑴𐑐𐑾𐑕	ˈkəʊpɪəs	shave_says:𐑒𐑴𐑐𐑾𐑕
-copulate	𐑒𐑷𐑐𐑘𐑩𐑤𐑱𐑑	ˈkɔːpjəleɪt	GenAm	89	𐑒𐑪𐑐𐑘𐑩𐑤𐑱𐑑	ˈkɒpjəleɪt	shave_says:𐑒𐑪𐑐𐑘𐑩𐑤𐑱𐑑
 copywriter	𐑒𐑭𐑐𐑦𐑮𐑲𐑑𐑼	ˈkɑːpiˌraɪtəR	GenAm	89	𐑒𐑪𐑐𐑦𐑮𐑲𐑑𐑼	ˈkɒpiraɪtəR	shave_says:𐑒𐑪𐑐𐑦𐑮𐑲𐑑𐑼
 coquetry	𐑒𐑪𐑒𐑦𐑑𐑮𐑦	kɒkɪtri	RSSB	89	𐑒𐑪𐑒𐑩𐑑𐑮𐑦	ˈkɒkətri	shave_says:𐑒𐑪𐑒𐑩𐑑𐑮𐑦
 coquetry	𐑒𐑴𐑒𐑩𐑑𐑮𐑦	ˈkoʊkətri	GenAm	89	𐑒𐑪𐑒𐑩𐑑𐑮𐑦	ˈkɒkətri	shave_says:𐑒𐑪𐑒𐑩𐑑𐑮𐑦
@@ -1709,15 +1740,12 @@ corsage	𐑒𐑹𐑕𐑸𐑠	kɔːRsɑːRʒ	RSSB	89	𐑒𐑹𐑕𐑭𐑠	kɔːR�
 corsair	𐑒𐑹𐑕𐑻	kɔːRsɜːR	RSSB	89	𐑒𐑹𐑕𐑺	ˈkɔːRseəR	shave_says:𐑒𐑹𐑕𐑺
 corset	𐑒𐑹𐑕𐑦𐑑	kɔːRsɪt	RSSB	89	𐑒𐑹𐑕𐑩𐑑	ˈkɔːRsət	shave_says:𐑒𐑹𐑕𐑩𐑑
 cortege	𐑒𐑷𐑮𐑑𐑧𐑠	kɔrteʒ	RSSB	89	𐑒𐑹𐑑𐑱𐑠	kɔːRˈteɪʒ	shave_says:𐑒𐑹𐑑𐑱𐑠
-cortisol	𐑒𐑹𐑑𐑦𐑕𐑪𐑤	kɔːRtɪsɒl	RSSB	89	𐑒𐑹𐑑𐑦𐑟𐑴𐑤	ˈkɔːRtɪzəʊl	shave_says:𐑒𐑹𐑑𐑦𐑟𐑴𐑤
-cortisol	𐑒𐑹𐑑𐑦𐑕𐑷𐑤	ˈkɔːRtɪˌsɔːl	GenAm	89	𐑒𐑹𐑑𐑦𐑟𐑴𐑤	ˈkɔːRtɪzəʊl	shave_says:𐑒𐑹𐑑𐑦𐑟𐑴𐑤
+cortisol	𐑒𐑹𐑑𐑦𐑕𐑪𐑤	ˈkɔːRtɪˌsɒl	GenAm	89	𐑒𐑹𐑑𐑦𐑟𐑴𐑤	ˈkɔːRtɪzəʊl	shave_says:𐑒𐑹𐑑𐑦𐑟𐑴𐑤
 cortisone	𐑒𐑹𐑑𐑦𐑕𐑴𐑯	ˈkɔːRtɪˌsoʊn	GenAm	89	𐑒𐑹𐑑𐑦𐑟𐑴𐑯	ˈkɔːRtɪzəʊn	shave_says:𐑒𐑹𐑑𐑦𐑟𐑴𐑯
 coruscate	𐑒𐑪𐑮𐑼𐑕𐑒𐑱𐑑	kɒrəRskeɪt	RSSB	89	𐑒𐑪𐑮𐑩𐑕𐑒𐑱𐑑	ˈkɒrəskeɪt	shave_says:𐑒𐑪𐑮𐑩𐑕𐑒𐑱𐑑
-costs	𐑒𐑷𐑕𐑑𐑕	ˈkɔːsts	GenAm	89	𐑒𐑪𐑕𐑑𐑕	kɒsts	shave_says:𐑒𐑪𐑕𐑑𐑕
 coterminous	𐑒𐑩𐑑𐑻𐑥𐑦𐑯𐑩𐑕	kəˈtɜːRmɪnəs	GenAm	89	𐑒𐑴𐑑𐑻𐑥𐑦𐑯𐑩𐑕	ˌkəʊˈtɜːRmɪnəs	shave_says:𐑒𐑴𐑑𐑻𐑥𐑦𐑯𐑩𐑕
 cotyledon	𐑒𐑪𐑑𐑩𐑤𐑰𐑛𐑩𐑯	ˌkɒtəlˈiːdən	GenAm	89	𐑒𐑪𐑑𐑦𐑤𐑰𐑛𐑩𐑯	ˌkɒtɪˈliːdən	shave_says:𐑒𐑪𐑑𐑦𐑤𐑰𐑛𐑩𐑯
 cougar	𐑒𐑫𐑜𐑼	ˈkuɡəR	GenAm	89	𐑒𐑵𐑜𐑼	ˈkuːɡəR	shave_says:𐑒𐑵𐑜𐑼
-cough	𐑒𐑷𐑓	kɔːf	GenAm	89	𐑒𐑪𐑓	kɒf	shave_says:𐑒𐑪𐑓
 counselor	𐑒𐑬𐑯𐑕𐑼𐑤𐑼	kaʊnsəRləR	RSSB	89	𐑒𐑬𐑯𐑕𐑩𐑤𐑼	ˈkaʊnsələR	shave_says:𐑒𐑬𐑯𐑕𐑩𐑤𐑼
 counterattraction	𐑒𐑬𐑯𐑑𐑼𐑼𐑑𐑮𐑨𐑒𐑖𐑩𐑯	kaʊntərəRtrakʃən	RSSB	89	𐑒𐑬𐑯𐑑𐑼𐑩𐑑𐑮𐑨𐑒𐑖𐑩𐑯	ˌkaʊntərəˈtrækʃən	shave_says:𐑒𐑬𐑯𐑑𐑼𐑩𐑑𐑮𐑨𐑒𐑖𐑩𐑯
 counterintuitive	𐑒𐑬𐑯𐑑𐑼𐑦𐑯𐑑𐑫𐑦𐑑𐑦𐑝	ˌkaʊntərɪnˈtuɪtɪv	GenAm	89	𐑒𐑬𐑯𐑑𐑼𐑦𐑯𐑑𐑵𐑦𐑑𐑦𐑝, 𐑒𐑬𐑯𐑑𐑼𐑦𐑯𐑑𐑿𐑦𐑑𐑦𐑝	ˈkaʊntərɪntˌjuːɪtɪv	shave_says:𐑒𐑬𐑯𐑑𐑼𐑦𐑯𐑑𐑵𐑦𐑑𐑦𐑝
@@ -1757,6 +1785,7 @@ creole	𐑒𐑮𐑦𐑴𐑤	ˈkrioʊl	GenAm	89	𐑒𐑮𐑰𐑴𐑤	ˈkriːəʊl
 creosote	𐑒𐑮𐑰𐑩𐑕𐑴𐑑	ˈkriːəˌsoʊt	GenAm	89	𐑒𐑮𐑾𐑕𐑴𐑑	ˈkrɪəsəʊt	shave_says:𐑒𐑮𐑾𐑕𐑴𐑑
 crepe	𐑒𐑮𐑧𐑐	krep	RSSB	89	𐑒𐑮𐑱𐑐	kreɪp	shave_says:𐑒𐑮𐑱𐑐
 crescent	𐑒𐑮𐑧𐑟𐑩𐑯𐑑	krezənt	RSSB	89	𐑒𐑮𐑧𐑕𐑩𐑯𐑑	ˈkresənt	shave_says:𐑒𐑮𐑧𐑕𐑩𐑯𐑑
+crestfallen	𐑒𐑮𐑧𐑕𐑑𐑓𐑪𐑤𐑩𐑯	ˈkrestfɒlən	GenAm	89	𐑒𐑮𐑧𐑕𐑑𐑓𐑷𐑤𐑩𐑯	ˈkrestfɔːlən	shave_says:𐑒𐑮𐑧𐑕𐑑𐑓𐑷𐑤𐑩𐑯
 cretaceous	𐑒𐑮𐑩𐑑𐑱𐑖𐑩𐑕	krəteɪʃəs	RSSB	89	𐑒𐑮𐑦𐑑𐑱𐑖𐑩𐑕	krɪˈteɪʃəs	shave_says:𐑒𐑮𐑦𐑑𐑱𐑖𐑩𐑕
 cretin	𐑒𐑮𐑰𐑑𐑦𐑯	ˈkriːtɪn	GenAm	89	𐑒𐑮𐑧𐑑𐑦𐑯	ˈkretɪn	shave_says:𐑒𐑮𐑧𐑑𐑦𐑯
 crevasse	𐑒𐑮𐑩𐑝𐑨𐑕	krəvæs	RSSB	89	𐑒𐑮𐑦𐑝𐑨𐑕	krɪˈvæs	shave_says:𐑒𐑮𐑦𐑝𐑨𐑕
@@ -1769,12 +1798,8 @@ crockery	𐑒𐑮𐑪𐑒𐑮𐑦	ˈkrɒkri	GenAm	89	𐑒𐑮𐑪𐑒𐑼𐑦	ˈ
 croissant	𐑒𐑮𐑩𐑕𐑪𐑯𐑑	krəˈsɒnt	GenAm	89	𐑒𐑢𐑨𐑕𐑪𐑯𐑑	ˈkwæsɒnt	shave_says:𐑒𐑢𐑨𐑕𐑪𐑯𐑑
 crosier	𐑒𐑮𐑴𐑟𐑦𐑼	krəʊziəR	RSSB	89	𐑒𐑮𐑴𐑟𐑽	ˈkrəʊzɪəR	shave_says:𐑒𐑮𐑴𐑟𐑽
 crosier	𐑒𐑮𐑴𐑠𐑼	ˈkroʊʒəR	GenAm	89	𐑒𐑮𐑴𐑟𐑽	ˈkrəʊzɪəR	shave_says:𐑒𐑮𐑴𐑟𐑽
-cross	𐑒𐑮𐑷𐑕	krɔːs	GenAm	89	𐑒𐑮𐑪𐑕	krɒs	shave_says:𐑒𐑮𐑪𐑕
 crossbreed	𐑒𐑮𐑭𐑕𐑚𐑮𐑰𐑛	krɑːsbriːd	RSSB	89	𐑒𐑮𐑪𐑕𐑚𐑮𐑰𐑛	ˈkrɒsbriːd	shave_says:𐑒𐑮𐑪𐑕𐑚𐑮𐑰𐑛
-crosscut	𐑒𐑮𐑷𐑕𐑒𐑳𐑑	ˈkrɔːskʌt	GenAm	89	𐑒𐑮𐑪𐑕𐑒𐑳𐑑	ˈkrɒskʌt	shave_says:𐑒𐑮𐑪𐑕𐑒𐑳𐑑
-crossed	𐑒𐑮𐑷𐑕𐑑	krɔːst	GenAm	89	𐑒𐑮𐑪𐑕𐑑	krɒst	shave_says:𐑒𐑮𐑪𐑕𐑑
 crossfire	𐑒𐑮𐑷𐑕𐑓𐑲𐑮	ˈkrɔːsfaɪr	GenAm	89	𐑒𐑮𐑪𐑕𐑓𐑲𐑼	ˈkrɒsfaɪəR	shave_says:𐑒𐑮𐑪𐑕𐑓𐑲𐑼
-crossing	𐑒𐑮𐑷𐑕𐑦𐑙	ˈkrɔːsɪŋ	GenAm	89	𐑒𐑮𐑪𐑕𐑦𐑙	ˈkrɒsɪŋ	shave_says:𐑒𐑮𐑪𐑕𐑦𐑙
 crosswind	𐑒𐑮𐑭𐑕𐑢𐑦𐑯𐑛	ˈkrɑːswɪnd	GenAm	89	𐑒𐑮𐑪𐑕𐑢𐑦𐑯𐑛	ˈkrɒswɪnd	shave_says:𐑒𐑮𐑪𐑕𐑢𐑦𐑯𐑛
 crotchet	𐑒𐑮𐑪𐑗𐑦𐑑	ˈkrɒtʃɪt	GenAm	89	𐑒𐑮𐑪𐑗𐑩𐑑	ˈkrɒtʃət	shave_says:𐑒𐑮𐑪𐑗𐑩𐑑
 cruelty	𐑒𐑮𐑵𐑤𐑑𐑦	kruːlti	RSSB	89	𐑒𐑮𐑵𐑩𐑤𐑑𐑦	ˈkruːəlti	shave_says:𐑒𐑮𐑵𐑩𐑤𐑑𐑦
@@ -1836,6 +1861,11 @@ darwinian	𐑛𐑸𐑢𐑦𐑯𐑦𐑩𐑯	dɑːRˈwɪniən	GenAm	89	𐑛𐑸�
 dashboard	𐑛𐑨𐑖𐑚𐑪𐑼𐑛	ˈdæʃˌboərd	GenAm	89	𐑛𐑨𐑖𐑚𐑹𐑛	ˈdæʃbɔːRd	shave_says:𐑛𐑨𐑖𐑚𐑹𐑛
 dastard	𐑛𐑸𐑕𐑑𐑼𐑛	dɑːRstəRd	RSSB	89	𐑛𐑨𐑕𐑑𐑼𐑛	ˈdæstəRd	shave_says:𐑛𐑨𐑕𐑑𐑼𐑛
 dastardly	𐑛𐑸𐑕𐑑𐑼𐑛𐑤𐑦	dɑːRstəRdli	RSSB	89	𐑛𐑨𐑕𐑑𐑼𐑛𐑤𐑦	ˈdæstəRdli	shave_says:𐑛𐑨𐑕𐑑𐑼𐑛𐑤𐑦
+daub	𐑛𐑪𐑚	dɒb	GenAm	89	𐑛𐑷𐑚	dɔːb	shave_says:𐑛𐑷𐑚
+daughter	𐑛𐑪𐑑𐑼	ˈdɒtəR	GenAm	89	𐑛𐑷𐑑𐑼	ˈdɔːtəR	shave_says:𐑛𐑷𐑑𐑼
+daunt	𐑛𐑪𐑯𐑑	dɒnt	GenAm	89	𐑛𐑷𐑯𐑑	dɔːnt	shave_says:𐑛𐑷𐑯𐑑
+daunting	𐑛𐑪𐑯𐑑𐑦𐑙	ˈdɒntɪŋ	GenAm	89	𐑛𐑷𐑯𐑑𐑦𐑙	ˈdɔːntɪŋ	shave_says:𐑛𐑷𐑯𐑑𐑦𐑙
+dawn	𐑛𐑪𐑯	dɒn	GenAm	89	𐑛𐑷𐑯	dɔːn	shave_says:𐑛𐑷𐑯
 dazzling	𐑛𐑨𐑟𐑩𐑤𐑦𐑙	ˈdæzəlɪŋ	RSSB	89	𐑛𐑨𐑟𐑤𐑦𐑙	ˈdæzlɪŋ	shave_says:𐑛𐑨𐑟𐑤𐑦𐑙
 de-escalate	𐑛𐑰𐑧𐑕𐑒𐑩𐑤𐑱𐑑	diːˈeskəleɪt	RSSB	89	𐑛𐑰-𐑧𐑕𐑒𐑩𐑤𐑱𐑑	ˌdiː-ˈeskəleɪt	shave_says:𐑛𐑰-𐑧𐑕𐑒𐑩𐑤𐑱𐑑
 de-escalation	𐑛𐑰𐑧𐑕𐑒𐑩𐑤𐑱𐑖𐑩𐑯	diːˌeskəˈleɪʃən	RSSB	89	𐑛𐑰-𐑧𐑕𐑒𐑩𐑤𐑱𐑖𐑩𐑯	diː-ˌeskəˈleɪʃən	shave_says:𐑛𐑰-𐑧𐑕𐑒𐑩𐑤𐑱𐑖𐑩𐑯
@@ -1925,7 +1955,7 @@ deliverance	𐑛𐑦𐑤𐑦𐑝𐑮𐑼𐑯𐑕	dɪlɪvrəRns	RSSB	89	𐑛𐑦�
 delivery	𐑛𐑦𐑤𐑦𐑝𐑮𐑦	dɪlɪvri	RSSB	89	𐑛𐑦𐑤𐑦𐑝𐑼𐑦	dɪˈlɪvəri	shave_says:𐑛𐑦𐑤𐑦𐑝𐑼𐑦
 deluge	𐑛𐑧𐑤𐑘𐑫𐑠	ˈdeljuʒ	GenAm	89	𐑛𐑧𐑤𐑿𐑡	ˈdeljuːdʒ	shave_says:𐑛𐑧𐑤𐑿𐑡
 delusion	𐑛𐑦𐑤𐑵𐑠𐑯	dɪˈluːʒn	RSSB	89	𐑛𐑦𐑤𐑵𐑠𐑩𐑯	dɪˈluːʒən	shave_says:𐑛𐑦𐑤𐑵𐑠𐑩𐑯
-demanding	𐑛𐑩𐑥𐑨𐑯𐑛𐑦𐑙	dəˈmændɪŋ	GenAm	89	𐑛𐑦𐑥𐑨𐑯𐑛𐑦𐑙, 𐑛𐑦𐑥𐑭𐑯𐑛𐑦𐑙	dɪˈmⱭːndɪŋ	shave_says:𐑛𐑦𐑥𐑨𐑯𐑛𐑦𐑙
+demanding	𐑛𐑩𐑥𐑨𐑯𐑛𐑦𐑙	dəˈmændɪŋ	GenAm	89	𐑛𐑦𐑥𐑨𐑯𐑛𐑦𐑙, 𐑛𐑦𐑥𐑭𐑯𐑛𐑦𐑙	dɪˈmⱭːndɪŋ	shave_says:𐑛𐑦𐑥𐑭𐑯𐑛𐑦𐑙
 demarcate	𐑛𐑧𐑥𐑸𐑒𐑱𐑑	demɑːRkeɪt	RSSB	89	𐑛𐑰𐑥𐑸𐑒𐑱𐑑	ˈdiːmɑːRkeɪt	shave_says:𐑛𐑰𐑥𐑸𐑒𐑱𐑑
 demarcation	𐑛𐑧𐑥𐑸𐑒𐑱𐑖𐑩𐑯	demɑːRkeɪʃən	RSSB	89	𐑛𐑰𐑥𐑸𐑒𐑱𐑖𐑩𐑯	ˌdiːmɑːRˈkeɪʃən	shave_says:𐑛𐑰𐑥𐑸𐑒𐑱𐑖𐑩𐑯
 demerit	𐑛𐑦𐑥𐑧𐑮𐑦𐑑	dɪmerɪt	RSSB	89	𐑛𐑰𐑥𐑧𐑮𐑦𐑑	diːˈmerɪt	shave_says:𐑛𐑰𐑥𐑧𐑮𐑦𐑑
@@ -2021,7 +2051,6 @@ dexterously	𐑛𐑧𐑒𐑕𐑑𐑮𐑼𐑕𐑤𐑦	dekstrəRsli	RSSB	89	𐑛�
 diaeresis	𐑛𐑲𐑧𐑮𐑦𐑕𐑦𐑕	daɪerɪsɪs	RSSB	89	𐑛𐑲𐑧𐑮𐑩𐑕𐑦𐑕	daɪˈerəsɪs	shave_says:𐑛𐑲𐑧𐑮𐑩𐑕𐑦𐑕
 diagnose	𐑛𐑲𐑩𐑜𐑯𐑴𐑕	daɪəɡˈnoʊs	GenAm	89	𐑛𐑲𐑩𐑜𐑯𐑴𐑟	ˈdaɪəɡnəʊz	shave_says:𐑛𐑲𐑩𐑜𐑯𐑴𐑟
 diagonally	𐑛𐑲𐑨𐑜𐑯𐑩𐑤𐑦	ˈdaɪæɡnəli	RSSB	89	𐑛𐑲𐑨𐑜𐑩𐑯𐑩𐑤𐑦	daɪˈæɡənəli	shave_says:𐑛𐑲𐑨𐑜𐑩𐑯𐑩𐑤𐑦
-dialogue	𐑛𐑲𐑩𐑤𐑷𐑜	ˈdaɪəlɔːɡ	GenAm	89	𐑛𐑲𐑩𐑤𐑪𐑜	ˈdaɪəlɒɡ	shave_says:𐑛𐑲𐑩𐑤𐑪𐑜
 diaper	𐑛𐑲𐑐𐑼	ˈdaɪpəR	GenAm	89	𐑛𐑲𐑩𐑐𐑼	ˈdaɪəpəR	shave_says:𐑛𐑲𐑩𐑐𐑼
 dictionary	𐑛𐑦𐑒𐑖𐑩𐑯𐑧𐑮𐑦	ˈdɪkʃəˌneri	GenAm	89	𐑛𐑦𐑒𐑖𐑩𐑯𐑼𐑦	ˈdɪkʃənəri	shave_says:𐑛𐑦𐑒𐑖𐑩𐑯𐑼𐑦
 dietary	𐑛𐑲𐑩𐑑𐑮𐑦	daɪətri	RSSB	89	𐑛𐑲𐑩𐑑𐑼𐑦	ˈdaɪətəri	shave_says:𐑛𐑲𐑩𐑑𐑼𐑦
@@ -2049,7 +2078,6 @@ dinghy	𐑛𐑦𐑙𐑦	ˈdɪŋi	GenAm	89	𐑛𐑦𐑙𐑜𐑦	ˈdɪŋɡi	shave_
 dinosaur	𐑛𐑲𐑯𐑼𐑕𐑹	daɪnəRsɔːR	RSSB	89	𐑛𐑲𐑯𐑩𐑕𐑹	ˈdaɪnəsɔːR	shave_says:𐑛𐑲𐑯𐑩𐑕𐑹
 diocesan	𐑛𐑳𐑦𐑪𐑕𐑦𐑕𐑩𐑯	dʌɪˈɒsɪsən	RSSB	89	𐑛𐑲𐑪𐑕𐑦𐑕𐑩𐑯	daɪˈɒsɪsən	shave_says:𐑛𐑲𐑪𐑕𐑦𐑕𐑩𐑯
 diphtheria	𐑛𐑦𐑓𐑔𐑦𐑮𐑦𐑩	dɪfˈθɪriə	GenAm	89	𐑛𐑦𐑓𐑔𐑽𐑾	dɪfˈθɪərɪə	shave_says:𐑛𐑦𐑓𐑔𐑽𐑾
-diphthong	𐑛𐑦𐑓𐑔𐑷𐑙	ˈdɪfθɔːŋ	GenAm	89	𐑛𐑦𐑓𐑔𐑪𐑙	ˈdɪfθɒŋ	shave_says:𐑛𐑦𐑓𐑔𐑪𐑙
 dipsomania	𐑛𐑦𐑐𐑕𐑩𐑥𐑱𐑯𐑾	ˌdɪpsəˈmeɪnɪə	RSSB	89	𐑛𐑦𐑐𐑕𐑴𐑥𐑱𐑯𐑾	ˌdɪpsəʊˈmeɪnɪə	shave_says:𐑛𐑦𐑐𐑕𐑴𐑥𐑱𐑯𐑾
 dipsomaniac	𐑛𐑦𐑐𐑕𐑩𐑥𐑱𐑯𐑦𐑨𐑒	dɪpsəˈmeɪniæk	RSSB	89	𐑛𐑦𐑐𐑕𐑴𐑥𐑱𐑯𐑦𐑨𐑒	ˌdɪpsəʊˈmeɪnɪæk	shave_says:𐑛𐑦𐑐𐑕𐑴𐑥𐑱𐑯𐑦𐑨𐑒
 directive	𐑛𐑲𐑮𐑧𐑒𐑑𐑦𐑝	daɪrektɪv	RSSB	89	𐑛𐑦𐑮𐑧𐑒𐑑𐑦𐑝	dɪˈrektɪv	shave_says:𐑛𐑦𐑮𐑧𐑒𐑑𐑦𐑝
@@ -2064,7 +2092,7 @@ disappearance	𐑛𐑦𐑕𐑩𐑐𐑽𐑼𐑯𐑕	dɪsəpɪərəRns	RSSB	89	�
 disapproval	𐑛𐑦𐑕𐑩𐑐𐑮𐑫𐑝𐑩𐑤	dɪsəˈpruvəl	GenAm	89	𐑛𐑦𐑕𐑩𐑐𐑮𐑵𐑝𐑩𐑤	ˌdɪsəˈpruːvəl	shave_says:𐑛𐑦𐑕𐑩𐑐𐑮𐑵𐑝𐑩𐑤
 disburse	𐑛𐑦𐑕𐑚𐑼𐑕	dɪsˈbəRs	GenAm	89	𐑛𐑦𐑕𐑚𐑻𐑕	dɪsˈbɜːRs	shave_says:𐑛𐑦𐑕𐑚𐑻𐑕
 discernible	𐑛𐑦𐑕𐑻𐑯𐑦𐑚𐑩𐑤	dɪˈsɜːRnɪbəl	GenAm	89	𐑛𐑦𐑕𐑻𐑯𐑩𐑚𐑩𐑤	dɪˈsɜːRnəbəl	shave_says:𐑛𐑦𐑕𐑻𐑯𐑩𐑚𐑩𐑤
-disciplinary	𐑛𐑦𐑕𐑩𐑐𐑤𐑩𐑯𐑧𐑮𐑦	ˈdɪsəpləˌneri	GenAm	89	𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦	ˈdɪsəplɪnəri	shave_says:[𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑼𐑦 / 𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦]
+disciplinary	𐑛𐑦𐑕𐑩𐑐𐑤𐑩𐑯𐑧𐑮𐑦	ˈdɪsəpləˌneri	GenAm	89	𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦	ˈdɪsəplɪnəri	shave_says:𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑼𐑦
 disconcerted	𐑛𐑦𐑕𐑒𐑩𐑯𐑕𐑻𐑑𐑼𐑛	dɪskənsɜːRtəRd	RSSB	89	𐑛𐑦𐑕𐑒𐑩𐑯𐑕𐑻𐑑𐑩𐑛	ˌdɪskənˈsɜːRtƏd	shave_says:𐑛𐑦𐑕𐑒𐑩𐑯𐑕𐑻𐑑𐑩𐑛
 disconcerting	𐑛𐑦𐑕𐑒𐑼𐑯𐑕𐑻𐑑𐑦𐑙	dɪskəRnsɜːRtɪŋ	RSSB	89	𐑛𐑦𐑕𐑒𐑩𐑯𐑕𐑻𐑑𐑦𐑙	ˌdɪskənˈsɜːRtɪŋ	shave_says:𐑛𐑦𐑕𐑒𐑩𐑯𐑕𐑻𐑑𐑦𐑙
 disconcertingly	𐑛𐑦𐑕𐑒𐑼𐑯𐑕𐑻𐑑𐑦𐑙𐑤𐑦	dɪskəRnsɜːRtɪŋli	RSSB	89	𐑛𐑦𐑕𐑒𐑩𐑯𐑕𐑻𐑑𐑦𐑙𐑤𐑦	ˌdɪskənˈsɜːRtɪŋli	shave_says:𐑛𐑦𐑕𐑒𐑩𐑯𐑕𐑻𐑑𐑦𐑙𐑤𐑦
@@ -2141,13 +2169,7 @@ doctrinal	𐑛𐑪𐑒𐑑𐑮𐑦𐑯𐑩𐑤	ˈdɒktrɪnəl	GenAm	89	𐑛𐑪�
 documentary	𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑑𐑮𐑦	dɒkjəmentri	RSSB	89	𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑑𐑼𐑦	ˌdɒkjəˈmentəri	shave_says:𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑑𐑼𐑦
 documentary	𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑮𐑦	ˌdɒkjəˈmenri	GenAm	89	𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑑𐑼𐑦	ˌdɒkjəˈmentəri	shave_says:𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑑𐑼𐑦
 documentation	𐑛𐑪𐑒𐑘𐑩𐑥𐑩𐑯𐑑𐑱𐑖𐑩𐑯	ˌdɒkjəmənˈteɪʃən	GenAm	89	𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑑𐑱𐑖𐑩𐑯	ˌdɒkjəmenˈteɪʃən	shave_says:𐑛𐑪𐑒𐑘𐑩𐑥𐑧𐑯𐑑𐑱𐑖𐑩𐑯
-doff	𐑛𐑷𐑓	dɔːf	GenAm	89	𐑛𐑪𐑓	dɒf	shave_says:𐑛𐑪𐑓
-dog	𐑛𐑷𐑜	dɔːɡ	GenAm	89	𐑛𐑪𐑜	dɒɡ	shave_says:𐑛𐑪𐑜
-dogged	𐑛𐑷𐑜𐑩𐑛	ˈdɔːɡƏd	GenAm	89	𐑛𐑪𐑜𐑛, 𐑛𐑪𐑜𐑩𐑛	dɒɡd	shave_says:[𐑛𐑪𐑜𐑩𐑛 / 𐑛𐑪𐑜𐑛]
-doggedly	𐑛𐑷𐑜𐑩𐑛𐑤𐑦	ˈdɔːɡədli	GenAm	89	𐑛𐑪𐑜𐑩𐑛𐑤𐑦	ˈdɒɡƏdli	shave_says:𐑛𐑪𐑜𐑩𐑛𐑤𐑦
 doggerel	𐑛𐑪𐑜𐑼𐑼𐑤	dɒɡərəRl	RSSB	89	𐑛𐑪𐑜𐑼𐑩𐑤	ˈdɒɡərəl	shave_says:𐑛𐑪𐑜𐑼𐑩𐑤
-dogma	𐑛𐑷𐑜𐑥𐑩	ˈdɔːɡmə	GenAm	89	𐑛𐑪𐑜𐑥𐑩	ˈdɒɡmə	shave_says:𐑛𐑪𐑜𐑥𐑩
-dogsbody	𐑛𐑷𐑜𐑟𐑚𐑪𐑛𐑦	ˈdɔːɡzbɒdi	GenAm	89	𐑛𐑪𐑜𐑟𐑚𐑪𐑛𐑦	ˈdɒɡzbɒdi	shave_says:𐑛𐑪𐑜𐑟𐑚𐑪𐑛𐑦
 dolmen	𐑛𐑴𐑤𐑥𐑩𐑯	ˈdoʊlmən	GenAm	89	𐑛𐑪𐑤𐑥𐑧𐑯	ˈdɒlmen	shave_says:𐑛𐑪𐑤𐑥𐑧𐑯
 dolt	𐑛𐑪𐑤𐑑	dɒlt	RSSB	89	𐑛𐑴𐑤𐑑	dəʊlt	shave_says:𐑛𐑴𐑤𐑑
 domain	𐑛𐑩𐑥𐑱𐑯	dəˈmeɪn	RSSB	89	𐑛𐑴𐑥𐑱𐑯	dəʊˈmeɪn	shave_says:𐑛𐑴𐑥𐑱𐑯
@@ -2178,6 +2200,8 @@ drain	𐑡𐑮𐑱𐑯	dʒreɪn	RSSB	89	𐑛𐑮𐑱𐑯	dreɪn	shave_says:𐑛�
 drainage	𐑛𐑮𐑱𐑯𐑩𐑡	dreɪnədʒ	RSSB	89	𐑛𐑮𐑱𐑯𐑦𐑡	ˈdreɪnɪdʒ	shave_says:𐑛𐑮𐑱𐑯𐑦𐑡
 drama	𐑛𐑮𐑪𐑥𐑩	ˈdrɒmə	GenAm	89	𐑛𐑮𐑨𐑥𐑩, 𐑛𐑮𐑭𐑥𐑩	ˈdrⱭːmə	shave_says:𐑛𐑮𐑨𐑥𐑩
 drastic	𐑛𐑮𐑭𐑕𐑑𐑦𐑒	drɑːstɪk	RSSB	89	𐑛𐑮𐑨𐑕𐑑𐑦𐑒	ˈdræstɪk	shave_says:𐑛𐑮𐑨𐑕𐑑𐑦𐑒
+draw	𐑛𐑮𐑪	drɒ	GenAm	89	𐑛𐑮𐑷	drɔː	shave_says:𐑛𐑮𐑷
+drawl	𐑛𐑮𐑪𐑤	drɒl	GenAm	89	𐑛𐑮𐑷𐑤	drɔːl	shave_says:𐑛𐑮𐑷𐑤
 dreadful	𐑛𐑮𐑧𐑛𐑓𐑫𐑤	dredfʊl	RSSB	89	𐑛𐑮𐑧𐑛𐑓𐑩𐑤	ˈdredfəl	shave_says:𐑛𐑮𐑧𐑛𐑓𐑩𐑤
 dreadfully	𐑛𐑮𐑧𐑛𐑓𐑫𐑤𐑦	dredfʊli	RSSB	89	𐑛𐑮𐑧𐑛𐑓𐑩𐑤𐑦	ˈdredfəli	shave_says:𐑛𐑮𐑧𐑛𐑓𐑩𐑤𐑦
 dream	𐑛𐑮𐑦𐑥	drim	GenAm	89	𐑛𐑮𐑰𐑥	driːm	shave_says:𐑛𐑮𐑰𐑥
@@ -2188,7 +2212,6 @@ drizzle	𐑛𐑮𐑦𐑟𐑤	drɪzl	RSSB	89	𐑛𐑮𐑦𐑟𐑩𐑤	ˈdrɪzəl	
 dromedary	𐑛𐑮𐑪𐑥𐑦𐑛𐑼𐑦	drɒmɪdəri	RSSB	89	𐑛𐑮𐑪𐑥𐑩𐑛𐑼𐑦	ˈdrɒmədəri	shave_says:𐑛𐑮𐑪𐑥𐑩𐑛𐑼𐑦
 dromedary	𐑛𐑮𐑪𐑥𐑩𐑛𐑧𐑮𐑦	ˈdrɒməˌderi	GenAm	89	𐑛𐑮𐑪𐑥𐑩𐑛𐑼𐑦	ˈdrɒmədəri	shave_says:𐑛𐑮𐑪𐑥𐑩𐑛𐑼𐑦
 droplet	𐑛𐑮𐑭𐑐𐑤𐑩𐑑	ˈdrɑːplət	GenAm	89	𐑛𐑮𐑪𐑐𐑤𐑩𐑑	ˈdrɒplət	shave_says:𐑛𐑮𐑪𐑐𐑤𐑩𐑑
-dross	𐑛𐑮𐑷𐑕	drɔːs	GenAm	89	𐑛𐑮𐑪𐑕	drɒs	shave_says:𐑛𐑮𐑪𐑕
 drugget	𐑛𐑮𐑳𐑜𐑦𐑑	drʌɡɪt	RSSB	89	𐑛𐑮𐑳𐑜𐑩𐑑	ˈdrʌɡIt	shave_says:𐑛𐑮𐑳𐑜𐑩𐑑
 dryad	𐑛𐑮𐑲𐑩𐑛	draɪəd	RSSB	89	𐑛𐑮𐑲𐑨𐑛	ˈdraɪæd	shave_says:𐑛𐑮𐑲𐑨𐑛
 dubious	𐑛𐑿𐑚𐑦𐑩𐑕	ˈdjuːbiəs	RSSB	89	𐑛𐑵𐑚𐑾𐑕, 𐑛𐑿𐑚𐑾𐑕	ˈdjuːbɪəs	shave_says:𐑛𐑿𐑚𐑾𐑕
@@ -2418,7 +2441,6 @@ epidemiology	𐑧𐑐𐑦𐑛𐑦𐑥𐑦𐑪𐑤𐑩𐑡𐑦	ˌepɪˌdimiˈɒl�
 epidermis	𐑧𐑐𐑩𐑛𐑻𐑥𐑩𐑕	ˌepəˈdɜːRməs	GenAm	89	𐑧𐑐𐑦𐑛𐑻𐑥𐑦𐑕	ˌepɪˈdɜːRmɪs	shave_says:𐑧𐑐𐑦𐑛𐑻𐑥𐑦𐑕
 epidiascope	𐑧𐑐𐑦𐑛𐑳𐑾𐑕𐑒𐑴𐑐	epɪˈdʌɪəskəʊp	RSSB	89	𐑧𐑐𐑦𐑛𐑲𐑩𐑕𐑒𐑴𐑐	ˌepɪˈdaɪəskəʊp	shave_says:𐑧𐑐𐑦𐑛𐑲𐑩𐑕𐑒𐑴𐑐
 epiglottis	𐑧𐑐𐑩𐑜𐑤𐑪𐑑𐑦𐑕	ˌepəˈɡlɒtɪs	GenAm	89	𐑧𐑐𐑦𐑜𐑤𐑪𐑑𐑦𐑕	ˌepɪˈɡlɒtɪs	shave_says:𐑧𐑐𐑦𐑜𐑤𐑪𐑑𐑦𐑕
-epilogue	𐑧𐑐𐑦𐑤𐑷𐑜	ˈepɪlɔːɡ	GenAm	89	𐑧𐑐𐑦𐑤𐑪𐑜	ˈepɪlɒɡ	shave_says:𐑧𐑐𐑦𐑤𐑪𐑜
 episcopal	𐑩𐑐𐑦𐑕𐑒𐑩𐑐𐑩𐑤	əˈpɪskəpəl	RSSB	89	𐑦𐑐𐑦𐑕𐑒𐑩𐑐𐑩𐑤	ɪˈpɪskəpəl	shave_says:𐑦𐑐𐑦𐑕𐑒𐑩𐑐𐑩𐑤
 episcopalian	𐑩𐑐𐑦𐑕𐑒𐑩𐑐𐑱𐑤𐑦𐑩𐑯	əˌpɪskəˈpeɪliən	RSSB	89	𐑦𐑐𐑦𐑕𐑒𐑩𐑐𐑱𐑤𐑾𐑯	ɪˌpɪskəˈpeɪlɪən	shave_says:𐑦𐑐𐑦𐑕𐑒𐑩𐑐𐑱𐑤𐑾𐑯
 epistle	𐑦𐑐𐑦𐑕𐑤	ɪˈpɪsl	RSSB	89	𐑦𐑐𐑦𐑕𐑩𐑤	ɪˈpɪsəl	shave_says:𐑦𐑐𐑦𐑕𐑩𐑤
@@ -2518,6 +2540,7 @@ execration	𐑧𐑒𐑕𐑩𐑒𐑮𐑱𐑖𐑩𐑯	eksəˈkreɪʃən	GenAm	89	�
 exegesis	𐑧𐑒𐑕𐑦𐑡𐑦𐑕𐑦𐑕	eksɪˈdʒisɪs	GenAm	89	𐑧𐑒𐑕𐑦𐑡𐑰𐑕𐑦𐑕	ˌeksɪˈdʒiːsɪs	shave_says:𐑧𐑒𐑕𐑦𐑡𐑰𐑕𐑦𐑕
 exemplary	𐑧𐑜𐑟𐑧𐑥𐑐𐑤𐑼𐑦	eɡˈzempləri	GenAm	89	𐑦𐑜𐑟𐑧𐑥𐑐𐑤𐑼𐑦	ɪɡˈzempləri	shave_says:𐑦𐑜𐑟𐑧𐑥𐑐𐑤𐑼𐑦
 exemplify	𐑧𐑜𐑟𐑧𐑥𐑐𐑤𐑦𐑓𐑲	eɡˈzemplɪfaɪ	RSSB	89	𐑦𐑜𐑟𐑧𐑥𐑐𐑤𐑦𐑓𐑲	ɪɡˈzemplɪfaɪ	shave_says:𐑦𐑜𐑟𐑧𐑥𐑐𐑤𐑦𐑓𐑲
+exhausted	𐑦𐑜𐑟𐑪𐑕𐑑𐑩𐑛	ɪɡˈzɒstƏd	GenAm	89	𐑦𐑜𐑟𐑷𐑕𐑑𐑩𐑛	ɪɡˈzɔːstƏd	shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑩𐑛
 exhaustive	𐑧𐑜𐑟𐑷𐑕𐑑𐑦𐑝	eɡˈzɔːstɪv	RSSB	89	𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝	ɪɡˈzɔːstɪv	shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝
 exhaustive	𐑧𐑜𐑟𐑪𐑕𐑑𐑦𐑝	eɡˈzɒstɪv	GenAm	89	𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝	ɪɡˈzɔːstɪv	shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝
 exhaustively	𐑧𐑜𐑟𐑷𐑕𐑑𐑦𐑝𐑤𐑦	eɡˈzɔːstɪvli	RSSB	89	𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝𐑤𐑦	ɪɡˈzɔːstɪvli	shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝𐑤𐑦
@@ -2599,7 +2622,13 @@ falcon	𐑓𐑷𐑒𐑩𐑯	ˈfɔːkən	RSSB	89	𐑓𐑷𐑤𐑒𐑩𐑯	ˈfɔː
 falcon	𐑓𐑭𐑤𐑒𐑩𐑯	ˈfɑːlkən	GenAm	89	𐑓𐑷𐑤𐑒𐑩𐑯	ˈfɔːlkən	shave_says:𐑓𐑷𐑤𐑒𐑩𐑯
 falconer	𐑓𐑪𐑤𐑒𐑼𐑯𐑼	fɒlkəRnəR	RSSB	89	𐑓𐑷𐑤𐑒𐑩𐑯𐑼	ˈfɔːlkənəR	shave_says:𐑓𐑷𐑤𐑒𐑩𐑯𐑼
 falconer	𐑓𐑨𐑤𐑒𐑩𐑯𐑼	ˈfælkənəR	GenAm	89	𐑓𐑷𐑤𐑒𐑩𐑯𐑼	ˈfɔːlkənəR	shave_says:𐑓𐑷𐑤𐑒𐑩𐑯𐑼
+fall	𐑓𐑪𐑤	fɒl	GenAm	89	𐑓𐑷𐑤	fɔːl	shave_says:𐑓𐑷𐑤
+fallen	𐑓𐑪𐑤𐑩𐑯	ˈfɒlən	GenAm	89	𐑓𐑷𐑤𐑩𐑯	ˈfɔːlən	shave_says:𐑓𐑷𐑤𐑩𐑯
+falling	𐑓𐑪𐑤𐑦𐑙	ˈfɒlɪŋ	GenAm	89	𐑓𐑷𐑤𐑦𐑙	ˈfɔːlɪŋ	shave_says:𐑓𐑷𐑤𐑦𐑙
+fallout	𐑓𐑪𐑤𐑬𐑑	ˈfɒlˌaʊt	GenAm	89	𐑓𐑷𐑤𐑬𐑑	ˈfɔːlaʊt	shave_says:𐑓𐑷𐑤𐑬𐑑
+false	𐑓𐑪𐑤𐑕	fɒls	GenAm	89	𐑓𐑷𐑤𐑕	fɔːls	shave_says:𐑓𐑷𐑤𐑕
 falsehood	𐑓𐑪𐑤𐑕𐑣𐑫𐑛	ˈfɒlsˌhʊd	RSSB	89	𐑓𐑷𐑤𐑕𐑣𐑫𐑛	ˈfɔːlshʊd	shave_says:𐑓𐑷𐑤𐑕𐑣𐑫𐑛
+falsetto	𐑓𐑪𐑤𐑕𐑧𐑑𐑴	fɒlˈsetoʊ	GenAm	89	𐑓𐑷𐑤𐑕𐑧𐑑𐑴	fɔːlˈsetəʊ	shave_says:𐑓𐑷𐑤𐑕𐑧𐑑𐑴
 falsify	𐑓𐑪𐑤𐑕𐑦𐑓𐑲	ˈfɒlsɪfaɪ	RSSB	89	𐑓𐑷𐑤𐑕𐑦𐑓𐑲	ˈfɔːlsɪfaɪ	shave_says:𐑓𐑷𐑤𐑕𐑦𐑓𐑲
 familial	𐑓𐑩𐑥𐑦𐑤𐑘𐑩𐑤	fəˈmɪljəl	RSSB	89	𐑓𐑩𐑥𐑦𐑤𐑾𐑤	fəˈmɪliəl	shave_says:𐑓𐑩𐑥𐑦𐑤𐑾𐑤
 familiar	𐑓𐑩𐑥𐑦𐑤𐑦𐑼	fəmɪliəR	RSSB	89	𐑓𐑩𐑥𐑦𐑤𐑽	fəˈmɪlɪəR	shave_says:𐑓𐑩𐑥𐑦𐑤𐑽
@@ -2626,7 +2655,9 @@ fatuity	𐑓𐑩𐑑𐑿𐑩𐑑𐑦	fəˈtjuːəti	RSSB	89	𐑓𐑩𐑗𐑵𐑦
 fatuity	𐑓𐑩𐑑𐑵𐑦𐑑𐑦	fəˈtuːɪti	GenAm	89	𐑓𐑩𐑗𐑵𐑦𐑑𐑦	fəˈtʃuːɪti	shave_says:𐑓𐑩𐑗𐑵𐑦𐑑𐑦
 fatuous	𐑓𐑨𐑑𐑘𐑫𐑩𐑕	ˈfætjuəs	RSSB	89	𐑓𐑨𐑗𐑫𐑩𐑕	ˈfætʃuəs	shave_says:𐑓𐑨𐑗𐑫𐑩𐑕
 fatuously	𐑓𐑨𐑑𐑘𐑫𐑩𐑕𐑤𐑦	ˈfætjuəsli	RSSB	89	𐑓𐑨𐑗𐑫𐑩𐑕𐑤𐑦	ˈfætʃuəsli	shave_says:𐑓𐑨𐑗𐑫𐑩𐑕𐑤𐑦
-faucet	𐑓𐑷𐑕𐑦𐑑	ˈfɔːsɪt	GenAm	89	𐑓𐑷𐑕𐑩𐑑	ˈfɔːsIt	shave_says:𐑓𐑷𐑕𐑩𐑑
+faucet	𐑓𐑷𐑕𐑦𐑑	ˈfɔːsɪt	RSSB	89	𐑓𐑷𐑕𐑩𐑑	ˈfɔːsIt	shave_says:𐑓𐑷𐑕𐑩𐑑
+faucet	𐑓𐑪𐑕𐑦𐑑	ˈfɒsɪt	GenAm	89	𐑓𐑷𐑕𐑩𐑑	ˈfɔːsIt	shave_says:𐑓𐑷𐑕𐑩𐑑
+fault	𐑓𐑪𐑤𐑑	fɒlt	GenAm	89	𐑓𐑷𐑤𐑑	fɔːlt	shave_says:𐑓𐑷𐑤𐑑
 favorite	𐑓𐑱𐑝𐑮𐑦𐑑	feɪvrɪt	RSSB	89	𐑓𐑱𐑝𐑼𐑦𐑑	ˈfeɪvərɪt	shave_says:𐑓𐑱𐑝𐑼𐑦𐑑
 favourable	𐑓𐑱𐑝𐑮𐑼𐑚𐑩𐑤	feɪvrəRbəl	RSSB	89	𐑓𐑱𐑝𐑼𐑩𐑚𐑩𐑤	ˈfeɪvərəbəl	shave_says:𐑓𐑱𐑝𐑼𐑩𐑚𐑩𐑤
 favourite	𐑓𐑱𐑝𐑮𐑦𐑑	feɪvrɪt	RSSB	89	𐑓𐑱𐑝𐑼𐑦𐑑	ˈfeɪvərɪt	shave_says:𐑓𐑱𐑝𐑼𐑦𐑑
@@ -2698,6 +2729,8 @@ flageolet	𐑓𐑤𐑨𐑠𐑩𐑤𐑱	ˈflæʒəleɪ	RSSB	89	𐑓𐑤𐑨𐑡�
 flaky	𐑓𐑤𐑱𐑒𐑰	ˈfleɪkiː	RSSB	89	𐑓𐑤𐑱𐑒𐑦	ˈfleɪki	shave_says:𐑓𐑤𐑱𐑒𐑦
 flan	𐑓𐑤𐑪𐑯	flɒn	GenAm	89	𐑓𐑤𐑨𐑯	flæn	shave_says:𐑓𐑤𐑨𐑯
 flatulence	𐑓𐑤𐑨𐑗𐑩𐑤𐑩𐑯𐑕	ˈflætʃələns	RSSB	89	𐑓𐑤𐑨𐑑𐑘𐑩𐑤𐑩𐑯𐑕	ˈflætjələns	shave_says:𐑓𐑤𐑨𐑑𐑘𐑩𐑤𐑩𐑯𐑕
+flaw	𐑓𐑤𐑪	ˈflɒ	GenAm	89	𐑓𐑤𐑷	flɔː	shave_says:𐑓𐑤𐑷
+flawless	𐑓𐑤𐑪𐑤𐑩𐑕	ˈflɒləs	GenAm	89	𐑓𐑤𐑷𐑤𐑩𐑕	ˈflɔːləs	shave_says:𐑓𐑤𐑷𐑤𐑩𐑕
 flawlessly	𐑓𐑤𐑭𐑤𐑩𐑕𐑤𐑦	ˈflɑːləsli	GenAm	89	𐑓𐑤𐑷𐑤𐑩𐑕𐑤𐑦	ˈflɔːləsli	shave_says:𐑓𐑤𐑷𐑤𐑩𐑕𐑤𐑦
 fleur-de-lis	𐑓𐑤𐑻𐑛𐑼𐑤𐑰𐑕	flɜːRdəRliːs	RSSB	89	𐑓𐑤𐑻-𐑛𐑩-𐑤𐑰	ˌflɜːR-də-ˈliː	shave_says:𐑓𐑤𐑻-𐑛𐑰-𐑤𐑰
 fleur-de-lis	𐑓𐑤𐑻𐑛𐑩𐑤𐑦𐑕	ˌflɜːRdəˈlis	GenAm	89	𐑓𐑤𐑻-𐑛𐑩-𐑤𐑰	ˌflɜːR-də-ˈliː	shave_says:𐑓𐑤𐑻-𐑛𐑰-𐑤𐑰
@@ -2724,6 +2757,8 @@ fomentation	𐑓𐑴𐑥𐑩𐑯𐑑𐑱𐑖𐑩𐑯	ˌfoʊmənˈteɪʃən	GenAm
 fondle	𐑓𐑪𐑯𐑛𐑤	ˈfɒndl	RSSB	89	𐑓𐑪𐑯𐑛𐑩𐑤	ˈfɒndəl	shave_says:𐑓𐑪𐑯𐑛𐑩𐑤
 food	𐑓𐑫𐑛	fud	GenAm	89	𐑓𐑵𐑛	fuːd	shave_says:𐑓𐑵𐑛
 foolhardy	𐑓𐑫𐑤𐑣𐑸𐑛𐑦	ˈfulˌhɑːRdi	GenAm	89	𐑓𐑵𐑤𐑣𐑸𐑛𐑦	ˈfuːlhɑːRdi	shave_says:𐑓𐑵𐑤𐑣𐑸𐑛𐑦
+football	𐑓𐑫𐑑𐑚𐑪𐑤	ˈfʊtbɒl	GenAm	89	𐑓𐑫𐑑𐑚𐑷𐑤	ˈfʊtbɔːl	shave_says:𐑓𐑫𐑑𐑚𐑷𐑤
+footfall	𐑓𐑫𐑑𐑓𐑪𐑤	ˈfʊtˌfɒl	GenAm	89	𐑓𐑫𐑑𐑓𐑷𐑤	ˈfʊtfɔːl	shave_says:𐑓𐑫𐑑𐑓𐑷𐑤
 forage	𐑓𐑹𐑦𐑡	ˈfɔːRɪdʒ	GenAm	89	𐑓𐑪𐑮𐑦𐑡	ˈfɒrɪdʒ	shave_says:𐑓𐑪𐑮𐑦𐑡
 foray	𐑓𐑹𐑱	ˈfɔːreɪ	GenAm	89	𐑓𐑪𐑮𐑱	ˈfɒreɪ	shave_says:𐑓𐑪𐑮𐑱
 forbearance	𐑓𐑹𐑚𐑻𐑼𐑯𐑕	fɔːRbɜːrəRns	RSSB	89	𐑓𐑹𐑚𐑺𐑩𐑯𐑕	fɔːRˈbeərəns	shave_says:𐑓𐑹𐑚𐑺𐑩𐑯𐑕
@@ -2731,7 +2766,6 @@ forbearance	𐑓𐑹𐑚𐑧𐑮𐑩𐑯𐑕	fɔːRˈberəns	GenAm	89	𐑓𐑹�
 forbid	𐑓𐑼𐑚𐑩𐑛	fəRˈbƏd	GenAm	89	𐑓𐑼𐑚𐑦𐑛	fəRˈbɪd	shave_says:𐑓𐑼𐑚𐑦𐑛
 forbidden	𐑓𐑻𐑚𐑦𐑛𐑩𐑯	fɜːRˈbɪdən	GenAm	89	𐑓𐑼𐑚𐑦𐑛𐑩𐑯	fəRˈbɪdən	shave_says:𐑓𐑼𐑚𐑦𐑛𐑩𐑯
 fordable	𐑓𐑹𐑛𐑩𐑚𐑤	fɔːRdəbl	RSSB	89	𐑓𐑹𐑛𐑩𐑚𐑩𐑤	ˈfɔːRdəbəl	shave_says:𐑓𐑹𐑛𐑩𐑚𐑩𐑤
-forecast	𐑓𐑹𐑒𐑸𐑕𐑑	fɔːRkɑːRst	RSSB	89	𐑓𐑹𐑒𐑨𐑕𐑑, 𐑓𐑹𐑒𐑭𐑕𐑑	ˈfɔːRkⱭːst	shave_says:𐑓𐑹𐑒𐑭𐑕𐑑
 forefather	𐑓𐑹𐑓𐑸𐑞𐑼	fɔːRfɑːRðəR	RSSB	89	𐑓𐑹𐑓𐑭𐑞𐑼	ˈfɔːRfɑːðəR	shave_says:𐑓𐑹𐑓𐑭𐑞𐑼
 foregone	𐑓𐑪𐑮𐑜𐑷𐑯	forɡɔn	RSSB	89	𐑓𐑹𐑜𐑪𐑯	fɔːRˈɡɒn	shave_says:𐑓𐑹𐑜𐑪𐑯
 forehead	𐑓𐑹𐑧𐑛	ˈfɔːRed	GenAm	89	𐑓𐑹𐑣𐑧𐑛	ˈfɔːRhed	shave_says:𐑓𐑹𐑣𐑧𐑛
@@ -2740,6 +2774,7 @@ foreigner	𐑓𐑹𐑦𐑯𐑼	ˈfɔːRɪnəR	GenAm	89	𐑓𐑪𐑮𐑦𐑯𐑼	
 forenoon	𐑓𐑹𐑯𐑫𐑯	ˈfɔːRnun	GenAm	89	𐑓𐑹𐑯𐑵𐑯	ˈfɔːRnuːn	shave_says:𐑓𐑹𐑯𐑵𐑯
 forensic	𐑓𐑼𐑧𐑯𐑟𐑦𐑒	fərenzɪk	RSSB	89	𐑓𐑼𐑧𐑯𐑕𐑦𐑒	fəˈrensɪk	shave_says:𐑓𐑼𐑧𐑯𐑕𐑦𐑒
 forepaw	𐑓𐑹𐑐𐑹	fɔːRpɔːR	RSSB	89	𐑓𐑹𐑐𐑷	fɔːRˈpɔː	shave_says:𐑓𐑹𐑐𐑷
+forepaw	𐑓𐑹𐑐𐑪	ˈfɔːRpɒ	GenAm	89	𐑓𐑹𐑐𐑷	fɔːRˈpɔː	shave_says:𐑓𐑹𐑐𐑷
 foresee	𐑓𐑹𐑕𐑦	fɔːRˈsi	GenAm	89	𐑓𐑹𐑕𐑰	fɔːRˈsiː	shave_says:𐑓𐑹𐑕𐑰
 forest	𐑓𐑹𐑦𐑕𐑑	ˈfɔːRɪst	GenAm	89	𐑓𐑪𐑮𐑦𐑕𐑑	ˈfɒrɪst	shave_says:𐑓𐑪𐑮𐑦𐑕𐑑
 forestall	𐑓𐑹𐑕𐑑𐑹𐑤	fɔːRstɔːRl	RSSB	89	𐑓𐑹𐑕𐑑𐑷𐑤	fɔːRˈstɔːl	shave_says:𐑓𐑹𐑕𐑑𐑷𐑤
@@ -2763,7 +2798,6 @@ fortieth	𐑓𐑹𐑑𐑦𐑩𐑔	ˈfɔːRtiəθ	GenAm	89	𐑓𐑹𐑑𐑾𐑔	�
 fortunately	𐑓𐑹𐑗𐑩𐑯𐑦𐑑𐑤𐑦	ˈfɔːRtʃənɪtli	GenAm	89	𐑓𐑹𐑗𐑩𐑯𐑩𐑑𐑤𐑦	ˈfɔːRtʃənətli	shave_says:𐑓𐑹𐑗𐑩𐑯𐑩𐑑𐑤𐑦
 fortune	𐑓𐑹𐑗𐑩𐑯	ˈfɔːRtʃən	GenAm	89	𐑓𐑹𐑗𐑵𐑯	ˈfɔːRtʃuːn	shave_says:𐑓𐑹𐑗𐑵𐑯
 forum	𐑓𐑹𐑼𐑥	fɔːrəRm	RSSB	89	𐑓𐑹𐑩𐑥	ˈfɔːrəm	shave_says:𐑓𐑹𐑩𐑥
-fosse	𐑓𐑷𐑕	fɔːs	GenAm	89	𐑓𐑪𐑕	fɒs	shave_says:𐑓𐑪𐑕
 fossil	𐑓𐑭𐑕𐑩𐑤	ˈfɑːsəl	GenAm	89	𐑓𐑪𐑕𐑩𐑤	ˈfɒsəl	shave_says:𐑓𐑪𐑕𐑩𐑤
 fossilize	𐑓𐑪𐑕𐑦𐑤𐑲𐑟	ˈfɒsɪlaɪz	RSSB	89	𐑓𐑪𐑕𐑩𐑤𐑲𐑟	ˈfɒsəlaɪz	shave_says:𐑓𐑪𐑕𐑩𐑤𐑲𐑟
 foulness	𐑓𐑬𐑩𐑤𐑯𐑩𐑕	ˈfaʊəlnəs	RSSB	89	𐑓𐑬𐑤𐑯𐑩𐑕	ˈfaʊlnəs	shave_says:𐑓𐑬𐑤𐑯𐑩𐑕
@@ -2774,7 +2808,9 @@ fragile	𐑓𐑮𐑨𐑡𐑩𐑤	ˈfrædʒəl	GenAm	89	𐑓𐑮𐑨𐑡𐑲𐑤	
 frankness	𐑓𐑮𐑨𐑙𐑒𐑯𐑧𐑕	fræŋknes	RSSB	89	𐑓𐑮𐑨𐑙𐑒𐑯𐑩𐑕	ˈfræŋknəs	shave_says:𐑓𐑮𐑨𐑙𐑒𐑯𐑩𐑕
 frappe	𐑓𐑮𐑨𐑐	fræp	RSSB	89	𐑓𐑮𐑨𐑐𐑱	ˈfræpeɪ	shave_says:𐑓𐑮𐑨𐑐𐑱
 fraternize	𐑓𐑮𐑨𐑑𐑼𐑯𐑪𐑦𐑟	ˈfrætəRnɒɪz	GenAm	89	𐑓𐑮𐑨𐑑𐑼𐑯𐑲𐑟	ˈfrætəRnaɪz	shave_says:𐑓𐑮𐑨𐑑𐑼𐑯𐑲𐑟
+fraud	𐑓𐑮𐑪𐑛	frɒd	GenAm	89	𐑓𐑮𐑷𐑛	frɔːd	shave_says:𐑓𐑮𐑷𐑛
 fraudulent	𐑓𐑮𐑷𐑡𐑫𐑤𐑩𐑯𐑑	frɔːdʒʊlənt	RSSB	89	𐑓𐑮𐑷𐑡𐑩𐑤𐑩𐑯𐑑	ˈfrɔːdʒələnt	shave_says:𐑓𐑮𐑷𐑡𐑩𐑤𐑩𐑯𐑑
+fraudulent	𐑓𐑮𐑪𐑡𐑩𐑤𐑩𐑯𐑑	ˈfrɒdʒələnt	GenAm	89	𐑓𐑮𐑷𐑡𐑩𐑤𐑩𐑯𐑑	ˈfrɔːdʒələnt	shave_says:𐑓𐑮𐑷𐑡𐑩𐑤𐑩𐑯𐑑
 free-for-all	𐑓𐑮𐑰𐑓𐑼𐑹𐑤	friːfərɔːRl	RSSB	89	𐑓𐑮𐑰-𐑓-𐑷𐑤	ˈfriː-F-ɔːl	shave_says:𐑓𐑮𐑰-𐑓-𐑷𐑤
 free-for-all	𐑓𐑮𐑰𐑓𐑼𐑷𐑤	ˈfriːfəRɔːl	GenAm	89	𐑓𐑮𐑰-𐑓-𐑷𐑤	ˈfriː-F-ɔːl	shave_says:𐑓𐑮𐑰-𐑓-𐑷𐑤
 freedom	𐑓𐑮𐑦𐑛𐑩𐑥	ˈfridəm	GenAm	89	𐑓𐑮𐑰𐑛𐑩𐑥	ˈfriːdəm	shave_says:𐑓𐑮𐑰𐑛𐑩𐑥
@@ -2788,8 +2824,6 @@ friction	𐑓𐑮𐑦𐑒𐑖𐑩𐑩𐑯	frɪkʃəən	RSSB	89	𐑓𐑮𐑦𐑒�
 frigid	𐑓𐑮𐑦𐑡𐑩𐑛	frɪdʒƏd	RSSB	89	𐑓𐑮𐑦𐑡𐑦𐑛	ˈfrɪdʒɪd	shave_says:𐑓𐑮𐑦𐑡𐑦𐑛
 frisson	𐑓𐑮𐑦𐑕𐑴𐑯	friˈsoʊn	GenAm	89	𐑓𐑮𐑰𐑕𐑪𐑯	ˈfriːsɒn	shave_says:𐑓𐑮𐑰𐑕𐑪𐑯
 frontier	𐑓𐑮𐑳𐑯𐑑𐑦𐑮	frʌnˈtɪr	GenAm	89	𐑓𐑮𐑳𐑯𐑑𐑽	ˈfrʌntɪəR	shave_says:𐑓𐑮𐑳𐑯𐑑𐑽
-frost	𐑓𐑮𐑷𐑕𐑑	frɔːst	GenAm	89	𐑓𐑮𐑪𐑕𐑑	frɒst	shave_says:𐑓𐑮𐑪𐑕𐑑
-froth	𐑓𐑮𐑷𐑔	frɔːθ	GenAm	89	𐑓𐑮𐑪𐑔	frɒθ	shave_says:𐑓𐑮𐑪𐑔
 fructose	𐑓𐑮𐑳𐑒𐑑𐑴𐑟	frʌktəʊz	RSSB	89	𐑓𐑮𐑳𐑒𐑑𐑴𐑕	ˈfrʌktəʊs	shave_says:𐑓𐑮𐑳𐑒𐑑𐑴𐑕
 frugality	𐑓𐑮𐑵𐑜𐑨𐑤𐑩𐑑𐑦	fruːɡæləti	RSSB	89	𐑓𐑮𐑵𐑜𐑨𐑤𐑦𐑑𐑦	fruːˈɡælɪti	shave_says:𐑓𐑮𐑵𐑜𐑨𐑤𐑦𐑑𐑦
 fruit	𐑓𐑮𐑫𐑑	frut	GenAm	89	𐑓𐑮𐑵𐑑	fruːt	shave_says:𐑓𐑮𐑵𐑑
@@ -2877,6 +2911,7 @@ germane	𐑡𐑻𐑥𐑱𐑯	dʒɜːRˈmeɪn	GenAm	89	𐑡𐑼𐑥𐑱𐑯	dʒə
 germanic	𐑡𐑻𐑥𐑨𐑯𐑦𐑒	dʒɜːRmænɪk	RSSB	89	𐑡𐑼𐑥𐑨𐑯𐑦𐑒	dʒəRˈmænɪk	shave_says:𐑡𐑼𐑥𐑨𐑯𐑦𐑒
 gerund	𐑡𐑧𐑮𐑼𐑯𐑛	dʒerəRnd	RSSB	89	𐑡𐑧𐑮𐑩𐑯𐑛	ˈdʒerənd	shave_says:𐑡𐑧𐑮𐑩𐑯𐑛
 gestalt	𐑜𐑩𐑖𐑑𐑨𐑤𐑑	ɡəˈʃtælt	RSSB	89	𐑜𐑩𐑖𐑑𐑷𐑤𐑑	ɡəˈʃtɑːlt	shave_says:𐑜𐑩𐑖𐑑𐑷𐑤𐑑
+gestalt	𐑜𐑩𐑖𐑑𐑪𐑤𐑑	ɡəˈʃtɒlt	GenAm	89	𐑜𐑩𐑖𐑑𐑷𐑤𐑑	ɡəˈʃtɑːlt	shave_says:𐑜𐑩𐑖𐑑𐑷𐑤𐑑
 geum	𐑡𐑰𐑩𐑥	ˈdʒiːəm	RSSB	89	𐑡𐑾𐑥	dʒiːəm	shave_says:𐑡𐑾𐑥
 geyser	𐑜𐑰𐑟𐑼	ɡiːzəR	RSSB	89	𐑜𐑲𐑟𐑼	ˈɡaɪzəR	shave_says:𐑜𐑲𐑟𐑼
 ghana	𐑭𐑯𐑩	ˈɑːnə	RSSB	89	𐑜𐑨𐑯𐑩, 𐑜𐑭𐑯𐑩	ˈɡⱭːnə	shave_says:𐑜𐑭𐑯𐑩
@@ -2904,17 +2939,17 @@ glazier	𐑜𐑤𐑱𐑟𐑘𐑼	ɡleɪzjəR	RSSB	89	𐑜𐑤𐑱𐑟𐑽	ˈɡle
 glazier	𐑜𐑤𐑱𐑠𐑼	ˈɡleɪʒər	GenAm	89	𐑜𐑤𐑱𐑟𐑽	ˈɡleɪzɪəR	shave_says:𐑜𐑤𐑱𐑟𐑽
 glissade	𐑜𐑤𐑦𐑕𐑱𐑛	ɡlɪˈseɪd	GenAm	89	𐑜𐑤𐑦𐑕𐑭𐑛	ɡlɪˈsɑːd	shave_says:𐑜𐑤𐑦𐑕𐑭𐑛
 globule	𐑜𐑤𐑪𐑚𐑘𐑫𐑤	ˈɡlɒbjul	GenAm	89	𐑜𐑤𐑪𐑚𐑿𐑤	ˈɡlɒbjuːl	shave_says:𐑜𐑤𐑪𐑚𐑿𐑤
-glockenspiel	𐑜𐑤𐑷𐑒𐑩𐑯𐑖𐑐𐑦𐑤	ˈɡlɔːkənˌʃpil	GenAm	89	𐑜𐑤𐑪𐑒𐑩𐑯𐑖𐑐𐑰𐑤	ˈɡlɒkənʃpiːl	shave_says:𐑜𐑤𐑪𐑒𐑩𐑯𐑖𐑐𐑰𐑤
+glockenspiel	𐑜𐑤𐑪𐑒𐑩𐑯𐑖𐑐𐑦𐑤	ˈɡlɒkənˌʃpil	GenAm	89	𐑜𐑤𐑪𐑒𐑩𐑯𐑖𐑐𐑰𐑤	ˈɡlɒkənʃpiːl	shave_says:𐑜𐑤𐑪𐑒𐑩𐑯𐑖𐑐𐑰𐑤
 gloom	𐑜𐑤𐑫𐑥	ɡlum	GenAm	89	𐑜𐑤𐑵𐑥	ɡluːm	shave_says:𐑜𐑤𐑵𐑥
 gloomy	𐑜𐑤𐑫𐑥𐑦	ˈɡlumi	GenAm	89	𐑜𐑤𐑵𐑥𐑦	ˈɡluːmi	shave_says:𐑜𐑤𐑵𐑥𐑦
 glorify	𐑜𐑤𐑷𐑮𐑦𐑓𐑲	ɡlɔrɪfaɪ	RSSB	89	𐑜𐑤𐑹𐑦𐑓𐑲	ˈɡlɔːrɪfaɪ	shave_says:𐑜𐑤𐑹𐑦𐑓𐑲
 glorious	𐑜𐑤𐑹𐑦𐑩𐑕	ˈɡlɔːRiəs	GenAm	89	𐑜𐑤𐑹𐑾𐑕	ˈɡlɔːrɪəs	shave_says:𐑜𐑤𐑹𐑾𐑕
-glossy	𐑜𐑤𐑷𐑕𐑦	ˈɡlɔːsi	GenAm	89	𐑜𐑤𐑪𐑕𐑦	ˈɡlɒsi	shave_says:𐑜𐑤𐑪𐑕𐑦
 glucose	𐑜𐑤𐑵𐑒𐑴𐑟	ˈɡluːkoʊz	RSSB	89	𐑜𐑤𐑵𐑒𐑴𐑕	ˈɡluːkəʊs	shave_says:𐑜𐑤𐑵𐑒𐑴𐑕
 glucose	𐑜𐑤𐑫𐑒𐑴𐑕	ˈɡlukoʊs	GenAm	89	𐑜𐑤𐑵𐑒𐑴𐑕	ˈɡluːkəʊs	shave_says:𐑜𐑤𐑵𐑒𐑴𐑕
 glutton	𐑜𐑤𐑳𐑑𐑯	ˈɡlʌtn	RSSB	89	𐑜𐑤𐑳𐑑𐑩𐑯	ˈɡlʌtən	shave_says:𐑜𐑤𐑳𐑑𐑩𐑯
 gluttonous	𐑜𐑤𐑳𐑑𐑯𐑩𐑕	ˈɡlʌtnəs	RSSB	89	𐑜𐑤𐑳𐑑𐑩𐑯𐑩𐑕	ˈɡlʌtənəs	shave_says:𐑜𐑤𐑳𐑑𐑩𐑯𐑩𐑕
 glycerine	𐑜𐑤𐑦𐑕𐑼𐑦𐑯	ɡlɪsərɪn	RSSB	89	𐑜𐑤𐑦𐑕𐑼𐑰𐑯	ˈɡlɪsəriːn	shave_says:𐑜𐑤𐑦𐑕𐑼𐑰𐑯
+gnaw	𐑯𐑪	nɒ	GenAm	89	𐑯𐑷	nɔː	shave_says:𐑯𐑷
 gnu	𐑯𐑿	njuː	RSSB	89	𐑯𐑵	nuː	shave_says:𐑯𐑵
 gobbet	𐑜𐑪𐑚𐑦𐑑	ˈɡɒbɪt	RSSB	89	𐑜𐑪𐑚𐑩𐑑	ˈɡɒbIt	shave_says:𐑜𐑪𐑚𐑩𐑑
 goddess	𐑜𐑪𐑛𐑩𐑕	ˈɡɒdəs	GenAm	89	𐑜𐑪𐑛𐑧𐑕	ˈɡɒdes	shave_says:𐑜𐑪𐑛𐑧𐑕
@@ -2980,6 +3015,7 @@ guava	𐑜𐑢𐑪𐑝𐑩	ˈɡwɒvə	GenAm	89	𐑜𐑢𐑭𐑝𐑩	ˈɡwɑːvə
 gubernatorial	𐑜𐑿𐑚𐑼𐑯𐑧𐑑𐑹𐑦𐑼𐑤	ɡjuːbəRnetɔːriəRl	RSSB	89	𐑜𐑵𐑚𐑼𐑯𐑩𐑑𐑹𐑾𐑤	ˌɡuːbəRnəˈtɔːriəl	shave_says:𐑜𐑵𐑚𐑼𐑯𐑩𐑑𐑹𐑾𐑤
 gubernatorial	𐑜𐑫𐑚𐑼𐑯𐑧𐑑𐑹𐑦𐑩𐑤	ˌɡubəRneˈtɔːRiəl	GenAm	89	𐑜𐑵𐑚𐑼𐑯𐑩𐑑𐑹𐑾𐑤	ˌɡuːbəRnəˈtɔːriəl	shave_says:𐑜𐑵𐑚𐑼𐑯𐑩𐑑𐑹𐑾𐑤
 guesstimate	𐑜𐑧𐑕𐑑𐑩𐑥𐑩𐑑	ˈɡestəmət	GenAm	89	𐑜𐑧𐑕𐑑𐑦𐑥𐑩𐑑	ˈɡestɪmət	shave_says:𐑜𐑧𐑕𐑑𐑦𐑥𐑩𐑑
+guffaw	𐑜𐑩𐑓𐑪	ɡəˈfɒ	GenAm	89	𐑜𐑩𐑓𐑷	ɡəˈfɔː	shave_says:𐑜𐑩𐑓𐑷
 gullet	𐑜𐑳𐑤𐑦𐑑	ˈɡʌlɪt	RSSB	89	𐑜𐑳𐑤𐑩𐑑	ˈɡʌlət	shave_says:𐑜𐑳𐑤𐑩𐑑
 gullible	𐑜𐑳𐑤𐑦𐑚𐑩𐑤	ˈɡʌlɪbəl	RSSB	89	𐑜𐑳𐑤𐑩𐑚𐑩𐑤	ˈɡʌləbəl	shave_says:𐑜𐑳𐑤𐑩𐑚𐑩𐑤
 gunfire	𐑜𐑳𐑯𐑓𐑳𐑽	ɡʌnfʌɪəR	RSSB	89	𐑜𐑳𐑯𐑓𐑲𐑼	ˈɡʌnfaɪəR	shave_says:𐑜𐑳𐑯𐑓𐑲𐑼
@@ -3005,7 +3041,9 @@ half-timbered	𐑣𐑭𐑓𐑑𐑦𐑥𐑚𐑼𐑛	hɑːftɪmbəRd	RSSB	89	𐑣�
 half-timbered	𐑣𐑨𐑓𐑑𐑦𐑥𐑚𐑼𐑛	ˌhæfˈtɪmbəRd	GenAm	89	𐑣𐑨𐑓-𐑑𐑦𐑥𐑚𐑼𐑛, 𐑣𐑭𐑓-𐑑𐑦𐑥𐑚𐑼𐑛	hⱭːf-ˈtɪmbəRd	shave_says:𐑣𐑨𐑓-𐑑𐑦𐑥𐑚𐑼𐑛
 halfpennyworth	𐑣𐑱𐑐𐑯𐑦𐑢𐑼𐑔	heɪpnɪwəRθ	RSSB	89	𐑣𐑱𐑐𐑯𐑦𐑢𐑻𐑔	ˈheɪpnɪwɜːRθ	shave_says:𐑣𐑱𐑐𐑯𐑦𐑢𐑻𐑔
 halide	𐑣𐑱𐑤𐑲𐑛	ˈheɪlaɪd	RSSB	89	𐑣𐑨𐑤𐑲𐑛	ˈhælaɪd	shave_says:𐑣𐑨𐑤𐑲𐑛
+hall	𐑣𐑪𐑤	hɒl	GenAm	89	𐑣𐑷𐑤	hɔːl	shave_says:𐑣𐑷𐑤
 hallmark	𐑣𐑹𐑤𐑥𐑸𐑒	hɔːRlmɑːRk	RSSB	89	𐑣𐑷𐑤𐑥𐑸𐑒	ˈhɔːlmɑːRk	shave_says:𐑣𐑷𐑤𐑥𐑸𐑒
+hallmark	𐑣𐑪𐑤𐑥𐑸𐑒	ˈhɒlmɑːRk	GenAm	89	𐑣𐑷𐑤𐑥𐑸𐑒	ˈhɔːlmɑːRk	shave_says:𐑣𐑷𐑤𐑥𐑸𐑒
 halloween	𐑣𐑨𐑤𐑩𐑢𐑰𐑯	ˌhæləˈwiːn	GenAm	89	𐑣𐑨𐑤𐑴𐑰𐑯	ˌhæləʊˈiːn	shave_says:𐑣𐑨𐑤𐑴𐑰𐑯
 hallucinatory	𐑣𐑩𐑤𐑵𐑕𐑦𐑯𐑼𐑑𐑼𐑦	həluːsɪnəRtəri	RSSB	89	𐑣𐑩𐑤𐑵𐑕𐑦𐑯𐑩𐑑𐑼𐑦	həˈluːsɪnətəri	shave_says:𐑣𐑩𐑤𐑵𐑕𐑦𐑯𐑩𐑑𐑼𐑦
 hallucinatory	𐑣𐑩𐑤𐑵𐑕𐑦𐑯𐑩𐑑𐑹𐑦	həˈluːsɪnətɔːri	GenAm	89	𐑣𐑩𐑤𐑵𐑕𐑦𐑯𐑩𐑑𐑼𐑦	həˈluːsɪnətəri	shave_says:𐑣𐑩𐑤𐑵𐑕𐑦𐑯𐑩𐑑𐑼𐑦
@@ -3034,14 +3072,16 @@ has-been	𐑣𐑨𐑟𐑚𐑦𐑯	ˈhæzbɪn	GenAm	89	𐑣𐑨𐑟-𐑚𐑦𐑯,
 hashish	𐑣𐑩𐑖𐑰𐑖	həˈʃiːʃ	RSSB	89	𐑣𐑨𐑖𐑰𐑖	ˈhæʃiːʃ	shave_says:𐑣𐑨𐑖𐑰𐑖
 hassle	𐑣𐑨𐑕𐑤	ˈhæsl	RSSB	89	𐑣𐑨𐑕𐑩𐑤	ˈhæsəl	shave_says:𐑣𐑨𐑕𐑩𐑤
 hatchet	𐑣𐑨𐑗𐑦𐑑	ˈhætʃɪt	RSSB	89	𐑣𐑨𐑗𐑩𐑑	ˈhætʃIt	shave_says:𐑣𐑨𐑗𐑩𐑑
+haul	𐑣𐑪𐑤	hɒl	GenAm	89	𐑣𐑷𐑤	hɔːl	shave_says:𐑣𐑷𐑤
 haulage	𐑣𐑷𐑤𐑩𐑡	hɔːlədʒ	RSSB	89	𐑣𐑷𐑤𐑦𐑡	ˈhɔːlɪdʒ	shave_says:𐑣𐑷𐑤𐑦𐑡
 haulm	𐑣𐑪𐑥	hɒm	RSSB	89	𐑣𐑷𐑥	hɔːm	shave_says:𐑣𐑷𐑥
+haunch	𐑣𐑪𐑯𐑗	hɒntʃ	GenAm	89	𐑣𐑷𐑯𐑗	hɔːntʃ	shave_says:𐑣𐑷𐑯𐑗
 hautboy	𐑣𐑴𐑚𐑶	ˈhoʊˌbɔɪ	GenAm	89	𐑴𐑚𐑶	ˈəʊbɔɪ	shave_says:𐑴𐑚𐑶
 hauteur	𐑷𐑑𐑻	ɔːtɜːR	RSSB	89	𐑴𐑑𐑻	əʊˈtɜːR	shave_says:𐑴𐑑𐑻
 hawthorn	𐑣𐑹𐑔𐑹𐑯	hɔːRθɔːRn	RSSB	89	𐑣𐑷𐑔𐑹𐑯	ˈhɔːθɔːRn	shave_says:𐑣𐑷𐑔𐑹𐑯
+hawthorn	𐑣𐑪𐑔𐑹𐑯	ˈhɒθɔːRn	GenAm	89	𐑣𐑷𐑔𐑹𐑯	ˈhɔːθɔːRn	shave_says:𐑣𐑷𐑔𐑹𐑯
 he	𐑣𐑦	hi	RSSB	89	𐑣𐑰	hiː	shave_says:𐑣𐑰
 he-man	𐑣𐑰𐑥𐑨𐑯	ˈhiːmæn	RSSB	89	𐑣𐑰-𐑥𐑨𐑯	ˈhiː-mæn	shave_says:𐑣𐑰-𐑥𐑨𐑯
-headlong	𐑣𐑧𐑛𐑤𐑷𐑙	ˈhedlɔːŋ	GenAm	89	𐑣𐑧𐑛𐑤𐑪𐑙	ˈhedlɒŋ	shave_says:𐑣𐑧𐑛𐑤𐑪𐑙
 healer	𐑣𐑦𐑤𐑼	ˈhiləR	GenAm	89	𐑣𐑰𐑤𐑼	ˈhiːləR	shave_says:𐑣𐑰𐑤𐑼
 hear	𐑣𐑦𐑮	hɪr	GenAm	89	𐑣𐑽	hɪəR	shave_says:𐑣𐑽
 hearing	𐑣𐑦𐑮𐑦𐑙	ˈhɪrɪŋ	GenAm	89	𐑣𐑽𐑦𐑙	ˈhɪərɪŋ	shave_says:𐑣𐑽𐑦𐑙
@@ -3124,6 +3164,7 @@ hoarse	𐑣𐑪𐑮𐑕	hors	GenAm	89	𐑣𐑹𐑕	hɔːRs	shave_says:𐑣𐑹�
 hocus-pocus	𐑣𐑴𐑒𐑩𐑕𐑐𐑴𐑒𐑩𐑕	ˌhoʊkəsˈpoʊkəs	GenAm	89	𐑣𐑴𐑒𐑩𐑕-𐑐𐑴𐑒𐑩𐑕	ˌhəʊkəs-ˈpəʊkəs	shave_says:𐑣𐑴𐑒𐑩𐑕-𐑐𐑴𐑒𐑩𐑕
 hoity-toity	𐑣𐑶𐑑𐑦𐑑𐑶𐑑𐑦	ˌhɔɪtiˈtɔɪti	RSSB	89	𐑣𐑶𐑑𐑦-𐑑𐑶𐑑𐑦	ˌhɔɪti-ˈtɔɪti	shave_says:𐑣𐑶𐑑𐑦-𐑑𐑶𐑑𐑦
 holiday	𐑣𐑪𐑤𐑩𐑛𐑱	ˈhɒləˌdeɪ	GenAm	89	𐑣𐑪𐑤𐑦𐑛𐑱	ˈhɒlɪdeɪ	shave_says:𐑣𐑪𐑤𐑦𐑛𐑱
+holocaust	𐑣𐑪𐑤𐑩𐑒𐑪𐑕𐑑	ˈhɒləkɒst	GenAm	89	𐑣𐑪𐑤𐑩𐑒𐑷𐑕𐑑	ˈhɒləkɔːst	shave_says:𐑣𐑪𐑤𐑩𐑒𐑷𐑕𐑑
 holster	𐑣𐑪𐑤𐑕𐑑𐑼	hɒlstəR	RSSB	89	𐑣𐑴𐑤𐑕𐑑𐑼	ˈhəʊlstəR	shave_says:𐑣𐑴𐑤𐑕𐑑𐑼
 homage	𐑪𐑥𐑦𐑡	ˈɒmɪdʒ	GenAm	89	𐑣𐑪𐑥𐑦𐑡	ˈhɒmɪdʒ	shave_says:𐑣𐑪𐑥𐑦𐑡
 home	𐑴𐑥	əʊm	RSSB	89	𐑣𐑴𐑥	həʊm	shave_says:𐑣𐑴𐑥
@@ -3137,7 +3178,6 @@ homogenise	𐑣𐑩𐑥𐑭𐑡𐑩𐑯𐑲𐑟	həˈmɑːdʒənaɪz	GenAm	89	�
 homogenize	𐑣𐑩𐑥𐑪𐑡𐑩𐑯𐑲𐑟	həˈmɒdʒənaɪz	RSSB	89	𐑣𐑩𐑥𐑪𐑡𐑦𐑯𐑲𐑟	həˈmɒdʒɪnaɪz	shave_says:𐑣𐑩𐑥𐑪𐑡𐑦𐑯𐑲𐑟
 homogenize	𐑣𐑩𐑥𐑭𐑡𐑩𐑯𐑲𐑟	həˈmɑːdʒənaɪz	GenAm	89	𐑣𐑩𐑥𐑪𐑡𐑦𐑯𐑲𐑟	həˈmɒdʒɪnaɪz	shave_says:𐑣𐑩𐑥𐑪𐑡𐑦𐑯𐑲𐑟
 homograph	𐑣𐑭𐑥𐑩𐑜𐑮𐑨𐑓	ˈhɑːməɡræf	GenAm	89	𐑣𐑪𐑥𐑩𐑜𐑮𐑨𐑓	ˈhɒməɡræf	shave_says:𐑣𐑪𐑥𐑩𐑜𐑮𐑨𐑓
-homophone	𐑣𐑷𐑥𐑩𐑓𐑴𐑯	ˈhɔːməfoʊn	GenAm	89	𐑣𐑪𐑥𐑩𐑓𐑴𐑯	ˈhɒməfəʊn	shave_says:𐑣𐑪𐑥𐑩𐑓𐑴𐑯
 homosexual	𐑣𐑪𐑥𐑴𐑕𐑧𐑒𐑕𐑿𐑩𐑤	ˌhɒməʊˈseksjuːəl	RSSB	89	𐑣𐑴𐑥𐑴𐑕𐑧𐑒𐑖𐑫𐑩𐑤	ˌhəʊməʊˈsekʃuəl	shave_says:𐑣𐑴𐑥𐑴𐑕𐑧𐑒𐑖𐑫𐑩𐑤
 honesty	𐑭𐑯𐑩𐑕𐑑𐑦	ˈɑːnəsti	GenAm	89	𐑪𐑯𐑩𐑕𐑑𐑦	ˈɒnəsti	shave_says:𐑪𐑯𐑩𐑕𐑑𐑦
 honeycomb	𐑣𐑳𐑯𐑰𐑒𐑴𐑥	ˈhʌniːkəʊm	RSSB	89	𐑣𐑳𐑯𐑦𐑒𐑴𐑥	ˈhʌnɪkəʊm	shave_says:𐑣𐑳𐑯𐑦𐑒𐑴𐑥
@@ -3542,12 +3582,15 @@ itinerary	𐑲𐑑𐑦𐑯𐑼𐑧𐑮𐑦	aɪˈtɪnəreri	GenAm	89	𐑲𐑑𐑦
 ivied	𐑲𐑝𐑰𐑛	ˈaɪviːd	RSSB	89	𐑲𐑝𐑦𐑛	ˈaɪvid	shave_says:𐑲𐑝𐑦𐑛
 ivory	𐑲𐑝𐑮𐑦	aɪvri	RSSB	89	𐑲𐑝𐑼𐑦	ˈaɪvəri	shave_says:𐑲𐑝𐑼𐑦
 jack-o'-lantern	𐑡𐑨𐑒𐑴𐑤𐑨𐑯𐑑𐑼𐑯	ˈdʒækoʊˌlæntəRn	GenAm	89	𐑡𐑨𐑒-𐑩-𐑤𐑨𐑯𐑑𐑼𐑯	dʒæk-ə-ˈlæntəRn	shave_says:𐑡𐑨𐑒-𐑴'-𐑤𐑨𐑯𐑑𐑼𐑯
+jackdaw	𐑡𐑨𐑒𐑛𐑪	ˈdʒækˌdɒ	GenAm	89	𐑡𐑨𐑒𐑛𐑷	ˈdʒækdɔː	shave_says:𐑡𐑨𐑒𐑛𐑷
 jacobean	𐑡𐑨𐑒𐑩𐑚𐑦𐑩𐑯	ˈdʒækəˌbiən	RSSB	89	𐑡𐑨𐑒𐑩𐑚𐑾𐑯	ˌdʒækəˈbɪən	shave_says:𐑡𐑨𐑒𐑩𐑚𐑾𐑯
 jaguar	𐑡𐑨𐑜𐑘𐑩𐑼	dʒæɡjəəR	RSSB	89	𐑡𐑨𐑜𐑘𐑫𐑼	ˈdʒæɡjuəR	shave_says:𐑡𐑨𐑜𐑘𐑫𐑼
 jaguar	𐑡𐑨𐑜𐑢𐑸	ˈdʒæɡwɑːR	GenAm	89	𐑡𐑨𐑜𐑘𐑫𐑼	ˈdʒæɡjuəR	shave_says:𐑡𐑨𐑜𐑘𐑫𐑼
 janissary	𐑡𐑨𐑯𐑦𐑟𐑼𐑦	dʒanɪzəri	RSSB	89	𐑡𐑨𐑯𐑦𐑕𐑼𐑦	ˈdʒænɪsəri	shave_says:𐑡𐑨𐑯𐑦𐑕𐑼𐑦
 janissary	𐑡𐑨𐑯𐑩𐑟𐑧𐑮𐑦	ˈdʒænəˌzeri	GenAm	89	𐑡𐑨𐑯𐑦𐑕𐑼𐑦	ˈdʒænɪsəri	shave_says:𐑡𐑨𐑯𐑦𐑕𐑼𐑦
+jaundice	𐑡𐑪𐑯𐑛𐑦𐑕	ˈdʒɒndɪs	GenAm	89	𐑡𐑷𐑯𐑛𐑦𐑕	ˈdʒɔːndɪs	shave_says:𐑡𐑷𐑯𐑛𐑦𐑕
 jauntily	𐑡𐑪𐑯𐑑𐑦𐑤𐑦	ˈdʒɒntɪli	GenAm	89	𐑡𐑷𐑯𐑑𐑦𐑤𐑦	ˈdʒɔːntɪli	shave_says:𐑡𐑷𐑯𐑑𐑦𐑤𐑦
+jaw	𐑡𐑪	dʒɒ	GenAm	89	𐑡𐑷	dʒɔː	shave_says:𐑡𐑷
 jehovah	𐑡𐑩𐑣𐑴𐑝𐑩	dʒəˈhoʊvə	RSSB	89	𐑡𐑦𐑣𐑴𐑝𐑩	dʒɪˈhəʊvə	shave_says:𐑡𐑦𐑣𐑴𐑝𐑩
 jejune	𐑡𐑩𐑡𐑵𐑯	dʒəˈdʒuːn	RSSB	89	𐑡𐑦𐑡𐑵𐑯	dʒɪˈdʒuːn	shave_says:𐑡𐑦𐑡𐑵𐑯
 jeremiad	𐑡𐑧𐑮𐑼𐑥𐑲𐑼𐑛	dʒerəRmaɪəRd	RSSB	89	𐑡𐑧𐑮𐑦𐑥𐑲𐑨𐑛	ˌdʒerɪˈmaɪæd	shave_says:𐑡𐑧𐑮𐑦𐑥𐑲𐑨𐑛
@@ -3576,6 +3619,7 @@ judicial	𐑡𐑫𐑛𐑦𐑖𐑩𐑤	dʒuˈdɪʃəl	RSSB	89	𐑡𐑵𐑛𐑦�
 judiciary	𐑡𐑵𐑛𐑦𐑖𐑽𐑦	ˌdʒuːˈdɪʃɪəri	GenAm	89	𐑡𐑵𐑛𐑦𐑖𐑼𐑦	dʒuːˈdɪʃəri	shave_says:𐑡𐑵𐑛𐑦𐑖𐑼𐑦
 judicious	𐑡𐑫𐑛𐑦𐑖𐑩𐑕	dʒuˈdɪʃəs	RSSB	89	𐑡𐑵𐑛𐑦𐑖𐑩𐑕	dʒuːˈdɪʃəs	shave_says:𐑡𐑵𐑛𐑦𐑖𐑩𐑕
 judo	𐑡𐑫𐑛𐑴	ˈdʒudoʊ	GenAm	89	𐑡𐑵𐑛𐑴	ˈdʒuːdəʊ	shave_says:𐑡𐑵𐑛𐑴
+juggernaut	𐑡𐑳𐑜𐑼𐑯𐑪𐑑	ˈdʒʌɡəRnɒt	GenAm	89	𐑡𐑳𐑜𐑼𐑯𐑷𐑑	ˈdʒʌɡəRnɔːt	shave_says:𐑡𐑳𐑜𐑼𐑯𐑷𐑑
 juggler	𐑡𐑳𐑜𐑼𐑤𐑼	dʒʌɡəRləR	RSSB	89	𐑡𐑳𐑜𐑤𐑼	ˈdʒʌɡləR	shave_says:𐑡𐑳𐑜𐑤𐑼
 juice	𐑡𐑫𐑕	dʒus	GenAm	89	𐑡𐑵𐑕	dʒuːs	shave_says:𐑡𐑵𐑕
 juicy	𐑡𐑫𐑕𐑦	ˈdʒusi	RSSB	89	𐑡𐑵𐑕𐑦	ˈdʒuːsi	shave_says:𐑡𐑵𐑕𐑦
@@ -3635,7 +3679,6 @@ labyrinthine	𐑤𐑨𐑚𐑼𐑦𐑯𐑔𐑳𐑦𐑯	labərɪnθʌɪn	RSSB	89	�
 labyrinthine	𐑤𐑨𐑚𐑼𐑦𐑯𐑔𐑦𐑯	ˌlæbəˈrɪnθɪn	GenAm	89	𐑤𐑨𐑚𐑼𐑦𐑯𐑔𐑲𐑯	ˌlæbəˈrɪnθaɪn	shave_says:𐑤𐑨𐑚𐑼𐑦𐑯𐑔𐑲𐑯
 lachrymal	𐑤𐑨𐑒𐑮𐑩𐑥𐑩𐑤	ˈlækrəməl	GenAm	89	𐑤𐑨𐑒𐑮𐑦𐑥𐑩𐑤	ˈlækrɪməl	shave_says:𐑤𐑨𐑒𐑮𐑦𐑥𐑩𐑤
 lackadaisical	𐑤𐑨𐑒𐑕𐑩-	læksə-	RSSB	89	𐑤𐑨𐑒𐑩𐑛𐑱𐑟𐑦𐑒𐑩𐑤	ˌlækəˈdeɪzɪkəl	shave_says:𐑤𐑨𐑒𐑩𐑛𐑱𐑟𐑦𐑒𐑩𐑤
-lacrosse	𐑤𐑩𐑒𐑮𐑷𐑕	ləˈkrɔːs	GenAm	89	𐑤𐑩𐑒𐑮𐑪𐑕	ləˈkrɒs	shave_says:𐑤𐑩𐑒𐑮𐑪𐑕
 lacuna	𐑤𐑩𐑒𐑵𐑯𐑩	ləˈkuːnə	GenAm	89	𐑤𐑩𐑒𐑿𐑯𐑩	ləˈkjuːnə	shave_says:𐑤𐑩𐑒𐑿𐑯𐑩
 lady-in-waiting	𐑤𐑱𐑛𐑦𐑦𐑯𐑢𐑱𐑑𐑦𐑙	ˌleɪdiɪnˈweɪtɪŋ	GenAm	89	𐑤𐑱𐑛𐑦-𐑦𐑯-𐑢𐑱𐑑𐑦𐑙	ˌleɪdi-ɪn-ˈweɪtɪŋ	shave_says:𐑤𐑱𐑛𐑦-𐑦𐑯-𐑢𐑱𐑑𐑦𐑙
 laird	𐑤𐑻𐑛	lɜːRd	RSSB	89	𐑤𐑺𐑛	leəRd	shave_says:𐑤𐑺𐑛
@@ -3647,6 +3690,7 @@ lamentation	𐑤𐑨𐑥𐑩𐑯𐑑𐑱𐑖𐑩𐑯	ˌlæmənˈteɪʃən	RSSB	8
 lancashire	𐑤𐑨𐑙𐑒𐑼𐑖𐑼	læŋkəRʃəR	RSSB	89	𐑤𐑨𐑙𐑒𐑩𐑖𐑼	ˈlæŋkəʃəR	shave_says:𐑤𐑨𐑙𐑒𐑩𐑖𐑼
 lancet	𐑤𐑭𐑯𐑕𐑦𐑑	lɑːnsɪt	RSSB	89	𐑤𐑨𐑯𐑕𐑩𐑑, 𐑤𐑭𐑯𐑕𐑩𐑑	ˈlⱭːnsIt	shave_says:𐑤𐑭𐑯𐑕𐑩𐑑
 lancet	𐑤𐑨𐑯𐑕𐑦𐑑	lænsɪt	GenAm	89	𐑤𐑨𐑯𐑕𐑩𐑑, 𐑤𐑭𐑯𐑕𐑩𐑑	ˈlⱭːnsIt	shave_says:𐑤𐑨𐑯𐑕𐑩𐑑
+landfall	𐑤𐑨𐑯𐑛𐑓𐑪𐑤	ˈlændfɒl	GenAm	89	𐑤𐑨𐑯𐑛𐑓𐑷𐑤	ˈlændfɔːl	shave_says:𐑤𐑨𐑯𐑛𐑓𐑷𐑤
 languorous	𐑤𐑨𐑙𐑜𐑼𐑼𐑕	læŋɡərəRs	RSSB	89	𐑤𐑨𐑙𐑜𐑼𐑩𐑕	ˈlæŋɡərəs	shave_says:𐑤𐑨𐑙𐑜𐑼𐑩𐑕
 languorous	𐑤𐑨𐑙𐑼𐑩𐑕	ˈlæŋərəs	GenAm	89	𐑤𐑨𐑙𐑜𐑼𐑩𐑕	ˈlæŋɡərəs	shave_says:𐑤𐑨𐑙𐑜𐑼𐑩𐑕
 laos	𐑤𐑬𐑟	laʊz	RSSB	89	𐑤𐑬𐑕	ˈlaʊs	shave_says:𐑤𐑬𐑕
@@ -3665,11 +3709,13 @@ latitude	𐑤𐑨𐑑𐑦𐑑𐑫𐑛	ˈlætɪtud	GenAm	89	𐑤𐑨𐑑𐑦𐑑�
 latitudinarian	𐑤𐑨𐑑𐑦𐑑𐑿𐑛𐑦𐑯𐑻𐑾𐑯	latɪtjuːdɪnɜːrɪən	RSSB	89	𐑤𐑨𐑑𐑦𐑑𐑵𐑛𐑦𐑯𐑺𐑾𐑯, 𐑤𐑨𐑑𐑦𐑑𐑿𐑛𐑦𐑯𐑺𐑾𐑯	ˌlætɪtjuːdɪˈneərɪən	shave_says:𐑤𐑨𐑑𐑦𐑑𐑿𐑛𐑦𐑯𐑺𐑾𐑯
 latitudinarian	𐑤𐑨𐑛𐑦𐑑𐑵𐑛𐑩𐑯𐑧𐑮𐑦𐑩𐑯	lædɪtuːdəˈneriən	GenAm	89	𐑤𐑨𐑑𐑦𐑑𐑵𐑛𐑦𐑯𐑺𐑾𐑯, 𐑤𐑨𐑑𐑦𐑑𐑿𐑛𐑦𐑯𐑺𐑾𐑯	ˌlætɪtjuːdɪˈneərɪən	shave_says:𐑤𐑨𐑑𐑦𐑑𐑵𐑛𐑦𐑯𐑺𐑾𐑯
 latter-day	𐑤𐑨𐑑𐑼𐑛𐑱	lætəRdeɪ	RSSB	89	𐑤𐑨𐑑𐑼-𐑛𐑱	ˈlætəR-deɪ	shave_says:𐑤𐑨𐑑𐑼-𐑛𐑱
+laud	𐑤𐑪𐑛	lɒd	GenAm	89	𐑤𐑷𐑛	lɔːd	shave_says:𐑤𐑷𐑛
 laudable	𐑤𐑷𐑛𐑩𐑚𐑤	ˈlɔːdəbl	RSSB	89	𐑤𐑷𐑛𐑩𐑚𐑩𐑤	ˈlɔːdəbəl	shave_says:𐑤𐑷𐑛𐑩𐑚𐑩𐑤
 laudably	𐑤𐑷𐑛𐑦𐑚𐑤𐑦	ˈlɔːdɪbli	RSSB	89	𐑤𐑷𐑛𐑩𐑚𐑤𐑦	ˈlɔːdəbli	shave_says:𐑤𐑷𐑛𐑩𐑚𐑤𐑦
 laudatory	𐑤𐑹𐑛𐑼𐑑𐑮𐑦	lɔːRdəRtri	RSSB	89	𐑤𐑷𐑛𐑩𐑑𐑼𐑦	ˈlɔːdətəri	shave_says:𐑤𐑷𐑛𐑩𐑑𐑼𐑦
 launcher	𐑤𐑪𐑯𐑗𐑼	ˈlɒntʃəR	GenAm	89	𐑤𐑷𐑯𐑗𐑼	ˈlɔːntʃəR	shave_says:𐑤𐑷𐑯𐑗𐑼
-launderette	𐑤𐑷𐑯𐑛𐑼𐑧𐑑	lɔːndəˈret	GenAm	89	𐑤𐑷𐑯𐑛𐑮𐑧𐑑	lɔːnˈdret	shave_says:𐑤𐑷𐑯𐑛𐑮𐑧𐑑
+launder	𐑤𐑪𐑯𐑛𐑼	ˈlɒndəR	GenAm	89	𐑤𐑷𐑯𐑛𐑼	ˈlɔːndəR	shave_says:𐑤𐑷𐑯𐑛𐑼
+launderette	𐑤𐑪𐑯𐑛𐑼𐑧𐑑	lɒndəˈret	GenAm	89	𐑤𐑷𐑯𐑛𐑮𐑧𐑑	lɔːnˈdret	shave_says:𐑤𐑷𐑯𐑛𐑮𐑧𐑑
 laureate	𐑤𐑪𐑮𐑦𐑩𐑑	lɒriət	RSSB	89	𐑤𐑹𐑾𐑑	ˈlɔːrɪət	shave_says:𐑤𐑹𐑾𐑑
 laureate	𐑤𐑹𐑦𐑩𐑑	ˈlɔːRiət	GenAm	89	𐑤𐑹𐑾𐑑	ˈlɔːrɪət	shave_says:𐑤𐑹𐑾𐑑
 laurel	𐑤𐑪𐑮𐑼𐑤	lɒrəRl	RSSB	89	𐑤𐑪𐑮𐑩𐑤	ˈlɒrəl	shave_says:𐑤𐑪𐑮𐑩𐑤
@@ -3677,6 +3723,7 @@ laurel	𐑤𐑹𐑩𐑤	ˈlɔːRəl	GenAm	89	𐑤𐑪𐑮𐑩𐑤	ˈlɒrəl	shav
 lavatory	𐑤𐑨𐑝𐑼𐑑𐑮𐑦	lævəRtri	RSSB	89	𐑤𐑨𐑝𐑩𐑑𐑼𐑦	ˈlævətəri	shave_says:𐑤𐑨𐑝𐑩𐑑𐑼𐑦
 lavatory	𐑤𐑨𐑝𐑩𐑑𐑹𐑦	ˈlævətɔːRi	GenAm	89	𐑤𐑨𐑝𐑩𐑑𐑼𐑦	ˈlævətəri	shave_says:𐑤𐑨𐑝𐑩𐑑𐑼𐑦
 lawful	𐑤𐑷𐑓𐑫𐑤	ˈlɔːfʊl	RSSB	89	𐑤𐑷𐑓𐑩𐑤	ˈlɔːfəl	shave_says:𐑤𐑷𐑓𐑩𐑤
+lawgiver	𐑤𐑪𐑜𐑦𐑝𐑼	ˈlɒˌɡɪvəR	GenAm	89	𐑤𐑷𐑜𐑦𐑝𐑼	ˈlɔːɡɪvəR	shave_says:𐑤𐑷𐑜𐑦𐑝𐑼
 lawsuit	𐑤𐑷𐑕𐑫𐑑	ˈlɔˌsut	RSSB	89	𐑤𐑷𐑕𐑵𐑑	ˈlɔːsuːt	shave_says:𐑤𐑷𐑕𐑵𐑑
 lawyer	𐑤𐑶𐑼	ˈlɔɪəR	GenAm	89	𐑤𐑷𐑘𐑼	ˈlɔːjəR	shave_says:𐑤𐑷𐑘𐑼
 lazar	𐑤𐑱𐑟𐑼	leɪzəR	RSSB	89	𐑤𐑨𐑟𐑼	ˈlæzəR	shave_says:𐑤𐑨𐑟𐑼
@@ -3700,6 +3747,7 @@ legislature	𐑤𐑧𐑡𐑦𐑕𐑤𐑩𐑗𐑫𐑼	ledʒɪslətʃʊəR	RSSB	89
 legitimacy	𐑤𐑩𐑡𐑦𐑑𐑦𐑥𐑩𐑕𐑦	ləˈdʒɪtɪməsi	RSSB	89	𐑤𐑦𐑡𐑦𐑑𐑦𐑥𐑩𐑕𐑦	lɪˈdʒɪtɪməsi	shave_says:𐑤𐑦𐑡𐑦𐑑𐑦𐑥𐑩𐑕𐑦
 legume	𐑤𐑦𐑜𐑿𐑥	lɪˈɡjuːm	RSSB	89	𐑤𐑧𐑜𐑿𐑥	ˈleɡjuːm	shave_says:𐑤𐑧𐑜𐑿𐑥
 lenient	𐑤𐑰𐑯𐑦𐑩𐑯𐑑	ˈliːniənt	RSSB	89	𐑤𐑰𐑯𐑾𐑯𐑑	ˈliːnɪənt	shave_says:𐑤𐑰𐑯𐑾𐑯𐑑
+leprechaun	𐑤𐑧𐑐𐑮𐑩𐑒𐑪𐑯	ˈleprəˌkɒn	GenAm	89	𐑤𐑧𐑐𐑮𐑩𐑒𐑷𐑯	ˈleprəkɔːn	shave_says:𐑤𐑧𐑐𐑮𐑩𐑒𐑷𐑯
 lesbian	𐑤𐑧𐑟𐑚𐑦𐑩𐑯	ˈlezbiən	RSSB	89	𐑤𐑧𐑟𐑚𐑾𐑯	ˈlezbɪən	shave_says:𐑤𐑧𐑟𐑚𐑾𐑯
 lethargic	𐑤𐑩𐑔𐑸𐑡𐑦𐑒	ləˈθɑːRdʒɪk	GenAm	89	𐑤𐑦𐑔𐑸𐑡𐑦𐑒	lɪˈθɑːRdʒɪk	shave_says:𐑤𐑦𐑔𐑸𐑡𐑦𐑒
 levant	𐑤𐑧𐑝𐑩𐑯𐑑	ˈlevənt	RSSB	89	𐑤𐑩𐑝𐑨𐑯𐑑	ləˈvænt	shave_says:𐑤𐑩𐑝𐑨𐑯𐑑
@@ -3762,7 +3810,6 @@ locomotive	𐑤𐑴𐑒𐑴𐑥𐑴𐑑𐑦𐑝	ˌləʊkəʊˈməʊtiv	RSSB	89	�
 locution	𐑤𐑴𐑒𐑘𐑫𐑖𐑩𐑯	loʊˈkjuʃən	RSSB	89	𐑤𐑩𐑒𐑿𐑖𐑩𐑯	ləˈkjuːʃən	shave_says:𐑤𐑩𐑒𐑿𐑖𐑩𐑯
 loess	𐑤𐑻𐑕	lɜːs	RSSB	89	𐑤𐑴𐑧𐑕	ˈləʊes	shave_says:𐑤𐑴𐑧𐑕
 loess	𐑤𐑴𐑩𐑕	ˈloʊəs	GenAm	89	𐑤𐑴𐑧𐑕	ˈləʊes	shave_says:𐑤𐑴𐑧𐑕
-loft	𐑤𐑷𐑓𐑑	lɔːft	GenAm	89	𐑤𐑪𐑓𐑑	lɒft	shave_says:𐑤𐑪𐑓𐑑
 lofty	𐑤𐑷𐑓𐑑𐑦	ˈlɔːfti	GenAm	89	𐑤𐑪𐑓𐑑𐑦	ˈlɒfti	shave_says:𐑤𐑪𐑓𐑑𐑦
 logarithm	𐑤𐑪𐑜𐑼𐑦𐑞𐑥	ˈlɒɡərɪðm	GenAm	89	𐑤𐑪𐑜𐑼𐑦𐑞𐑩𐑥	ˈlɒɡərɪðəm	shave_says:𐑤𐑪𐑜𐑼𐑦𐑞𐑩𐑥
 loggia	𐑤𐑪𐑡𐑩	ˈlɒdʒə	RSSB	89	𐑤𐑪𐑡𐑾	ˈlɒdʒɪə	shave_says:𐑤𐑪𐑡𐑾
@@ -3770,7 +3817,6 @@ logos	𐑤𐑪𐑜𐑪𐑕	ˈlɒɡɒs	RSSB	89	𐑤𐑴𐑜𐑴𐑟	ˈləʊɡəʊ
 logos	𐑤𐑴𐑜𐑴𐑕	ˈloʊɡoʊs	GenAm	89	𐑤𐑴𐑜𐑴𐑟	ˈləʊɡəʊz	shave_says:𐑤𐑴𐑜𐑴𐑟
 londoner	𐑤𐑳𐑯𐑛𐑼𐑯𐑼	lʌndəRnəR	RSSB	89	𐑤𐑳𐑯𐑛𐑩𐑯𐑼	ˈlʌndənəR	shave_says:𐑤𐑳𐑯𐑛𐑩𐑯𐑼
 long-lived	𐑤𐑪𐑙𐑤𐑲𐑝𐑛	ˈlɒŋˈlaɪvd	RSSB	89	𐑤𐑪𐑙-𐑤𐑦𐑝𐑛	lɒŋ-ˈlɪvd	shave_says:𐑤𐑪𐑙-𐑤𐑦𐑝𐑛
-longest	𐑤𐑷𐑙𐑜𐑩𐑕𐑑	ˈlɔːŋɡəst	GenAm	89	𐑤𐑪𐑙𐑜𐑩𐑕𐑑	ˈlɒŋɡəst	shave_says:𐑤𐑪𐑙𐑜𐑩𐑕𐑑
 longevity	𐑤𐑪𐑙𐑡𐑧𐑝𐑦𐑑𐑦	lɒŋˈdʒevɪti	RSSB	89	𐑤𐑪𐑯𐑡𐑧𐑝𐑦𐑑𐑦	lɒnˈdʒevɪti	shave_says:𐑤𐑪𐑯𐑡𐑧𐑝𐑦𐑑𐑦
 longitude	𐑤𐑪𐑯𐑡𐑩𐑑𐑫𐑛	ˈlɒndʒəˌtud	GenAm	89	𐑤𐑪𐑯𐑡𐑦𐑑𐑵𐑛, 𐑤𐑪𐑯𐑡𐑦𐑑𐑿𐑛	ˈlɒndʒɪtjuːd	shave_says:𐑤𐑪𐑯𐑡𐑦𐑑𐑵𐑛
 longitudinal	𐑤𐑪𐑙𐑜𐑦𐑑𐑿𐑛𐑦𐑯𐑤	ˌlɒŋɡɪˈtjuːdɪnl	RSSB	89	𐑤𐑪𐑯𐑡𐑦𐑑𐑵𐑛𐑦𐑯𐑩𐑤, 𐑤𐑪𐑯𐑡𐑦𐑑𐑿𐑛𐑦𐑯𐑩𐑤	ˌlɒndʒɪˈtjuːdɪnəl	shave_says:𐑤𐑪𐑯𐑡𐑦𐑑𐑿𐑛𐑦𐑯𐑩𐑤
@@ -3782,7 +3828,6 @@ looter	𐑤𐑫𐑑𐑼	ˈlutəR	GenAm	89	𐑤𐑵𐑑𐑼	ˈluːtəR	shave_says
 loquacious	𐑤𐑴𐑒𐑢𐑱𐑖𐑩𐑕	loʊˈkweɪʃəs	GenAm	89	𐑤𐑩𐑒𐑢𐑱𐑖𐑩𐑕	ləˈkweɪʃəs	shave_says:𐑤𐑩𐑒𐑢𐑱𐑖𐑩𐑕
 lorgnette	𐑤𐑪𐑮𐑯𐑘𐑧𐑑	lɒrnjet	RSSB	89	𐑤𐑹𐑯𐑘𐑧𐑑	lɔːRˈnjet	shave_says:𐑤𐑹𐑯𐑘𐑧𐑑
 lory	𐑤𐑪𐑮𐑦	lɒri	RSSB	89	𐑤𐑹𐑦	ˈlɔːri	shave_says:𐑤𐑹𐑦
-loss	𐑤𐑷𐑕	lɔːs	GenAm	89	𐑤𐑪𐑕	lɒs	shave_says:𐑤𐑪𐑕
 loth	𐑤𐑴𐑑	ləʊt	RSSB	89	𐑤𐑴𐑔	ləʊθ	shave_says:𐑤𐑴𐑔
 low-down	𐑤𐑴𐑛𐑬𐑯	ˈloʊdaʊn	GenAm	89	𐑤𐑴-𐑛𐑬𐑯	ləʊ-ˈdaʊn	shave_says:𐑤𐑴-𐑛𐑬𐑯
 lowering	𐑤𐑴𐑮𐑦𐑙	loʊrɪŋ	RSSB	89	𐑤𐑬𐑼𐑦𐑙, 𐑤𐑴𐑼𐑦𐑙	ˈlaʊərɪŋ	shave_says:[𐑤𐑬𐑼𐑦𐑙 / 𐑤𐑴𐑼𐑦𐑙]
@@ -3887,6 +3932,7 @@ maraschino	𐑥𐑨𐑮𐑩𐑖𐑦𐑯𐑴	ˌmærəˈʃinoʊ	GenAm	89	𐑥𐑨�
 marathon	𐑥𐑨𐑮𐑼𐑔𐑩𐑯	mærəRθən	RSSB	89	𐑥𐑨𐑮𐑩𐑔𐑩𐑯	ˈmærəθən	shave_says:𐑥𐑨𐑮𐑩𐑔𐑩𐑯
 marathon	𐑥𐑨𐑮𐑩𐑔𐑪𐑯	ˈmærəˌθɒn	GenAm	89	𐑥𐑨𐑮𐑩𐑔𐑩𐑯	ˈmærəθən	shave_says:𐑥𐑨𐑮𐑩𐑔𐑩𐑯
 maraud	𐑥𐑼𐑹𐑛	mərɔːRd	RSSB	89	𐑥𐑼𐑷𐑛	məˈrɔːd	shave_says:𐑥𐑼𐑷𐑛
+maraud	𐑥𐑼𐑪𐑛	məˈrɒd	GenAm	89	𐑥𐑼𐑷𐑛	məˈrɔːd	shave_says:𐑥𐑼𐑷𐑛
 marauder	𐑥𐑼𐑹𐑛𐑼	mərɔːRdəR	RSSB	89	𐑥𐑼𐑷𐑛𐑼	məˈrɔːdəR	shave_says:𐑥𐑼𐑷𐑛𐑼
 margarine	𐑥𐑸𐑡𐑼𐑦𐑯	ˈmɑːRdʒərɪn	GenAm	89	𐑥𐑸𐑡𐑼𐑰𐑯	ˌmɑːRdʒəˈriːn	shave_says:𐑥𐑸𐑡𐑼𐑰𐑯
 margin	𐑥𐑸𐑡𐑯	ˈmɑːrdʒn	GenAm	89	𐑥𐑸𐑡𐑦𐑯	ˈmɑːRdʒɪn	shave_says:𐑥𐑸𐑡𐑦𐑯
@@ -3943,8 +3989,10 @@ maturity	𐑥𐑩𐑗𐑫𐑼𐑼𐑑𐑦	mətʃʊərəRti	RSSB	89	𐑥𐑩𐑗�
 maturity	𐑥𐑩𐑑𐑫𐑼𐑩𐑑𐑦	məˈtʊərəti	GenAm	89	𐑥𐑩𐑗𐑫𐑼𐑦𐑑𐑦	məˈtʃʊərɪti	shave_says:𐑥𐑩𐑗𐑫𐑼𐑦𐑑𐑦
 matutinal	𐑥𐑩𐑑𐑘𐑫𐑑𐑦𐑯𐑩𐑤	məˈtjutɪnəl	RSSB	89	𐑥𐑩𐑑𐑵𐑑𐑦𐑯𐑩𐑤, 𐑥𐑩𐑑𐑿𐑑𐑦𐑯𐑩𐑤	məˈtjuːtɪnəl	shave_says:𐑥𐑩𐑑𐑿𐑑𐑦𐑯𐑩𐑤
 matutinal	𐑥𐑩𐑑𐑫𐑑𐑩𐑯𐑩𐑤	məˈtutənəl	GenAm	89	𐑥𐑩𐑑𐑵𐑑𐑦𐑯𐑩𐑤, 𐑥𐑩𐑑𐑿𐑑𐑦𐑯𐑩𐑤	məˈtjuːtɪnəl	shave_says:𐑥𐑩𐑑𐑵𐑑𐑦𐑯𐑩𐑤
+maudlin	𐑥𐑪𐑛𐑤𐑦𐑯	ˈmɒdlɪn	GenAm	89	𐑥𐑷𐑛𐑤𐑦𐑯	ˈmɔːdlɪn	shave_says:𐑥𐑷𐑛𐑤𐑦𐑯
+maunder	𐑥𐑪𐑯𐑛𐑼	ˈmɒndəR	GenAm	89	𐑥𐑷𐑯𐑛𐑼	ˈmɔːndəR	shave_says:𐑥𐑷𐑯𐑛𐑼
 mausoleum	𐑥𐑷𐑟𐑩𐑤𐑰𐑩𐑥	ˌmɔːzəˈliːəm	RSSB	89	𐑥𐑷𐑕𐑩𐑤𐑾𐑥	ˌmɔːsəˈliːəm	shave_says:𐑥𐑷𐑕𐑩𐑤𐑾𐑥
-mausoleum	𐑥𐑷𐑕𐑩𐑤𐑦𐑩𐑥	ˌmɔːsəˈliəm	GenAm	89	𐑥𐑷𐑕𐑩𐑤𐑾𐑥	ˌmɔːsəˈliːəm	shave_says:𐑥𐑷𐑕𐑩𐑤𐑾𐑥
+mausoleum	𐑥𐑪𐑕𐑩𐑤𐑦𐑩𐑥	ˌmɒsəˈliəm	GenAm	89	𐑥𐑷𐑕𐑩𐑤𐑾𐑥	ˌmɔːsəˈliːəm	shave_says:𐑥𐑷𐑕𐑩𐑤𐑾𐑥
 mauve	𐑥𐑷𐑝	mɔːv	GenAm	89	𐑥𐑴𐑝	məʊv	shave_says:𐑥𐑴𐑝
 maxillary	𐑥𐑨𐑒𐑕𐑩𐑤𐑧𐑮𐑦	ˈmæksəˌleri	GenAm	89	𐑥𐑨𐑒𐑕𐑦𐑤𐑼𐑦	mækˈsɪləri	shave_says:𐑥𐑨𐑒𐑕𐑦𐑤𐑼𐑦
 maximise	𐑥𐑨𐑒𐑕𐑩𐑥𐑲𐑟	ˈmæksəmaɪz	RSSB	89	𐑥𐑨𐑒𐑕𐑦𐑥𐑲𐑟	ˈmæksɪmaɪz	shave_says:𐑥𐑨𐑒𐑕𐑦𐑥𐑲𐑟
@@ -4158,9 +4206,7 @@ mosaic	𐑥𐑴𐑟𐑱𐑒	məʊˈzeɪk	RSSB	89	𐑥𐑴𐑟𐑱𐑦𐑒	məʊ�
 moses	𐑥𐑴𐑟𐑦𐑕	ˈməʊzɪs	RSSB	89	𐑥𐑴𐑟𐑩𐑟	ˈməʊzƏz	shave_says:𐑥𐑴𐑟𐑩𐑟
 mosquito	𐑥𐑪𐑕𐑒𐑰𐑑𐑴	mɒsˈkiːtəʊ	RSSB	89	𐑥𐑩𐑕𐑒𐑰𐑑𐑴	məˈskiːtəʊ	shave_says:𐑥𐑩𐑕𐑒𐑰𐑑𐑴
 mosquito	𐑥𐑩𐑕𐑒𐑦𐑑𐑴	məˈskitoʊ	GenAm	89	𐑥𐑩𐑕𐑒𐑰𐑑𐑴	məˈskiːtəʊ	shave_says:𐑥𐑩𐑕𐑒𐑰𐑑𐑴
-moss	𐑥𐑷𐑕	mɔːs	GenAm	89	𐑥𐑪𐑕	mɒs	shave_says:𐑥𐑪𐑕
-moss-grown	𐑥𐑪𐑕𐑜𐑮𐑴𐑯	mɒsɡrəʊn	RSSB	89	𐑥𐑪𐑕-𐑜𐑮𐑴𐑯	ˈmɒs-ɡrəʊn	shave_says:𐑥𐑪𐑕-𐑜𐑮𐑴𐑯
-moss-grown	𐑥𐑷𐑕𐑜𐑮𐑴𐑯	ˈmɔːsˌɡroʊn	GenAm	89	𐑥𐑪𐑕-𐑜𐑮𐑴𐑯	ˈmɒs-ɡrəʊn	shave_says:𐑥𐑪𐑕-𐑜𐑮𐑴𐑯
+moss-grown	𐑥𐑪𐑕𐑜𐑮𐑴𐑯	ˈmɒsˌɡroʊn	GenAm	89	𐑥𐑪𐑕-𐑜𐑮𐑴𐑯	ˈmɒs-ɡrəʊn	shave_says:𐑥𐑪𐑕-𐑜𐑮𐑴𐑯
 mossy	𐑥𐑭𐑕𐑦	ˈmɑːsi	GenAm	89	𐑥𐑪𐑕𐑦	ˈmɒsi	shave_says:𐑥𐑪𐑕𐑦
 mother-in-law	𐑥𐑳𐑞𐑼𐑦𐑯𐑤𐑷	mʌðərɪnlɔː	RSSB	89	𐑥𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷	ˈmʌðər-ɪn-lɔː	shave_says:𐑥𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷
 mother-in-law	𐑥𐑳𐑞𐑼𐑦𐑯𐑤𐑭	ˈmʌðərɪnˌlɑː	GenAm	89	𐑥𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷	ˈmʌðər-ɪn-lɔː	shave_says:𐑥𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷
@@ -4224,8 +4270,11 @@ national	𐑯𐑨𐑖𐑩𐑯𐑤	ˈnæʃənl	GenAm	89	𐑯𐑨𐑖𐑩𐑯𐑩�
 natural	𐑯𐑨𐑗𐑼𐑼𐑤	nætʃərəRl	RSSB	89	𐑯𐑨𐑗𐑼𐑩𐑤	ˈnætʃərəl	shave_says:𐑯𐑨𐑗𐑼𐑩𐑤
 naturalize	𐑯𐑨𐑗𐑼𐑼𐑤𐑲𐑟	nætʃərəRlaɪz	RSSB	89	𐑯𐑨𐑗𐑼𐑩𐑤𐑲𐑟	ˈnætʃərəlaɪz	shave_says:𐑯𐑨𐑗𐑼𐑩𐑤𐑲𐑟
 naturally	𐑯𐑨𐑗𐑮𐑼𐑤𐑦	nætʃrəRli	RSSB	89	𐑯𐑨𐑗𐑼𐑩𐑤𐑦	ˈnætʃərəli	shave_says:𐑯𐑨𐑗𐑼𐑩𐑤𐑦
-nausea	𐑯𐑷𐑟𐑦𐑩	ˈnɔːziə	GenAm	89	𐑯𐑷𐑟𐑾	ˈnɔːzɪə	shave_says:𐑯𐑷𐑟𐑾
+naught	𐑯𐑪𐑑	nɒt	GenAm	89	𐑯𐑷𐑑	nɔːt	shave_says:𐑯𐑷𐑑
+naughty	𐑯𐑪𐑑𐑦	ˈnɒti	GenAm	89	𐑯𐑷𐑑𐑦	ˈnɔːti	shave_says:𐑯𐑷𐑑𐑦
+nausea	𐑯𐑪𐑟𐑦𐑩	ˈnɒziə	GenAm	89	𐑯𐑷𐑟𐑾	ˈnɔːzɪə	shave_says:𐑯𐑷𐑟𐑾
 nauseous	𐑯𐑷𐑖𐑩𐑕	ˈnɔːʃəs	GenAm	89	𐑯𐑷𐑟𐑾𐑕	ˈnɔːzɪəs	shave_says:𐑯𐑷𐑟𐑾𐑕
+nautilus	𐑯𐑪𐑑𐑦𐑤𐑩𐑕	ˈnɒtɪləs	GenAm	89	𐑯𐑷𐑑𐑦𐑤𐑩𐑕	ˈnɔːtɪləs	shave_says:𐑯𐑷𐑑𐑦𐑤𐑩𐑕
 ne'er-do-well	𐑯𐑺𐑛𐑫𐑢𐑧𐑤	neəRduwel	RSSB	89	𐑯𐑺-𐑛𐑵-𐑢𐑧𐑤	ˈneəR-duː-wel	shave_says:𐑯𐑺-𐑛𐑵-𐑢𐑧𐑤
 neanderthal	𐑯𐑦𐑨𐑯𐑛𐑼𐑔𐑩𐑤	niˈændəRθəl	GenAm	89	𐑯𐑰𐑨𐑯𐑛𐑼𐑑𐑭𐑤	niːˈændəRtɑːl	shave_says:𐑯𐑰𐑨𐑯𐑛𐑼𐑑𐑭𐑤
 neapolitan	𐑯𐑰𐑩𐑐𐑪𐑤𐑦𐑑𐑩𐑯	ˌniːəˈpɒlɪtən	RSSB	89	𐑯𐑾𐑐𐑪𐑤𐑦𐑑𐑩𐑯	nɪəˈpɒlɪtən	shave_says:𐑯𐑾𐑐𐑪𐑤𐑦𐑑𐑩𐑯
@@ -4259,6 +4308,7 @@ neophyte	𐑯𐑦𐑩𐑓𐑲𐑑	ˈniəˌfaɪt	GenAm	89	𐑯𐑰𐑴𐑓𐑲�
 nepali	𐑯𐑩𐑐𐑷𐑤𐑦	nəˈpɔːli	RSSB	89	𐑯𐑦𐑐𐑷𐑤𐑦	nɪˈpɔːli	shave_says:𐑯𐑦𐑐𐑷𐑤𐑦
 nephew	𐑯𐑧𐑓𐑘𐑫	ˈnefju	GenAm	89	𐑯𐑧𐑓𐑿	ˈnefjuː	shave_says:𐑯𐑧𐑓𐑿
 nescience	𐑯𐑧𐑖𐑩𐑯𐑕	ˈneʃəns	GenAm	89	𐑯𐑧𐑕𐑾𐑯𐑕	ˈnesɪəns	shave_says:𐑯𐑧𐑕𐑾𐑯𐑕
+netball	𐑯𐑧𐑑𐑚𐑪𐑤	ˈnetˌbɒl	GenAm	89	𐑯𐑧𐑑𐑚𐑷𐑤	ˈnetbɔːl	shave_says:𐑯𐑧𐑑𐑚𐑷𐑤
 netherlands	𐑯𐑧𐑞𐑼𐑤𐑼𐑯𐑛𐑟	neðəRləRndz	RSSB	89	𐑯𐑧𐑞𐑼𐑤𐑩𐑯𐑛𐑟	ˈneðəRləndz	shave_says:𐑯𐑧𐑞𐑼𐑤𐑩𐑯𐑛𐑟
 nettle	𐑯𐑧𐑑𐑤	ˈnetl	RSSB	89	𐑯𐑧𐑑𐑩𐑤	ˈnetəl	shave_says:𐑯𐑧𐑑𐑩𐑤
 neural	𐑯𐑫𐑮𐑩𐑤	ˈnʊrəl	GenAm	89	𐑯𐑘𐑫𐑼𐑩𐑤	ˈnjʊərəl	shave_says:𐑯𐑘𐑫𐑼𐑩𐑤
@@ -4275,7 +4325,7 @@ newfoundland	𐑯𐑿𐑓𐑬𐑯𐑛𐑤𐑩𐑯𐑛	ˈnjuːˌfaʊndlənd	RSSB	
 newfoundland	𐑯𐑫𐑓𐑬𐑯𐑛𐑤𐑩𐑯𐑛	ˈnuˌfaʊndlənd	GenAm	89	𐑯𐑵𐑓𐑩𐑯𐑤𐑩𐑯𐑛, 𐑯𐑿𐑓𐑩𐑯𐑤𐑩𐑯𐑛	ˈnjuːfənlənd	shave_says:𐑯𐑵𐑓𐑩𐑯𐑤𐑩𐑯𐑛
 newly	𐑯𐑫𐑤𐑦	ˈnuli	GenAm	89	𐑯𐑵𐑤𐑦, 𐑯𐑿𐑤𐑦	ˈnjuːli	shave_says:𐑯𐑵𐑤𐑦
 newsletter	𐑯𐑫𐑟𐑤𐑧𐑑𐑼	ˈnuzˌletəR	GenAm	89	𐑯𐑵𐑟𐑤𐑧𐑑𐑼, 𐑯𐑿𐑟𐑤𐑧𐑑𐑼	ˈnjuːzletəR	shave_says:𐑯𐑵𐑟𐑤𐑧𐑑𐑼
-newspaper	𐑯𐑿𐑕𐑐𐑱𐑐𐑼	njuːspeɪpəR	RSSB	89	𐑯𐑵𐑟𐑐𐑱𐑐𐑼, 𐑯𐑿𐑟𐑐𐑱𐑐𐑼	ˈnjuːzpeɪpəR	shave_says:𐑯𐑿𐑟𐑐𐑱𐑐𐑼
+newspaper	𐑯𐑿𐑕𐑐𐑱𐑐𐑼	njuːspeɪpəR	RSSB	89	𐑯𐑵𐑟𐑐𐑱𐑐𐑼, 𐑯𐑿𐑟𐑐𐑱𐑐𐑼	ˈnjuːzpeɪpəR	shave_says:𐑯𐑵𐑟𐑐𐑱𐑐𐑼
 newspaper	𐑯𐑫𐑟𐑐𐑱𐑐𐑼	ˈnuzˌpeɪpəR	GenAm	89	𐑯𐑵𐑟𐑐𐑱𐑐𐑼, 𐑯𐑿𐑟𐑐𐑱𐑐𐑼	ˈnjuːzpeɪpəR	shave_says:𐑯𐑵𐑟𐑐𐑱𐑐𐑼
 newt	𐑯𐑫𐑑	ˈnut	GenAm	89	𐑯𐑵𐑑, 𐑯𐑿𐑑	njuːt	shave_says:𐑯𐑵𐑑
 newtonian	𐑯𐑫𐑑𐑴𐑯𐑦𐑩𐑯	nuˈtoʊniən	GenAm	89	𐑯𐑵𐑑𐑴𐑯𐑾𐑯, 𐑯𐑿𐑑𐑴𐑯𐑾𐑯	njuːˈtəʊnɪən	shave_says:𐑯𐑵𐑑𐑴𐑯𐑾𐑯
@@ -4358,7 +4408,6 @@ obdurate	𐑪𐑚𐑛𐑫𐑮𐑦𐑑	ˈɒbdʊrɪt	GenAm	89	𐑪𐑚𐑛𐑘𐑫
 obedience	𐑩𐑚𐑰𐑛𐑾𐑯𐑕	əˈbiːdɪəns	RSSB	89	𐑴𐑚𐑰𐑛𐑾𐑯𐑕	əʊˈbiːdɪəns	shave_says:𐑴𐑚𐑰𐑛𐑾𐑯𐑕
 obedient	𐑩𐑚𐑰𐑛𐑾𐑯𐑑	əˈbiːdɪənt	RSSB	89	𐑴𐑚𐑰𐑛𐑾𐑯𐑑	əʊˈbiːdɪənt	shave_says:𐑴𐑚𐑰𐑛𐑾𐑯𐑑
 obedient	𐑩𐑚𐑦𐑛𐑦𐑩𐑯𐑑	əˈbidiənt	GenAm	89	𐑴𐑚𐑰𐑛𐑾𐑯𐑑	əʊˈbiːdɪənt	shave_says:𐑴𐑚𐑰𐑛𐑾𐑯𐑑
-obelisk	𐑷𐑚𐑩𐑤𐑦𐑕𐑒	ˈɔːbəlɪsk	GenAm	89	𐑪𐑚𐑩𐑤𐑦𐑕𐑒	ˈɒbəlɪsk	shave_says:𐑪𐑚𐑩𐑤𐑦𐑕𐑒
 obese	𐑴𐑚𐑦𐑕	oʊˈbis	GenAm	89	𐑴𐑚𐑰𐑕	əʊˈbiːs	shave_says:𐑴𐑚𐑰𐑕
 obfuscate	𐑪𐑚𐑓𐑳𐑕𐑒𐑱𐑑	ˈɒbfʌskeɪt	RSSB	89	𐑪𐑚𐑓𐑩𐑕𐑒𐑱𐑑	ˈɒbfəskeɪt	shave_says:𐑪𐑚𐑓𐑩𐑕𐑒𐑱𐑑
 obfuscate	𐑭𐑚𐑓𐑳𐑕𐑒𐑱𐑑	ˈɑːbfʌskeɪt	GenAm	89	𐑪𐑚𐑓𐑩𐑕𐑒𐑱𐑑	ˈɒbfəskeɪt	shave_says:𐑪𐑚𐑓𐑩𐑕𐑒𐑱𐑑
@@ -4397,20 +4446,8 @@ odalisque	𐑴𐑛𐑤𐑦𐑕𐑒	ˈoʊdlɪsk	GenAm	89	𐑴𐑛𐑩𐑤𐑦𐑕
 odious	𐑴𐑛𐑦𐑩𐑕	ˈoʊdiəs	GenAm	89	𐑴𐑛𐑾𐑕	ˈəʊdɪəs	shave_says:𐑴𐑛𐑾𐑕
 odium	𐑴𐑛𐑦𐑩𐑥	ˈəʊdiəm	RSSB	89	𐑴𐑛𐑾𐑥	ˈəʊdɪəm	shave_says:𐑴𐑛𐑾𐑥
 oesophagus	𐑰𐑕𐑪𐑓𐑩𐑜𐑩𐑕	iːˈsɒfəɡəs	RSSB	89	𐑦𐑕𐑪𐑓𐑩𐑜𐑩𐑕	ɪˈsɒfəɡəs	shave_says:𐑦𐑕𐑪𐑓𐑩𐑜𐑩𐑕
-off	𐑷𐑓	ɔːf	GenAm	89	𐑪𐑓	ɒf	shave_says:𐑪𐑓
-offal	𐑷𐑓𐑩𐑤	ˈɔːfəl	GenAm	89	𐑪𐑓𐑩𐑤	ˈɒfəl	shave_says:𐑪𐑓𐑩𐑤
-offering	𐑷𐑓𐑼𐑦𐑙	ˈɔːfərɪŋ	GenAm	89	𐑪𐑓𐑼𐑦𐑙	ˈɒfərɪŋ	shave_says:𐑪𐑓𐑼𐑦𐑙
 offertory	𐑪𐑓𐑼𐑑𐑮𐑦	ɒfəRtri	RSSB	89	𐑪𐑓𐑼𐑑𐑼𐑦	ˈɒfəRtəri	shave_says:𐑪𐑓𐑼𐑑𐑼𐑦
 offertory	𐑪𐑓𐑼𐑑𐑹𐑦	ˈɒfərˌtɔːRi	GenAm	89	𐑪𐑓𐑼𐑑𐑼𐑦	ˈɒfəRtəri	shave_says:𐑪𐑓𐑼𐑑𐑼𐑦
-offhand	𐑷𐑓𐑣𐑨𐑯𐑛	ˌɔːfˈhænd	GenAm	89	𐑪𐑓𐑣𐑨𐑯𐑛	ˌɒfˈhænd	shave_says:𐑪𐑓𐑣𐑨𐑯𐑛
-offhanded	𐑷𐑓𐑣𐑨𐑯𐑛𐑩𐑛	ɔːfˈhændƏd	GenAm	89	𐑪𐑓𐑣𐑨𐑯𐑛𐑩𐑛	ˌɒfˈhændƏd	shave_says:𐑪𐑓𐑣𐑨𐑯𐑛𐑩𐑛
-office	𐑷𐑓𐑦𐑕	ˈɔːfɪs	GenAm	89	𐑪𐑓𐑦𐑕	ˈɒfɪs	shave_says:𐑪𐑓𐑦𐑕
-officer	𐑷𐑓𐑦𐑕𐑼	ˈɔːfɪsəR	GenAm	89	𐑪𐑓𐑦𐑕𐑼	ˈɒfɪsəR	shave_says:𐑪𐑓𐑦𐑕𐑼
-offing	𐑷𐑓𐑦𐑙	ˈɔːfɪŋ	GenAm	89	𐑪𐑓𐑦𐑙	ˈɒfɪŋ	shave_says:𐑪𐑓𐑦𐑙
-offspring	𐑷𐑓𐑕𐑐𐑮𐑦𐑙	ˈɔːfsprɪŋ	GenAm	89	𐑪𐑓𐑕𐑐𐑮𐑦𐑙	ˈɒfsprɪŋ	shave_says:𐑪𐑓𐑕𐑐𐑮𐑦𐑙
-oft	𐑷𐑓𐑑	ɔːft	GenAm	89	𐑪𐑓𐑑	ɒft	shave_says:𐑪𐑓𐑑
-often	𐑷𐑓𐑩𐑯	ˈɔːfən	GenAm	89	𐑪𐑓𐑩𐑯	ˈɒfən	shave_says:𐑪𐑓𐑩𐑯
-oftentimes	𐑷𐑓𐑩𐑯𐑑𐑲𐑥𐑟	ˈɔːfənˌtaɪmz	GenAm	89	𐑪𐑓𐑩𐑯𐑑𐑲𐑥𐑟	ˈɒfəntaɪmz	shave_says:𐑪𐑓𐑩𐑯𐑑𐑲𐑥𐑟
 ogle	𐑪𐑜𐑩𐑤	ˈɒɡəl	RSSB	89	𐑴𐑜𐑩𐑤	ˈəʊɡəl	shave_says:𐑴𐑜𐑩𐑤
 ogress	𐑴𐑜𐑮𐑧𐑕	əʊɡres	RSSB	89	𐑴𐑜𐑮𐑩𐑕	ˈəʊɡrƏs	shave_says:𐑴𐑜𐑮𐑩𐑕
 ointment	𐑶𐑯𐑑𐑥𐑯𐑑	ˈɔɪntmnt	RSSB	89	𐑶𐑯𐑑𐑥𐑩𐑯𐑑	ˈɔɪntmənt	shave_says:𐑶𐑯𐑑𐑥𐑩𐑯𐑑
@@ -4432,7 +4469,6 @@ one-upmanship	𐑢𐑩𐑯𐑩𐑐𐑥𐑩𐑯𐑖𐑦𐑐	wənˈəpmənˌʃɪp	
 onerous	𐑪𐑯𐑼𐑼𐑕	ɒnərəRs	RSSB	89	𐑴𐑯𐑼𐑩𐑕	ˈəʊnərəs	shave_says:𐑴𐑯𐑼𐑩𐑕
 onerous	𐑪𐑯𐑼𐑩𐑕	ˈɒnərəs	GenAm	89	𐑴𐑯𐑼𐑩𐑕	ˈəʊnərəs	shave_says:𐑴𐑯𐑼𐑩𐑕
 onomatopoeia	𐑪𐑯𐑩𐑥𐑨𐑑𐑩𐑐𐑰𐑩	ˌɒnəˌmætəˈpiːə	GenAm	89	𐑪𐑯𐑩𐑥𐑨𐑑𐑩𐑐𐑾	ˌɒnəˌmætəˈpiːə	shave_says:𐑪𐑯𐑩𐑥𐑨𐑑𐑩𐑐𐑾
-onset	𐑷𐑯𐑕𐑧𐑑	ˈɔːnˌset	GenAm	89	𐑪𐑯𐑕𐑧𐑑	ˈɒnset	shave_says:𐑪𐑯𐑕𐑧𐑑
 opacity	𐑴𐑐𐑨𐑕𐑦𐑑𐑰	oʊˈpæsɪtiː	GenAm	89	𐑴𐑐𐑨𐑕𐑦𐑑𐑦	əʊˈpæsɪti	shave_says:𐑴𐑐𐑨𐑕𐑦𐑑𐑦
 opener	𐑴𐑐𐑼𐑯𐑼	əʊpəRnəR	RSSB	89	𐑴𐑐𐑩𐑯𐑼	ˈəʊpənəR	shave_says:𐑴𐑐𐑩𐑯𐑼
 operable	𐑪𐑐𐑼𐑼𐑚𐑩𐑤	ɒpərəRbəl	RSSB	89	𐑪𐑐𐑼𐑩𐑚𐑩𐑤	ˈɒpərəbəl	shave_says:𐑪𐑐𐑼𐑩𐑚𐑩𐑤
@@ -4449,7 +4485,7 @@ opprobrious	𐑩𐑐𐑮𐑴𐑚𐑮𐑦𐑩𐑕	əprəʊbriəs	RSSB	89	𐑩𐑐
 opprobrium	𐑩𐑐𐑮𐑴𐑚𐑮𐑦𐑩𐑥	əˈproʊbriəm	GenAm	89	𐑩𐑐𐑮𐑴𐑚𐑮𐑾𐑥	əˈprəʊbrɪəm	shave_says:𐑩𐑐𐑮𐑴𐑚𐑮𐑾𐑥
 oracle	𐑷𐑮𐑼𐑒𐑩𐑤	ɔrəRkəl	RSSB	89	𐑪𐑮𐑩𐑒𐑩𐑤	ˈɒrəkəl	shave_says:𐑪𐑮𐑩𐑒𐑩𐑤
 oracular	𐑪𐑮𐑨𐑒𐑿𐑤𐑼	ɒrækjuːləR	RSSB	89	𐑼𐑨𐑒𐑘𐑩𐑤𐑼	əˈrækjələR	shave_says:𐑼𐑨𐑒𐑘𐑩𐑤𐑼
-oracular	𐑹𐑨𐑒𐑘𐑫𐑤𐑼	ɔːˈrækjuləR	GenAm	89	𐑼𐑨𐑒𐑘𐑩𐑤𐑼	əˈrækjələR	shave_says:𐑼𐑨𐑒𐑘𐑩𐑤𐑼
+oracular	𐑪𐑮𐑨𐑒𐑘𐑫𐑤𐑼	ɒˈrækjuləR	GenAm	89	𐑼𐑨𐑒𐑘𐑩𐑤𐑼	əˈrækjələR	shave_says:𐑼𐑨𐑒𐑘𐑩𐑤𐑼
 oral	𐑹𐑼𐑤	ɔːrəRl	RSSB	89	𐑹𐑩𐑤	ˈɔːrəl	shave_says:𐑹𐑩𐑤
 orate	𐑹𐑱𐑑	ˈɔːReɪt	GenAm	89	𐑪𐑮𐑱𐑑	ɒˈreɪt	shave_says:𐑪𐑮𐑱𐑑
 oration	𐑹𐑱𐑖𐑩𐑯	ɔːRˈeɪʃən	GenAm	89	𐑪𐑮𐑱𐑖𐑩𐑯	ɒˈreɪʃən	shave_says:𐑪𐑮𐑱𐑖𐑩𐑯
@@ -4467,7 +4503,7 @@ ordinary	𐑹𐑛𐑦𐑯𐑧𐑮𐑦	ˈɔːRdɪneri	GenAm	89	𐑹𐑛𐑦𐑯�
 ordure	𐑹𐑛𐑘𐑼	ɔːRdjəR	RSSB	89	𐑹𐑛𐑘𐑫𐑼	ˈɔːRdjʊəR	shave_says:𐑹𐑛𐑘𐑫𐑼
 ordure	𐑹𐑡𐑫𐑮	ˈɔːRdʒʊr	GenAm	89	𐑹𐑛𐑘𐑫𐑼	ˈɔːRdjʊəR	shave_says:𐑹𐑛𐑘𐑫𐑼
 oregano	𐑪𐑮𐑦𐑜𐑸𐑯𐑴	ɒrɪɡɑːRnəʊ	RSSB	89	𐑪𐑮𐑦𐑜𐑭𐑯𐑴	ˌɒrɪˈɡɑːnəʊ	shave_says:𐑪𐑮𐑦𐑜𐑭𐑯𐑴
-oregano	𐑹𐑧𐑜𐑩𐑯𐑴	ɔːˈreɡənoʊ	GenAm	89	𐑪𐑮𐑦𐑜𐑭𐑯𐑴	ˌɒrɪˈɡɑːnəʊ	shave_says:𐑪𐑮𐑦𐑜𐑭𐑯𐑴
+oregano	𐑪𐑮𐑧𐑜𐑩𐑯𐑴	ɒˈreɡənoʊ	GenAm	89	𐑪𐑮𐑦𐑜𐑭𐑯𐑴	ˌɒrɪˈɡɑːnəʊ	shave_says:𐑪𐑮𐑦𐑜𐑭𐑯𐑴
 organisation	𐑹𐑜𐑼𐑯𐑲𐑟𐑱𐑖𐑩𐑯	ɔːRɡəRnaɪzeɪʃən	RSSB	89	𐑹𐑜𐑩𐑯𐑲𐑟𐑱𐑖𐑩𐑯	ˌɔːRɡənaɪˈzeɪʃən	shave_says:𐑹𐑜𐑩𐑯𐑲𐑟𐑱𐑖𐑩𐑯
 organisation	𐑹𐑜𐑩𐑯𐑦𐑟𐑱𐑖𐑩𐑯	ˌɔːRɡənɪˈzeɪʃən	GenAm	89	𐑹𐑜𐑩𐑯𐑲𐑟𐑱𐑖𐑩𐑯	ˌɔːRɡənaɪˈzeɪʃən	shave_says:𐑹𐑜𐑩𐑯𐑲𐑟𐑱𐑖𐑩𐑯
 organism	𐑹𐑜𐑼𐑯𐑦𐑟𐑩𐑥	ɔːRɡəRnɪzəm	RSSB	89	𐑹𐑜𐑩𐑯𐑦𐑟𐑩𐑥	ˈɔːRɡənɪzəm	shave_says:𐑹𐑜𐑩𐑯𐑦𐑟𐑩𐑥
@@ -4498,13 +4534,14 @@ ostensibly	𐑭𐑕𐑑𐑧𐑯𐑕𐑩𐑚𐑤𐑦	ɑːˈstensəbli	GenAm	89	�
 ostentation	𐑪𐑕𐑑𐑩𐑯𐑑𐑱𐑖𐑩𐑯	ˌɒstənˈteɪʃən	RSSB	89	𐑪𐑕𐑑𐑧𐑯𐑑𐑱𐑖𐑩𐑯	ˌɒstenˈteɪʃən	shave_says:𐑪𐑕𐑑𐑧𐑯𐑑𐑱𐑖𐑩𐑯
 ostler	𐑭𐑕𐑤𐑼	ˈɑːsləR	GenAm	89	𐑪𐑕𐑤𐑼	ˈɒsləR	shave_says:𐑪𐑕𐑤𐑼
 ostracism	𐑪𐑕𐑑𐑮𐑩𐑕𐑦𐑟𐑥	ɒstrəsɪzm	RSSB	89	𐑪𐑕𐑑𐑮𐑩𐑕𐑦𐑟𐑩𐑥	ˈɒstrəsɪzəm	shave_says:𐑪𐑕𐑑𐑮𐑩𐑕𐑦𐑟𐑩𐑥
-ostrich	𐑷𐑕𐑑𐑮𐑦𐑗	ˈɔːstrɪtʃ	GenAm	89	𐑪𐑕𐑑𐑮𐑦𐑗	ˈɒstrɪtʃ	shave_says:𐑪𐑕𐑑𐑮𐑦𐑗
 outbid	𐑬𐑑𐑚𐑩𐑛	aʊtˈbƏd	RSSB	89	𐑬𐑑𐑚𐑦𐑛	aʊtˈbɪd	shave_says:𐑬𐑑𐑚𐑦𐑛
 outdo	𐑬𐑑𐑛𐑫	aʊtˈdu	GenAm	89	𐑬𐑑𐑛𐑵	aʊtˈduː	shave_says:𐑬𐑑𐑛𐑵
 outgrow	𐑪𐑫𐑑𐑜𐑮𐑴	ˌɒʊtˈɡroʊ	GenAm	89	𐑬𐑑𐑜𐑮𐑴	ˌaʊtˈɡrəʊ	shave_says:𐑬𐑑𐑜𐑮𐑴
 outlawry	𐑬𐑑𐑤𐑹𐑦	aʊtlɔːri	RSSB	89	𐑬𐑑𐑤𐑷𐑮𐑦	ˈaʊtlɔː+ri	shave_says:𐑬𐑑𐑤𐑷𐑮𐑦
 outshine	𐑬𐑗𐑲𐑯	aʊtˈʃaɪn	RSSB	89	𐑬𐑑𐑖𐑲𐑯	ˌaʊt+ˈʃaɪn	shave_says:𐑬𐑑𐑖𐑲𐑯
 outwork	𐑬𐑑𐑢𐑹𐑒	aʊtwɔːRk	RSSB	89	𐑬𐑑𐑢𐑻𐑒	ˈaʊtwɜːRk	shave_says:𐑬𐑑𐑢𐑻𐑒
+overall	𐑴𐑝𐑼𐑪𐑤	ˌoʊvəRˈɒl	GenAm	89	𐑴𐑝𐑼𐑷𐑤	ˌəʊvəˈrɔːl	shave_says:𐑴𐑝𐑼𐑷𐑤
+overawe	𐑴𐑝𐑼𐑪	oʊvəRˈɒ	GenAm	89	𐑴𐑝𐑼𐑷	ˌəʊvəˈrɔː	shave_says:𐑴𐑝𐑼𐑷
 overbear	𐑴𐑝𐑼𐑚𐑻	əʊvəRbɜːR	RSSB	89	𐑴𐑝𐑼𐑚𐑺	ˌəʊvəRˈbeəR	shave_says:𐑴𐑝𐑼𐑚𐑺
 overbid	𐑴𐑝𐑼𐑚𐑩𐑛	əʊvəRbƏd	RSSB	89	𐑴𐑝𐑼𐑚𐑦𐑛	ˈəʊvəRbɪd	shave_says:𐑴𐑝𐑼𐑚𐑦𐑛
 overdo	𐑴𐑝𐑼𐑛𐑫	ˌoʊvərˈdu	GenAm	89	𐑴𐑝𐑼𐑛𐑵	ˌəʊvəRˈduː	shave_says:𐑴𐑝𐑼𐑛𐑵
@@ -4532,7 +4569,7 @@ palette	𐑐𐑨𐑤𐑦𐑑	ˈpælɪt	GenAm	89	𐑐𐑨𐑤𐑩𐑑	ˈpælət	s
 palliasse	𐑐𐑨𐑤𐑘𐑭𐑕	pælˈjɑːs	RSSB	89	𐑐𐑨𐑤𐑦𐑨𐑕	ˈpælɪæs	shave_says:𐑐𐑨𐑤𐑦𐑨𐑕
 palliative	𐑐𐑨𐑤𐑦𐑱𐑑𐑦𐑝	ˈpælieɪtɪv	GenAm	89	𐑐𐑨𐑤𐑾𐑑𐑦𐑝	ˈpælɪətɪv	shave_says:𐑐𐑨𐑤𐑾𐑑𐑦𐑝
 pallid	𐑐𐑨𐑤𐑩𐑛	ˈpælƏd	RSSB	89	𐑐𐑨𐑤𐑦𐑛	ˈpælɪd	shave_says:𐑐𐑨𐑤𐑦𐑛
-paltry	𐑐𐑪𐑤𐑑𐑮𐑦	pɒltri	RSSB	89	𐑐𐑷𐑤𐑑𐑮𐑦	ˈpɔːltri	shave_says:𐑐𐑷𐑤𐑑𐑮𐑦
+paltry	𐑐𐑪𐑤𐑑𐑮𐑦	ˈpɒltri	GenAm	89	𐑐𐑷𐑤𐑑𐑮𐑦	ˈpɔːltri	shave_says:𐑐𐑷𐑤𐑑𐑮𐑦
 pamphlet	𐑐𐑨𐑥𐑓𐑤𐑦𐑑	ˈpæmflɪt	RSSB	89	𐑐𐑨𐑥𐑓𐑤𐑩𐑑	ˈpæmflət	shave_says:𐑐𐑨𐑥𐑓𐑤𐑩𐑑
 pamphleteer	𐑐𐑨𐑥𐑓𐑤𐑩𐑑𐑦𐑮	pæmflətɪr	RSSB	89	𐑐𐑨𐑥𐑓𐑤𐑩𐑑𐑽	ˌpæmfləˈtɪəR	shave_says:𐑐𐑨𐑥𐑓𐑤𐑩𐑑𐑽
 panacea	𐑐𐑨𐑯𐑩𐑕𐑰𐑩	ˌpænəˈsiːə	RSSB	89	𐑐𐑨𐑯𐑩𐑕𐑾	ˌpænəˈsɪə	shave_says:𐑐𐑨𐑯𐑩𐑕𐑾
@@ -4557,7 +4594,7 @@ paradoxical	𐑐𐑧𐑮𐑩𐑛𐑭𐑒𐑕𐑦𐑒𐑩𐑤	ˌperəˈdɑːksɪk
 paraffin	𐑐𐑨𐑮𐑼𐑓𐑦𐑯	pærəRfɪn	RSSB	89	𐑐𐑨𐑮𐑩𐑓𐑦𐑯	ˈpærəfɪn	shave_says:𐑐𐑨𐑮𐑩𐑓𐑦𐑯
 paraffin	𐑐𐑧𐑮𐑩𐑓𐑦𐑯	ˈperəfɪn	GenAm	89	𐑐𐑨𐑮𐑩𐑓𐑦𐑯	ˈpærəfɪn	shave_says:𐑐𐑨𐑮𐑩𐑓𐑦𐑯
 paragon	𐑐𐑨𐑮𐑼𐑜𐑩𐑯	pærəRɡən	RSSB	89	𐑐𐑨𐑮𐑩𐑜𐑩𐑯	ˈpærəɡən	shave_says:𐑐𐑨𐑮𐑩𐑜𐑩𐑯
-paragon	𐑐𐑨𐑮𐑩𐑜𐑷𐑯	ˈpærəˌɡɔːn	GenAm	89	𐑐𐑨𐑮𐑩𐑜𐑩𐑯	ˈpærəɡən	shave_says:𐑐𐑨𐑮𐑩𐑜𐑩𐑯
+paragon	𐑐𐑨𐑮𐑩𐑜𐑪𐑯	ˈpærəˌɡɒn	GenAm	89	𐑐𐑨𐑮𐑩𐑜𐑩𐑯	ˈpærəɡən	shave_says:𐑐𐑨𐑮𐑩𐑜𐑩𐑯
 paragraph	𐑐𐑨𐑮𐑼𐑜𐑮𐑸𐑓	pærəRɡrɑːRf	RSSB	89	𐑐𐑨𐑮𐑩𐑜𐑮𐑨𐑓	ˈpærəɡræf	shave_says:𐑐𐑨𐑮𐑩𐑜𐑮𐑨𐑓
 paragraph	𐑐𐑧𐑮𐑩𐑜𐑮𐑨𐑓	ˈperəɡræf	GenAm	89	𐑐𐑨𐑮𐑩𐑜𐑮𐑨𐑓	ˈpærəɡræf	shave_says:𐑐𐑨𐑮𐑩𐑜𐑮𐑨𐑓
 parakeet	𐑐𐑨𐑮𐑼𐑒𐑰𐑑	parəRkiːt	RSSB	89	𐑐𐑨𐑮𐑩𐑒𐑰𐑑	ˈpærəkiːt	shave_says:𐑐𐑨𐑮𐑩𐑒𐑰𐑑
@@ -4619,7 +4656,7 @@ pastoral	𐑐𐑨𐑕𐑑𐑼𐑼𐑤	pæstərəRl	RSSB	89	𐑐𐑨𐑕𐑑𐑼�
 pasture	𐑐𐑭𐑕𐑑𐑘𐑼	pɑːstjəR	RSSB	89	𐑐𐑨𐑕𐑗𐑼, 𐑐𐑭𐑕𐑗𐑼	ˈpⱭːstʃəR	shave_says:𐑐𐑭𐑕𐑗𐑼
 patchouli	𐑐𐑩𐑗𐑫𐑤𐑦	pəˈtʃuli	GenAm	89	𐑐𐑨𐑗𐑵𐑤𐑦	ˈpætʃuːli	shave_says:𐑐𐑨𐑗𐑵𐑤𐑦
 paternoster	𐑐𐑭𐑑𐑼𐑯𐑪𐑕𐑑𐑼	pɑːtəRnɒstəR	RSSB	89	𐑐𐑨𐑑𐑼𐑯𐑪𐑕𐑑𐑼	ˌpætəRˈnɒstəR	shave_says:𐑐𐑨𐑑𐑼𐑯𐑪𐑕𐑑𐑼
-paternoster	𐑐𐑪𐑑𐑼𐑯𐑷𐑕𐑑𐑼	ˈpɒtərˌnɔːstəR	GenAm	89	𐑐𐑨𐑑𐑼𐑯𐑪𐑕𐑑𐑼	ˌpætəRˈnɒstəR	shave_says:𐑐𐑨𐑑𐑼𐑯𐑪𐑕𐑑𐑼
+paternoster	𐑐𐑪𐑑𐑼𐑯𐑪𐑕𐑑𐑼	ˈpɒtərˌnɒstəR	GenAm	89	𐑐𐑨𐑑𐑼𐑯𐑪𐑕𐑑𐑼	ˌpætəRˈnɒstəR	shave_says:𐑐𐑨𐑑𐑼𐑯𐑪𐑕𐑑𐑼
 pathos	𐑐𐑱𐑔𐑴𐑕	ˈpeɪˌθoʊs	GenAm	89	𐑐𐑱𐑔𐑪𐑕	ˈpeɪθɒs	shave_says:𐑐𐑱𐑔𐑪𐑕
 patina	𐑐𐑨𐑑𐑦𐑯𐑩	ˈpætɪnə	RSSB	89	𐑐𐑩𐑑𐑰𐑯𐑩	ˈpətiːnə	shave_says:𐑐𐑩𐑑𐑰𐑯𐑩
 patois	𐑐𐑨𐑑𐑢𐑪	ˈpæˌtwɒ	GenAm	89	𐑐𐑨𐑑𐑢𐑭, 𐑐𐑨𐑑𐑢𐑭𐑟	ˈpætwɑː	shave_says:𐑐𐑨𐑑𐑢𐑭
@@ -4634,6 +4671,10 @@ patronize	𐑐𐑱𐑑𐑮𐑩𐑯𐑲𐑟	ˈpeɪtrənaɪz	GenAm	89	𐑐𐑨𐑑
 patten	𐑐𐑨𐑑𐑯	ˈpætn	GenAm	89	𐑐𐑨𐑑𐑩𐑯	ˈpætən	shave_says:𐑐𐑨𐑑𐑩𐑯
 paucity	𐑐𐑪𐑕𐑦𐑑𐑦	ˈpɒsɪti	GenAm	89	𐑐𐑷𐑕𐑦𐑑𐑦	ˈpɔːsɪti	shave_says:𐑐𐑷𐑕𐑦𐑑𐑦
 pauline	𐑐𐑷𐑤𐑲𐑯	ˈpɔːˌlaɪn	RSSB	89	𐑐𐑷𐑤𐑰𐑯	ˈpɔːliːn	shave_says:𐑐𐑷𐑤𐑰𐑯
+pauper	𐑐𐑪𐑐𐑼	ˈpɒpəR	GenAm	89	𐑐𐑷𐑐𐑼	ˈpɔːpəR	shave_says:𐑐𐑷𐑐𐑼
+pause	𐑐𐑪𐑟	pɒz	GenAm	89	𐑐𐑷𐑟	pɔːz	shave_says:𐑐𐑷𐑟
+paw	𐑐𐑪	pɒ	GenAm	89	𐑐𐑷	pɔː	shave_says:𐑐𐑷
+pawnshop	𐑐𐑪𐑯𐑖𐑪𐑐	ˈpɒnʃɒp	GenAm	89	𐑐𐑷𐑯𐑖𐑪𐑐	ˈpɔːnʃɒp	shave_says:𐑐𐑷𐑯𐑖𐑪𐑐
 pe	𐑐𐑱	peɪ	RSSB	89	𐑐𐑰𐑰	ˌpiːˈiː	shave_says:𐑐𐑰𐑰
 peaceable	𐑐𐑰𐑕𐑩𐑚𐑤	ˈpiːsəbl	RSSB	89	𐑐𐑰𐑕𐑩𐑚𐑩𐑤	ˈpiːsəbəl	shave_says:𐑐𐑰𐑕𐑩𐑚𐑩𐑤
 peacock	𐑐𐑦𐑒𐑪𐑒	ˈpikɒk	GenAm	89	𐑐𐑰𐑒𐑪𐑒	ˈpiːkɒk	shave_says:𐑐𐑰𐑒𐑪𐑒
@@ -4714,7 +4755,6 @@ peripheral	𐑐𐑼𐑦𐑓𐑮𐑤	pərɪfrl	RSSB	89	𐑐𐑼𐑦𐑓𐑼𐑩�
 periphrastic	𐑐𐑧𐑮𐑩𐑓𐑮𐑨𐑕𐑑𐑦𐑒	ˌperəˈfræstɪk	GenAm	89	𐑐𐑧𐑮𐑦𐑓𐑮𐑨𐑕𐑑𐑦𐑒	ˌperɪˈfræstɪk	shave_says:𐑐𐑧𐑮𐑦𐑓𐑮𐑨𐑕𐑑𐑦𐑒
 peristyle	𐑐𐑧𐑮𐑩𐑕𐑑𐑲𐑤	ˈperəstaɪl	GenAm	89	𐑐𐑧𐑮𐑦𐑕𐑑𐑲𐑤	ˈperɪstaɪl	shave_says:𐑐𐑧𐑮𐑦𐑕𐑑𐑲𐑤
 perjurer	𐑐𐑼𐑡𐑼𐑼	pərdʒərər	RSSB	89	𐑐𐑻𐑡𐑼𐑼	ˈpɜːRdʒərəR	shave_says:𐑐𐑻𐑡𐑼𐑼
-permafrost	𐑐𐑻𐑥𐑩𐑓𐑮𐑷𐑕𐑑	ˈpɜːRməˌfrɔːst	GenAm	89	𐑐𐑻𐑥𐑩𐑓𐑮𐑪𐑕𐑑	ˈpɜːRməfrɒst	shave_says:𐑐𐑻𐑥𐑩𐑓𐑮𐑪𐑕𐑑
 permeability	𐑐𐑻𐑥𐑦𐑩𐑚𐑦𐑤𐑦𐑑𐑦	ˌpɜːRmiəˈbɪlɪti	GenAm	89	𐑐𐑻𐑥𐑾𐑚𐑦𐑤𐑦𐑑𐑦	ˌpɜːRmɪəˈbɪlɪti	shave_says:𐑐𐑻𐑥𐑾𐑚𐑦𐑤𐑦𐑑𐑦
 permeable	𐑐𐑻𐑥𐑦𐑩𐑚𐑩𐑤	pɜːRmiəbəl	RSSB	89	𐑐𐑻𐑥𐑾𐑚𐑩𐑤	ˈpɜːRmɪəbəl	shave_says:𐑐𐑻𐑥𐑾𐑚𐑩𐑤
 pernickety	𐑐𐑻𐑯𐑦𐑒𐑦𐑑𐑦	pɜːRnɪkɪti	RSSB	89	𐑐𐑼𐑯𐑦𐑒𐑩𐑑𐑦	pəRˈnɪkəti	shave_says:𐑐𐑼𐑯𐑦𐑒𐑩𐑑𐑦
@@ -4802,6 +4842,7 @@ picturesquely	𐑐𐑦𐑒𐑑𐑘𐑩𐑼𐑧𐑕𐑒𐑤𐑦	pɪktjəəreskli	
 piddle	𐑐𐑦𐑛𐑤	ˈpɪdl	RSSB	89	𐑐𐑦𐑛𐑩𐑤	ˈpɪdəl	shave_says:𐑐𐑦𐑛𐑩𐑤
 piddling	𐑐𐑦𐑛𐑩𐑤𐑦𐑙	ˈpɪdəlɪŋ	RSSB	89	𐑐𐑦𐑛𐑤𐑦𐑙	ˈpɪdlɪŋ	shave_says:𐑐𐑦𐑛𐑤𐑦𐑙
 pidgin	𐑐𐑦𐑡𐑩𐑯	ˈpɪdʒən	GenAm	89	𐑐𐑦𐑡𐑦𐑯	ˈpɪdʒɪn	shave_says:·𐑐𐑦𐑡𐑦𐑯
+piebald	𐑐𐑲𐑚𐑪𐑤𐑛	ˈpaɪbɒld	GenAm	89	𐑐𐑲𐑚𐑷𐑤𐑛	ˈpaɪbɔːld	shave_says:𐑐𐑲𐑚𐑷𐑤𐑛
 pier	𐑐𐑦𐑮	pir	GenAm	89	𐑐𐑽	pɪəR	shave_says:𐑐𐑽
 pierced	𐑐𐑦𐑮𐑕𐑑	pɪrst	GenAm	89	𐑐𐑽𐑕𐑑	pɪəRst	shave_says:𐑐𐑽𐑕𐑑
 piercing	𐑐𐑦𐑮𐑕𐑦𐑙	ˈpɪrsɪŋ	GenAm	89	𐑐𐑽𐑕𐑦𐑙	ˈpɪəRsɪŋ	shave_says:𐑐𐑽𐑕𐑦𐑙
@@ -4827,6 +4868,7 @@ pirate	𐑐𐑲𐑮𐑦𐑑	paɪrɪt	RSSB	89	𐑐𐑲𐑮𐑩𐑑	ˈpaɪrət	sha
 pirouette	𐑐𐑦𐑮𐑫𐑧𐑑	pɪrʊet	RSSB	89	𐑐𐑦𐑮𐑵𐑧𐑑	ˌpɪruːˈet	shave_says:𐑐𐑦𐑮𐑵𐑧𐑑
 pirouette	𐑐𐑦𐑮𐑩𐑢𐑧𐑑	ˌpɪrəˈwet	GenAm	89	𐑐𐑦𐑮𐑵𐑧𐑑	ˌpɪruːˈet	shave_says:𐑐𐑦𐑮𐑵𐑧𐑑
 pitchfork	𐑐𐑦𐑗𐑓𐑷𐑮𐑒	pɪtʃfɔrk	RSSB	89	𐑐𐑦𐑗𐑓𐑹𐑒	ˈpɪtʃfɔːRk	shave_says:𐑐𐑦𐑗𐑓𐑹𐑒
+pitfall	𐑐𐑦𐑑𐑓𐑪𐑤	ˈpɪtfɒl	GenAm	89	𐑐𐑦𐑑𐑓𐑷𐑤	ˈpɪtfɔːl	shave_says:𐑐𐑦𐑑𐑓𐑷𐑤
 pitiable	𐑐𐑦𐑑𐑦𐑩𐑚𐑩𐑤	ˈpɪtiəbəl	RSSB	89	𐑐𐑦𐑑𐑾𐑚𐑩𐑤	ˈpɪtɪəbəl	shave_says:𐑐𐑦𐑑𐑾𐑚𐑩𐑤
 pituitary	𐑐𐑦𐑑𐑿𐑦𐑑𐑮𐑦	pɪtjuːɪtri	RSSB	89	𐑐𐑦𐑑𐑵𐑦𐑑𐑼𐑦, 𐑐𐑦𐑑𐑿𐑦𐑑𐑼𐑦	pɪˈtjuːɪtəri	shave_says:𐑐𐑦𐑑𐑿𐑦𐑑𐑼𐑦
 pituitary	𐑐𐑦𐑑𐑵𐑦𐑑𐑧𐑮𐑦	pɪˈtuːɪˌteri	GenAm	89	𐑐𐑦𐑑𐑵𐑦𐑑𐑼𐑦, 𐑐𐑦𐑑𐑿𐑦𐑑𐑼𐑦	pɪˈtjuːɪtəri	shave_says:𐑐𐑦𐑑𐑵𐑦𐑑𐑼𐑦
@@ -4844,7 +4886,6 @@ planetary	𐑐𐑤𐑨𐑯𐑼𐑑𐑧𐑮𐑦	plænəRteri	RSSB	89	𐑐𐑤𐑨
 platinum	𐑐𐑤𐑨𐑑𐑯𐑩𐑥	ˈplætnəm	RSSB	89	𐑐𐑤𐑨𐑑𐑦𐑯𐑩𐑥	ˈplætɪnəm	shave_says:𐑐𐑤𐑨𐑑𐑦𐑯𐑩𐑥
 platitude	𐑐𐑤𐑨𐑑𐑦𐑑𐑫𐑛	ˈplætɪtud	GenAm	89	𐑐𐑤𐑨𐑑𐑦𐑑𐑵𐑛, 𐑐𐑤𐑨𐑑𐑦𐑑𐑿𐑛	ˈplætɪtjuːd	shave_says:𐑐𐑤𐑨𐑑𐑦𐑑𐑵𐑛
 platitudinous	𐑐𐑤𐑨𐑑𐑦𐑑𐑫𐑛𐑯𐑩𐑕	ˌplætɪˈtudnəs	GenAm	89	𐑐𐑤𐑨𐑑𐑦𐑑𐑵𐑛𐑦𐑯𐑩𐑕, 𐑐𐑤𐑨𐑑𐑦𐑑𐑿𐑛𐑦𐑯𐑩𐑕	ˌplætɪˈtjuːdɪnəs	shave_says:𐑐𐑤𐑨𐑑𐑦𐑑𐑵𐑛𐑦𐑯𐑩𐑕
-platonic	𐑐𐑤𐑩𐑑𐑷𐑯𐑦𐑒	pləˈtɔːnɪk	GenAm	89	𐑐𐑤𐑩𐑑𐑪𐑯𐑦𐑒	pləˈtɒnɪk	shave_says:𐑐𐑤𐑩𐑑𐑪𐑯𐑦𐑒
 platypus	𐑐𐑤𐑨𐑑𐑦𐑐𐑩𐑕	ˈplætɪpəs	GenAm	89	𐑐𐑤𐑨𐑑𐑦𐑐𐑫𐑕	ˈplætɪpʊs	shave_says:𐑐𐑤𐑨𐑑𐑦𐑐𐑫𐑕
 pleach	𐑐𐑤𐑦𐑗	plitʃ	GenAm	89	𐑐𐑤𐑰𐑗	pliːtʃ	shave_says:𐑐𐑤𐑰𐑗
 pleasurable	𐑐𐑤𐑧𐑠𐑼𐑼𐑚𐑩𐑤	pleʒərəRbəl	RSSB	89	𐑐𐑤𐑧𐑠𐑼𐑩𐑚𐑩𐑤	ˈpleʒərəbəl	shave_says:𐑐𐑤𐑧𐑠𐑼𐑩𐑚𐑩𐑤
@@ -4865,7 +4906,6 @@ plutonium	𐑐𐑤𐑵𐑑𐑴𐑯𐑦𐑩𐑥	pluːˈtoʊniəm	RSSB	89	𐑐𐑤
 pneumatic	𐑯𐑫𐑥𐑨𐑑𐑦𐑒	nʊˈmætɪk	RSSB	89	𐑯𐑵𐑥𐑨𐑑𐑦𐑒, 𐑯𐑿𐑥𐑨𐑑𐑦𐑒	njuːˈmætɪk	shave_says:𐑯𐑿𐑥𐑨𐑑𐑦𐑒
 pneumonia	𐑯𐑘𐑫𐑥𐑴𐑯𐑦𐑩	njuˈməʊniə	RSSB	89	𐑯𐑵𐑥𐑴𐑯𐑾, 𐑯𐑿𐑥𐑴𐑯𐑾	njuːˈməʊnɪə	shave_says:𐑯𐑿𐑥𐑴𐑯𐑾
 pneumonia	𐑯𐑫𐑥𐑴𐑯𐑦𐑩	nuˈmoʊniə	GenAm	89	𐑯𐑵𐑥𐑴𐑯𐑾, 𐑯𐑿𐑥𐑴𐑯𐑾	njuːˈməʊnɪə	shave_says:𐑯𐑵𐑥𐑴𐑯𐑾
-podcast	𐑐𐑷𐑛𐑒𐑨𐑕𐑑	ˈpɔːdkæst	GenAm	89	𐑐𐑪𐑛𐑒𐑨𐑕𐑑, 𐑐𐑪𐑛𐑒𐑭𐑕𐑑	ˈpɒdkⱭːst	shave_says:𐑐𐑪𐑛𐑒𐑨𐑕𐑑
 podium	𐑐𐑴𐑛𐑰𐑳𐑥	ˈpəʊdiːʌm	RSSB	89	𐑐𐑴𐑛𐑾𐑥	ˈpəʊdɪəm	shave_says:𐑐𐑴𐑛𐑾𐑥
 poem	𐑐𐑴𐑦𐑥	ˈpəʊɪm	RSSB	89	𐑐𐑴𐑩𐑥	ˈpəʊəm	shave_says:𐑐𐑴𐑩𐑥
 poesy	𐑐𐑴𐑦𐑟𐑦	ˈpoʊɪzi	GenAm	89	𐑐𐑴𐑩𐑟𐑦	ˈpəʊəzi	shave_says:𐑐𐑴𐑩𐑟𐑦
@@ -4943,6 +4983,7 @@ powerful	𐑐𐑬𐑼𐑓𐑼𐑤	paʊəRfəRl	RSSB	89	𐑐𐑬𐑼𐑓𐑩𐑤	
 powerfully	𐑐𐑬𐑼𐑓𐑤𐑦	ˈpaʊəRfli	GenAm	89	𐑐𐑬𐑼𐑓𐑩𐑤𐑦	ˈpaʊəRfəli	shave_says:𐑐𐑬𐑼𐑓𐑩𐑤𐑦
 practitioner	𐑐𐑮𐑨𐑒𐑑𐑦𐑖𐑼𐑯𐑼	præktɪʃəRnəR	RSSB	89	𐑐𐑮𐑨𐑒𐑑𐑦𐑖𐑩𐑯𐑼	prækˈtɪʃənəR	shave_says:𐑐𐑮𐑨𐑒𐑑𐑦𐑖𐑩𐑯𐑼
 praetor	𐑐𐑮𐑰𐑑𐑹	priːtɔːR	RSSB	89	𐑐𐑮𐑰𐑑𐑼	ˈpriːtəR	shave_says:𐑐𐑮𐑰𐑑𐑼
+prawn	𐑐𐑮𐑪𐑯	prɒn	GenAm	89	𐑐𐑮𐑷𐑯	prɔːn	shave_says:𐑐𐑮𐑷𐑯
 prayerful	𐑐𐑮𐑻𐑓𐑫𐑤	prɜːRfʊl	RSSB	89	𐑐𐑮𐑺𐑓𐑩𐑤	ˈpreəRfəl	shave_says:𐑐𐑮𐑺𐑓𐑩𐑤
 preacher	𐑐𐑮𐑦𐑗𐑼	ˈpritʃəR	GenAm	89	𐑐𐑮𐑰𐑗𐑼	ˈpriːtʃəR	shave_says:𐑐𐑮𐑰𐑗𐑼
 preamble	𐑐𐑮𐑦𐑨𐑥𐑚𐑩𐑤	ˈpriˌæmbəl	GenAm	89	𐑐𐑮𐑰𐑨𐑥𐑚𐑩𐑤	priːˈæmbəl	shave_says:𐑐𐑮𐑰𐑨𐑥𐑚𐑩𐑤
@@ -5060,11 +5101,8 @@ projectile	𐑐𐑮𐑩𐑡𐑧𐑒𐑑𐑳𐑦𐑤	prədʒektʌɪl	RSSB	89	𐑐
 proletariat	𐑐𐑮𐑴𐑤𐑦𐑑𐑻𐑾𐑑	prəʊlɪtɜːrɪət	RSSB	89	𐑐𐑮𐑴𐑤𐑦𐑑𐑺𐑾𐑑	ˌprəʊlɪˈteərɪət	shave_says:𐑐𐑮𐑴𐑤𐑦𐑑𐑺𐑾𐑑
 proletariat	𐑐𐑮𐑴𐑤𐑩𐑑𐑧𐑮𐑦𐑩𐑑	ˌproʊləˈteriət	GenAm	89	𐑐𐑮𐑴𐑤𐑦𐑑𐑺𐑾𐑑	ˌprəʊlɪˈteərɪət	shave_says:𐑐𐑮𐑴𐑤𐑦𐑑𐑺𐑾𐑑
 prolixity	𐑐𐑮𐑩𐑤𐑦𐑒𐑕𐑦𐑑𐑦	prəlɪksɪti	RSSB	89	𐑐𐑮𐑴𐑤𐑦𐑒𐑕𐑦𐑑𐑦	prəʊˈlɪksɪti	shave_says:𐑐𐑮𐑴𐑤𐑦𐑒𐑕𐑦𐑑𐑦
-prologue	𐑐𐑮𐑴𐑤𐑷𐑜	ˈproʊlɔːɡ	GenAm	89	𐑐𐑮𐑴𐑤𐑪𐑜	ˈprəʊlɒɡ	shave_says:𐑐𐑮𐑴𐑤𐑪𐑜
-prolong	𐑐𐑮𐑴𐑤𐑪𐑙	prəʊlɒŋ	RSSB	89	𐑐𐑮𐑩𐑤𐑪𐑙	prəˈlɒŋ	shave_says:𐑐𐑮𐑩𐑤𐑪𐑙
-prolong	𐑐𐑮𐑴𐑤𐑷𐑙	proʊˈlɔːŋ	GenAm	89	𐑐𐑮𐑩𐑤𐑪𐑙	prəˈlɒŋ	shave_says:𐑐𐑮𐑩𐑤𐑪𐑙
-prolonged	𐑐𐑮𐑴𐑤𐑪𐑙𐑛	prəʊlɒŋd	RSSB	89	𐑐𐑮𐑩𐑤𐑪𐑙𐑛	prəˈlɒŋd	shave_says:𐑐𐑮𐑩𐑤𐑪𐑙𐑛
-prolonged	𐑐𐑮𐑴𐑤𐑷𐑙𐑛	proʊˈlɔːŋd	GenAm	89	𐑐𐑮𐑩𐑤𐑪𐑙𐑛	prəˈlɒŋd	shave_says:𐑐𐑮𐑩𐑤𐑪𐑙𐑛
+prolong	𐑐𐑮𐑴𐑤𐑪𐑙	proʊˈlɒŋ	GenAm	89	𐑐𐑮𐑩𐑤𐑪𐑙	prəˈlɒŋ	shave_says:𐑐𐑮𐑩𐑤𐑪𐑙
+prolonged	𐑐𐑮𐑴𐑤𐑪𐑙𐑛	proʊˈlɒŋd	GenAm	89	𐑐𐑮𐑩𐑤𐑪𐑙𐑛	prəˈlɒŋd	shave_says:𐑐𐑮𐑩𐑤𐑪𐑙𐑛
 promenade	𐑐𐑮𐑪𐑥𐑩𐑯𐑱𐑛	prɒməˈneɪd	GenAm	89	𐑐𐑮𐑪𐑥𐑩𐑯𐑭𐑛	ˌprɒməˈnɑːd	shave_says:𐑐𐑮𐑪𐑥𐑩𐑯𐑭𐑛
 promiscuous	𐑐𐑮𐑩𐑥𐑦𐑕𐑒𐑿𐑩𐑕	prəmɪskjuːəs	RSSB	89	𐑐𐑮𐑩𐑥𐑦𐑕𐑒𐑘𐑫𐑩𐑕	prəˈmɪskjuəs	shave_says:𐑐𐑮𐑩𐑥𐑦𐑕𐑒𐑘𐑫𐑩𐑕
 promontory	𐑐𐑮𐑪𐑥𐑩𐑯𐑑𐑮𐑦	prɒməntri	RSSB	89	𐑐𐑮𐑪𐑥𐑩𐑯𐑑𐑼𐑦	ˈprɒməntəri	shave_says:𐑐𐑮𐑪𐑥𐑩𐑯𐑑𐑼𐑦
@@ -5201,7 +5239,6 @@ quantitative	𐑒𐑢𐑪𐑯𐑑𐑩𐑑𐑦𐑝	ˈkwɒntətɪv	RSSB	89	𐑒�
 quantitative	𐑒𐑢𐑪𐑯𐑑𐑦𐑑𐑱𐑑𐑦𐑝	ˈkwɒntɪˌteɪtɪv	GenAm	89	𐑒𐑢𐑪𐑯𐑑𐑦𐑑𐑩𐑑𐑦𐑝	ˈkwɒntɪtətɪv	shave_says:𐑒𐑢𐑪𐑯𐑑𐑦𐑑𐑩𐑑𐑦𐑝
 quartermaster	𐑒𐑹𐑑𐑼𐑥𐑨𐑕𐑑𐑼	ˈkɔːRtəRˌmæstəR	GenAm	89	𐑒𐑢𐑹𐑑𐑼𐑥𐑨𐑕𐑑𐑼, 𐑒𐑢𐑹𐑑𐑼𐑥𐑭𐑕𐑑𐑼	ˈkwɔːRtəRmⱭːstəR	shave_says:𐑒𐑢𐑹𐑑𐑼𐑥𐑨𐑕𐑑𐑼
 quartz	𐑒𐑹𐑑𐑕	kɔːRts	GenAm	89	𐑒𐑢𐑹𐑑𐑕	kwɔːRts	shave_says:𐑒𐑢𐑹𐑑𐑕
-quash	𐑒𐑢𐑷𐑖	kwɔːʃ	GenAm	89	𐑒𐑢𐑪𐑖	kwɒʃ	shave_says:𐑒𐑢𐑪𐑖
 quay	𐑒𐑦	ki	GenAm	89	𐑒𐑰	kiː	shave_says:𐑒𐑰
 quebec	𐑒𐑢𐑦𐑚𐑧𐑒	kwɪˈbek	RSSB	89	𐑒𐑢𐑩𐑚𐑧𐑒	kwəˈbek	shave_says:𐑒𐑢𐑩𐑚𐑧𐑒
 queer	𐑒𐑢𐑦𐑮	kwɪr	GenAm	89	𐑒𐑢𐑽	kwɪəR	shave_says:𐑒𐑢𐑽
@@ -5251,7 +5288,10 @@ ratio	𐑮𐑱𐑖𐑴	ˈreɪʃoʊ	GenAm	89	𐑮𐑱𐑖𐑦𐑴	ˈreɪʃiəʊ	s
 ratiocination	𐑮𐑨𐑑𐑦𐑪𐑕𐑦𐑯𐑱𐑖𐑩𐑯	rætiˌɒsiˈneɪʃən	GenAm	89	𐑮𐑨𐑖𐑦𐑪𐑕𐑦𐑯𐑱𐑖𐑩𐑯	ˌræʃɪˌɒsɪˈneɪʃən	shave_says:𐑮𐑨𐑖𐑦𐑪𐑕𐑦𐑯𐑱𐑖𐑩𐑯
 rationalise	𐑮𐑨𐑖𐑩𐑯𐑩𐑤𐑱𐑟	ræʃənəleɪz	RSSB	89	𐑮𐑨𐑖𐑩𐑯𐑩𐑤𐑲𐑟	ˈræʃənəlaɪz	shave_says:𐑮𐑨𐑖𐑩𐑯𐑩𐑤𐑲𐑟
 rattler	𐑮𐑨𐑑𐑼𐑤𐑼	rætəRləR	RSSB	89	𐑮𐑨𐑑𐑤𐑼	ˈrætləR	shave_says:𐑮𐑨𐑑𐑤𐑼
+raucous	𐑮𐑪𐑒𐑩𐑕	ˈrɒkəs	GenAm	89	𐑮𐑷𐑒𐑩𐑕	ˈrɔːkəs	shave_says:𐑮𐑷𐑒𐑩𐑕
 raven	𐑮𐑨𐑝𐑩𐑯	rævən	RSSB	89	𐑮𐑱𐑝𐑩𐑯	ˈreɪvən	shave_says:𐑮𐑱𐑝𐑩𐑯
+raw	𐑮𐑪	rɒ	GenAm	89	𐑮𐑷	rɔː	shave_says:𐑮𐑷
+rawhide	𐑮𐑪𐑣𐑲𐑛	ˈrɒhaɪd	GenAm	89	𐑮𐑷𐑣𐑲𐑛	ˈrɔːhaɪd	shave_says:𐑮𐑷𐑣𐑲𐑛
 react	𐑮𐑰𐑨𐑒𐑑	riːækt	RSSB	89	𐑮𐑦𐑨𐑒𐑑	rɪˈækt	shave_says:𐑮𐑦𐑨𐑒𐑑
 reactionary	𐑮𐑦𐑨𐑒𐑖𐑼𐑯𐑮𐑦	riækʃəRnri	RSSB	89	𐑮𐑦𐑨𐑒𐑖𐑩𐑯𐑼𐑦	rɪˈækʃənəri	shave_says:𐑮𐑦𐑨𐑒𐑖𐑩𐑯𐑼𐑦
 reactionary	𐑮𐑦𐑨𐑒𐑖𐑩𐑯𐑧𐑮𐑦	riˈækʃəˌneri	GenAm	89	𐑮𐑦𐑨𐑒𐑖𐑩𐑯𐑼𐑦	rɪˈækʃənəri	shave_says:𐑮𐑦𐑨𐑒𐑖𐑩𐑯𐑼𐑦
@@ -5278,6 +5318,7 @@ rebellious	𐑮𐑩𐑚𐑧𐑤𐑦𐑩𐑕	rəbeliəs	RSSB	89	𐑮𐑦𐑚𐑧�
 rebind	𐑮𐑦𐑚𐑲𐑯𐑛	ribaɪnd	RSSB	89	𐑮𐑰𐑚𐑲𐑯𐑛	ˌriːˈbaɪnd	shave_says:𐑮𐑰𐑚𐑲𐑯𐑛
 rebirth	𐑮𐑦𐑚𐑻𐑔	riˈbɜːRθ	GenAm	89	𐑮𐑰𐑚𐑻𐑔	ˌriːˈbɜːRθ	shave_says:𐑮𐑰𐑚𐑻𐑔
 rebus	𐑮𐑦𐑚𐑩𐑕	ˈribəs	GenAm	89	𐑮𐑰𐑚𐑩𐑕	ˈriːbəs	shave_says:𐑮𐑰𐑚𐑩𐑕
+recall	𐑮𐑦𐑒𐑪𐑤	rɪˈkɒl	GenAm	89	𐑮𐑦𐑒𐑷𐑤	rɪˈkɔːl	shave_says:𐑮𐑦𐑒𐑷𐑤
 recant	𐑮𐑩𐑒𐑨𐑯𐑑	rəkænt	RSSB	89	𐑮𐑦𐑒𐑨𐑯𐑑	rɪˈkænt	shave_says:𐑮𐑦𐑒𐑨𐑯𐑑
 recapitulation	𐑮𐑰𐑒𐑩𐑐𐑦𐑑𐑘𐑩𐑤𐑱𐑖𐑯	riːkəpɪtjəleɪʃn	RSSB	89	𐑮𐑰𐑒𐑩𐑐𐑦𐑗𐑩𐑤𐑱𐑖𐑩𐑯	ˌriːkəˌpɪtʃəˈleɪʃən	shave_says:𐑮𐑰𐑒𐑩𐑐𐑦𐑗𐑩𐑤𐑱𐑖𐑩𐑯
 recapitulation	𐑮𐑰𐑒𐑩𐑐𐑦𐑗𐑩𐑤𐑱𐑖𐑯	riːkəˌpɪtʃəˈleɪʃn	GenAm	89	𐑮𐑰𐑒𐑩𐑐𐑦𐑗𐑩𐑤𐑱𐑖𐑩𐑯	ˌriːkəˌpɪtʃəˈleɪʃən	shave_says:𐑮𐑰𐑒𐑩𐑐𐑦𐑗𐑩𐑤𐑱𐑖𐑩𐑯
@@ -5310,7 +5351,7 @@ recycle	𐑮𐑩𐑕𐑲𐑒𐑩𐑤	rəˈsaɪkəl	GenAm	89	𐑮𐑰𐑕𐑲𐑒
 redaction	𐑮𐑩𐑛𐑨𐑒𐑖𐑩𐑯	rədækʃən	RSSB	89	𐑮𐑦𐑛𐑨𐑒𐑖𐑩𐑯	rɪˈdækʃən	shave_says:𐑮𐑦𐑛𐑨𐑒𐑖𐑩𐑯
 redistribution	𐑮𐑰𐑛𐑦𐑕𐑑𐑮𐑩𐑚𐑿𐑖𐑩𐑯	riːdɪstrəbjuːʃən	RSSB	89	𐑮𐑰𐑛𐑦𐑕𐑑𐑮𐑦𐑚𐑿𐑖𐑩𐑯	ˌriːdɪstrɪˈbjuːʃən	shave_says:𐑮𐑰𐑛𐑦𐑕𐑑𐑮𐑦𐑚𐑿𐑖𐑩𐑯
 redolence	𐑮𐑧𐑛𐑩𐑤𐑩𐑯𐑑𐑕	redələnts	RSSB	89	𐑮𐑧𐑛𐑩𐑤𐑩𐑯𐑕	ˈredələns	shave_says:𐑮𐑧𐑛𐑩𐑤𐑩𐑯𐑕
-reduced	𐑮𐑦𐑛𐑘𐑫𐑕𐑑	rɪˈdjust	GenAm	89	𐑮𐑦𐑛𐑵𐑕𐑑, 𐑮𐑦𐑛𐑿𐑕𐑑	rɪˈdjuːst	shave_says:𐑮𐑦𐑛𐑵𐑕𐑑
+reduced	𐑮𐑦𐑛𐑘𐑫𐑕𐑑	rɪˈdjust	GenAm	89	𐑮𐑦𐑛𐑵𐑕𐑑, 𐑮𐑦𐑛𐑿𐑕𐑑	rɪˈdjuːst	shave_says:[𐑮𐑦𐑛𐑿𐑕𐑑 / 𐑮𐑦𐑛𐑵𐑕𐑑]
 redundancy	𐑮𐑦𐑛𐑳𐑯𐑛𐑯𐑕𐑦	rɪdʌndnsi	RSSB	89	𐑮𐑦𐑛𐑳𐑯𐑛𐑩𐑯𐑕𐑦	rɪˈdʌndənsi	shave_says:𐑮𐑦𐑛𐑳𐑯𐑛𐑩𐑯𐑕𐑦
 reduplication	𐑮𐑦𐑛𐑫𐑐𐑤𐑦𐑒𐑱𐑖𐑩𐑯	rɪduplɪˈkeɪʃən	GenAm	89	𐑮𐑦𐑛𐑵𐑐𐑤𐑦𐑒𐑱𐑖𐑩𐑯, 𐑮𐑦𐑛𐑿𐑐𐑤𐑦𐑒𐑱𐑖𐑩𐑯	rɪˌdjuːplɪˈkeɪʃən	shave_says:𐑮𐑦𐑛𐑵𐑐𐑤𐑦𐑒𐑱𐑖𐑩𐑯
 refectory	𐑮𐑦𐑓𐑧𐑒𐑑𐑮𐑦	rɪfektri	RSSB	89	𐑮𐑦𐑓𐑧𐑒𐑑𐑼𐑦	rɪˈfektəri	shave_says:𐑮𐑦𐑓𐑧𐑒𐑑𐑼𐑦
@@ -5452,7 +5493,7 @@ reveal	𐑮𐑩𐑝𐑰𐑤	rəviːl	RSSB	89	𐑮𐑦𐑝𐑰𐑤	rɪˈviːl	sha
 revealing	𐑮𐑩𐑝𐑰𐑤𐑦𐑙	rəviːlɪŋ	RSSB	89	𐑮𐑦𐑝𐑰𐑤𐑦𐑙	rɪˈviːlɪŋ	shave_says:𐑮𐑦𐑝𐑰𐑤𐑦𐑙
 reveille	𐑮𐑧𐑝𐑩𐑤𐑦	ˈrevəli	GenAm	89	𐑮𐑦𐑝𐑨𐑤𐑦	rɪˈvæli	shave_says:𐑮𐑦𐑝𐑨𐑤𐑦
 revengeful	𐑮𐑦𐑝𐑧𐑯𐑡𐑓𐑫𐑤	rɪvendʒfʊl	RSSB	89	𐑮𐑦𐑝𐑧𐑯𐑡𐑓𐑩𐑤	rɪˈvendʒfəl	shave_says:𐑮𐑦𐑝𐑧𐑯𐑡𐑓𐑩𐑤
-revenue	𐑮𐑧𐑝𐑩𐑯𐑫	ˈrevəˌnu	GenAm	89	𐑮𐑧𐑝𐑩𐑯𐑵, 𐑮𐑧𐑝𐑩𐑯𐑿	ˈrevənjuː	shave_says:𐑮𐑧𐑝𐑩𐑯𐑵
+revenue	𐑮𐑧𐑝𐑩𐑯𐑫	ˈrevəˌnu	GenAm	89	𐑮𐑧𐑝𐑩𐑯𐑵, 𐑮𐑧𐑝𐑩𐑯𐑿	ˈrevənjuː	shave_says:𐑮𐑧𐑝𐑩𐑯𐑿
 reverberant	𐑮𐑦𐑝𐑻𐑚𐑼𐑼𐑯𐑑	rɪvɜːRbərəRnt	RSSB	89	𐑮𐑦𐑝𐑻𐑚𐑼𐑩𐑯𐑑	rɪˈvɜːRbərənt	shave_says:𐑮𐑦𐑝𐑻𐑚𐑼𐑩𐑯𐑑
 reverberant	𐑮𐑩𐑝𐑻𐑚𐑼𐑩𐑯𐑑	rəˈvɜːRbərənt	GenAm	89	𐑮𐑦𐑝𐑻𐑚𐑼𐑩𐑯𐑑	rɪˈvɜːRbərənt	shave_says:𐑮𐑦𐑝𐑻𐑚𐑼𐑩𐑯𐑑
 revere	𐑮𐑩𐑝𐑰𐑮	rəviːr	RSSB	89	𐑮𐑦𐑝𐑽	rɪˈvɪəR	shave_says:𐑮𐑦𐑝𐑽
@@ -5490,12 +5531,10 @@ roentgen	𐑮𐑻𐑯𐑑𐑜𐑩𐑯	rɜːRntɡən	RSSB	89	𐑮𐑪𐑯𐑑𐑘
 roly-poly	𐑮𐑴𐑤𐑦𐑐𐑴𐑤𐑦	ˈroʊliˈpoʊli	GenAm	89	𐑮𐑴𐑤𐑦-𐑐𐑴𐑤𐑦	ˌrəʊli-ˈpəʊli	shave_says:𐑮𐑴𐑤𐑦-𐑐𐑪𐑤𐑦
 romanian	𐑮𐑴𐑥𐑱𐑯𐑦𐑩𐑯	roʊmeɪniən	RSSB	89	𐑮𐑴𐑥𐑱𐑯𐑾𐑯	rəʊˈmeɪnɪən	shave_says:𐑮𐑴𐑥𐑱𐑯𐑾𐑯
 romantic	𐑮𐑴𐑥𐑨𐑯𐑦𐑒	roʊˈmænɪk	GenAm	89	𐑮𐑴𐑥𐑨𐑯𐑑𐑦𐑒	rəʊˈmæntɪk	shave_says:𐑮𐑴𐑥𐑨𐑯𐑑𐑦𐑒
-rooibos	𐑮𐑶𐑚𐑷𐑕	ˈrɔɪbɔːs	GenAm	89	𐑮𐑶𐑚𐑪𐑕	ˈrɔɪbɒs	shave_says:𐑮𐑶𐑚𐑪𐑕
 rooster	𐑮𐑫𐑕𐑑𐑼	ˈrustər	GenAm	89	𐑮𐑵𐑕𐑑𐑼	ˈruːstəR	shave_says:𐑮𐑵𐑕𐑑𐑼
 roseate	𐑮𐑴𐑟𐑦𐑩𐑑	ˈroʊziət	GenAm	89	𐑮𐑴𐑟𐑾𐑑	ˈrəʊzɪət	shave_says:𐑮𐑴𐑟𐑾𐑑
 rosemary	𐑮𐑴𐑟𐑥𐑺𐑦	ˈroʊzˌmeəri	GenAm	89	𐑮𐑴𐑟𐑥𐑼𐑦	ˈrəʊzməri	shave_says:𐑮𐑴𐑟𐑥𐑼𐑦
 rosin	𐑮𐑪𐑟𐑩𐑯	ˈrɒzən	GenAm	89	𐑮𐑪𐑟𐑦𐑯	ˈrɒzɪn	shave_says:𐑮𐑪𐑟𐑦𐑯
-ross	𐑮𐑷𐑕	rɔːs	GenAm	89	𐑮𐑪𐑕	rɒs	shave_says:𐑮𐑪𐑕
 rotarian	𐑮𐑴𐑑𐑺𐑦𐑩𐑯	rəʊteəriən	RSSB	89	𐑮𐑴𐑑𐑺𐑾𐑯	rəʊˈteərɪən	shave_says:𐑮𐑴𐑑𐑺𐑾𐑯
 rotarian	𐑮𐑴𐑑𐑧𐑮𐑦𐑩𐑯	roʊˈteriən	GenAm	89	𐑮𐑴𐑑𐑺𐑾𐑯	rəʊˈteərɪən	shave_says:𐑮𐑴𐑑𐑺𐑾𐑯
 rotatory	𐑮𐑴𐑑𐑱𐑑𐑼𐑦	rəʊteɪtəri	RSSB	89	𐑮𐑴𐑑𐑩𐑑𐑼𐑦	ˈrəʊtətəri	shave_says:𐑮𐑴𐑑𐑩𐑑𐑼𐑦
@@ -5576,15 +5615,18 @@ satrap	𐑕𐑱𐑑𐑮𐑨𐑐	seɪtræp	RSSB	89	𐑕𐑨𐑑𐑮𐑨𐑐	ˈsæ
 satsuma	𐑕𐑨𐑑𐑕𐑫𐑥𐑩	sætˈsumə	GenAm	89	𐑕𐑨𐑑𐑕𐑵𐑥𐑩	ˌsætˈsuːmə	shave_says:𐑕𐑨𐑑𐑕𐑵𐑥𐑩
 saturnalia	𐑕𐑨𐑑𐑼𐑯𐑱𐑤𐑦𐑩	ˌsætəRˈneɪliə	GenAm	89	𐑕𐑨𐑑𐑼𐑯𐑱𐑤𐑾	ˌsætəRˈneɪlɪə	shave_says:𐑕𐑨𐑑𐑼𐑯𐑱𐑤𐑾
 satyr	𐑕𐑱𐑑𐑼	ˈseɪtəR	GenAm	89	𐑕𐑨𐑑𐑼	ˈsætəR	shave_says:𐑕𐑨𐑑𐑼
-saucepan	𐑕𐑷𐑕𐑐𐑨𐑯	ˈsɔːsˌpæn	GenAm	89	𐑕𐑷𐑕𐑐𐑩𐑯	ˈsɔːspən	shave_says:𐑕𐑷𐑕𐑐𐑩𐑯
+sauce	𐑕𐑪𐑕	sɒs	GenAm	89	𐑕𐑷𐑕	sɔːs	shave_says:𐑕𐑷𐑕
+saucepan	𐑕𐑪𐑕𐑐𐑨𐑯	ˈsɒsˌpæn	GenAm	89	𐑕𐑷𐑕𐑐𐑩𐑯	ˈsɔːspən	shave_says:𐑕𐑷𐑕𐑐𐑩𐑯
+saucer	𐑕𐑪𐑕𐑼	ˈsɒsər	GenAm	89	𐑕𐑷𐑕𐑼	ˈsɔːsəR	shave_says:𐑕𐑷𐑕𐑼
+saucy	𐑕𐑪𐑕𐑦	ˈsɒsi	GenAm	89	𐑕𐑷𐑕𐑦	ˈsɔːsi	shave_says:𐑕𐑷𐑕𐑦
+saunter	𐑕𐑪𐑯𐑑𐑼	ˈsɒntəR	GenAm	89	𐑕𐑷𐑯𐑑𐑼	ˈsɔːntəR	shave_says:𐑕𐑷𐑯𐑑𐑼
 saurian	𐑕𐑹𐑦𐑩𐑯	ˈsɔːRiən	GenAm	89	𐑕𐑹𐑾𐑯	ˈsɔːrɪən	shave_says:𐑕𐑹𐑾𐑯
-sausage	𐑕𐑷𐑕𐑦𐑡	ˈsɔːsɪdʒ	GenAm	89	𐑕𐑪𐑕𐑦𐑡	ˈsɒsɪdʒ	shave_says:𐑕𐑪𐑕𐑦𐑡
 savant	𐑕𐑩𐑝𐑪𐑯𐑑	səˈvɒnt	GenAm	89	𐑕𐑨𐑝𐑩𐑯𐑑	ˈsævənt	shave_says:𐑕𐑨𐑝𐑩𐑯𐑑
 savoir-faire	𐑕𐑨𐑝𐑢𐑸𐑓𐑧𐑮	ˌsævwɑːRˈfer	GenAm	89	𐑕𐑨𐑝𐑢𐑸-𐑓𐑺	ˌsævwɑːR-ˈfeəR	shave_says:𐑕𐑨𐑝𐑢𐑸-𐑓𐑺
 sawhorse	𐑕𐑹𐑣𐑹𐑕	sɔːRhɔːRs	RSSB	89	𐑕𐑷𐑣𐑹𐑕	ˈsɔːhɔːRs	shave_says:𐑕𐑷𐑣𐑹𐑕
+sawhorse	𐑕𐑪𐑣𐑹𐑕	sɒhɔːRs	GenAm	89	𐑕𐑷𐑣𐑹𐑕	ˈsɔːhɔːRs	shave_says:𐑕𐑷𐑣𐑹𐑕
 sawyer	𐑕𐑶𐑼	ˈsɔɪəR	GenAm	89	𐑕𐑷𐑘𐑼	ˈsɔːjəR	shave_says:𐑕𐑷𐑘𐑼
 saxifrage	𐑕𐑨𐑒𐑕𐑩𐑓𐑮𐑦𐑡	sæksəfrɪdʒ	RSSB	89	𐑕𐑨𐑒𐑕𐑦𐑓𐑮𐑦𐑡	ˈsæksɪfrɪdʒ	shave_says:𐑕𐑨𐑒𐑕𐑦𐑓𐑮𐑦𐑡
-saxophonist	𐑕𐑨𐑒𐑕𐑷𐑓𐑩𐑯𐑦𐑕𐑑	ˌsækˈsɔːfənɪst	GenAm	89	𐑕𐑨𐑒𐑕𐑪𐑓𐑩𐑯𐑦𐑕𐑑	sækˈsɒfənɪst	shave_says:𐑕𐑨𐑒𐑕𐑪𐑓𐑩𐑯𐑦𐑕𐑑
 scabies	𐑕𐑒𐑧𐑦𐑚𐑦𐑟	ˈskeibiz	RSSB	89	𐑕𐑒𐑱𐑚𐑰𐑟	ˈskeɪbiːz	shave_says:𐑕𐑒𐑱𐑚𐑰𐑟
 scabrous	𐑕𐑒𐑨𐑚𐑮𐑩𐑕	ˈskæbrəs	GenAm	89	𐑕𐑒𐑱𐑚𐑮𐑩𐑕	ˈskeɪbrəs	shave_says:𐑕𐑒𐑱𐑚𐑮𐑩𐑕
 scaffold	𐑕𐑒𐑨𐑓𐑩𐑤𐑛	ˈskæfəld	GenAm	89	𐑕𐑒𐑨𐑓𐑴𐑤𐑛	ˈskæfəʊld	shave_says:𐑕𐑒𐑨𐑓𐑴𐑤𐑛
@@ -5612,16 +5654,14 @@ scone	𐑕𐑒𐑴𐑯	skoʊn	GenAm	89	𐑕𐑒𐑪𐑯	skɒn	shave_says:𐑕�
 scorpio	𐑕𐑒𐑹𐑐𐑾𐑫	skɔːRpɪəʊ	RSSB	89	𐑕𐑒𐑹𐑐𐑦𐑴	ˈskɔːRpɪəʊ	shave_says:𐑕𐑒𐑹𐑐𐑦𐑴
 scorpion	𐑕𐑒𐑹𐑐𐑦𐑩𐑯	ˈskɔːRpiən	GenAm	89	𐑕𐑒𐑹𐑐𐑾𐑯	ˈskɔːRpɪən	shave_says:𐑕𐑒𐑹𐑐𐑾𐑯
 scourer	𐑕𐑒𐑬𐑮𐑼	ˈskaʊrər	GenAm	89	𐑕𐑒𐑬𐑼𐑼	ˈskaʊərəR	shave_says:𐑕𐑒𐑬𐑼𐑼
+scrawny	𐑕𐑒𐑮𐑪𐑯𐑦	ˈskrɒni	GenAm	89	𐑕𐑒𐑮𐑷𐑯𐑦	ˈskrɔːni	shave_says:𐑕𐑒𐑮𐑷𐑯𐑦
 scream	𐑕𐑒𐑮𐑦𐑥	skrim	GenAm	89	𐑕𐑒𐑮𐑰𐑥	skriːm	shave_says:𐑕𐑒𐑮𐑰𐑥
 scribbler	𐑕𐑒𐑮𐑦𐑚𐑼𐑤𐑼	skrɪbəRləR	RSSB	89	𐑕𐑒𐑮𐑦𐑚𐑤𐑼	ˈskrɪbləR	shave_says:𐑕𐑒𐑮𐑦𐑚𐑤𐑼
 scrimmage	𐑕𐑒𐑮𐑦𐑥𐑩𐑡	ˈskrɪmədʒ	GenAm	89	𐑕𐑒𐑮𐑦𐑥𐑦𐑡	ˈskrɪmɪdʒ	shave_says:𐑕𐑒𐑮𐑦𐑥𐑦𐑡
 scrivener	𐑕𐑒𐑮𐑦𐑝𐑯𐑼	skrɪvnəR	RSSB	89	𐑕𐑒𐑮𐑦𐑝𐑩𐑯𐑼	ˈskrɪvənəR	shave_says:𐑕𐑒𐑮𐑦𐑝𐑩𐑯𐑼
-scrofula	𐑕𐑒𐑮𐑷𐑓𐑘𐑩𐑤𐑩	ˈskrɔːfjələ	GenAm	89	𐑕𐑒𐑮𐑪𐑓𐑘𐑩𐑤𐑩	ˈskrɒfjələ	shave_says:𐑕𐑒𐑮𐑪𐑓𐑘𐑩𐑤𐑩
-scrofulous	𐑕𐑒𐑮𐑷𐑓𐑘𐑩𐑤𐑩𐑕	ˈskrɔːfjələs	GenAm	89	𐑕𐑒𐑮𐑪𐑓𐑘𐑩𐑤𐑩𐑕	ˈskrɒfjələs	shave_says:𐑕𐑒𐑮𐑪𐑓𐑘𐑩𐑤𐑩𐑕
 scruple	𐑕𐑒𐑮𐑫𐑐𐑩𐑤	ˈskrupəl	GenAm	89	𐑕𐑒𐑮𐑵𐑐𐑩𐑤	ˈskruːpəl	shave_says:𐑕𐑒𐑮𐑵𐑐𐑩𐑤
 scrutinize	𐑕𐑒𐑮𐑫𐑑𐑩𐑯𐑲𐑟	ˈskrutənˌaɪz	GenAm	89	𐑕𐑒𐑮𐑵𐑑𐑦𐑯𐑲𐑟	ˈskruːtɪnaɪz	shave_says:𐑕𐑒𐑮𐑵𐑑𐑦𐑯𐑲𐑟
 sculpture	𐑕𐑒𐑳𐑤𐑐𐑑𐑘𐑼	skʌlptjəR	RSSB	89	𐑕𐑒𐑳𐑤𐑐𐑗𐑼	ˈskʌlptʃəR	shave_says:𐑕𐑒𐑳𐑤𐑐𐑗𐑼
-scuppernong	𐑕𐑒𐑳𐑐𐑼𐑯𐑷𐑙	ˈskʌpərˌnɔːŋ	GenAm	89	𐑕𐑒𐑳𐑐𐑼𐑯𐑪𐑙	ˈskʌpəRnɒŋ	shave_says:𐑕𐑒𐑳𐑐𐑼𐑯𐑪𐑙
 scutcheon	𐑕𐑒𐑳𐑗𐑯	ˈskʌtʃn	RSSB	89	𐑕𐑒𐑳𐑗𐑩𐑯	ˈskʌtʃən	shave_says:𐑕𐑒𐑳𐑗𐑩𐑯
 scythe	𐑕𐑲𐑔	ˈsaɪθ	RSSB	89	𐑕𐑲𐑞	saɪð	shave_says:𐑕𐑲𐑞
 seance	𐑕𐑱𐑪𐑯𐑕	ˈseɪˌɒns	GenAm	89	𐑕𐑱𐑭𐑯𐑕	ˈseɪɑːns	shave_says:𐑕𐑱𐑭𐑯𐑕
@@ -5766,7 +5806,7 @@ singularity	𐑕𐑦𐑙𐑜𐑘𐑼𐑤𐑨𐑮𐑼𐑑𐑦	sɪŋɡjəRlærəRt
 sinhala	𐑕𐑦𐑯𐑣𐑩𐑤𐑩	ˈsɪnhələ	RSSB	89	𐑕𐑦𐑯𐑣𐑭𐑤𐑩	sɪnˈhɑːlə	shave_says:𐑕𐑦𐑯𐑣𐑭𐑤𐑩
 siren	𐑕𐑲𐑼𐑼𐑯	saɪərəRn	RSSB	89	𐑕𐑲𐑮𐑩𐑯	ˈsaɪrən	shave_says:𐑕𐑲𐑮𐑩𐑯
 sisal	𐑕𐑳𐑦𐑕𐑩𐑤	ˈsʌɪsəl	RSSB	89	𐑕𐑲𐑕𐑩𐑤	ˈsaɪsəl	shave_says:𐑕𐑲𐑕𐑩𐑤
-sister-in-law	𐑕𐑦𐑕𐑑𐑼𐑦𐑯𐑤𐑷	ˈsɪstəRɪnlɔː	GenAm	89	𐑕𐑦𐑕𐑑𐑼-𐑦𐑯-𐑤𐑷	ˈsɪstər-ɪn-lɔː	shave_says:𐑕𐑦𐑕𐑑𐑼-𐑦𐑯-𐑤𐑷
+sister-in-law	𐑕𐑦𐑕𐑑𐑼𐑦𐑯𐑤𐑪	ˈsɪstəRɪnlɒ	GenAm	89	𐑕𐑦𐑕𐑑𐑼-𐑦𐑯-𐑤𐑷	ˈsɪstər-ɪn-lɔː	shave_says:𐑕𐑦𐑕𐑑𐑼-𐑦𐑯-𐑤𐑷
 sit-up	𐑕𐑦𐑑𐑳𐑐	ˈsɪtʌp	GenAm	89	𐑕𐑦𐑑-𐑳𐑐	ˈsɪt-ʌp	shave_says:𐑕𐑦𐑑-𐑳𐑐
 situation	𐑕𐑦𐑑𐑿𐑱𐑖𐑩𐑯	sɪtjuːˈeɪʃən	RSSB	89	𐑕𐑦𐑗𐑫𐑱𐑖𐑩𐑯	ˌsɪtʃuˈeɪʃən	shave_says:𐑕𐑦𐑗𐑫𐑱𐑖𐑩𐑯
 sixth	𐑕𐑦𐑒𐑔	sɪkθ	RSSB	89	𐑕𐑦𐑒𐑕𐑔	sɪksθ	shave_says:𐑕𐑦𐑒𐑕𐑔
@@ -5775,21 +5815,26 @@ skeletal	𐑕𐑒𐑧𐑤𐑦𐑑𐑤	ˈskelɪtl	RSSB	89	𐑕𐑒𐑧𐑤𐑦�
 skiing	𐑕𐑒𐑦𐑦𐑙	ˈskiɪŋ	RSSB	89	𐑕𐑒𐑰𐑦𐑙	ˈskiːɪŋ	shave_says:𐑕𐑒𐑰𐑦𐑙
 skillet	𐑕𐑒𐑦𐑤𐑦𐑑	ˈskɪlɪt	RSSB	89	𐑕𐑒𐑦𐑤𐑩𐑑	ˈskɪlət	shave_says:𐑕𐑒𐑦𐑤𐑩𐑑
 skylark	𐑕𐑒𐑳𐑦𐑤𐑸𐑒	skʌɪlɑːRk	RSSB	89	𐑕𐑒𐑲𐑤𐑸𐑒	ˈskaɪlɑːRk	shave_says:𐑕𐑒𐑲𐑤𐑸𐑒
+slaughter	𐑕𐑤𐑪𐑑𐑼	ˈslɒtəR	GenAm	89	𐑕𐑤𐑷𐑑𐑼	ˈslɔːtəR	shave_says:𐑕𐑤𐑷𐑑𐑼
 slaver	𐑕𐑤𐑱𐑝𐑼	sleɪvəR	RSSB	89	𐑕𐑤𐑨𐑝𐑼	ˈslævəR	shave_says:𐑕𐑤𐑨𐑝𐑼
 slip-up	𐑕𐑤𐑦𐑐𐑳𐑐	ˈslɪpʌp	RSSB	89	𐑕𐑤𐑦𐑐-𐑳𐑐	ˈslɪp-ʌp	shave_says:𐑕𐑤𐑦𐑐-𐑳𐑐
 slogan	𐑕𐑤𐑴𐑜𐑯	ˈsləʊɡn	RSSB	89	𐑕𐑤𐑴𐑜𐑩𐑯	ˈsləʊɡən	shave_says:𐑕𐑤𐑴𐑜𐑩𐑯
 sloshed	𐑕𐑤𐑪𐑖𐑛	ˈslɒʃd	GenAm	89	𐑕𐑤𐑪𐑖𐑑	slɒʃt	shave_says:𐑕𐑤𐑪𐑖𐑑
-sloth	𐑕𐑤𐑷𐑔	slɔːθ	GenAm	89	𐑕𐑤𐑴𐑔	sləʊθ	shave_says:𐑕𐑤𐑴𐑔
+sloth	𐑕𐑤𐑪𐑔	slɒθ	GenAm	89	𐑕𐑤𐑴𐑔	sləʊθ	shave_says:𐑕𐑤𐑴𐑔
 slovak	𐑕𐑤𐑴𐑝𐑭𐑒	ˈsloʊvɑːk	RSSB	89	𐑕𐑤𐑴𐑝𐑨𐑒	ˈsləʊvæk	shave_says:𐑕𐑤𐑴𐑝𐑨𐑒
 slovenian	𐑕𐑤𐑩𐑝𐑰𐑯𐑦𐑩𐑯	sləˈviːniən	RSSB	89	𐑕𐑤𐑩𐑝𐑰𐑯𐑾𐑯	sləˈviːnɪən	shave_says:𐑕𐑤𐑩𐑝𐑰𐑯𐑾𐑯
+small	𐑕𐑥𐑪𐑤	smɒl	GenAm	89	𐑕𐑥𐑷𐑤	smɔːl	shave_says:𐑕𐑥𐑷𐑤
+smaller	𐑕𐑥𐑪𐑤𐑼	ˈsmɒləR	GenAm	89	𐑕𐑥𐑷𐑤𐑼	ˈsmɔːləR	shave_says:𐑕𐑥𐑷𐑤𐑼
+smallpox	𐑕𐑥𐑪𐑤𐑐𐑪𐑒𐑕	ˈsmɒlpɒks	GenAm	89	𐑕𐑥𐑷𐑤𐑐𐑪𐑒𐑕	ˈsmɔːlpɒks	shave_says:𐑕𐑥𐑷𐑤𐑐𐑪𐑒𐑕
 smithereens	𐑕𐑥𐑦𐑞𐑼𐑦𐑯𐑟	ˌsmɪðəˈrinz	GenAm	89	𐑕𐑥𐑦𐑞𐑼𐑰𐑯𐑟	ˌsmɪðəˈriːnz	shave_says:𐑕𐑥𐑦𐑞𐑼𐑰𐑯𐑟
 smithy	𐑕𐑥𐑦𐑔𐑦	ˈsmɪθi	RSSB	89	𐑕𐑥𐑦𐑞𐑦	ˈsmɪði	shave_says:𐑕𐑥𐑦𐑞𐑦
-smog	𐑕𐑥𐑷𐑜	smɔːɡ	GenAm	89	𐑕𐑥𐑪𐑜	smɒɡ	shave_says:𐑕𐑥𐑪𐑜
 sneaker	𐑕𐑯𐑦𐑒𐑼	ˈsnikəR	GenAm	89	𐑕𐑯𐑰𐑒𐑼	ˈsniːkəR	shave_says:𐑕𐑯𐑰𐑒𐑼
 snippet	𐑕𐑯𐑦𐑐𐑦𐑑	ˈsnɪpɪt	GenAm	89	𐑕𐑯𐑦𐑐𐑩𐑑	ˈsnɪpIt	shave_says:𐑕𐑯𐑦𐑐𐑩𐑑
 snooker	𐑕𐑯𐑫𐑒𐑼	ˈsnʊkər	GenAm	89	𐑕𐑯𐑵𐑒𐑼	ˈsnuːkəR	shave_says:𐑕𐑯𐑵𐑒𐑼
+snowball	𐑕𐑯𐑴𐑚𐑪𐑤	ˈsnoʊbɒl	GenAm	89	𐑕𐑯𐑴𐑚𐑷𐑤	ˈsnəʊbɔːl	shave_says:𐑕𐑯𐑴𐑚𐑷𐑤
 snowshoe	𐑕𐑯𐑴𐑖𐑫	ˈsnoʊʃu	GenAm	89	𐑕𐑯𐑴𐑖𐑵	ˈsnəʊʃuː	shave_says:𐑕𐑯𐑴𐑖𐑵
-so-called	𐑕𐑴𐑒𐑷𐑤𐑛	ˈsoʊˌkɔːld	GenAm	89	𐑕𐑴-𐑒𐑷𐑤𐑛	səʊ-ˈkɔːld	shave_says:𐑕𐑴-𐑒𐑷𐑤𐑛
+so-called	𐑕𐑴𐑒𐑷𐑤𐑛	ˈsəʊˌkɔːld	RSSB	89	𐑕𐑴-𐑒𐑷𐑤𐑛	səʊ-ˈkɔːld	shave_says:𐑕𐑴-𐑒𐑷𐑤𐑛
+so-called	𐑕𐑴𐑒𐑪𐑤𐑛	ˈsoʊˌkɒld	GenAm	89	𐑕𐑴-𐑒𐑷𐑤𐑛	səʊ-ˈkɔːld	shave_says:𐑕𐑴-𐑒𐑷𐑤𐑛
 so-so	𐑕𐑴𐑕𐑴	ˈsəʊˌsəʊ	RSSB	89	𐑕𐑴-𐑕𐑴	ˌsəʊ-ˈsəʊ	shave_says:𐑕𐑴-𐑕𐑴
 sob	𐑧𐑕𐑴𐑚𐑦	ˌesoʊˈbi	GenAm	89	𐑕𐑪𐑚	sɒb	shave_says:𐑕𐑪𐑚
 sobriety	𐑕𐑩𐑚𐑮𐑲𐑦𐑑𐑦	səbraɪɪti	RSSB	89	𐑕𐑩𐑚𐑮𐑲𐑩𐑑𐑦	səˈbraɪəti	shave_says:𐑕𐑩𐑚𐑮𐑲𐑩𐑑𐑦
@@ -5797,18 +5842,11 @@ sociology	𐑕𐑴𐑕𐑰𐑪𐑤𐑩𐑡𐑰	ˌsəʊsiːˈɒlədʒiː	RSSB	89	
 sociopath	𐑕𐑴𐑖𐑦𐑩𐑐𐑨𐑔	ˈsoʊʃiəˌpæθ	RSSB	89	𐑕𐑴𐑖𐑦𐑴𐑐𐑨𐑔	ˈsəʊʃiəʊpæθ	shave_says:𐑕𐑴𐑖𐑦𐑴𐑐𐑨𐑔
 sociopath	𐑕𐑴𐑕𐑦𐑩𐑐𐑨𐑔	ˈsoʊsiəˌpæθ	GenAm	89	𐑕𐑴𐑖𐑦𐑴𐑐𐑨𐑔	ˈsəʊʃiəʊpæθ	shave_says:𐑕𐑴𐑖𐑦𐑴𐑐𐑨𐑔
 sodium	𐑕𐑴𐑛𐑦𐑩𐑥	ˈsoʊdiəm	GenAm	89	𐑕𐑴𐑛𐑾𐑥	ˈsəʊdɪəm	shave_says:𐑕𐑴𐑛𐑾𐑥
-soft	𐑕𐑷𐑓𐑑	sɔːft	GenAm	89	𐑕𐑪𐑓𐑑	sɒft	shave_says:𐑕𐑪𐑓𐑑
-soft-spoken	𐑕𐑪𐑓𐑑𐑕𐑐𐑴𐑒𐑩𐑯	ˈsɒftˌspəʊkən	RSSB	89	𐑕𐑪𐑓𐑑-𐑕𐑐𐑴𐑒𐑩𐑯	sɒft-ˈspəʊkən	shave_says:𐑕𐑪𐑓𐑑-𐑕𐑐𐑴𐑒𐑩𐑯
-soft-spoken	𐑕𐑷𐑓𐑑𐑕𐑐𐑴𐑒𐑩𐑯	ˈsɔːftˌspoʊkən	GenAm	89	𐑕𐑪𐑓𐑑-𐑕𐑐𐑴𐑒𐑩𐑯	sɒft-ˈspəʊkən	shave_says:𐑕𐑪𐑓𐑑-𐑕𐑐𐑴𐑒𐑩𐑯
-soften	𐑕𐑷𐑓𐑩𐑯	ˈsɔːfən	GenAm	89	𐑕𐑪𐑓𐑩𐑯	ˈsɒfən	shave_says:𐑕𐑪𐑓𐑩𐑯
-softened	𐑕𐑷𐑓𐑩𐑯𐑛	ˈsɔːfənd	GenAm	89	𐑕𐑪𐑓𐑩𐑯𐑛	ˈsɒfənd	shave_says:𐑕𐑪𐑓𐑩𐑯𐑛
-softly	𐑕𐑷𐑓𐑑𐑤𐑦	ˈsɔːftli	GenAm	89	𐑕𐑪𐑓𐑑𐑤𐑦	ˈsɒftli	shave_says:𐑕𐑪𐑓𐑑𐑤𐑦
-softness	𐑕𐑷𐑓𐑑𐑯𐑩𐑕	ˈsɔːftnəs	GenAm	89	𐑕𐑪𐑓𐑑𐑯𐑩𐑕	ˈsɒftnəs	shave_says:𐑕𐑪𐑓𐑑𐑯𐑩𐑕
-software	𐑕𐑷𐑓𐑑𐑢𐑧𐑮	ˈsɔːftˌwer	GenAm	89	𐑕𐑪𐑓𐑑𐑢𐑺	ˈsɒftweəR	shave_says:𐑕𐑪𐑓𐑑𐑢𐑺
+soft-spoken	𐑕𐑪𐑓𐑑𐑕𐑐𐑴𐑒𐑩𐑯	ˈsɒftˌspoʊkən	GenAm	89	𐑕𐑪𐑓𐑑-𐑕𐑐𐑴𐑒𐑩𐑯	sɒft-ˈspəʊkən	shave_says:𐑕𐑪𐑓𐑑-𐑕𐑐𐑴𐑒𐑩𐑯
+software	𐑕𐑪𐑓𐑑𐑢𐑧𐑮	ˈsɒftˌwer	GenAm	89	𐑕𐑪𐑓𐑑𐑢𐑺	ˈsɒftweəR	shave_says:𐑕𐑪𐑓𐑑𐑢𐑺
 soilure	𐑕𐑶𐑤𐑘𐑩𐑼	sɔɪljəəR	RSSB	89	𐑕𐑶𐑤𐑘𐑼	ˈsɔɪljəR	shave_says:𐑕𐑶𐑤𐑘𐑼
 sojourn	𐑕𐑪𐑡𐑻𐑯	sɒdʒɜːRn	RSSB	89	𐑕𐑪𐑡𐑼𐑯	ˈsɒdʒəRn	shave_says:𐑕𐑪𐑡𐑼𐑯
 sojourn	𐑕𐑴𐑡𐑼𐑯	ˈsoʊdʒəRn	GenAm	89	𐑕𐑪𐑡𐑼𐑯	ˈsɒdʒəRn	shave_says:𐑕𐑪𐑡𐑼𐑯
-sol	𐑕𐑷𐑤	sɔːl	GenAm	89	𐑕𐑪𐑤	sɒl	shave_says:𐑕𐑪𐑤
 solace	𐑕𐑭𐑤𐑦𐑕	ˈsɑːlɪs	GenAm	89	𐑕𐑪𐑤𐑦𐑕	ˈsɒlɪs	shave_says:𐑕𐑪𐑤𐑦𐑕
 solarium	𐑕𐑩𐑤𐑺𐑦𐑩𐑥	səleəriəm	RSSB	89	𐑕𐑴𐑤𐑺𐑾𐑥	səʊˈleərɪəm	shave_says:𐑕𐑴𐑤𐑺𐑾𐑥
 solder	𐑕𐑪𐑤𐑛𐑼	sɒldəR	RSSB	89	𐑕𐑪𐑛𐑼, 𐑕𐑴𐑤𐑛𐑼	ˈsəʊldəR	shave_says:𐑕𐑴𐑤𐑛𐑼
@@ -5827,8 +5865,6 @@ somewhere	𐑕𐑳𐑥𐑢𐑧𐑮	ˈsʌmwer	GenAm	89	𐑕𐑳𐑥𐑢𐑺	ˈsʌ
 somnambulate	𐑕𐑭𐑥𐑯𐑨𐑥𐑚𐑘𐑫𐑤𐑱𐑑	sɑːmˈnæmbjuˌleɪt	GenAm	89	𐑕𐑪𐑥𐑯𐑨𐑥𐑚𐑘𐑩𐑤𐑱𐑑	sɒmˈnæmbjəleɪt	shave_says:𐑕𐑪𐑥𐑯𐑨𐑥𐑚𐑘𐑩𐑤𐑱𐑑
 somnolent	𐑕𐑭𐑥𐑯𐑩𐑤𐑩𐑯𐑑	ˈsɑːmnələnt	GenAm	89	𐑕𐑪𐑥𐑯𐑩𐑤𐑩𐑯𐑑	ˈsɒmnələnt	shave_says:𐑕𐑪𐑥𐑯𐑩𐑤𐑩𐑯𐑑
 son-in-law	𐑕𐑳𐑯𐑦𐑯𐑤𐑷	ˈsʌnɪnˌlɔː	RSSB	89	𐑕𐑳𐑯-𐑦𐑯-𐑤𐑷	ˈsʌn-ɪn-lɔː	shave_says:𐑕𐑳𐑯-𐑦𐑯-𐑤𐑷
-song	𐑕𐑷𐑙	sɔːŋ	GenAm	89	𐑕𐑪𐑙	sɒŋ	shave_says:𐑕𐑪𐑙
-songbird	𐑕𐑷𐑙𐑚𐑻𐑛	ˈsɔːŋˌbɜːRd	GenAm	89	𐑕𐑪𐑙𐑚𐑻𐑛	ˈsɒŋbɜːRd	shave_says:𐑕𐑪𐑙𐑚𐑻𐑛
 sonnet	𐑕𐑪𐑯𐑦𐑑	ˈsɒnɪt	RSSB	89	𐑕𐑪𐑯𐑩𐑑	ˈsɒnIt	shave_says:𐑕𐑪𐑯𐑩𐑑
 sonorous	𐑕𐑪𐑯𐑼𐑼𐑕	sɒnərəRs	RSSB	89	𐑕𐑪𐑯𐑼𐑩𐑕	ˈsɒnərəs	shave_says:𐑕𐑪𐑯𐑼𐑩𐑕
 sonorous	𐑕𐑭𐑯𐑼𐑩𐑕	ˈsɑːnəRəs	GenAm	89	𐑕𐑪𐑯𐑼𐑩𐑕	ˈsɒnərəs	shave_says:𐑕𐑪𐑯𐑼𐑩𐑕
@@ -5875,6 +5911,7 @@ spoor	𐑕𐑐𐑫𐑮	spʊr	GenAm	89	𐑕𐑐𐑫𐑼	spʊəR	shave_says:𐑕�
 sporadic	𐑕𐑐𐑼𐑨𐑑𐑦𐑒	spəˈrætɪk	GenAm	89	𐑕𐑐𐑼𐑨𐑛𐑦𐑒	spəˈrædɪk	shave_says:𐑕𐑐𐑼𐑨𐑛𐑦𐑒
 spork	𐑕𐑐𐑪𐑼𐑒	spoərk	GenAm	89	𐑕𐑐𐑹𐑒	ˈspɔːRk	shave_says:𐑕𐑐𐑹𐑒
 sporran	𐑕𐑐𐑪𐑮𐑼𐑯	spɒrəRn	RSSB	89	𐑕𐑐𐑪𐑮𐑩𐑯	ˈspɒrən	shave_says:𐑕𐑐𐑪𐑮𐑩𐑯
+sprawl	𐑕𐑐𐑮𐑪𐑤	sprɒl	GenAm	89	𐑕𐑐𐑮𐑷𐑤	sprɔːl	shave_says:𐑕𐑐𐑮𐑷𐑤
 spurious	𐑕𐑐𐑘𐑩𐑼𐑦𐑩𐑕	spjəəriəs	RSSB	89	𐑕𐑐𐑘𐑫𐑼𐑾𐑕	ˈspjʊərɪəs	shave_says:𐑕𐑐𐑘𐑫𐑼𐑾𐑕
 spurious	𐑕𐑐𐑘𐑼𐑦𐑩𐑕	ˈspjəriəs	GenAm	89	𐑕𐑐𐑘𐑫𐑼𐑾𐑕	ˈspjʊərɪəs	shave_says:𐑕𐑐𐑘𐑫𐑼𐑾𐑕
 spurn	𐑕𐑐𐑼𐑯	spəRn	GenAm	89	𐑕𐑐𐑻𐑯	spɜːRn	shave_says:𐑕𐑐𐑻𐑯
@@ -5895,6 +5932,7 @@ stalactite	𐑕𐑑𐑩𐑤𐑨𐑒𐑑𐑲𐑑	stəˈlækˌtaɪt	GenAm	89	𐑕�
 stalagmite	𐑕𐑑𐑩𐑤𐑨𐑜𐑥𐑲𐑑	stəˈlæɡˌmaɪt	GenAm	89	𐑕𐑑𐑨𐑤𐑩𐑜𐑥𐑲𐑑	ˈstæləɡmaɪt	shave_says:𐑕𐑑𐑨𐑤𐑩𐑜𐑥𐑲𐑑
 stallion	𐑕𐑑𐑨𐑤𐑦𐑩𐑯	ˈstæliən	RSSB	89	𐑕𐑑𐑨𐑤𐑘𐑩𐑯	ˈstæljən	shave_says:𐑕𐑑𐑨𐑤𐑘𐑩𐑯
 stalwart	𐑕𐑑𐑹𐑤𐑢𐑼𐑑	stɔːRlwəRt	RSSB	89	𐑕𐑑𐑷𐑤𐑢𐑼𐑑	ˈstɔːlwəRt	shave_says:𐑕𐑑𐑷𐑤𐑢𐑼𐑑
+stalwart	𐑕𐑑𐑪𐑤𐑢𐑼𐑑	ˈstɒlwəRt	GenAm	89	𐑕𐑑𐑷𐑤𐑢𐑼𐑑	ˈstɔːlwəRt	shave_says:𐑕𐑑𐑷𐑤𐑢𐑼𐑑
 stamina	𐑕𐑑𐑨𐑥𐑩𐑯𐑩	ˈstæmənə	GenAm	89	𐑕𐑑𐑨𐑥𐑦𐑯𐑩	ˈstæmɪnə	shave_says:𐑕𐑑𐑨𐑥𐑦𐑯𐑩
 stanchion	𐑕𐑑𐑨𐑯𐑖𐑩𐑯	ˈstænʃən	RSSB	89	𐑕𐑑𐑨𐑯𐑗𐑩𐑯	ˈstæntʃən	shave_says:𐑕𐑑𐑨𐑯𐑗𐑩𐑯
 staring	𐑕𐑑𐑧𐑮𐑦𐑙	ˈsterɪŋ	GenAm	89	𐑕𐑑𐑺𐑦𐑙	ˈsteərɪŋ	shave_says:𐑕𐑑𐑺𐑦𐑙
@@ -5933,15 +5971,13 @@ stolid	𐑕𐑑𐑭𐑤𐑩𐑛	ˈstɑːlƏd	GenAm	89	𐑕𐑑𐑪𐑤𐑦𐑛	�
 stradivarius	𐑕𐑑𐑮𐑨𐑛𐑩𐑝𐑧𐑮𐑦𐑩𐑕	ˌstrædəˈveriəs	GenAm	89	𐑕𐑑𐑮𐑨𐑛𐑦𐑝𐑺𐑾𐑕	ˌstrædɪˈveəriəs	shave_says:𐑕𐑑𐑮𐑨𐑛𐑦𐑝𐑺𐑾𐑕
 strangle	𐑕𐑑𐑮𐑨𐑙𐑜𐑤	stræŋɡl	RSSB	89	𐑕𐑑𐑮𐑨𐑙𐑜𐑩𐑤	ˈstræŋɡəl	shave_says:𐑕𐑑𐑮𐑨𐑙𐑜𐑩𐑤
 strategist	𐑕𐑑𐑮𐑨𐑑𐑩𐑡𐑦𐑕𐑑	strætədʒɪst	RSSB	89	𐑕𐑑𐑮𐑨𐑑𐑦𐑡𐑦𐑕𐑑	ˈstrætɪdʒɪst	shave_says:𐑕𐑑𐑮𐑨𐑑𐑦𐑡𐑦𐑕𐑑
+straw	𐑕𐑑𐑮𐑪	strɒ	GenAm	89	𐑕𐑑𐑮𐑷	strɔː	shave_says:𐑕𐑑𐑮𐑷
 strength	𐑕𐑑𐑮𐑧𐑙𐑒𐑔	streŋkθ	RSSB	89	𐑕𐑑𐑮𐑧𐑙𐑔	streŋθ	shave_says:𐑕𐑑𐑮𐑧𐑙𐑔
 streptomycin	𐑕𐑑𐑮𐑧𐑐𐑑𐑩𐑥𐑳𐑦𐑕𐑦𐑯	streptəmʌɪsɪn	RSSB	89	𐑕𐑑𐑮𐑧𐑐𐑑𐑩𐑥𐑲𐑕𐑦𐑯	ˌstreptəˈmaɪsɪn	shave_says:𐑕𐑑𐑮𐑧𐑐𐑑𐑩𐑥𐑲𐑕𐑦𐑯
 streptomycin	𐑕𐑑𐑮𐑧𐑐𐑑𐑩𐑥𐑲𐑕𐑩𐑯	ˌstreptəˈmaɪsən	GenAm	89	𐑕𐑑𐑮𐑧𐑐𐑑𐑩𐑥𐑲𐑕𐑦𐑯	ˌstreptəˈmaɪsɪn	shave_says:𐑕𐑑𐑮𐑧𐑐𐑑𐑩𐑥𐑲𐑕𐑦𐑯
 strew	𐑕𐑑𐑮𐑫	stru	GenAm	89	𐑕𐑑𐑮𐑵	struː	shave_says:𐑕𐑑𐑮𐑵
 stridulate	𐑕𐑑𐑮𐑦𐑛𐑘𐑩𐑤𐑱𐑖𐑯	strɪdjəleɪʃn	RSSB	89	𐑕𐑑𐑮𐑦𐑛𐑘𐑩𐑤𐑱𐑑	ˈstrɪdjəleɪt	shave_says:𐑕𐑑𐑮𐑦𐑛𐑘𐑩𐑤𐑱𐑑
 stripe	𐑕𐑑𐑮𐑳𐑦𐑐	strʌɪp	GenAm	89	𐑕𐑑𐑮𐑲𐑐	straɪp	shave_says:𐑕𐑑𐑮𐑲𐑐
-strong	𐑕𐑑𐑮𐑷𐑙	strɔːŋ	GenAm	89	𐑕𐑑𐑮𐑪𐑙	strɒŋ	shave_says:𐑕𐑑𐑮𐑪𐑙
-stronghold	𐑕𐑑𐑮𐑷𐑙𐑣𐑴𐑤𐑛	ˈstrɔːŋˌhoʊld	GenAm	89	𐑕𐑑𐑮𐑪𐑙𐑣𐑴𐑤𐑛	ˈstrɒŋhəʊld	shave_says:𐑕𐑑𐑮𐑪𐑙𐑣𐑴𐑤𐑛
-strongly	𐑕𐑑𐑮𐑷𐑙𐑤𐑦	strɔːŋli	GenAm	89	𐑕𐑑𐑮𐑪𐑙𐑤𐑦	ˈstrɒŋli	shave_says:𐑕𐑑𐑮𐑪𐑙𐑤𐑦
 strontium	𐑕𐑑𐑮𐑪𐑯𐑑𐑦𐑩𐑥	strɒntiəm	RSSB	89	𐑕𐑑𐑮𐑪𐑯𐑑𐑾𐑥	ˈstrɒntɪəm	shave_says:𐑕𐑑𐑮𐑪𐑯𐑑𐑾𐑥
 strumpet	𐑕𐑑𐑮𐑳𐑥𐑐𐑦𐑑	strʌmpɪt	RSSB	89	𐑕𐑑𐑮𐑳𐑥𐑐𐑩𐑑	ˈstrʌmpIt	shave_says:𐑕𐑑𐑮𐑳𐑥𐑐𐑩𐑑
 stubbornness	𐑕𐑑𐑳𐑚𐑼𐑯𐑩𐑕	ˈstʌbəRnəs	GenAm	89	𐑕𐑑𐑳𐑚𐑼𐑯𐑯𐑩𐑕	ˈstʌbəRn+nəs	shave_says:𐑕𐑑𐑳𐑚𐑼𐑯𐑯𐑩𐑕
@@ -6018,7 +6054,7 @@ supernal	𐑕𐑫𐑐𐑻𐑯𐑩𐑤	suˈpɜːRnəl	GenAm	89	𐑕𐑵𐑐𐑻�
 supernatural	𐑕𐑵𐑐𐑼𐑯𐑨𐑗𐑮𐑼𐑤	suːpəRnatʃrəRl	RSSB	89	𐑕𐑵𐑐𐑼𐑯𐑨𐑗𐑼𐑩𐑤	ˌsuːpəRˈnætʃərəl	shave_says:𐑕𐑵𐑐𐑼𐑯𐑨𐑗𐑼𐑩𐑤
 supernormal	𐑕𐑫𐑐𐑼𐑯𐑷𐑮𐑥𐑩𐑤	supərnɔrməl	RSSB	89	𐑕𐑵𐑐𐑼𐑯𐑹𐑥𐑩𐑤	ˌsuːpəRˈnɔːRməl	shave_says:𐑕𐑵𐑐𐑼𐑯𐑹𐑥𐑩𐑤
 supernumerary	𐑕𐑵𐑐𐑼𐑯𐑿𐑥𐑮𐑮𐑦	suːpəRnjuːmrri	RSSB	89	𐑕𐑵𐑐𐑼𐑯𐑵𐑥𐑼𐑼𐑦, 𐑕𐑵𐑐𐑼𐑯𐑿𐑥𐑼𐑼𐑦	ˌsuːpəRˈnjuːmərəri	shave_says:𐑕𐑵𐑐𐑼𐑯𐑿𐑥𐑼𐑼𐑦
-supernumerary	𐑕𐑫𐑐𐑼𐑯𐑫𐑥𐑼𐑧𐑮𐑦	ˌsupəRˈnuməˌreri	GenAm	89	𐑕𐑵𐑐𐑼𐑯𐑵𐑥𐑼𐑼𐑦, 𐑕𐑵𐑐𐑼𐑯𐑿𐑥𐑼𐑼𐑦	ˌsuːpəRˈnjuːmərəri	shave_says:𐑕𐑵𐑐𐑼𐑯𐑵𐑥𐑼𐑼𐑦
+supernumerary	𐑕𐑫𐑐𐑼𐑯𐑫𐑥𐑼𐑧𐑮𐑦	ˌsupəRˈnuməˌreri	GenAm	89	𐑕𐑵𐑐𐑼𐑯𐑵𐑥𐑼𐑼𐑦, 𐑕𐑵𐑐𐑼𐑯𐑿𐑥𐑼𐑼𐑦	ˌsuːpəRˈnjuːmərəri	shave_says:𐑕𐑵𐑐𐑼𐑯𐑿𐑥𐑼𐑼𐑦
 superscribe	𐑕𐑵𐑐𐑼𐑕𐑒𐑮𐑳𐑦𐑚	suːpəRskrʌɪb	RSSB	89	𐑕𐑵𐑐𐑼𐑕𐑒𐑮𐑲𐑚	ˈsuːpəRˌskraɪb	shave_says:𐑕𐑵𐑐𐑼𐑕𐑒𐑮𐑲𐑚
 superscription	𐑕𐑵𐑐𐑼𐑕𐑒𐑮𐑦𐑐𐑖𐑯	suːpəRskrɪpʃn	RSSB	89	𐑕𐑵𐑐𐑼𐑕𐑒𐑮𐑦𐑐𐑖𐑩𐑯	ˌsuːpəRˈskrɪpʃən	shave_says:𐑕𐑵𐑐𐑼𐑕𐑒𐑮𐑦𐑐𐑖𐑩𐑯
 supersession	𐑕𐑵𐑐𐑼𐑕𐑧𐑖𐑯	suːpəRseʃn	RSSB	89	𐑕𐑵𐑐𐑼𐑕𐑧𐑖𐑩𐑯	ˌsuːpəRˈseʃən	shave_says:𐑕𐑵𐑐𐑼𐑕𐑧𐑖𐑩𐑯
@@ -6045,7 +6081,6 @@ sustenance	𐑕𐑳𐑕𐑑𐑩𐑯𐑩𐑯𐑕	ˈsʌstənəns	RSSB	89	𐑕𐑳�
 suture	𐑕𐑵𐑑𐑘𐑼	suːtjəR	RSSB	89	𐑕𐑵𐑗𐑼	ˈsuːtʃəR	shave_says:𐑕𐑵𐑗𐑼
 suzerain	𐑕𐑫𐑟𐑮𐑼𐑯	suzrəRn	RSSB	89	𐑕𐑵𐑟𐑼𐑱𐑯	ˈsuːzəreɪn	shave_says:𐑕𐑵𐑟𐑼𐑱𐑯
 suzerainty	𐑕𐑫𐑟𐑮𐑼𐑯𐑑𐑦	suzrəRnti	RSSB	89	𐑕𐑵𐑟𐑼𐑩𐑯𐑑𐑦	ˈsuːzərənti	shave_says:𐑕𐑵𐑟𐑼𐑩𐑯𐑑𐑦
-swaddle	𐑕𐑢𐑷𐑛𐑩𐑤	ˈswɔːdəl	GenAm	89	𐑕𐑢𐑪𐑛𐑩𐑤	ˈswɒdəl	shave_says:𐑕𐑢𐑪𐑛𐑩𐑤
 swahili	𐑕𐑢𐑩𐑣𐑰𐑤𐑦	swəˈhiːli	RSSB	89	𐑕𐑢𐑭𐑣𐑰𐑤𐑦	swɑːˈhiːli	shave_says:𐑕𐑢𐑭𐑣𐑰𐑤𐑦
 swahili	𐑕𐑢𐑪𐑣𐑦𐑤𐑦	swɒˈhili	GenAm	89	𐑕𐑢𐑭𐑣𐑰𐑤𐑦	swɑːˈhiːli	shave_says:𐑕𐑢𐑭𐑣𐑰𐑤𐑦
 sweeper	𐑕𐑢𐑦𐑐𐑼	ˈswipəR	GenAm	89	𐑕𐑢𐑰𐑐𐑼	ˈswiːpəR	shave_says:𐑕𐑢𐑰𐑐𐑼
@@ -6077,6 +6112,7 @@ taiwan	𐑑𐑲𐑢𐑪𐑯	ˌtaɪˈwɒn	GenAm	89	𐑑𐑲𐑢𐑭𐑯	taɪˈwɑ
 taiwanese	𐑑𐑲𐑢𐑪𐑯𐑰𐑟	ˌtaɪwɒˈniːz	GenAm	89	𐑑𐑲𐑢𐑩𐑯𐑰𐑟	ˌtaɪwəˈniːz	shave_says:𐑑𐑲𐑢𐑩𐑯𐑰𐑟
 talisman	𐑑𐑨𐑤𐑦𐑕𐑥𐑨𐑯	ˈtælɪsˌmæn	RSSB	89	𐑑𐑨𐑤𐑦𐑟𐑥𐑩𐑯	ˈtælɪzmən	shave_says:𐑑𐑨𐑤𐑦𐑟𐑥𐑩𐑯
 talkative	𐑑𐑭𐑒𐑩𐑛𐑦𐑝	ˈtɑːkədɪv	GenAm	89	𐑑𐑷𐑒𐑩𐑑𐑦𐑝	ˈtɔːkətɪv	shave_says:𐑑𐑷𐑒𐑩𐑑𐑦𐑝
+tall	𐑑𐑪𐑤	tɒl	GenAm	89	𐑑𐑷𐑤	tɔːl	shave_says:𐑑𐑷𐑤
 tangerine	𐑑𐑨𐑯𐑡𐑼𐑦𐑯	tændʒərin	RSSB	89	𐑑𐑨𐑯𐑡𐑼𐑰𐑯	ˌtændʒəˈriːn	shave_says:𐑑𐑨𐑯𐑡𐑼𐑰𐑯
 tangy	𐑑𐑨𐑙𐑰	ˈtæŋiː	RSSB	89	𐑑𐑨𐑙𐑦	ˈtæŋi	shave_says:𐑑𐑨𐑙𐑦
 tanzanian	𐑑𐑨𐑯𐑟𐑩𐑯𐑦𐑩𐑯	ˌtænzəˈniən	GenAm	89	𐑑𐑨𐑯𐑟𐑩𐑯𐑾𐑯	ˌtænzəˈnɪən	shave_says:𐑑𐑨𐑯𐑟𐑩𐑯𐑾𐑯
@@ -6099,6 +6135,8 @@ tatterdemalion	𐑑𐑨𐑑𐑼𐑛𐑼𐑥𐑱𐑤𐑦𐑪𐑯	tætəRdəRmeɪl
 tattle	𐑑𐑨𐑑𐑤	ˈtætl	RSSB	89	𐑑𐑨𐑑𐑩𐑤	ˈtætəl	shave_says:𐑑𐑨𐑑𐑩𐑤
 tattler	𐑑𐑨𐑑𐑼𐑤𐑼	tætəRləR	RSSB	89	𐑑𐑨𐑑𐑤𐑼	ˈtætləR	shave_says:𐑑𐑨𐑑𐑤𐑼
 tattler	𐑑𐑨𐑑𐑩𐑤𐑼	ˈtætələR	GenAm	89	𐑑𐑨𐑑𐑤𐑼	ˈtætləR	shave_says:𐑑𐑨𐑑𐑤𐑼
+taut	𐑑𐑪𐑑	tɒt	GenAm	89	𐑑𐑷𐑑	tɔːt	shave_says:𐑑𐑷𐑑
+tautology	𐑑𐑪𐑑𐑪𐑤𐑩𐑡𐑦	tɒˈtɒlədʒi	GenAm	89	𐑑𐑷𐑑𐑪𐑤𐑩𐑡𐑦	tɔːˈtɒlədʒi	shave_says:𐑑𐑷𐑑𐑪𐑤𐑩𐑡𐑦
 taxidermy	𐑑𐑨𐑒𐑕𐑦𐑛𐑼𐑥𐑦	ˈtæksɪdəRmi	GenAm	89	𐑑𐑨𐑒𐑕𐑦𐑛𐑻𐑥𐑦	ˈtæksɪdɜːRmi	shave_says:𐑑𐑨𐑒𐑕𐑦𐑛𐑻𐑥𐑦
 taxis	𐑑𐑨𐑒𐑕𐑦𐑕	ˈtæksɪs	RSSB	89	𐑑𐑨𐑒𐑕𐑦𐑟	ˈtæksiz	shave_says:𐑑𐑨𐑒𐑕𐑦𐑟
 taxonomy	𐑑𐑨𐑒𐑕𐑭𐑯𐑩𐑥𐑦	tækˈsɑːnəmi	GenAm	89	𐑑𐑨𐑒𐑕𐑪𐑯𐑩𐑥𐑦	tækˈsɒnəmi	shave_says:𐑑𐑨𐑒𐑕𐑪𐑯𐑩𐑥𐑦
@@ -6118,7 +6156,7 @@ teetotaler	𐑑𐑰𐑑𐑴𐑑𐑼𐑤𐑼	tiːtəʊtəRləR	RSSB	89	𐑑𐑰�
 teetotaler	𐑑𐑦𐑑𐑴𐑑𐑩𐑤𐑼	ˈtitoʊtələR	GenAm	89	𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑼	tiːˈtəʊtələR	shave_says:𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑼
 teetotaller	𐑑𐑦𐑑𐑴𐑑𐑩𐑤𐑼	ˈtitoʊtələR	GenAm	89	𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑼	tiːˈtəʊtələR	shave_says:𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑼
 telegram	𐑑𐑧𐑤𐑩𐑜𐑮𐑨𐑥	teləɡræm	RSSB	89	𐑑𐑧𐑤𐑦𐑜𐑮𐑨𐑥	ˈtelɪɡræm	shave_says:𐑑𐑧𐑤𐑦𐑜𐑮𐑨𐑥
-telegraph	𐑑𐑧𐑤𐑩𐑜𐑮𐑨𐑓	teləɡræf	RSSB	89	𐑑𐑧𐑤𐑦𐑜𐑮𐑨𐑓	ˈtelɪɡræf	shave_says:𐑑𐑧𐑤𐑦𐑜𐑮𐑭𐑓
+telegraph	𐑑𐑧𐑤𐑩𐑜𐑮𐑨𐑓	teləɡræf	RSSB	89	𐑑𐑧𐑤𐑦𐑜𐑮𐑨𐑓	ˈtelɪɡræf	shave_says:𐑑𐑧𐑤𐑦𐑜𐑮𐑨𐑓
 teleological	𐑑𐑧𐑤𐑰𐑩𐑤𐑪𐑡𐑦𐑒𐑤	teliːəˈlɒdʒɪkl	RSSB	89	𐑑𐑧𐑤𐑾𐑤𐑪𐑡𐑦𐑒𐑩𐑤	ˌtelɪəˈlɒdʒɪkəl	shave_says:𐑑𐑧𐑤𐑾𐑤𐑪𐑡𐑦𐑒𐑩𐑤
 teleology	𐑑𐑰𐑤𐑦𐑪𐑤𐑩𐑡𐑦	ˈtiːliˌɒlədʒi	RSSB	89	𐑑𐑧𐑤𐑦𐑪𐑤𐑩𐑡𐑦	ˌtelɪˈɒlədʒi	shave_says:𐑑𐑧𐑤𐑦𐑪𐑤𐑩𐑡𐑦
 telepathy	𐑑𐑧𐑤𐑧𐑐𐑩𐑔𐑦	teˈlepəθi	RSSB	89	𐑑𐑦𐑤𐑧𐑐𐑩𐑔𐑦	tɪˈlepəθi	shave_says:𐑑𐑦𐑤𐑧𐑐𐑩𐑔𐑦
@@ -6205,15 +6243,20 @@ thoroughly	𐑔𐑻𐑩𐑤𐑦	θɜːrəlɪ	GenAm	89	𐑔𐑳𐑮𐑩𐑤𐑦	�
 thoroughness	𐑔𐑳𐑮𐑼𐑯𐑩𐑕	θʌrəRnəs	RSSB	89	𐑔𐑳𐑮𐑩𐑯𐑩𐑕	ˈθʌrənəs	shave_says:𐑔𐑳𐑮𐑩𐑯𐑩𐑕
 thoroughness	𐑔𐑳𐑮𐑴𐑯𐑩𐑕	ˈθʌroʊnəs	GenAm	89	𐑔𐑳𐑮𐑩𐑯𐑩𐑕	ˈθʌrənəs	shave_says:𐑔𐑳𐑮𐑩𐑯𐑩𐑕
 thou	𐑔𐑬	θaʊ	RSSB	89	𐑞𐑬	ðaʊ	shave_says:𐑞𐑬
+thought	𐑔𐑪𐑑	θɒt	GenAm	89	𐑔𐑷𐑑	θɔːt	shave_says:𐑔𐑷𐑑
 thoughtful	𐑔𐑷𐑑𐑓𐑫𐑤	ˈθɔːtfʊl	RSSB	89	𐑔𐑷𐑑𐑓𐑩𐑤	ˈθɔːtfəl	shave_says:𐑔𐑷𐑑𐑓𐑩𐑤
+thoughtful	𐑔𐑪𐑑𐑓𐑩𐑤	ˈθɒtfəl	GenAm	89	𐑔𐑷𐑑𐑓𐑩𐑤	ˈθɔːtfəl	shave_says:𐑔𐑷𐑑𐑓𐑩𐑤
 thoughtfully	𐑔𐑷𐑑𐑓𐑫𐑤𐑦	ˈθɔːtfʊli	RSSB	89	𐑔𐑷𐑑𐑓𐑩𐑤𐑦	ˈθɔːtfəli	shave_says:𐑔𐑷𐑑𐑓𐑩𐑤𐑦
-thoughtfulness	𐑔𐑷𐑑𐑓𐑤𐑯𐑩𐑕	ˈθɔːtflnəs	GenAm	89	𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕	ˈθɔːtfəlnəs	shave_says:𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕
+thoughtfully	𐑔𐑪𐑑𐑓𐑩𐑤𐑦	ˈθɒtfəli	GenAm	89	𐑔𐑷𐑑𐑓𐑩𐑤𐑦	ˈθɔːtfəli	shave_says:𐑔𐑷𐑑𐑓𐑩𐑤𐑦
+thoughtfulness	𐑔𐑷𐑑𐑓𐑤𐑯𐑩𐑕	ˈθɔːtflnəs	RSSB	89	𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕	ˈθɔːtfəlnəs	shave_says:𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕
+thoughtfulness	𐑔𐑪𐑑𐑓𐑤𐑯𐑩𐑕	ˈθɒtflnəs	GenAm	89	𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕	ˈθɔːtfəlnəs	shave_says:𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕
+thoughtless	𐑔𐑪𐑑𐑤𐑩𐑕	ˈθɒtləs	GenAm	89	𐑔𐑷𐑑𐑤𐑩𐑕	ˈθɔːtləs	shave_says:𐑔𐑷𐑑𐑤𐑩𐑕
 thoughtlessly	𐑔𐑷𐑑𐑤𐑦𐑕𐑤𐑦	ˈθɔtlɪsli	RSSB	89	𐑔𐑷𐑑𐑤𐑩𐑕𐑤𐑦	ˈθɔːtləsli	shave_says:𐑔𐑷𐑑𐑤𐑩𐑕𐑤𐑦
+thoughtlessness	𐑔𐑪𐑑𐑤𐑩𐑕𐑯𐑩𐑕	ˈθɒtləsnəs	GenAm	89	𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑩𐑕	ˈθɔːtləsnəs	shave_says:𐑔𐑷𐑑𐑤𐑩𐑕𐑯𐑩𐑕
 thousandth	𐑔𐑬𐑟𐑩𐑯𐑑𐑔	ˈθaʊzəntθ	RSSB	89	𐑔𐑬𐑟𐑩𐑯𐑛𐑔	ˈθaʊzəndθ	shave_says:𐑔𐑬𐑟𐑩𐑯𐑛𐑔
 threepence	𐑔𐑮𐑳𐑐𐑩𐑯𐑕	θrʌpəns	RSSB	89	𐑔𐑮𐑧𐑐𐑩𐑯𐑕	ˈθrepəns	shave_says:𐑔𐑮𐑧𐑐𐑩𐑯𐑕
 threepenny	𐑔𐑮𐑳𐑐𐑩𐑯𐑦	θrʌpəni	RSSB	89	𐑔𐑮𐑧𐑐𐑩𐑯𐑦	ˈθrepəni	shave_says:𐑔𐑮𐑧𐑐𐑩𐑯𐑦
 threshold	𐑔𐑮𐑧𐑖𐑴𐑤𐑛	ˈθreʃoʊld	GenAm	89	𐑔𐑮𐑧𐑖𐑣𐑴𐑤𐑛	ˈθreʃhəʊld	shave_says:𐑔𐑮𐑧𐑖𐑣𐑴𐑤𐑛
-throng	𐑔𐑮𐑷𐑙	θrɔːŋ	GenAm	89	𐑔𐑮𐑪𐑙	θrɒŋ	shave_says:𐑔𐑮𐑪𐑙
 through	𐑔𐑮𐑫	θru	GenAm	89	𐑔𐑮𐑵	θruː	shave_says:𐑔𐑮𐑵
 throughout	𐑔𐑮𐑫𐑳𐑫𐑑	θruʌʊt	RSSB	89	𐑔𐑮𐑵𐑬𐑑	θruːˈaʊt	shave_says:𐑔𐑮𐑵𐑬𐑑
 throughput	𐑔𐑮𐑫𐑐𐑫𐑑	ˈθrupʊt	GenAm	89	𐑔𐑮𐑵𐑐𐑫𐑑	ˈθruːpʊt	shave_says:𐑔𐑮𐑵𐑐𐑫𐑑
@@ -6237,7 +6280,6 @@ tissue	𐑑𐑦𐑖𐑫	ˈtɪʃu	GenAm	89	𐑑𐑦𐑖𐑵	ˈtɪʃuː	shave_says
 titular	𐑑𐑦𐑑𐑘𐑩𐑤𐑼	tɪtjələR	RSSB	89	𐑑𐑦𐑗𐑩𐑤𐑼	ˈtɪtʃələR	shave_says:𐑑𐑦𐑗𐑩𐑤𐑼
 toadstool	𐑑𐑴𐑛𐑕𐑑𐑫𐑤	ˈtoʊdˌstul	GenAm	89	𐑑𐑴𐑛𐑕𐑑𐑵𐑤	ˈtəʊdstuːl	shave_says:𐑑𐑴𐑛𐑕𐑑𐑵𐑤
 toboggan	𐑑𐑩𐑚𐑭𐑜𐑩𐑯	təˈbɑːɡən	GenAm	89	𐑑𐑩𐑚𐑪𐑜𐑩𐑯	təˈbɒɡən	shave_says:𐑑𐑩𐑚𐑪𐑜𐑩𐑯
-toffee	𐑑𐑷𐑓𐑦	ˈtɔːfi	GenAm	89	𐑑𐑪𐑓𐑦	ˈtɒfi	shave_says:𐑑𐑪𐑓𐑦
 tofu	𐑑𐑴𐑓𐑫	ˈtoʊfu	GenAm	89	𐑑𐑴𐑓𐑵	ˈtəʊfuː	shave_says:𐑑𐑴𐑓𐑵
 together	𐑑𐑫𐑜𐑧𐑞𐑼	tʊˈɡeðəR	GenAm	89	𐑑𐑩𐑜𐑧𐑞𐑼	təˈɡeðəR	shave_says:𐑑𐑩𐑜𐑧𐑞𐑼
 tolerable	𐑑𐑪𐑤𐑼𐑼𐑚𐑩𐑤	tɒlərəRbəl	RSSB	89	𐑑𐑪𐑤𐑼𐑩𐑚𐑩𐑤	ˈtɒlərəbəl	shave_says:𐑑𐑪𐑤𐑼𐑩𐑚𐑩𐑤
@@ -6245,6 +6287,7 @@ tolerably	𐑑𐑪𐑤𐑼𐑼𐑚𐑤𐑦	tɒlərəRbli	RSSB	89	𐑑𐑪𐑤�
 tolerance	𐑑𐑪𐑤𐑼𐑼𐑯𐑕	tɒlərəRns	RSSB	89	𐑑𐑪𐑤𐑼𐑩𐑯𐑕	ˈtɒlərəns	shave_says:𐑑𐑪𐑤𐑼𐑩𐑯𐑕
 tolerant	𐑑𐑪𐑤𐑼𐑼𐑯𐑑	tɒlərəRnt	RSSB	89	𐑑𐑪𐑤𐑼𐑩𐑯𐑑	ˈtɒlərənt	shave_says:𐑑𐑪𐑤𐑼𐑩𐑯𐑑
 tolerant	𐑑𐑭𐑤𐑼𐑩𐑯𐑑	ˈtɑːlərənt	GenAm	89	𐑑𐑪𐑤𐑼𐑩𐑯𐑑	ˈtɒlərənt	shave_says:𐑑𐑪𐑤𐑼𐑩𐑯𐑑
+tomahawk	𐑑𐑪𐑥𐑩𐑣𐑪𐑒	ˈtɒməhɒk	GenAm	89	𐑑𐑪𐑥𐑩𐑣𐑷𐑒	ˈtɒməhɔːk	shave_says:𐑑𐑪𐑥𐑩𐑣𐑷𐑒
 tomb	𐑑𐑫𐑥	tum	GenAm	89	𐑑𐑵𐑥	tuːm	shave_says:𐑑𐑵𐑥
 tomorrow	𐑑𐑼𐑥𐑪𐑮𐑴	təRmɒrəʊ	RSSB	89	𐑑𐑩𐑥𐑪𐑮𐑴	təˈmɒrəʊ	shave_says:𐑑𐑩𐑥𐑪𐑮𐑴
 tonne	𐑑𐑪𐑯	tɒn	RSSB	89	𐑑𐑳𐑯	tʌn	shave_says:𐑑𐑳𐑯
@@ -6261,7 +6304,6 @@ tortilla	𐑑𐑹𐑑𐑦𐑩	tɔːRˈtiə	GenAm	89	𐑑𐑹𐑑𐑰𐑘𐑩	tɔ
 tortoiseshell	𐑑𐑹𐑑𐑩𐑖𐑧𐑤	tɔːRtəʃel	RSSB	89	𐑑𐑹𐑑𐑩𐑕𐑖𐑧𐑤	ˈtɔːRtəs+ʃel	shave_says:𐑑𐑹𐑑𐑩𐑕𐑖𐑧𐑤
 tortuous	𐑑𐑹𐑗𐑵𐑩𐑕	tɔːRtʃuːəs	RSSB	89	𐑑𐑹𐑗𐑫𐑩𐑕	ˈtɔːRtʃuəs	shave_says:𐑑𐑹𐑗𐑫𐑩𐑕
 torus	𐑑𐑹𐑼𐑕	tɔːrəRs	RSSB	89	𐑑𐑹𐑩𐑕	ˈtɔːRəs	shave_says:𐑑𐑹𐑩𐑕
-toss	𐑑𐑷𐑕	tɔːs	GenAm	89	𐑑𐑪𐑕	tɒs	shave_says:𐑑𐑪𐑕
 totalitarian	𐑑𐑴𐑑𐑩𐑤𐑦𐑑𐑧𐑮𐑦𐑼𐑯	təʊtəlɪteriəRn	RSSB	89	𐑑𐑴𐑑𐑨𐑤𐑦𐑑𐑺𐑾𐑯	ˌtəʊtælɪˈteərɪən	shave_says:𐑑𐑴𐑑𐑨𐑤𐑦𐑑𐑺𐑾𐑯
 totalitarian	𐑑𐑴𐑑𐑩𐑤𐑦𐑑𐑺𐑦𐑩𐑯	ˌtoʊtəlɪˈteəriən	GenAm	89	𐑑𐑴𐑑𐑨𐑤𐑦𐑑𐑺𐑾𐑯	ˌtəʊtælɪˈteərɪən	shave_says:𐑑𐑴𐑑𐑨𐑤𐑦𐑑𐑺𐑾𐑯
 totter	𐑑𐑭𐑑𐑼	ˈtɑːtəR	GenAm	89	𐑑𐑪𐑑𐑼	ˈtɒtəR	shave_says:𐑑𐑪𐑑𐑼
@@ -6312,9 +6354,11 @@ transsexual	𐑑𐑮𐑨𐑯𐑕𐑧𐑒𐑖𐑫𐑩𐑤	trænsekʃuəl	RSSB	89	
 transverse	𐑑𐑮𐑨𐑯𐑕𐑝𐑻𐑕	trænsˈvɜːRs	GenAm	89	𐑑𐑮𐑨𐑯𐑟𐑝𐑻𐑕	ˈtrænzvɜːRs	shave_says:𐑑𐑮𐑨𐑯𐑟𐑝𐑻𐑕
 trapezium	𐑑𐑮𐑩𐑐𐑰𐑟𐑦𐑩𐑥	trəpiːziəm	RSSB	89	𐑑𐑮𐑩𐑐𐑰𐑟𐑾𐑥	trəˈpiːzɪəm	shave_says:𐑑𐑮𐑩𐑐𐑰𐑟𐑾𐑥
 trapezoid	𐑑𐑮𐑨𐑐𐑩𐑟𐑶𐑛	træpəzɔɪd	RSSB	89	𐑑𐑮𐑨𐑐𐑦𐑟𐑶𐑛	ˈtræpɪzɔɪd	shave_says:𐑑𐑮𐑨𐑐𐑦𐑟𐑶𐑛
+trauma	𐑑𐑮𐑪𐑥𐑩	ˈtrɒmə	GenAm	89	𐑑𐑮𐑷𐑥𐑩	ˈtrɔːmə	shave_says:𐑑𐑮𐑷𐑥𐑩
 traveling	𐑑𐑮𐑨𐑝𐑤𐑦𐑙	trævlɪŋ	RSSB	89	𐑑𐑮𐑨𐑝𐑩𐑤𐑦𐑙	ˈtrævəlɪŋ	shave_says:𐑑𐑮𐑨𐑝𐑩𐑤𐑦𐑙
 travelling	𐑑𐑮𐑨𐑝𐑤𐑦𐑙	trævlɪŋ	RSSB	89	𐑑𐑮𐑨𐑝𐑩𐑤𐑦𐑙	ˈtrævəlɪŋ	shave_says:𐑑𐑮𐑨𐑝𐑩𐑤𐑦𐑙
 travesty	𐑑𐑮𐑨𐑝𐑦𐑕𐑑𐑦	trævɪsti	RSSB	89	𐑑𐑮𐑨𐑝𐑩𐑕𐑑𐑦	ˈtrævəsti	shave_says:𐑑𐑮𐑨𐑝𐑩𐑕𐑑𐑦
+trawl	𐑑𐑮𐑪𐑤	trɒl	GenAm	89	𐑑𐑮𐑷𐑤	trɔːl	shave_says:𐑑𐑮𐑷𐑤
 treacherous	𐑑𐑮𐑧𐑗𐑼𐑼𐑕	tretʃərəRs	RSSB	89	𐑑𐑮𐑧𐑗𐑼𐑩𐑕	ˈtretʃərəs	shave_says:𐑑𐑮𐑧𐑗𐑼𐑩𐑕
 tree	𐑑𐑮𐑦	tri	GenAm	89	𐑑𐑮𐑰	triː	shave_says:𐑑𐑮𐑰
 tremulous	𐑑𐑮𐑧𐑥𐑘𐑫𐑤𐑩𐑕	tremjuləs	RSSB	89	𐑑𐑮𐑧𐑥𐑘𐑩𐑤𐑩𐑕	ˈtremjələs	shave_says:𐑑𐑮𐑧𐑥𐑘𐑩𐑤𐑩𐑕
@@ -6334,7 +6378,6 @@ triviality	𐑑𐑮𐑦𐑝𐑦𐑨𐑤𐑩𐑑𐑦	trɪviæləti	RSSB	89	𐑑�
 trochee	𐑑𐑮𐑴𐑒𐑦	trəʊki	RSSB	89	𐑑𐑮𐑴𐑒𐑰	ˈtrəʊkiː	shave_says:𐑑𐑮𐑴𐑒𐑰
 troop	𐑑𐑮𐑫𐑐	trup	GenAm	89	𐑑𐑮𐑵𐑐	truːp	shave_says:𐑑𐑮𐑵𐑐
 trouble	𐑑𐑮𐑳𐑚𐑤	ˈtrʌbl	GenAm	89	𐑑𐑮𐑳𐑚𐑩𐑤	ˈtrʌbəl	shave_says:𐑑𐑮𐑳𐑚𐑩𐑤
-trough	𐑑𐑮𐑷𐑓	trɔːf	GenAm	89	𐑑𐑮𐑪𐑓	trɒf	shave_says:𐑑𐑮𐑪𐑓
 trousseau	𐑑𐑮𐑫𐑕𐑴	ˈtruˌsoʊ	GenAm	89	𐑑𐑮𐑵𐑕𐑴	ˈtruːsəʊ	shave_says:𐑑𐑮𐑵𐑕𐑴
 trowel	𐑑𐑮𐑬𐑼𐑤	traʊəRl	RSSB	89	𐑑𐑮𐑬𐑩𐑤	ˈtraʊəl	shave_says:𐑑𐑮𐑬𐑩𐑤
 truce	𐑑𐑮𐑫𐑕	trus	GenAm	89	𐑑𐑮𐑵𐑕	truːs	shave_says:𐑑𐑮𐑵𐑕
@@ -6369,7 +6412,7 @@ turgid	𐑑𐑻𐑡𐑩𐑛	ˈtɜːRdʒƏd	GenAm	89	𐑑𐑻𐑡𐑦𐑛	ˈtɜː
 turmeric	𐑑𐑻𐑥𐑮𐑦𐑒	tɜːRmrɪk	RSSB	89	𐑑𐑻𐑥𐑼𐑦𐑒	ˈtɜːRmərɪk	shave_says:𐑑𐑻𐑥𐑼𐑦𐑒
 turntable	𐑑𐑻𐑯𐑑𐑱𐑚𐑤	tɜːRnteɪbl	RSSB	89	𐑑𐑻𐑯𐑑𐑱𐑚𐑩𐑤	ˈtɜːRnteɪbəl	shave_says:𐑑𐑻𐑯𐑑𐑱𐑚𐑩𐑤
 turquoise	𐑑𐑻𐑒𐑶𐑟	ˈtɜːRkɔɪz	GenAm	89	𐑑𐑻𐑒𐑢𐑶𐑟	ˈtɜːRkwɔɪz	shave_says:𐑑𐑻𐑒𐑢𐑶𐑟
-tutelary	𐑑𐑫𐑑𐑦𐑤𐑧𐑮𐑦	ˈtutɪlerɪ	GenAm	89	𐑑𐑵𐑑𐑦𐑤𐑼𐑦, 𐑑𐑿𐑑𐑦𐑤𐑼𐑦	ˈtjuːtɪləri	shave_says:𐑑𐑵𐑑𐑦𐑤𐑼𐑦
+tutelary	𐑑𐑫𐑑𐑦𐑤𐑧𐑮𐑦	ˈtutɪlerɪ	GenAm	89	𐑑𐑵𐑑𐑦𐑤𐑼𐑦, 𐑑𐑿𐑑𐑦𐑤𐑼𐑦	ˈtjuːtɪləri	shave_says:𐑑𐑵𐑑𐑦𐑤𐑺𐑦
 tutorial	𐑑𐑫𐑢𐑑𐑹𐑦𐑘𐑩𐑤	tuwˈtɔːRijəl	GenAm	89	𐑑𐑵𐑑𐑹𐑾𐑤, 𐑑𐑿𐑑𐑹𐑾𐑤	tjuːˈtɔːrɪəl	shave_says:𐑑𐑵𐑑𐑹𐑾𐑤
 tutti-frutti	𐑑𐑵𐑑𐑦𐑓𐑮𐑵𐑑𐑦	tuːtɪfruːtɪ	RSSB	89	𐑑𐑵𐑑𐑦-𐑓𐑮𐑵𐑑𐑦	ˌtuːti-ˈfruːti	shave_says:𐑑𐑵𐑑𐑦-𐑓𐑮𐑵𐑑𐑦
 tutti-frutti	𐑑𐑫𐑑𐑦𐑓𐑮𐑫𐑑𐑦	ˌtutiˈfruti	GenAm	89	𐑑𐑵𐑑𐑦-𐑓𐑮𐑵𐑑𐑦	ˌtuːti-ˈfruːti	shave_says:𐑑𐑵𐑑𐑦-𐑓𐑮𐑵𐑑𐑦
@@ -6466,8 +6509,8 @@ uranus	𐑘𐑫𐑮𐑩𐑯𐑩𐑕	ˈjʊrənəs	GenAm	89	𐑘𐑫𐑼𐑩𐑯�
 urbanity	𐑻𐑚𐑨𐑯𐑩𐑑𐑦	ɜːRˈbænəti	GenAm	89	𐑻𐑚𐑨𐑯𐑦𐑑𐑦	ɜːRˈbænɪti	shave_says:𐑻𐑚𐑨𐑯𐑦𐑑𐑦
 urgent	𐑼𐑡𐑩𐑯𐑑	ˈəRdʒənt	GenAm	89	𐑻𐑡𐑩𐑯𐑑	ˈɜːRdʒənt	shave_says:𐑻𐑡𐑩𐑯𐑑
 uric	𐑘𐑼𐑦𐑒	jərɪk	RSSB	89	𐑘𐑫𐑼𐑦𐑒	ˈjʊərɪk	shave_says:𐑘𐑫𐑼𐑦𐑒
-urinal	𐑿𐑮𐑲𐑯𐑩𐑤	juːraɪnəl	RSSB	89	𐑘𐑫𐑼𐑦𐑯𐑩𐑤	jʊəˈrɪnəl	shave_says:[𐑘𐑫𐑼𐑦𐑯𐑩𐑤 / 𐑘𐑫𐑼𐑲𐑯𐑩𐑤]
-urinal	𐑘𐑫𐑮𐑦𐑯𐑩𐑤	ˈjʊrɪnəl	GenAm	89	𐑘𐑫𐑼𐑦𐑯𐑩𐑤	jʊəˈrɪnəl	shave_says:[𐑘𐑫𐑼𐑦𐑯𐑩𐑤 / 𐑘𐑫𐑼𐑲𐑯𐑩𐑤]
+urinal	𐑿𐑮𐑲𐑯𐑩𐑤	juːraɪnəl	RSSB	89	𐑘𐑫𐑼𐑦𐑯𐑩𐑤	jʊəˈrɪnəl	shave_says:𐑘𐑫𐑼𐑦𐑯𐑩𐑤
+urinal	𐑘𐑫𐑮𐑦𐑯𐑩𐑤	ˈjʊrɪnəl	GenAm	89	𐑘𐑫𐑼𐑦𐑯𐑩𐑤	jʊəˈrɪnəl	shave_says:𐑘𐑫𐑼𐑦𐑯𐑩𐑤
 urinate	𐑘𐑫𐑮𐑦𐑯𐑱𐑑	ˈjʊrɪneɪt	GenAm	89	𐑘𐑫𐑼𐑦𐑯𐑱𐑑	ˈjʊərɪneɪt	shave_says:𐑘𐑫𐑼𐑦𐑯𐑱𐑑
 urine	𐑘𐑫𐑮𐑦𐑯	ˈjʊrɪn	GenAm	89	𐑘𐑫𐑼𐑦𐑯	ˈjʊərɪn	shave_says:𐑘𐑫𐑼𐑦𐑯
 uruguayan	𐑫𐑮𐑫𐑜𐑢𐑲𐑩𐑯	uruɡwaɪən	RSSB	89	𐑘𐑫𐑼𐑩𐑜𐑢𐑲𐑩𐑯	ˌjʊərəˈɡwaɪən	shave_says:𐑘𐑫𐑼𐑩𐑜𐑢𐑲𐑩𐑯
@@ -6517,6 +6560,7 @@ variety	𐑝𐑼𐑲𐑦𐑑𐑦	vəraɪɪti	RSSB	89	𐑝𐑼𐑲𐑩𐑑𐑦	v�
 variorum	𐑝𐑻𐑦𐑹𐑼𐑥	vɜːrɪɔːrəRm	RSSB	89	𐑝𐑺𐑦𐑹𐑩𐑥	ˈveərɪɔːrəm	shave_says:𐑝𐑺𐑦𐑹𐑩𐑥
 various	𐑝𐑺𐑦𐑩𐑕	ˈveəriəs	GenAm	89	𐑝𐑺𐑾𐑕	ˈveərɪəs	shave_says:𐑝𐑺𐑾𐑕
 vase	𐑝𐑱𐑕	veɪs	GenAm	89	𐑝𐑭𐑟	vɑːz	shave_says:𐑝𐑭𐑟
+vaudeville	𐑝𐑪𐑛𐑝𐑦𐑤	ˈvɒdvɪl	GenAm	89	𐑝𐑷𐑛𐑝𐑦𐑤, 𐑝𐑷𐑛𐑩𐑝𐑦𐑤	ˈvɔːdəvɪl	shave_says:𐑝𐑷𐑛𐑝𐑦𐑤
 vegetable	𐑝𐑧𐑡𐑩𐑑𐑩𐑚𐑩𐑤	ˈvedʒətəbəl	GenAm	89	𐑝𐑧𐑡𐑑𐑩𐑚𐑩𐑤	ˈvedʒtəbəl	shave_says:𐑝𐑧𐑡𐑑𐑩𐑚𐑩𐑤
 vegetarian	𐑝𐑧𐑡𐑦𐑑𐑺𐑦𐑩𐑯	vedʒɪteəriən	RSSB	89	𐑝𐑧𐑡𐑦𐑑𐑺𐑾𐑯	ˌvedʒɪˈteərɪən	shave_says:𐑝𐑧𐑡𐑦𐑑𐑺𐑾𐑯
 vegetarian	𐑝𐑧𐑡𐑦𐑑𐑧𐑮𐑦𐑩𐑯	vedʒɪˈteriən	GenAm	89	𐑝𐑧𐑡𐑦𐑑𐑺𐑾𐑯	ˌvedʒɪˈteərɪən	shave_says:𐑝𐑧𐑡𐑦𐑑𐑺𐑾𐑯
@@ -6644,7 +6688,7 @@ wainscoted	𐑢𐑱𐑯𐑕𐑒𐑪𐑑𐑩𐑛	ˈweɪnskɒtƏd	RSSB	89	𐑢𐑱
 waistcoat	𐑢𐑱𐑕𐑒𐑴𐑑	ˈweɪskəʊt	RSSB	89	𐑢𐑱𐑕𐑑𐑒𐑴𐑑	ˈweɪstkəʊt	shave_says:𐑢𐑱𐑕𐑑𐑒𐑴𐑑
 wallah	𐑢𐑭𐑤𐑩	ˈwɑːlə	RSSB	89	𐑢𐑪𐑤𐑩	ˈwɒlə	shave_says:𐑢𐑪𐑤𐑩
 wallet	𐑢𐑪𐑤𐑦𐑑	ˈwɒlɪt	RSSB	89	𐑢𐑪𐑤𐑩𐑑	ˈwɒlət	shave_says:𐑢𐑪𐑤𐑩𐑑
-wallflower	𐑢𐑷𐑤𐑓𐑤𐑪𐑫𐑼	ˈwɔːlˌflɒʊəR	GenAm	89	𐑢𐑷𐑤𐑓𐑤𐑬𐑼	ˈwɔːlflaʊəR	shave_says:𐑢𐑷𐑤𐑓𐑤𐑬𐑼
+wallflower	𐑢𐑪𐑤𐑓𐑤𐑪𐑫𐑼	ˈwɒlˌflɒʊəR	GenAm	89	𐑢𐑷𐑤𐑓𐑤𐑬𐑼	ˈwɔːlflaʊəR	shave_says:𐑢𐑷𐑤𐑓𐑤𐑬𐑼
 walnut	𐑢𐑪𐑤𐑯𐑩𐑑	ˈwɒlnət	GenAm	89	𐑢𐑷𐑤𐑯𐑳𐑑	ˈwɔːlnʌt	shave_says:𐑢𐑷𐑤𐑯𐑳𐑑
 walrus	𐑢𐑪𐑤𐑮𐑩𐑕	ˈwɒlrəs	GenAm	89	𐑢𐑷𐑤𐑮𐑩𐑕	ˈwɔːlrəs	shave_says:𐑢𐑷𐑤𐑮𐑩𐑕
 wardress	𐑢𐑹𐑛𐑮𐑦𐑕	ˈwɔːRdrɪs	GenAm	89	𐑢𐑹𐑛𐑮𐑩𐑕	ˈwɔːRdrƏs	shave_says:𐑢𐑹𐑛𐑮𐑩𐑕
@@ -6652,11 +6696,14 @@ warfare	𐑢𐑹𐑓𐑧𐑮	ˈwɔːRfer	GenAm	89	𐑢𐑹𐑓𐑺	ˈwɔːRfeəR
 warrant	𐑢𐑪𐑮𐑼𐑯𐑑	wɒrəRnt	RSSB	89	𐑢𐑪𐑮𐑩𐑯𐑑	ˈwɒrənt	shave_says:𐑢𐑪𐑮𐑩𐑯𐑑
 warranty	𐑢𐑪𐑮𐑼𐑯𐑑𐑦	wɒrəRnti	RSSB	89	𐑢𐑪𐑮𐑩𐑯𐑑𐑦	ˈwɒrənti	shave_says:𐑢𐑪𐑮𐑩𐑯𐑑𐑦
 warren	𐑢𐑪𐑮𐑼𐑯	wɒrəRn	RSSB	89	𐑢𐑪𐑮𐑩𐑯	ˈwɒrən	shave_says:𐑢𐑪𐑮𐑩𐑯
-wash	𐑢𐑷𐑖	wɔːʃ	GenAm	89	𐑢𐑪𐑖	wɒʃ	shave_says:𐑢𐑪𐑖
-washcloth	𐑢𐑷𐑖𐑒𐑤𐑷𐑔	ˈwɔːʃklɔːθ	GenAm	89	𐑢𐑪𐑖𐑒𐑤𐑪𐑔	ˈwɒʃklɒθ	shave_says:𐑢𐑪𐑖𐑒𐑤𐑪𐑔
-washing	𐑢𐑷𐑖𐑦𐑙	ˈwɔːʃɪŋ	GenAm	89	𐑢𐑪𐑖𐑦𐑙	ˈwɒʃɪŋ	shave_says:𐑢𐑪𐑖𐑦𐑙
-watchful	𐑢𐑷𐑗𐑓𐑩𐑤	ˈwɔːtʃfəl	GenAm	89	𐑢𐑪𐑗𐑓𐑩𐑤	ˈwɒtʃfəl	shave_says:𐑢𐑪𐑗𐑓𐑩𐑤
 watchmaker	𐑢𐑷𐑗𐑥𐑱𐑒𐑼	wɔtʃmeɪkəR	RSSB	89	𐑢𐑪𐑗𐑥𐑱𐑒𐑼	ˈwɒtʃmeɪkəR	shave_says:𐑢𐑪𐑗𐑥𐑱𐑒𐑼
+watercress	𐑢𐑪𐑑𐑼𐑒𐑮𐑧𐑕	ˈwɒtərkres	GenAm	89	𐑢𐑷𐑑𐑼𐑒𐑮𐑧𐑕	ˈwɔːtəRkres	shave_says:𐑢𐑷𐑑𐑼𐑒𐑮𐑧𐑕
+waterfall	𐑢𐑪𐑑𐑼𐑓𐑪𐑤	ˈwɒtəRfɒl	GenAm	89	𐑢𐑷𐑑𐑼𐑓𐑷𐑤	ˈwɔːtəRfɔːl	shave_says:𐑢𐑷𐑑𐑼𐑓𐑷𐑤
+waterloo	𐑢𐑪𐑑𐑼𐑤𐑵	ˌwɒtəRˈluː	GenAm	89	𐑢𐑷𐑑𐑼𐑤𐑵	ˌwɔːtəRˈluː	shave_says:𐑢𐑷𐑑𐑼𐑤𐑵
+watermelon	𐑢𐑪𐑑𐑼𐑥𐑧𐑤𐑩𐑯	ˈwɒtərˌmelən	GenAm	89	𐑢𐑷𐑑𐑼𐑥𐑧𐑤𐑩𐑯	ˈwɔːtəRmelən	shave_says:𐑢𐑷𐑑𐑼𐑥𐑧𐑤𐑩𐑯
+waters	𐑢𐑪𐑑𐑼𐑟	ˈwɒtəRz	GenAm	89	𐑢𐑷𐑑𐑼𐑟	ˈwɔːtəRz	shave_says:𐑢𐑷𐑑𐑼𐑟
+watershed	𐑢𐑪𐑑𐑼𐑖𐑧𐑛	ˈwɒtəRʃed	GenAm	89	𐑢𐑷𐑑𐑼𐑖𐑧𐑛	ˈwɔːtəRʃed	shave_says:𐑢𐑷𐑑𐑼𐑖𐑧𐑛
+watery	𐑢𐑪𐑑𐑼𐑦	ˈwɒtəri	GenAm	89	𐑢𐑷𐑑𐑼𐑦	ˈwɔːtəri	shave_says:𐑢𐑷𐑑𐑼𐑦
 weaken	𐑢𐑦𐑒𐑩𐑯	ˈwikən	GenAm	89	𐑢𐑰𐑒𐑩𐑯	ˈwiːkən	shave_says:𐑢𐑰𐑒𐑩𐑯
 weakened	𐑢𐑰𐑒𐑧𐑯𐑛	wiːˈkend	RSSB	89	𐑢𐑰𐑒𐑩𐑯𐑛	ˈwiːkənd	shave_says:𐑢𐑰𐑒𐑩𐑯𐑛
 weakened	𐑢𐑦𐑒𐑧𐑯𐑛	ˈwiˌkend	GenAm	89	𐑢𐑰𐑒𐑩𐑯𐑛	ˈwiːkənd	shave_says:𐑢𐑰𐑒𐑩𐑯𐑛
@@ -6685,6 +6732,7 @@ wheel	𐑢𐑦𐑤	ʍil	GenAm	89	𐑢𐑰𐑤	ʍiːl	shave_says:𐑢𐑰𐑤
 wheelchair	𐑢𐑦𐑤𐑗𐑧𐑮	ˈwiltʃer	GenAm	89	𐑢𐑰𐑤𐑗𐑺	ˈʍiːltʃeəR	shave_says:𐑢𐑰𐑤𐑗𐑺
 wheelhouse	𐑢𐑦𐑤𐑣𐑬𐑕	ˈʍilˌhaʊs	GenAm	89	𐑢𐑰𐑤𐑣𐑬𐑕	ˈʍiːlhaʊs	shave_says:𐑢𐑰𐑤𐑣𐑬𐑕
 wherever	𐑢𐑧𐑮𐑧𐑝𐑼	werˈevəR	GenAm	89	𐑢𐑺𐑧𐑝𐑼	ˌʍeəˈrevəR	shave_says:𐑢𐑺𐑧𐑝𐑼
+wherewithal	𐑢𐑺𐑢𐑦𐑞𐑪𐑤	ˈweərwɪðɒl	GenAm	89	𐑢𐑺𐑢𐑦𐑔𐑷𐑤, 𐑢𐑺𐑢𐑦𐑞𐑷𐑤	ˈʍeəRwɪðɔːl	shave_says:𐑢𐑺𐑢𐑦𐑔𐑷𐑤
 whirlpool	𐑢𐑻𐑤𐑐𐑫𐑤	ˈwɜːRlpul	GenAm	89	𐑢𐑻𐑤𐑐𐑵𐑤	ˈʍɜːRlpuːl	shave_says:𐑢𐑻𐑤𐑐𐑵𐑤
 wholehearted	𐑣𐑴𐑤𐑣𐑸𐑑𐑼𐑛	həʊlhɑːRtəRd	RSSB	89	𐑣𐑴𐑤𐑣𐑸𐑑𐑩𐑛	ˌhəʊlˈhɑːRtƏd	shave_says:𐑣𐑴𐑤𐑣𐑸𐑑𐑩𐑛
 wholeheartedly	𐑣𐑴𐑤𐑣𐑸𐑑𐑼𐑛𐑤𐑦	həʊlhɑːRtəRdli	RSSB	89	𐑣𐑴𐑤𐑣𐑸𐑑𐑩𐑛𐑤𐑦	ˌhəʊlˈhɑːRtƏdli	shave_says:𐑣𐑴𐑤𐑣𐑸𐑑𐑩𐑛𐑤𐑦
@@ -6704,10 +6752,9 @@ winsome	𐑢𐑦𐑯𐑕𐑥	ˈwɪnsm	RSSB	89	𐑢𐑦𐑯𐑕𐑩𐑥	ˈwɪnsə
 wired	𐑢𐑲𐑮𐑛	waɪrd	GenAm	89	𐑢𐑲𐑼𐑛	ˈwaɪəRd	shave_says:𐑢𐑲𐑼𐑛
 wireless	𐑢𐑲𐑮𐑤𐑩𐑕	ˈwaɪrləs	GenAm	89	𐑢𐑲𐑼𐑤𐑩𐑕	ˈwaɪəRləs	shave_says:𐑢𐑲𐑼𐑤𐑩𐑕
 wiry	𐑢𐑲𐑮𐑦	waɪri	RSSB	89	𐑢𐑲𐑼𐑦	ˈwaɪəri	shave_says:𐑢𐑲𐑼𐑦
-wishy-washy	𐑢𐑦𐑖𐑦𐑢𐑪𐑖𐑦	ˈwɪʃiˌwɒʃi	RSSB	89	𐑢𐑦𐑖𐑦-𐑢𐑪𐑖𐑦	ˈwɪʃi-wɒʃi	shave_says:𐑢𐑦𐑖𐑦-𐑢𐑪𐑖𐑦
-wishy-washy	𐑢𐑦𐑖𐑦𐑢𐑷𐑖𐑦	ˈwɪʃiˌwɔːʃi	GenAm	89	𐑢𐑦𐑖𐑦-𐑢𐑪𐑖𐑦	ˈwɪʃi-wɒʃi	shave_says:𐑢𐑦𐑖𐑦-𐑢𐑪𐑖𐑦
+wishy-washy	𐑢𐑦𐑖𐑦𐑢𐑪𐑖𐑦	ˈwɪʃiˌwɒʃi	GenAm	89	𐑢𐑦𐑖𐑦-𐑢𐑪𐑖𐑦	ˈwɪʃi-wɒʃi	shave_says:𐑢𐑦𐑖𐑦-𐑢𐑪𐑖𐑦
 witch-hunt	𐑢𐑦𐑗𐑣𐑳𐑯𐑑	ˈwɪtʃhʌnt	RSSB	89	𐑢𐑦𐑗-𐑣𐑳𐑯𐑑	ˈwɪtʃ-hʌnt	shave_says:𐑢𐑦𐑗-𐑣𐑳𐑯𐑑
-withal	𐑢𐑦𐑞𐑪𐑤	wɪˈðɒl	GenAm	89	𐑢𐑦𐑔𐑷𐑤, 𐑢𐑦𐑞𐑷𐑤	wɪðˈɔːl	shave_says:𐑢𐑦𐑔𐑷𐑤
+withal	𐑢𐑦𐑞𐑪𐑤	wɪˈðɒl	GenAm	89	𐑢𐑦𐑔𐑷𐑤, 𐑢𐑦𐑞𐑷𐑤	wɪðˈɔːl	shave_says:𐑢𐑦𐑞𐑷𐑤
 withdrawal	𐑢𐑦𐑞𐑛𐑮𐑷𐑤	wɪðdrɔːl	RSSB	89	𐑢𐑦𐑔𐑛𐑮𐑷𐑩𐑤, 𐑢𐑦𐑞𐑛𐑮𐑷𐑩𐑤	wɪðˈdrɔːəl	shave_says:𐑢𐑦𐑞𐑛𐑮𐑷𐑩𐑤
 womanlike	𐑢𐑫𐑥𐑩𐑯𐑤𐑳𐑦𐑒	ˈwʊmənlʌɪk	RSSB	89	𐑢𐑫𐑥𐑩𐑯𐑤𐑲𐑒	ˈwʊmənlaɪk	shave_says:𐑢𐑫𐑥𐑩𐑯𐑤𐑲𐑒
 won	𐑢𐑪𐑯	wɒn	GenAm	89	𐑢𐑳𐑯	wʌn	shave_says:𐑢𐑳𐑯
@@ -6726,15 +6773,14 @@ wrestling	𐑮𐑧𐑕𐑩𐑤𐑦𐑙	resəlɪŋ	RSSB	89	𐑮𐑧𐑕𐑤𐑦�
 wretchedness	𐑮𐑧𐑗𐑦𐑛𐑯𐑩𐑕	retʃɪdnəs	RSSB	89	𐑮𐑧𐑗𐑩𐑛𐑯𐑩𐑕	ˈretʃƏdnəs	shave_says:𐑮𐑧𐑗𐑩𐑛𐑯𐑩𐑕
 wristband	𐑮𐑦𐑕𐑚𐑨𐑯𐑛	rɪsbænd	RSSB	89	𐑮𐑦𐑕𐑑𐑚𐑨𐑯𐑛	ˈrɪstbænd	shave_says:𐑮𐑦𐑕𐑑𐑚𐑨𐑯𐑛
 wristlet	𐑮𐑦𐑕𐑤𐑩𐑑	ˈrɪslət	GenAm	89	𐑮𐑦𐑕𐑑𐑤𐑩𐑑	ˈrɪstlət	shave_says:𐑮𐑦𐑕𐑑𐑤𐑩𐑑
-wristwatch	𐑮𐑦𐑕𐑑𐑢𐑷𐑗	rɪstwɔːtʃ	GenAm	89	𐑮𐑦𐑕𐑑𐑢𐑪𐑗	ˈrɪstwɒtʃ	shave_says:𐑮𐑦𐑕𐑑𐑢𐑪𐑗
-wrong	𐑮𐑷𐑙	rɔːŋ	GenAm	89	𐑮𐑪𐑙	rɒŋ	shave_says:𐑮𐑪𐑙
-wrongly	𐑮𐑷𐑙𐑤𐑦	ˈrɔːŋli	GenAm	89	𐑮𐑪𐑙𐑤𐑦	ˈrɒŋli	shave_says:𐑮𐑪𐑙𐑤𐑦
-wroth	𐑮𐑷𐑔	rɔːθ	GenAm	89	𐑮𐑴𐑔	rəʊθ	shave_says:𐑮𐑴𐑔
+wroth	𐑮𐑪𐑔	rɒθ	GenAm	89	𐑮𐑴𐑔	rəʊθ	shave_says:𐑮𐑴𐑔
+wrought	𐑮𐑪𐑑	rɒt	GenAm	89	𐑮𐑷𐑑	rɔːt	shave_says:𐑮𐑷𐑑
 x-ray	𐑧𐑒𐑕𐑮𐑱	ˈeksˌreɪ	GenAm	89	𐑧𐑒𐑕-𐑮𐑱	ˈeks-reɪ	shave_says:x-𐑮𐑱
 xenophobia	𐑟𐑦𐑯𐑩𐑓𐑴𐑚𐑦𐑩	zinəˈfoʊbiə	GenAm	89	𐑟𐑧𐑯𐑩𐑓𐑴𐑚𐑾	ˌzenəˈfəʊbɪə	shave_says:𐑟𐑧𐑯𐑩𐑓𐑴𐑚𐑾
 xerox	𐑟𐑧𐑮𐑪𐑒𐑕	zerɒks	RSSB	89	𐑟𐑽𐑪𐑒𐑕	ˈzɪərɒks	shave_says:𐑟𐑽𐑪𐑒𐑕
 xerox	𐑟𐑰𐑮𐑪𐑒𐑕	ˈziːrɒks	GenAm	89	𐑟𐑽𐑪𐑒𐑕	ˈzɪərɒks	shave_says:𐑟𐑽𐑪𐑒𐑕
 xmas	𐑒𐑮𐑦𐑕𐑥𐑩𐑕	ˈkrɪsməs	RSSB	89	𐑧𐑒𐑕𐑥𐑩𐑕	ˈeksməs	shave_says:𐑧𐑒𐑕𐑥𐑩𐑕
+yawn	𐑘𐑪𐑯	jɒn	GenAm	89	𐑘𐑷𐑯	jɔːn	shave_says:𐑘𐑷𐑯
 year	𐑘𐑦𐑮	jɪr	GenAm	89	𐑘𐑽	jɪəR	shave_says:𐑘𐑽
 yearly	𐑘𐑦𐑮𐑤𐑦	ˈjɪrli	GenAm	89	𐑘𐑽𐑤𐑦	ˈjɪəRli	shave_says:𐑘𐑽𐑤𐑦
 years	𐑘𐑦𐑼𐑟	jiəRz	RSSB	89	𐑘𐑽𐑟	jɪəRz	shave_says:𐑘𐑽𐑟
@@ -6753,8 +6799,8 @@ zenithal	𐑟𐑦𐑯𐑦𐑔𐑩𐑤	ˈzinɪθəl	GenAm	89	𐑟𐑧𐑯𐑦𐑔
 zeppelin	𐑟𐑧𐑐𐑤𐑦𐑯	ˈzeplɪn	RSSB	89	𐑟𐑧𐑐𐑩𐑤𐑦𐑯	ˈzepəlɪn	shave_says:𐑟𐑧𐑐𐑩𐑤𐑦𐑯
 zero	𐑟𐑦𐑮𐑴	ˈzɪroʊ	GenAm	89	𐑟𐑽𐑴	ˈzɪərəʊ	shave_says:𐑟𐑽𐑴
 zucchini	𐑟𐑵𐑒𐑰𐑯𐑰	zuːˈkiːniː	RSSB	89	𐑟𐑫𐑒𐑰𐑯𐑦	zʊˈkiːni	shave_says:𐑟𐑫𐑒𐑰𐑯𐑦
+carrier	𐑒𐑨𐑮𐑽	ˈkærɪəR	GenAm	95	𐑒𐑨𐑮𐑦𐑼	ˈkærɪəR	r_gap:spelling=3,ipa=2; shave_agrees
 disciplinarian	𐑛𐑦𐑕𐑦𐑐𐑤𐑦𐑯𐑺𐑾𐑯	dɪsɪplɪneərɪən	RSSB	95	𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑺𐑾𐑯	ˌdɪsəplɪˈneərɪən	ml_disagrees:𐑛𐑦𐑕𐑩𐑐𐑤𐑦𐑯𐑺𐑾𐑯; shave_agrees
-graph	𐑜𐑮𐑭𐑓	ɡrɑːf	RSSB	95	𐑜𐑮𐑨𐑓	ɡræf	ml_disagrees:𐑜𐑮ɑ𐑨𐑓; shave_agrees
 homograph	𐑣𐑪𐑥𐑩𐑜𐑮𐑭𐑓	hɒməɡrɑːf	RSSB	95	𐑣𐑪𐑥𐑩𐑜𐑮𐑨𐑓	ˈhɒməɡræf	ml_disagrees:𐑣𐑪𐑥𐑩𐑜𐑮ɑ𐑨𐑓; shave_agrees
 miscegenation	𐑥𐑦𐑕𐑧𐑡𐑩𐑯𐑱𐑖𐑩𐑯	mɪˌsedʒəˈneɪʃən	RSSB	95	𐑥𐑦𐑕𐑧𐑡𐑦𐑯𐑱𐑖𐑩𐑯	ˌmɪsedʒɪˈneɪʃən	ml_disagrees:𐑥𐑦𐑕𐑧𐑡𐑦𐑯𐑱𐑖𐑩𐑯; shave_agrees
 sierra	𐑕𐑦𐑧𐑮𐑩	sierə	RSSB	95	𐑕𐑦𐑺𐑩	sɪˈeərə	r_gap:spelling=2,ipa=1; shave_agrees

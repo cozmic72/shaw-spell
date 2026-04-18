@@ -1,0 +1,43 @@
+word	pos	var	shaw	ipa	verdict	shaw_override	pos_override	var_override	ipa_override	source	status	confidence	notes
+this'll	DT0+VM0	RRP	𐑞𐑦𐑕𐑩𐑤	ˈðɪsəl	keep					manual	manual	100	
+this'll	PNP+VM0	RRP	𐑞𐑦𐑕𐑩𐑤	ˈðɪsəl	keep					manual	manual	100	
+this'd	DT0+VM0	RRP	𐑞𐑦𐑕𐑩𐑛	ˈðɪsəd	keep					manual	manual	100	
+this'd	PNP+VM0	RRP	𐑞𐑦𐑕𐑩𐑛	ˈðɪsəd	keep					manual	manual	100	
+these'll	DT0+VM0	RRP	𐑞𐑰𐑟𐑩𐑤	ˈðiːzəl	keep					manual	manual	100	
+those'll	DT0+VM0	RRP	𐑞𐑴𐑟𐑩𐑤	ˈðəʊzəl	keep					manual	manual	100	
+there'll	EX0+VM0	RRP	𐑞𐑺𐑤	ðeəRl	keep					manual	manual	100	
+there'd	EX0+VHD	RRP	𐑞𐑺𐑛	ðeəRd	keep					manual	manual	100	
+there'd	EX0+VM0	RRP	𐑞𐑺𐑛	ðeəRd	keep					manual	manual	100	
+there're	EX0+VBB	RRP	𐑞𐑺𐑼	ˈðeəRəR	keep					manual	manual	100	
+there've	EX0+VHB	RRP	𐑞𐑺𐑩𐑝	ˈðeəRəv	keep					manual	manual	100	
+who've	PNQ+VHB	RRP	𐑣𐑵𐑝	huːv	keep					manual	manual	100	
+what'd	PNQ+VHD	RRP	𐑢𐑪𐑑𐑩𐑛	ˈʍɒtəd	keep					manual	manual	100	
+what'd	PNQ+VM0	RRP	𐑢𐑪𐑑𐑩𐑛	ˈʍɒtəd	keep					manual	manual	100	
+what're	PNQ+VBB	RRP	𐑢𐑪𐑑𐑼	ˈʍɒtəR	keep					manual	manual	100	
+what've	PNQ+VHB	RRP	𐑢𐑪𐑑𐑩𐑝	ˈʍɒtəv	keep					manual	manual	100	
+where'll	AVQ+VM0	RRP	𐑢𐑺𐑤	ʍeəRl	keep					manual	manual	100	
+where'd	AVQ+VHD	RRP	𐑢𐑺𐑛	ʍeəRd	keep					manual	manual	100	
+where'd	AVQ+VM0	RRP	𐑢𐑺𐑛	ʍeəRd	keep					manual	manual	100	
+where've	AVQ+VHB	RRP	𐑢𐑺𐑩𐑝	ˈʍeəRəv	keep					manual	manual	100	
+when'll	AVQ+VM0	RRP	𐑢𐑧𐑯𐑩𐑤	ˈʍenəl	keep					manual	manual	100	
+when'd	AVQ+VHD	RRP	𐑢𐑧𐑯𐑛	ʍend	keep					manual	manual	100	
+when'd	AVQ+VM0	RRP	𐑢𐑧𐑯𐑛	ʍend	keep					manual	manual	100	
+when've	AVQ+VHB	RRP	𐑢𐑧𐑯𐑩𐑝	ˈʍenəv	keep					manual	manual	100	
+why's	AVQ+VBZ	RRP	𐑢𐑲𐑟	ʍaɪz	keep					manual	manual	100	
+why'll	AVQ+VM0	RRP	𐑢𐑲𐑤	ʍaɪl	keep					manual	manual	100	
+why'd	AVQ+VHD	RRP	𐑢𐑲𐑛	ʍaɪd	keep					manual	manual	100	
+why'd	AVQ+VM0	RRP	𐑢𐑲𐑛	ʍaɪd	keep					manual	manual	100	
+why've	AVQ+VHB	RRP	𐑢𐑲𐑝	ʍaɪv	keep					manual	manual	100	
+how'll	AVQ+VM0	RRP	𐑣𐑬𐑤	haʊl	keep					manual	manual	100	
+how'd	AVQ+VHD	RRP	𐑣𐑬𐑛	haʊd	keep					manual	manual	100	
+how'd	AVQ+VM0	RRP	𐑣𐑬𐑛	haʊd	keep					manual	manual	100	
+how've	AVQ+VHB	RRP	𐑣𐑬𐑝	haʊv	keep					manual	manual	100	
+could've	VM0+VHB	RRP	𐑒𐑫𐑛𐑩𐑝	ˈkʊdəv	keep					manual	manual	100	
+would've	VM0+VHB	RRP	𐑢𐑫𐑛𐑩𐑝	ˈwʊdəv	keep					manual	manual	100	
+should've	VM0+VHB	RRP	𐑖𐑫𐑛𐑩𐑝	ˈʃʊdəv	keep					manual	manual	100	
+might've	VM0+VHB	RRP	𐑥𐑲𐑑𐑩𐑝	ˈmaɪtəv	keep					manual	manual	100	
+must've	VM0+VHB	RRP	𐑥𐑳𐑕𐑑𐑩𐑝	ˈmʌstəv	keep					manual	manual	100	
+y'all	PNP	RRP	𐑘𐑷𐑤	jɔːl	keep					manual	manual	100	
+'cause	CJS	RRP	𐑒𐑷𐑟	kɔːz	keep					manual	manual	100	reduced 'because'
+'cos	CJS	RRP	𐑒𐑪𐑟	kɒz	keep					manual	manual	100	reduced 'because'
+y'know	ITJ	RRP	𐑘𐑯𐑴	jəˈnəʊ	keep					manual	manual	100	informal 'you know'

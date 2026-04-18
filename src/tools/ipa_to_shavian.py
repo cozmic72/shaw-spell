@@ -506,6 +506,7 @@ PHONEME_MAP = [
     ("ɔːR", "𐑹"),  # NORTH/FORCE: for, more
     ("eəR", "𐑺"),  # SQUARE: air, Mary
     ("ɪəR", "𐑽"),  # NEAR: dear, here
+    ("iəR", "𐑽"),  # NEAR: weak /i/ + schwa + linking r, e.g. material-ly
     ("ʊəR", "𐑫𐑼"), # CURE: poor, sure
 
     # R-colored long vowels/diphthongs (with lowercase r)
@@ -514,6 +515,7 @@ PHONEME_MAP = [
     ("ɔːr", "𐑹"),  # NORTH/FORCE: for (lowercase r variant)
     ("eər", "𐑺"),  # SQUARE: air (lowercase r variant)
     ("ɪər", "𐑽"),  # NEAR: dear (lowercase r variant)
+    ("iər", "𐑽"),  # NEAR: weak /i/ + schwa (lowercase r variant)
     ("ʊər", "𐑫𐑼"), # CURE: poor (lowercase r variant)
 
     # R-colored short vowels (with capital R or lowercase r)
@@ -531,6 +533,7 @@ PHONEME_MAP = [
     ("əʊ", "𐑴"),   # GOAT: go, no
     ("oʊ", "𐑴"),   # GOAT (GenAm variant)
     ("ɪə", "𐑾"),   # NEAR (without R): idea, area
+    ("iə", "𐑾"),   # NEAR: weak /i/ + schwa, e.g. material, editorial, coaxial
     ("eə", "𐑺"),   # SQUARE (without R, rare in ReadLex)
     ("ʊə", "𐑫𐑼"), # CURE (without R)
 
@@ -792,10 +795,20 @@ def score_confidence(word: str, ipa: str, shaw: str,
     return pct, notes
 
 
+WSD_OVERRIDE_THRESHOLD = 70  # shave's WSD must be this confident to override IPA-derived spelling
+
+
 def upgrade_confidence_shave(pct: int, notes: list[str],
                              shaw: str, shave_shaw: str,
-                             ml_shaw: str | None) -> tuple[int, list[str], str | None]:
+                             ml_shaw: str | None,
+                             wsd_confidence: int | None = None,
+                             ) -> tuple[int, list[str], str | None]:
     """Upgrade confidence based on shave tool agreement.
+
+    When wsd_confidence is provided and below WSD_OVERRIDE_THRESHOLD, any
+    shave-proposed override is refused — shave was unsure which sense of a
+    homograph was meant, so its spelling guess should not trump the
+    IPA-derived one. The WSD value is logged in notes for traceability.
 
     Returns (new_pct, updated_notes, override_shaw_or_None).
     """
@@ -809,8 +822,13 @@ def upgrade_confidence_shave(pct: int, notes: list[str],
         notes.append("shave_agrees")
         return new_pct, notes, None
     elif ml_shaw and shave_shaw == ml_shaw:
-        # Shave + ML consensus → override
-        notes.append(f"overridden:was={shaw}; shave+ml_consensus")
+        # Shave + ML consensus would normally override — but refuse if shave
+        # flagged this word as WSD-ambiguous below threshold.
+        if wsd_confidence is not None and wsd_confidence < WSD_OVERRIDE_THRESHOLD:
+            notes.append(f"wsd_ambiguous:{wsd_confidence}%; shave_says:{shave_shaw}")
+            return pct, notes, None
+        suffix = f"; wsd={wsd_confidence}%" if wsd_confidence is not None else ""
+        notes.append(f"overridden:was={shaw}; shave+ml_consensus{suffix}")
         return 99, notes, shave_shaw
     else:
         # Shave disagrees with both

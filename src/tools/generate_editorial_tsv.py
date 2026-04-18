@@ -39,7 +39,7 @@ REFERENCE_PATH = PROJECT_ROOT / "data" / "readlex-reference.tsv"
 
 COLUMNS = [
     "word", "pos", "var", "shaw", "ipa", "verdict",
-    "shaw_override", "pos_override", "var_override",
+    "shaw_override", "pos_override", "var_override", "ipa_override",
     "source", "status", "confidence", "notes",
 ]
 
@@ -198,6 +198,7 @@ def generate_editorial(rebuild=False):
                     "shaw_override": "",
                     "pos_override": "",
                     "var_override": "",
+                    "ipa_override": "",
                     "source": source_name,
                     "status": status,
                     "notes": entry.get("review", ""),
@@ -247,6 +248,7 @@ def generate_editorial(rebuild=False):
             "shaw_override": "",
             "pos_override": "",
             "var_override": "",
+            "ipa_override": "",
             "source": row["source"],
             "status": row["status"],
             "notes": "cot-caught variant of GenAm " + row["shaw"],
@@ -347,6 +349,7 @@ def generate_readlex_reference():
                 "shaw_override": "",
                 "pos_override": "",
                 "var_override": "",
+                "ipa_override": "",
                 "source": "readlex",
                 "status": "readlex",
                 "notes": "",

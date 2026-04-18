@@ -54,18 +54,21 @@ POS_MAP = {
     "punct": "UNC",
 }
 
-def _batch_shave(words: list[str], dialect: str = "british") -> dict[str, str]:
-    """Run words through the `shave` tool and return word->shavian mapping.
+_WSD_RE = re.compile(r"^WSD:\s+(\S+)\s+->\s+(\S+)\s+(\d+)%\s+/\s+(\S+)\s+(\d+)%")
 
-    Args:
-        words: list of words to transliterate
-        dialect: "british" or "american" — selects the shave readlex dialect
+
+def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, str], dict[str, int]]:
+    """Run words through the `shave` tool.
+
+    Returns (word->shavian, word_lower->wsd_top_percent). WSD lines come from
+    shave's stderr when it has to disambiguate a homograph; absence means
+    shave was certain about that token.
     """
     try:
         input_text = "\n".join(words)
         flag = "--readlex-british" if dialect == "british" else "--readlex-american"
         result = subprocess.run(
-            ["shave", "-q", flag],
+            ["shave", flag],   # NOT -q: we want WSD diagnostics on stderr
             input=input_text,
             capture_output=True,
             text=True,
@@ -77,10 +80,17 @@ def _batch_shave(words: list[str], dialect: str = "british") -> dict[str, str]:
             shaw = shaw_line.strip()
             if shaw:
                 mapping[word] = shaw
-        return mapping
+        wsd: dict[str, int] = {}
+        for line in result.stderr.split("\n"):
+            m = _WSD_RE.match(line)
+            if m:
+                w = m.group(1).lower()
+                top = int(m.group(3))
+                wsd[w] = min(wsd[w], top) if w in wsd else top
+        return mapping, wsd
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         print(f"  Warning: shave tool unavailable: {e}", file=sys.stderr)
-        return {}
+        return {}, {}
 
 
 def _compute_ml_shaw(word: str, ipa: str, dialect: str,
@@ -331,6 +341,8 @@ def main():
 
     shave_results_british = {}
     shave_results_american = {}
+    wsd_british: dict[str, int] = {}
+    wsd_american: dict[str, int] = {}
 
     if review_british:
         print(f"\n  Consulting `shave` tool for {len(review_british):,} RSSB review words...")
@@ -338,11 +350,14 @@ def main():
         BATCH_SIZE = 5000
         for batch_start in range(0, len(review_list), BATCH_SIZE):
             batch = review_list[batch_start:batch_start + BATCH_SIZE]
-            batch_results = _batch_shave(batch, dialect="british")
+            batch_results, batch_wsd = _batch_shave(batch, dialect="british")
             shave_results_british.update(batch_results)
+            for w, pct in batch_wsd.items():
+                wsd_british[w] = min(wsd_british[w], pct) if w in wsd_british else pct
             if batch_start > 0 and batch_start % 10000 == 0:
                 print(f"    ...shave processed {batch_start:,}/{len(review_list):,}")
-        print(f"  Got shave results for {len(shave_results_british):,} RSSB words.")
+        print(f"  Got shave results for {len(shave_results_british):,} RSSB words "
+              f"({len(wsd_british):,} WSD-ambiguous).")
 
     if review_american:
         print(f"\n  Consulting `shave` tool for {len(review_american):,} GenAm review words...")
@@ -350,11 +365,14 @@ def main():
         BATCH_SIZE = 5000
         for batch_start in range(0, len(review_list), BATCH_SIZE):
             batch = review_list[batch_start:batch_start + BATCH_SIZE]
-            batch_results = _batch_shave(batch, dialect="american")
+            batch_results, batch_wsd = _batch_shave(batch, dialect="american")
             shave_results_american.update(batch_results)
+            for w, pct in batch_wsd.items():
+                wsd_american[w] = min(wsd_american[w], pct) if w in wsd_american else pct
             if batch_start > 0 and batch_start % 10000 == 0:
                 print(f"    ...shave processed {batch_start:,}/{len(review_list):,}")
-        print(f"  Got shave results for {len(shave_results_american):,} GenAm words.")
+        print(f"  Got shave results for {len(shave_results_american):,} GenAm words "
+              f"({len(wsd_american):,} WSD-ambiguous).")
 
     if review_british or review_american:
         shave_upgraded = 0
@@ -366,8 +384,10 @@ def main():
                 var = e.get("var")
                 if var == "RSSB":
                     shave_results = shave_results_british
+                    wsd_dict = wsd_british
                 elif var == "GenAm":
                     shave_results = shave_results_american
+                    wsd_dict = wsd_american
                 else:
                     continue
                 w = e["Latn"]
@@ -377,8 +397,15 @@ def main():
                 ml_shaw = e.pop("_ml_shaw", None)
                 notes = [n for n in e.get("review", "").split("; ") if n]
 
+                phrase_wsd = None
+                for token in w.lower().split():
+                    pct = wsd_dict.get(token)
+                    if pct is not None:
+                        phrase_wsd = pct if phrase_wsd is None else min(phrase_wsd, pct)
+
                 new_pct, notes, override = upgrade_confidence_shave(
-                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw
+                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw,
+                    wsd_confidence=phrase_wsd,
                 )
                 e["confidence"] = new_pct
                 e["review"] = "; ".join(notes) if notes else ""

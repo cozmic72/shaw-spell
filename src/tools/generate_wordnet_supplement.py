@@ -116,18 +116,20 @@ def load_readlex_keys() -> set[str]:
     return keys
 
 
-def _batch_shave(words: list[str], dialect: str = "british") -> dict[str, str]:
-    """Run words through the `shave` tool and return word->shavian mapping.
+_WSD_RE = re.compile(r"^WSD:\s+(\S+)\s+->\s+(\S+)\s+(\d+)%\s+/\s+(\S+)\s+(\d+)%")
 
-    Args:
-        words: list of words to transliterate
-        dialect: "british" or "american" — selects the shave readlex dialect
+
+def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, str], dict[str, int]]:
+    """Run words through the `shave` tool.
+
+    Returns (word->shavian, word_lower->wsd_top_percent). WSD entries come
+    from shave's stderr when it disambiguates a homograph.
     """
     try:
         input_text = "\n".join(words)
         flag = "--readlex-british" if dialect == "british" else "--readlex-american"
         result = subprocess.run(
-            ["shave", "-q", flag],
+            ["shave", flag],   # not -q: need WSD on stderr
             input=input_text,
             capture_output=True,
             text=True,
@@ -139,10 +141,17 @@ def _batch_shave(words: list[str], dialect: str = "british") -> dict[str, str]:
             shaw = shaw_line.strip()
             if shaw:
                 mapping[word] = shaw
-        return mapping
+        wsd: dict[str, int] = {}
+        for line in result.stderr.split("\n"):
+            m = _WSD_RE.match(line)
+            if m:
+                w = m.group(1).lower()
+                top = int(m.group(3))
+                wsd[w] = min(wsd[w], top) if w in wsd else top
+        return mapping, wsd
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         print(f"  Warning: shave tool unavailable: {e}", file=sys.stderr)
-        return {}
+        return {}, {}
 
 
 def _compute_ml_shaw(word: str, ipa: str, have_ml: bool, ml_model) -> str | None:
@@ -297,14 +306,18 @@ def main():
                 else:
                     review_british.add(e["Latn"])
 
-    shave_results_british = {}
-    shave_results_american = {}
+    shave_results_british: dict[str, str] = {}
+    shave_results_american: dict[str, str] = {}
+    wsd_british: dict[str, int] = {}
+    wsd_american: dict[str, int] = {}
     if review_british:
         print(f"\n  Consulting `shave --readlex-british` for {len(review_british)} review words...")
-        shave_results_british = _batch_shave(sorted(review_british), dialect="british")
+        shave_results_british, wsd_british = _batch_shave(sorted(review_british), dialect="british")
+        print(f"  ({len(wsd_british):,} WSD-ambiguous)")
     if review_american:
         print(f"  Consulting `shave --readlex-american` for {len(review_american)} review words...")
-        shave_results_american = _batch_shave(sorted(review_american), dialect="american")
+        shave_results_american, wsd_american = _batch_shave(sorted(review_american), dialect="american")
+        print(f"  ({len(wsd_american):,} WSD-ambiguous)")
 
     if review_british or review_american:
         shave_upgraded = 0
@@ -314,15 +327,27 @@ def main():
                 if e.get("confidence", 89) >= 89:
                     continue
                 w = e["Latn"]
-                shave_results = shave_results_american if e["var"] == "GenAm" else shave_results_british
+                if e["var"] == "GenAm":
+                    shave_results = shave_results_american
+                    wsd_dict = wsd_american
+                else:
+                    shave_results = shave_results_british
+                    wsd_dict = wsd_british
                 if w not in shave_results:
                     continue
                 shave_shaw = shave_results[w]
                 ml_shaw = e.pop("_ml_shaw", None)
                 notes = [n for n in e.get("review", "").split("; ") if n]
 
+                phrase_wsd = None
+                for token in w.lower().split():
+                    pct = wsd_dict.get(token)
+                    if pct is not None:
+                        phrase_wsd = pct if phrase_wsd is None else min(phrase_wsd, pct)
+
                 new_pct, notes, override = upgrade_confidence_shave(
-                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw
+                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw,
+                    wsd_confidence=phrase_wsd,
                 )
                 e["confidence"] = new_pct
                 e["review"] = "; ".join(notes) if notes else ""

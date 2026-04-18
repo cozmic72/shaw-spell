@@ -12,6 +12,7 @@ Usage:
 """
 
 import json
+import re
 import subprocess
 import sys
 import argparse
@@ -30,20 +31,51 @@ SUPPLEMENTS = [
 ]
 
 
+_WSD_RE = re.compile(r"^WSD:\s+(\S+)\s+->\s+(\S+)\s+(\d+)%\s+/\s+(\S+)\s+(\d+)%")
+
+
+def _parse_wsd_stderr(stderr_text: str) -> dict[str, int]:
+    """Parse shave's WSD diagnostic lines from stderr.
+
+    Each line like 'WSD: tear -> 𐑑𐑺 53% / 𐑑𐑽 47%' tells us shave was uncertain
+    about a homograph. Returns {word_lower: top_percent}. Words NOT in the dict
+    were unambiguous (shave was confident about that token).
+    """
+    wsd = {}
+    for line in stderr_text.split("\n"):
+        m = _WSD_RE.match(line)
+        if m:
+            word = m.group(1).lower()
+            top = int(m.group(3))
+            # If a word appears on multiple WSD lines (different callsites),
+            # keep the lowest confidence — most conservative.
+            if word in wsd:
+                wsd[word] = min(wsd[word], top)
+            else:
+                wsd[word] = top
+    return wsd
+
+
 def batch_shave(words: list[str], dialect: str = "british",
-                chunk_size: int = 5000) -> dict[str, str]:
-    """Run words through shave -q in batches.
+                chunk_size: int = 5000) -> tuple[dict[str, str], dict[str, int]]:
+    """Run words through shave in batches.
+
+    Returns (shaw_results, wsd_confidence). WSD values are shave's WSD
+    top-choice percentage for homograph tokens; a missing entry means shave
+    had no disambiguation doubts.
 
     Args:
         dialect: "british" or "american" — selects shave's readlex flag
     """
     flag = "--readlex-british" if dialect == "british" else "--readlex-american"
-    results = {}
+    # NB: we deliberately do NOT pass -q so that WSD diagnostic lines reach stderr.
+    results: dict[str, str] = {}
+    wsd: dict[str, int] = {}
     for i in range(0, len(words), chunk_size):
         chunk = words[i:i + chunk_size]
         try:
             proc = subprocess.run(
-                ["shave", "-q", flag],
+                ["shave", flag],
                 input="\n".join(chunk),
                 capture_output=True, text=True, timeout=120,
             )
@@ -51,9 +83,15 @@ def batch_shave(words: list[str], dialect: str = "british",
                 shaw = line.strip()
                 if shaw:
                     results[word] = shaw
+            # Merge WSD confidences from this chunk's stderr
+            for w, pct in _parse_wsd_stderr(proc.stderr).items():
+                if w in wsd:
+                    wsd[w] = min(wsd[w], pct)
+                else:
+                    wsd[w] = pct
         except (FileNotFoundError, subprocess.TimeoutExpired) as e:
             print(f"  Warning: shave error: {e}", file=sys.stderr)
-    return results
+    return results, wsd
 
 
 def rescore_file(filepath: Path, ml_model, full_shave: bool) -> dict:
@@ -114,8 +152,9 @@ def rescore_file(filepath: Path, ml_model, full_shave: bool) -> dict:
             continue
 
         print(f"  Consulting shave ({dialect_label}) for {len(review_words):,} words...")
-        shave_results = batch_shave(sorted(review_words), dialect=dialect_flag)
-        print(f"  Got {len(shave_results):,} results")
+        shave_results, wsd_confidence = batch_shave(sorted(review_words), dialect=dialect_flag)
+        print(f"  Got {len(shave_results):,} results "
+              f"({len(wsd_confidence):,} WSD-ambiguous words)")
 
         for key, entries in data.items():
             for e in entries:
@@ -131,8 +170,17 @@ def rescore_file(filepath: Path, ml_model, full_shave: bool) -> dict:
                 ml_shaw = e.get("_ml_shaw")
                 notes = [n for n in e.get("review", "").split("; ") if n]
 
+                # WSD confidence: lookup by each token in the multi-word phrase
+                # and take the MINIMUM (any ambiguous token taints the phrase).
+                phrase_wsd = None
+                for token in w.lower().split():
+                    pct = wsd_confidence.get(token)
+                    if pct is not None:
+                        phrase_wsd = pct if phrase_wsd is None else min(phrase_wsd, pct)
+
                 new_pct, notes, override = upgrade_confidence_shave(
-                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw
+                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw,
+                    wsd_confidence=phrase_wsd,
                 )
 
                 old_pct = e["confidence"]

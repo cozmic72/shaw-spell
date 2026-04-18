@@ -25,6 +25,8 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 READLEX_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex.json"
 EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.tsv"
+EDITORIAL_MANUAL_PATH = PROJECT_ROOT / "data" / "editorial-manual.tsv"
+EDITORIAL_POS_GAPS_PATH = PROJECT_ROOT / "data" / "editorial-pos-gaps.tsv"
 
 SUPPLEMENTS = [
     ("wordnet", PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
@@ -61,9 +63,122 @@ def load_editorial():
             "shaw_override": cleaned.get("shaw_override", ""),
             "pos_override": cleaned.get("pos_override", ""),
             "var_override": cleaned.get("var_override", ""),
+            "ipa_override": cleaned.get("ipa_override", ""),
         }
 
     return editorial
+
+
+def load_editorial_tsv(path, require_keep_verdict=False):
+    """Load editorial entries from a TSV with the standard column layout.
+
+    Returns a list of row-dicts (one per row). When require_keep_verdict is
+    True, only rows with verdict == 'keep' are returned — used for the
+    pos-gaps file where most rows are unreviewed.
+    """
+    if not path.exists():
+        return None
+
+    rows = []
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        content = f.read()
+    lines = content.split("\n")
+    reader = csv.DictReader(lines, delimiter="\t")
+    for row in reader:
+        cleaned = {}
+        for k, v in row.items():
+            if k is None:
+                continue
+            k = k.strip().rstrip("\r")
+            cleaned[k] = v.strip().rstrip("\r") if v else ""
+        if not cleaned.get("word"):
+            continue
+        if require_keep_verdict and cleaned.get("verdict") != "keep":
+            continue
+        rows.append(cleaned)
+    return rows
+
+
+def apply_manual_overrides(merged, manual_rows, source_label="manual"):
+    """Apply editorial entries to the merged dict.
+
+    For each row, the (Latn-lower, pos, var) triple identifies a slot.
+    Any existing entries in that slot are replaced (logged). Entries with the
+    same (word, pos) but different var are left alone. Entries with the same
+    (word, pos, var) but only a different shaw spelling are also replaced —
+    the editorial row is treated as the authoritative spelling for that slot.
+
+    source_label is written into each new entry's source/status fields and
+    used in the override log line so different editorial sources are
+    distinguishable in output.
+    """
+    stats = {
+        "manual_rows": 0,
+        "overrode_existing": 0,
+        "added_new": 0,
+        "added_to_existing_key": 0,
+    }
+
+    # Build an index: (word_lower, pos, var) -> list of (key, entry_index) into merged
+    # so we can find and remove what we're overriding.
+    slot_index = defaultdict(list)
+    for key, entries in merged.items():
+        for i, e in enumerate(entries):
+            slot = (e.get("Latn", "").lower(), e.get("pos", ""), e.get("var", ""))
+            slot_index[slot].append((key, i))
+
+    for row in manual_rows:
+        stats["manual_rows"] += 1
+        word = row["word"]
+        pos = row.get("pos_override") or row["pos"]
+        var = row.get("var_override") or row.get("var") or "RRP"
+        shaw = row.get("shaw_override") or row["shaw"]
+        ipa = row.get("ipa_override") or row.get("ipa", "")
+        notes = row.get("notes", "")
+
+        slot = (word.lower(), pos, var)
+
+        # Remove any existing entries in this slot (across any merged keys),
+        # logging each replacement.
+        for old_key, _idx in slot_index.get(slot, []):
+            old_entries = merged.get(old_key, [])
+            kept = []
+            for e in old_entries:
+                e_slot = (e.get("Latn", "").lower(), e.get("pos", ""), e.get("var", ""))
+                if e_slot == slot:
+                    print(f"  {source_label} override: {word!r} pos={pos} var={var} "
+                          f"old shaw={e.get('Shaw')!r} → new shaw={shaw!r}")
+                    stats["overrode_existing"] += 1
+                else:
+                    kept.append(e)
+            if kept:
+                merged[old_key] = kept
+            else:
+                del merged[old_key]
+
+        # Build the new entry
+        manual_entry = {
+            "Latn": word,
+            "Shaw": shaw,
+            "pos": pos,
+            "ipa": ipa,
+            "freq": 0,
+            "var": var,
+            "source": source_label,
+            "status": source_label,
+        }
+        if notes:
+            manual_entry["review"] = notes
+
+        merged_key = f"{word}_{pos}_{shaw}"
+        if merged_key in merged:
+            merged[merged_key].append(manual_entry)
+            stats["added_to_existing_key"] += 1
+        else:
+            merged[merged_key] = [manual_entry]
+            stats["added_new"] += 1
+
+    return stats
 
 
 def main():
@@ -134,6 +249,7 @@ def main():
                 shaw = entry.get("Shaw", "")
                 pos = entry.get("pos", "UNC")
                 var = entry.get("var", "UNC")
+                ipa_override = ""
 
                 # Editorial filtering (when editorial.tsv exists)
                 if use_editorial:
@@ -160,6 +276,7 @@ def main():
                         pos = ed["pos_override"]
                     if ed["var_override"]:
                         var = ed["var_override"]
+                    ipa_override = ed.get("ipa_override", "")
                 else:
                     # Fallback: confidence-based filtering
                     if confidence < args.min_confidence:
@@ -180,11 +297,14 @@ def main():
                     continue
 
                 # Build the merged entry
+                entry_ipa = entry.get("ipa", "")
+                if use_editorial and ipa_override:
+                    entry_ipa = ipa_override
                 merged_entry = {
                     "Latn": word,
                     "Shaw": shaw,
                     "pos": pos,
-                    "ipa": entry.get("ipa", ""),
+                    "ipa": entry_ipa,
                     "freq": entry.get("freq", 0),
                     "var": var,
                     "confidence": confidence,
@@ -230,6 +350,35 @@ def main():
         print(f"  Added {source_stats['added']:,} entries "
               f"({source_stats['new']:,} new words, {source_stats['overlap']:,} overlapping)")
         print(f"  Skipped {source_stats['skipped']:,}")
+
+    # Apply pos-gaps (only verdict=keep rows) before manual, so manual still wins
+    # on any slot collision.
+    pos_gap_rows = load_editorial_tsv(EDITORIAL_POS_GAPS_PATH, require_keep_verdict=True)
+    if pos_gap_rows is not None:
+        print(f"\nApplying pos-gaps from {EDITORIAL_POS_GAPS_PATH.name} "
+              f"({len(pos_gap_rows):,} approved rows)...")
+        gap_stats = apply_manual_overrides(merged, pos_gap_rows, source_label="pos-gap")
+        stats["pos_gap"] = gap_stats
+        print(f"  Approved rows:         {gap_stats['manual_rows']:,}")
+        print(f"  Overrode existing:     {gap_stats['overrode_existing']:,}")
+        print(f"  Added new key:         {gap_stats['added_new']:,}")
+        print(f"  Added to existing key: {gap_stats['added_to_existing_key']:,}")
+    else:
+        print(f"\nNo pos-gaps file at {EDITORIAL_POS_GAPS_PATH} — skipping.")
+
+    # Apply manual editorial overrides last so they trump everything above.
+    manual_rows = load_editorial_tsv(EDITORIAL_MANUAL_PATH)
+    if manual_rows is not None:
+        print(f"\nApplying manual editorial from {EDITORIAL_MANUAL_PATH.name} "
+              f"({len(manual_rows):,} rows)...")
+        manual_stats = apply_manual_overrides(merged, manual_rows, source_label="manual")
+        stats["manual"] = manual_stats
+        print(f"  Manual rows:           {manual_stats['manual_rows']:,}")
+        print(f"  Overrode existing:     {manual_stats['overrode_existing']:,}")
+        print(f"  Added new key:         {manual_stats['added_new']:,}")
+        print(f"  Added to existing key: {manual_stats['added_to_existing_key']:,}")
+    else:
+        print(f"\nNo manual editorial file at {EDITORIAL_MANUAL_PATH} — skipping.")
 
     # Write output
     print(f"\nWriting merged readlex to {OUTPUT_PATH}...")

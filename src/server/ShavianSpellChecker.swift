@@ -20,6 +20,61 @@ private let signpostCacheLookup = OSSignpostID(log: performanceLog)
 private let shavianStart: UInt32 = 0x10450
 private let shavianEnd: UInt32 = 0x1047F
 
+// MARK: - False-positive heuristics
+//
+// These run ONLY on tokens Hunspell has already rejected, so clean prose pays
+// nothing. Each rule is an independent pattern; we compose them with `|` and
+// compile once. A token matching any branch is treated as correctly spelled.
+//
+// Rules (in order of the union):
+//   1. All non-letter junk: no Latin, no Shavian letters. Catches "42",
+//      "---", "(&*)!", "3.14", etc. — stray punctuation / number tokens
+//      that Hunspell would otherwise reject.
+//   2. Acronyms: 2–6 uppercase ASCII letters, optional plural `s`. "URL",
+//      "NASA", "PhDs", "URLs". We cap at 6 to avoid accepting e.g.
+//      all-caps shouting of real misspellings.
+//   3. Alphanumeric identifiers: contains at least one letter AND one
+//      digit. Catches "H2O", "CO2", "iPhone15", "foo_bar2", variable
+//      names, chemical formulas, SKU codes.
+private let tokenAcceptPatterns: [String] = [
+    // 1. Contains no Latin (A-Z/a-z) and no Shavian letter.
+    "^[^A-Za-z\u{10450}-\u{1047F}]+$",
+    // 2. Acronym, possibly pluralised.
+    "^[A-Z]{2,6}s?$",
+    // 3. Alphanumeric mix (letter + digit, any order).
+    #"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9_]+$"#,
+]
+
+private let tokenAcceptRegex: NSRegularExpression = {
+    let combined = tokenAcceptPatterns.map { "(?:\($0))" }.joined(separator: "|")
+    return try! NSRegularExpression(pattern: combined, options: [])
+}()
+
+// Full-string scan for spans that should never be spell-checked as words.
+// CFStringTokenizer splits "https://example.com" into ["https", "example",
+// "com"] before we see them, so a per-token regex can't catch URIs. We scan
+// the whole input once and remember the ranges; any token overlapping a
+// skip-range is accepted on the failure path.
+//
+// Rough-and-ready — aims for ~95% recall on real-world URIs/emails without
+// trying to be an RFC-conformant parser.
+private let skipSpanPatterns: [String] = [
+    // Email: anything@anything.anything (one dot minimum after @).
+    #"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"#,
+    // URI with explicit scheme (http, https, ftp, mailto, file, etc.)
+    // or a leading www. — eat everything up to whitespace.
+    #"(?:[a-zA-Z][a-zA-Z0-9+\-.]*://|www\.)\S+"#,
+    // Bare domain: at least one dot, ends in a known-ish TLD. This is the
+    // sloppy one — covers foo.com, example.co.uk, news.bbc.co.uk, etc.
+    // Case-insensitive via (?i).
+    #"(?i)\b(?:[a-z0-9\-]+\.)+(?:com|org|net|edu|gov|mil|io|co|uk|us|de|fr|jp|cn|ru|br|in|au|ca|nz|ch|nl|se|no|dk|fi|es|it|pl|be|at|ie|info|biz|name|pro|dev|app|ai|xyz|co\.uk|co\.nz|co\.jp|ac\.uk|gov\.uk|org\.uk|com\.au)\b(?:/\S*)?"#,
+]
+
+private let skipSpanRegex: NSRegularExpression = {
+    let combined = skipSpanPatterns.map { "(?:\($0))" }.joined(separator: "|")
+    return try! NSRegularExpression(pattern: combined, options: [])
+}()
+
 // LRU Cache for spell-check results
 private class SpellCheckCache {
     private let capacity: Int
@@ -236,14 +291,36 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         let nextCharRange = nsString.rangeOfComposedCharacterSequence(at: wordEnd)
         let nextChar = nsString.substring(with: nextCharRange)
 
-        // Word is complete if followed by whitespace, punctuation, or other non-letter
-        if let scalar = nextChar.unicodeScalars.first {
-            let codepoint = scalar.value
-            // Not a letter = word boundary = complete word
-            return !isShavianOrLatinLetter(codepoint)
+        guard let scalar = nextChar.unicodeScalars.first else {
+            return false
+        }
+        let codepoint = scalar.value
+
+        // Mid-typing email: 'joro@' should not be flagged before the user
+        // finishes typing the domain (otherwise autocorrect kicks in on @
+        // and rewrites the local part to a real word — e.g. joro→jorum).
+        if codepoint == 0x40 {  // @
+            return false
         }
 
-        return false
+        // Mid-typing bare URL: 'example.c' (period followed by a letter
+        // with no whitespace) probably means the user is in the middle of
+        // typing example.com. Hold off until they finish; the URI/email
+        // pre-scan will then accept the whole span. We only fire this
+        // when a letter follows the dot, so sentence-ending periods like
+        // 'fine.' or 'fine. Next' still complete normally.
+        if codepoint == 0x2E && wordEnd + nextCharRange.length < nsString.length {  // .
+            let afterDotIdx = wordEnd + nextCharRange.length
+            let afterDotRange = nsString.rangeOfComposedCharacterSequence(at: afterDotIdx)
+            let afterDot = nsString.substring(with: afterDotRange)
+            if let nextScalar = afterDot.unicodeScalars.first,
+               isShavianOrLatinLetter(nextScalar.value) {
+                return false
+            }
+        }
+
+        // Otherwise: not-a-letter means word boundary (complete word).
+        return !isShavianOrLatinLetter(codepoint)
     }
 
     // Optimized word extraction using CFStringTokenizer - incremental
@@ -313,64 +390,117 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     // MARK: - Spell Checking
 
     private func normalizeWord(_ word: String) -> String {
-        // Remove soft hyphens (U+00AD) which are invisible formatting characters
-        // that shouldn't affect spell-checking
-        return word.replacingOccurrences(of: "\u{00AD}", with: "")
+        // Strip soft hyphens (invisible formatting) and fold curly apostrophe
+        // to ASCII. The dictionaries store contractions with U+0027, but macOS
+        // smart-quotes substitutes U+2019 as the user types.
+        return word
+            .replacingOccurrences(of: "\u{00AD}", with: "")
+            .replacingOccurrences(of: "\u{2019}", with: "'")
     }
 
-    private func checkWord(_ word: String, at position: Int, in fullString: String) -> Bool {
+    private func checkWord(_ word: String,
+                           at position: Int,
+                           in fullString: String,
+                           tokenRange: NSRange,
+                           skipRanges: [NSRange]) -> Bool {
         totalChecks += 1
 
         // Normalize word (remove soft hyphens, etc.)
         let normalizedWord = normalizeWord(word)
 
-        // Check cache first
+        // Cache stores the raw Hunspell verdict only. Heuristic accepts
+        // are context-dependent (a token may be inside a URI here and
+        // standalone elsewhere) so they run fresh every time.
         os_signpost(.begin, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup)
-        if let cached = spellCheckCache.get(normalizedWord) {
+        let cachedHunspell = spellCheckCache.get(normalizedWord)
+        if cachedHunspell == true {
             cacheHits += 1
             os_signpost(.end, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup, "Hit")
-            return cached
+            return true
         }
-        cacheMisses += 1
-        os_signpost(.end, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup, "Miss")
-
-        // Cache miss - check with Hunspell
-        os_signpost(.begin, log: performanceLog, name: "Hunspell Lookup", signpostID: signpostHunspellLookup)
-        defer {
-            os_signpost(.end, log: performanceLog, name: "Hunspell Lookup", signpostID: signpostHunspellLookup)
-        }
-
-        // Determine which dictionary to use based on script
-        let isShavian = containsShavianScript(normalizedWord)
-        let handle = isShavian ? shavianHandle : englishHandle
-
-        guard let hunspellHandle = handle else {
-            return true  // No dictionary loaded for this script, assume correct
+        if cachedHunspell == nil {
+            cacheMisses += 1
+            os_signpost(.end, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup, "Miss")
+        } else {
+            cacheHits += 1
+            os_signpost(.end, log: performanceLog, name: "Cache Lookup", signpostID: signpostCacheLookup, "Hit")
         }
 
-        var result = Hunspell_spell(hunspellHandle, normalizedWord)
-        var isCorrect = result != 0  // Non-zero means correctly spelled
+        var isCorrect: Bool
+        if let cached = cachedHunspell {
+            isCorrect = cached
+        } else {
+            os_signpost(.begin, log: performanceLog, name: "Hunspell Lookup", signpostID: signpostHunspellLookup)
+            defer {
+                os_signpost(.end, log: performanceLog, name: "Hunspell Lookup", signpostID: signpostHunspellLookup)
+            }
 
-        // For Shavian words, namer dot is optional (proper nouns may or may not include it)
-        // Try both variants: with and without namer dot
-        if !isCorrect && isShavian {
-            if normalizedWord.hasPrefix("·") {
-                // Word has namer dot but failed - try without it
-                let withoutDot = String(normalizedWord.dropFirst())
-                result = Hunspell_spell(hunspellHandle, withoutDot)
-                isCorrect = result != 0
-            } else {
-                // Word doesn't have namer dot but failed - try with it
-                let withDot = "·" + normalizedWord
-                result = Hunspell_spell(hunspellHandle, withDot)
-                isCorrect = result != 0
+            let isShavian = containsShavianScript(normalizedWord)
+            let handle = isShavian ? shavianHandle : englishHandle
+
+            guard let hunspellHandle = handle else {
+                return true  // No dictionary loaded for this script, assume correct
+            }
+
+            var result = Hunspell_spell(hunspellHandle, normalizedWord)
+            isCorrect = result != 0
+
+            // Shavian namer dot is optional — retry with/without.
+            if !isCorrect && isShavian {
+                if normalizedWord.hasPrefix("·") {
+                    let withoutDot = String(normalizedWord.dropFirst())
+                    result = Hunspell_spell(hunspellHandle, withoutDot)
+                    isCorrect = result != 0
+                } else {
+                    let withDot = "·" + normalizedWord
+                    result = Hunspell_spell(hunspellHandle, withDot)
+                    isCorrect = result != 0
+                }
+            }
+
+            spellCheckCache.set(normalizedWord, isCorrect)
+        }
+
+        // Failure-path heuristics. Run every time (not cached) because
+        // skipRanges depends on the containing string.
+        if !isCorrect && isAcceptableFalsePositive(normalizedWord,
+                                                   tokenRange: tokenRange,
+                                                   skipRanges: skipRanges) {
+            return true
+        }
+
+        return isCorrect
+    }
+
+    // Full-string pass to locate URI/email spans. Returns the ranges we
+    // treat as off-limits for per-token spell-checking.
+    private func nonSpellcheckableRanges(in string: String) -> [NSRange] {
+        let ns = string as NSString
+        let full = NSRange(location: 0, length: ns.length)
+        let matches = skipSpanRegex.matches(in: string, options: [], range: full)
+        return matches.map { $0.range }
+    }
+
+    // Decide whether a Hunspell-rejected token should be accepted anyway.
+    // See tokenAcceptPatterns / skipSpanPatterns at top of file for rules.
+    private func isAcceptableFalsePositive(_ word: String,
+                                           tokenRange: NSRange,
+                                           skipRanges: [NSRange]) -> Bool {
+        // Inside a URI/email span? Accept.
+        for span in skipRanges {
+            if NSIntersectionRange(span, tokenRange).length > 0 {
+                return true
             }
         }
 
-        // Store in cache
-        spellCheckCache.set(normalizedWord, isCorrect)
+        // Per-token pattern union (no-letters / acronym / alphanumeric).
+        let ns = word as NSString
+        let full = NSRange(location: 0, length: ns.length)
+        if tokenAcceptRegex.firstMatch(in: word, options: [], range: full) != nil {
+            return true
+        }
 
-        return isCorrect
+        return false
     }
 
     // MARK: - NSSpellServerDelegate
@@ -380,6 +510,11 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
                     language: String,
                     wordCount: UnsafeMutablePointer<Int>,
                     countOnly: Bool) -> NSRange {
+
+        // One scan per request to find URI/email spans we should never
+        // flag. Cheap on clean text (no matches) and lets checkWord skip
+        // tokens that CFStringTokenizer has already split out of a URI.
+        let skipRanges = countOnly ? [] : nonSpellcheckableRanges(in: stringToCheck)
 
         // Incremental word-by-word checking - only check from current position forward
         var position = 0
@@ -397,7 +532,11 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
             if !countOnly {
                 let word = (stringToCheck as NSString).substring(with: wordRange)
 
-                if !checkWord(word, at: wordRange.location, in: stringToCheck) {
+                if !checkWord(word,
+                              at: wordRange.location,
+                              in: stringToCheck,
+                              tokenRange: wordRange,
+                              skipRanges: skipRanges) {
                     // Found misspelled word
                     wordCount.pointee = count
                     return wordRange

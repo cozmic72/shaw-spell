@@ -387,6 +387,99 @@ def add_namer_dot_if_proper_noun(text, pos_code):
     return text
 
 
+# Voicing classes for the Shavian sibilant suffix (used by plural and
+# canonical apostrophe-free possessive). Last char of the stem decides:
+#   sibilant ending → 𐑩𐑟
+#   voiceless non-sibilant → 𐑕
+#   anything else (voiced consonant or vowel) → 𐑟
+_SHAVIAN_VOICELESS_NON_SIBILANT = set('𐑐𐑑𐑒𐑓𐑔')
+_SHAVIAN_SIBILANT = set('𐑕𐑟𐑖𐑠𐑗𐑡')
+
+
+def _shavian_sibilant_suffix(shaw):
+    """Pick the voicing-correct sibilant suffix (𐑩𐑟 / 𐑕 / 𐑟) for a stem."""
+    if not shaw:
+        return ''
+    last = shaw[-1]
+    if last in _SHAVIAN_SIBILANT:
+        return '𐑩𐑟'
+    if last in _SHAVIAN_VOICELESS_NON_SIBILANT:
+        return '𐑕'
+    return '𐑟'
+
+
+def derive_shavian_noun_indices(shaw, pos):
+    """
+    Generate the additional Shavian d:index forms for a noun.
+
+    For singular nouns (NN1/NP0):
+      - plural / apostrophe-free possessive (homograph): 𐑛𐑪𐑜 → 𐑛𐑪𐑜𐑟
+      - apostrophe-singular-possessive:                  𐑛𐑪𐑜 → 𐑛𐑪𐑜'𐑟
+      - apostrophe-plural-possessive:                    𐑛𐑪𐑜 → 𐑛𐑪𐑜𐑟'
+
+    For plural-only NN2 entries (alms, antipodes, …):
+      - apostrophe-plural-possessive only: 𐑭𐑥𐑟 → 𐑭𐑥𐑟'
+
+    Returns a set of derived Shavian forms (excluding the input itself).
+    """
+    if not shaw:
+        return set()
+
+    derived = set()
+    is_singular_noun = pos == 'NN1' or is_proper_noun(pos)
+    is_plural_noun = pos == 'NN2'
+
+    if is_singular_noun:
+        plural = shaw + _shavian_sibilant_suffix(shaw)
+        derived.add(plural)
+        derived.add(plural + "'")
+        derived.add(shaw + "'𐑟")
+    elif is_plural_noun:
+        derived.add(shaw + "'")
+
+    return derived
+
+
+def derive_latin_noun_indices(latin, shaw, pos):
+    """
+    Generate the additional Latin d:index forms for a noun, using the
+    Shavian form as a phonemic oracle for the sibilant decision.
+
+    For singular nouns (NN1/NP0):
+      - plural:               dog → dogs, box → boxes, baby → babies
+      - singular possessive:  dog → dog's
+      - plural possessive:    dog → dogs'
+
+    For plural-only NN2 entries:
+      - plural possessive only: alms → alms'
+
+    Returns a set of derived Latin forms (excluding the input itself).
+    """
+    if not latin:
+        return set()
+
+    derived = set()
+    is_singular_noun = pos == 'NN1' or is_proper_noun(pos)
+    is_plural_noun = pos == 'NN2'
+
+    if is_singular_noun:
+        # Sibilant decision uses the Shavian last char (phonemic). Falls
+        # back to a Latin-side check if no Shavian form is available.
+        if shaw and shaw[-1] in _SHAVIAN_SIBILANT:
+            plural = latin + ('s' if latin.endswith('e') else 'es')
+        elif len(latin) >= 2 and latin[-1] == 'y' and latin[-2] not in 'aeiou':
+            plural = latin[:-1] + 'ies'
+        else:
+            plural = latin + 's'
+        derived.add(plural)
+        derived.add(plural + "'")
+        derived.add(latin + "'s")
+    elif is_plural_noun:
+        derived.add(latin + "'")
+
+    return derived
+
+
 def process_readlex_with_lemmas(readlex_data):
     """
     Process readlex data to include lemma information.
@@ -648,6 +741,66 @@ def pos_to_readable(pos_code):
         'POS': 'possessive',
     }
     return pos_map.get(pos_code, pos_code)
+
+
+# Shavian translations for grammar terms that aren't single-word entries in the
+# Latin→Shavian lookup. Used by translate_grammar_term().
+GRAMMAR_TERM_SHAVIAN = {
+    'past tense': '𐑐𐑭𐑕𐑑 𐑑𐑧𐑯𐑕',
+    'present participle': '𐑐𐑮𐑧𐑟𐑩𐑯𐑑 𐑐𐑸𐑑𐑦𐑕𐑦𐑐𐑩𐑤',
+    'past participle': '𐑐𐑭𐑕𐑑 𐑐𐑸𐑑𐑦𐑕𐑦𐑐𐑩𐑤',
+    'third person singular': '𐑔𐑻𐑛 𐑐𐑻𐑕𐑩𐑯 𐑕𐑦𐑙𐑜𐑘𐑫𐑤𐑼',
+    'plural': '𐑐𐑤𐑫𐑼𐑩𐑤',
+    'comparative': '𐑒𐑩𐑥𐑐𐑨𐑮𐑩𐑑𐑦𐑝',
+    'superlative': '𐑕𐑵𐑐𐑻𐑤𐑩𐑑𐑦𐑝',
+}
+
+
+def translate_grammar_term(term, shavian_lookup):
+    """Translate a grammar-form label to Shavian.
+
+    Tries the hard-coded GRAMMAR_TERM_SHAVIAN map first (handles multi-word
+    terms like 'past tense' whose individual words may not translate cleanly),
+    then falls back to the main lookup.
+    """
+    if not term:
+        return term
+    if term in GRAMMAR_TERM_SHAVIAN:
+        return GRAMMAR_TERM_SHAVIAN[term]
+    return translate_to_shavian(term, shavian_lookup)
+
+
+def pos_to_form_label(pos_code):
+    """POS-derived sub-label for a derived-form line.
+
+    Returns only the grammatical specialisation (e.g. 'past tense', 'plural') —
+    not the top-level part of speech, which is already shown in the definitions
+    heading. Returns empty string for lemma-like tags (infinitive / base form /
+    bare singular), since those add no information over the headword.
+    """
+    if not pos_code:
+        return ''
+    if '+' in pos_code:
+        # Composite tag — pick the first meaningful sub-label
+        for p in pos_code.split('+'):
+            label = pos_to_form_label(p)
+            if label:
+                return label
+        return ''
+
+    form_map = {
+        # Verbs — main verb
+        'VVD': 'past tense',
+        'VVG': 'present participle',
+        'VVN': 'past participle',
+        'VVZ': 'third person singular',
+        # Nouns
+        'NN2': 'plural',
+        # Adjectives
+        'AJC': 'comparative',
+        'AJS': 'superlative',
+    }
+    return form_map.get(pos_code, '')
 
 
 def wordnet_pos_to_label(pos_code):
@@ -1214,11 +1367,30 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
                             else:
                                 lemma_forms_indices.add(form_index)
+
+                            # Derived noun forms: plural + possessive variants.
+                            # Bare and namer-dotted stems both seed indices so the
+                            # entry is findable from either spelling convention.
+                            for stem in (form_index, add_namer_dot_if_proper_noun(form_index, form['pos'])):
+                                lemma_forms_indices.update(
+                                    derive_shavian_noun_indices(stem, form['pos'])
+                                )
                         else:
                             # For Latin, add both lowercase and capitalized versions for proper nouns
                             lemma_forms_indices.add(form_index)  # lowercase version
                             if is_proper_noun(form['pos']):
                                 lemma_forms_indices.add(form_index.capitalize())
+
+                            # Derived Latin noun forms (plural + possessives).
+                            # Uses the Shavian as a phonemic oracle for the sibilant
+                            # decision, so 'box' (𐑚𐑪𐑒𐑕) → 'boxes' lands correctly.
+                            derived_latin = derive_latin_noun_indices(
+                                form_index, form.get('shaw', ''), form['pos']
+                            )
+                            lemma_forms_indices.update(derived_latin)
+                            if is_proper_noun(form['pos']):
+                                for d in derived_latin:
+                                    lemma_forms_indices.add(d.capitalize())
 
                     # Add foreign dialect forms as cross-references
                     # E.g., in GB dictionary, add "color" indices pointing to "colour" entry
@@ -1234,10 +1406,21 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                         lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
                                     else:
                                         lemma_forms_indices.add(form_index)
+                                    for stem in (form_index, add_namer_dot_if_proper_noun(form_index, form['pos'])):
+                                        lemma_forms_indices.update(
+                                            derive_shavian_noun_indices(stem, form['pos'])
+                                        )
                                 else:
                                     lemma_forms_indices.add(form_index)
                                     if is_proper_noun(form['pos']):
                                         lemma_forms_indices.add(form_index.capitalize())
+                                    derived_latin = derive_latin_noun_indices(
+                                        form_index, form.get('shaw', ''), form['pos']
+                                    )
+                                    lemma_forms_indices.update(derived_latin)
+                                    if is_proper_noun(form['pos']):
+                                        for d in derived_latin:
+                                            lemma_forms_indices.add(d.capitalize())
 
                     # Write entry for this readlex key
                     entry_id = f"{config['index_key']}_{index_word}_{entry_idx}"
@@ -1355,12 +1538,14 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             f.write(escape(home_display_text))
                             f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
 
-                            # Display POS label if available
-                            pos_label_text = pos_to_readable(home_form.get('pos', ''))
-                            if pos_label_text:
+                            # Display grammatical form sub-label (e.g. "past tense",
+                            # "plural"). Empty for lemma-like POS tags so the main
+                            # headword isn't cluttered with "singular"/"infinitive".
+                            form_label_text = pos_to_form_label(home_form.get('pos', ''))
+                            if form_label_text:
                                 if config['translate_labels']:
-                                    pos_label_text = translate_to_shavian(pos_label_text, shavian_lookup)
-                                f.write(f' <i>{escape(pos_label_text)}</i>')
+                                    form_label_text = translate_grammar_term(form_label_text, shavian_lookup)
+                                f.write(f' <span class="form-label">{escape(form_label_text)}</span>')
 
                             # Look up alternate dialect spellings from WordNet cache
                             # E.g., in GB dict for "colour", find "color" from cache variants
@@ -1497,12 +1682,12 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             f.write(escape(alt_display_text))
                             f.write(f' <span class="ipa">/{alt_form["ipa"]}/</span>')
 
-                            # Display POS label if available
-                            pos_label_text = pos_to_readable(alt_form.get('pos', ''))
-                            if pos_label_text:
+                            # Display grammatical form sub-label (see home-form branch above)
+                            form_label_text = pos_to_form_label(alt_form.get('pos', ''))
+                            if form_label_text:
                                 if config['translate_labels']:
-                                    pos_label_text = translate_to_shavian(pos_label_text, shavian_lookup)
-                                f.write(f' <i>{escape(pos_label_text)}</i>')
+                                    form_label_text = translate_grammar_term(form_label_text, shavian_lookup)
+                                f.write(f' <span class="form-label">{escape(form_label_text)}</span>')
 
                             if alt_form.get('var') != 'TrapBath':
                                 f.write(f' <span class="variant">({alt_dialect})</span>')

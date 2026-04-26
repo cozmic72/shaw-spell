@@ -116,7 +116,6 @@ def apply_manual_overrides(merged, manual_rows, source_label="manual"):
         var = row.get("var_override") or row.get("var") or "RRP"
         shaw = row.get("shaw_override") or row["shaw"]
         ipa = row.get("ipa_override") or row.get("ipa", "")
-        notes = row.get("notes", "")
 
         slot = (word.lower(), pos, var)
 
@@ -149,8 +148,6 @@ def apply_manual_overrides(merged, manual_rows, source_label="manual"):
             "source": source_label,
             "status": source_label,
         }
-        if notes:
-            manual_entry["review"] = notes
 
         merged_key = f"{word}_{pos}_{shaw}"
         if merged_key in merged:
@@ -293,11 +290,6 @@ def main():
                     "source": source_name,
                     "status": "supplement",
                 }
-
-                # Include review notes if present
-                review = entry.get("review", "")
-                if review:
-                    merged_entry["review"] = review
 
                 # Build key matching ReadLex convention
                 merged_key = f"{word}_{pos}_{shaw}"

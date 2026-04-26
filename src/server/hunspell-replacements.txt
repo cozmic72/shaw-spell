@@ -1,30 +1,49 @@
-# Common spelling error corrections for Shavian
-# REP table: defines common misspellings and their corrections
-# Format: REP <wrong> <correct>
+# Hunspell REP table for Shavian spell-checking.
 #
-# Vowel substitutions are the most common errors in Shavian.
-# Each pair goes both ways (wrong→correct and correct→wrong).
+# Two classes of rules below:
+#
+# 1. Bidirectional vowel/consonant swaps — common typos a user might make
+#    by picking the "wrong" letter of a phonetically-similar pair. Listed
+#    in both directions so either wrong→right or right→wrong can fire.
+#
+# 2. Always-wrong compound-letter decompositions. Shavian's six compound
+#    letters (𐑸 𐑹 𐑺 𐑻 𐑼 𐑽 𐑿) are never correctly spelled as their
+#    component sequence; these REPs nudge suggestions back to the
+#    compound form. Directional (wrong→right only).
+#
+# See also: PH_RULES in generate_spellcheck.py for the suggestion-ranking
+# rules (happy-tensing, cot-caught, trap-bath, etc.) that go into the
+# .dic via ph: annotations rather than the .aff.
 
-REP 14
-REP 𐑦 𐑰  # kit ↔ fleece (short vs long i)
+REP 27
+
+# --- Bidirectional vowel/consonant swaps ---
+REP 𐑦 𐑰   # kit ↔ fleece
 REP 𐑰 𐑦
-REP 𐑧 𐑱  # dress ↔ face (short e vs long a)
+REP 𐑧 𐑱   # dress ↔ face
 REP 𐑱 𐑧
-REP 𐑨 𐑭  # trap ↔ palm/bath (short vs long a)
+REP 𐑨 𐑭   # trap ↔ palm/bath
 REP 𐑭 𐑨
-REP 𐑩 𐑳  # comma ↔ strut (schwa vs short u)
+REP 𐑩 𐑳   # comma ↔ strut
 REP 𐑳 𐑩
-REP 𐑪 𐑷  # lot ↔ thought (short o vs long aw)
+REP 𐑪 𐑷   # lot ↔ thought
 REP 𐑷 𐑪
-REP 𐑫 𐑵  # foot ↔ goose (short vs long u)
+REP 𐑫 𐑵   # foot ↔ goose
 REP 𐑵 𐑫
-REP 𐑬 𐑶  # price ↔ choice (different diphthongs)
+REP 𐑬 𐑶   # price ↔ choice
 REP 𐑶 𐑬
-REP 𐑣 𐑙
-REP 𐑙 𐑙
-REP 𐑔 𐑞
+REP 𐑔 𐑞   # thigh ↔ they
 REP 𐑞 𐑔
-REP 𐑑 𐑛
+REP 𐑑 𐑛   # tot ↔ dead
 REP 𐑛 𐑑
-REP 𐑕 𐑟
+REP 𐑕 𐑟   # so ↔ zoo
 REP 𐑟 𐑕
+
+# --- Always-wrong compound-letter decompositions (directional) ---
+REP 𐑩𐑮 𐑼   # ARRAY / lettER — only exception is "infrared"
+REP 𐑭𐑮 𐑸   # ARE / START
+REP 𐑷𐑮 𐑹   # OR / NORTH-FORCE
+REP 𐑾𐑮 𐑽   # EAR
+REP 𐑵𐑮 𐑫𐑼  # CURE (not GOOSE + R — Shavian has no 𐑵𐑮 sequence)
+REP 𐑘𐑵 𐑿   # YEW — 𐑘𐑵 is never valid
+REP 𐑿𐑼 𐑘𐑹  # "your"-type CURE-after-yod: canonically 𐑘𐑹

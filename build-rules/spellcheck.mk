@@ -19,7 +19,7 @@ HUNSPELL_FILES = $(HUNSPELL_GB) $(BUILD_HUNSPELL)/io.joro.shaw-spell.shavian-gb.
 
 # Shavian Hunspell dictionaries (both GB and US generated together)
 # Pick GB .dic as canonical target, others depend on it
-$(HUNSPELL_GB): $(READLEX_PATH) $(SRC_SERVER)/generate_spellcheck.py | $(BUILD_HUNSPELL)
+$(HUNSPELL_GB): $(READLEX_PATH) $(SRC_SERVER)/generate_spellcheck.py $(SRC_SERVER)/hunspell-replacements.txt | $(BUILD_HUNSPELL)
 	@echo "Generating Shavian Hunspell dictionaries..."
 	@# Script currently writes to build/ - need to update it to write to BUILD_HUNSPELL
 	@# For now, generate to build/ and move

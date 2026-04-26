@@ -23,11 +23,13 @@ TEMP_DMG="${OUTPUT_DMG%.dmg}-temp.dmg"
 rm -f "$TEMP_DMG" "$OUTPUT_DMG"
 
 # Create empty DMG (500MB should be plenty for dictionaries)
+# NOTE: -fs HFS+ currently fails on this machine's hdiutil — it produces an
+# image with no mountable filesystem. APFS works; it needs macOS 10.13+.
 echo "Creating empty DMG..."
 hdiutil create \
     -volname "$VOLUME_NAME" \
     -size 500m \
-    -fs HFS+ \
+    -fs APFS \
     -type UDIF \
     "$TEMP_DMG"
 

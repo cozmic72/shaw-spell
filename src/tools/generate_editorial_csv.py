@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Generate editorial TSV files for reviewing supplement entries against ReadLex.
+Generate editorial CSV files for reviewing supplement entries against ReadLex.
 
-Appends new entries to existing editorial.tsv, preserving all previous verdicts
+Appends new entries to existing editorial.csv, preserving all previous verdicts
 and overrides. Run this after updating supplement data to pick up new entries.
 
 Outputs:
-  data/editorial.tsv            — entries needing editorial review (collapsed across dialects)
-  data/editorial-duplicates.tsv — entries that match ReadLex (word, shaw)
-  data/editorial-drops.tsv      — fragments, affixes, and other rejects
-  data/readlex-reference.tsv    — all ReadLex entries for reference
+  data/editorial.csv            — entries needing editorial review (collapsed across dialects)
+  data/editorial-duplicates.csv — entries that match ReadLex (word, shaw)
+  data/editorial-drops.csv      — fragments, affixes, and other rejects
+  data/readlex-reference.tsv    — all ReadLex entries for reference (still TSV)
 
 See data/README.md for column reference and workflow documentation.
 
 Usage:
-    python3 src/tools/generate_editorial_tsv.py           # append new entries
-    python3 src/tools/generate_editorial_tsv.py --rebuild  # regenerate from scratch
+    python3 src/tools/generate_editorial_csv.py           # append new entries
+    python3 src/tools/generate_editorial_csv.py --rebuild  # regenerate from scratch
 """
 
 import csv
@@ -32,9 +32,9 @@ SUPPLEMENTS = [
     ("wiktionary", PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json"),
 ]
 
-EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.tsv"
-DUPLICATES_PATH = PROJECT_ROOT / "data" / "editorial-duplicates.tsv"
-DROPS_PATH = PROJECT_ROOT / "data" / "editorial-drops.tsv"
+EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.csv"
+DUPLICATES_PATH = PROJECT_ROOT / "data" / "editorial-duplicates.csv"
+DROPS_PATH = PROJECT_ROOT / "data" / "editorial-drops.csv"
 REFERENCE_PATH = PROJECT_ROOT / "data" / "readlex-reference.tsv"
 
 COLUMNS = [
@@ -60,71 +60,53 @@ def classify_status(word, shaw, readlex_words):
     return "new"  # word not in ReadLex at all
 
 
-def sanitize_field(value):
-    """Replace tabs and newlines in field values."""
-    if isinstance(value, str):
-        return value.replace("\t", " ").replace("\n", " ").replace("\r", "")
-    return value
-
-
-def format_tsv_field(value):
-    """Format a field for TSV output, quoting if necessary (Numbers-compatible)."""
-    val = str(sanitize_field(value))
-    if '"' in val:
-        val = '"' + val.replace('"', '""') + '"'
-    elif ',' in val:
-        val = '"' + val + '"'
-    return val
+def write_csv(path, columns, rows):
+    """Write rows to a CSV file with minimal quoting (lossless)."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=columns, quoting=csv.QUOTE_MINIMAL,
+                                lineterminator="\n", extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({col: str(row.get(col, "")) for col in columns})
 
 
 def write_tsv(path, columns, rows):
-    """Write rows to a TSV file in Apple Numbers-compatible format (CRLF, no trailing newline)."""
-    with open(path, "wb") as f:
-        lines = ["\t".join(columns)]
+    """Write rows to a TSV file (used for the readlex-reference dump only)."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=columns, delimiter="\t",
+                                quoting=csv.QUOTE_MINIMAL, lineterminator="\n",
+                                extrasaction="ignore")
+        writer.writeheader()
         for row in rows:
-            lines.append("\t".join(format_tsv_field(row[col]) for col in columns))
-        f.write("\r\n".join(lines).encode("utf-8"))
+            writer.writerow({col: str(row.get(col, "")) for col in columns})
 
 
 def read_existing_editorial(path):
-    """Read an existing editorial TSV, returning rows and a set of identity keys."""
+    """Read an existing editorial CSV, returning rows and a set of identity keys."""
     rows = []
     keys = set()
     if not path.exists():
         return rows, keys
 
     with open(path, "r", encoding="utf-8", newline="") as f:
-        content = f.read()
-    # Handle CRLF
-    lines = content.split("\n")
-    if not lines:
-        return rows, keys
-
-    reader = csv.DictReader(lines, delimiter="\t")
-    for row in reader:
-        # Strip CRLF artifacts from values
-        cleaned = {}
-        for k, v in row.items():
-            if k is None:
-                continue
-            k = k.strip().rstrip("\r")
-            cleaned[k] = v.strip().rstrip("\r") if v else ""
-        # Ensure all columns present
-        for col in COLUMNS:
-            if col not in cleaned:
-                cleaned[col] = ""
-        rows.append(cleaned)
-        # Identity key: (word_lower, pos, shaw) — var excluded because collapsing changes it
-        identity = (cleaned["word"].lower(), cleaned["pos"], cleaned["shaw"])
-        keys.add(identity)
+        reader = csv.DictReader(f)
+        for row in reader:
+            cleaned = {(k or "").strip(): (v or "").strip() for k, v in row.items() if k is not None}
+            for col in COLUMNS:
+                if col not in cleaned:
+                    cleaned[col] = ""
+            rows.append(cleaned)
+            # Identity key: (word_lower, pos, shaw) — var excluded because collapsing changes it
+            identity = (cleaned["word"].lower(), cleaned["pos"], cleaned["shaw"])
+            keys.add(identity)
 
     return rows, keys
 
 
 def generate_editorial(rebuild=False):
-    """Generate editorial TSV files from supplement data.
+    """Generate editorial CSV files from supplement data.
 
-    In append mode (default), reads existing editorial.tsv and only adds
+    In append mode (default), reads existing editorial.csv and only adds
     entries not already present. All existing verdicts/overrides are preserved.
 
     In rebuild mode (--rebuild), regenerates from scratch.
@@ -295,12 +277,12 @@ def generate_editorial(rebuild=False):
     all_duplicates.sort(key=sort_key)
     all_drops.sort(key=sort_key)
 
-    write_tsv(EDITORIAL_PATH, COLUMNS, all_editorial)
-    write_tsv(DUPLICATES_PATH, COLUMNS, all_duplicates)
-    write_tsv(DROPS_PATH, COLUMNS, all_drops)
+    write_csv(EDITORIAL_PATH, COLUMNS, all_editorial)
+    write_csv(DUPLICATES_PATH, COLUMNS, all_duplicates)
+    write_csv(DROPS_PATH, COLUMNS, all_drops)
 
     # Stats
-    print(f"\n=== editorial.tsv ===")
+    print(f"\n=== editorial.csv ===")
     print(f"Total rows: {len(all_editorial):,}")
     verdict_counts = defaultdict(int)
     status_counts = defaultdict(int)
@@ -315,10 +297,10 @@ def generate_editorial(rebuild=False):
     for v in sorted(verdict_counts):
         print(f"  {v:20s} {verdict_counts[v]:,}")
 
-    print(f"\n=== editorial-duplicates.tsv ===")
+    print(f"\n=== editorial-duplicates.csv ===")
     print(f"Total rows: {len(all_duplicates):,}")
 
-    print(f"\n=== editorial-drops.tsv ===")
+    print(f"\n=== editorial-drops.csv ===")
     print(f"Total rows: {len(all_drops):,}")
 
     return all_editorial

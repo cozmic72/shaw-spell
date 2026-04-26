@@ -2,15 +2,15 @@
 
 ## Editorial Process
 
-The editorial process reviews all supplement entries before they are merged into `readlex.json`. It produces four TSV files, all in Apple Numbers-compatible format (CRLF line endings, minimal quoting).
+The editorial process reviews all supplement entries before they are merged into `readlex.json`. It produces four files: the editorial-* ones are CSV (LF line endings, minimal quoting — RFC 4180 with Unix newlines), the readlex-reference dump is TSV.
 
 ### Files
 
 | File | Purpose | Editable? |
 |------|---------|-----------|
-| `editorial.tsv` | Entries needing editorial review | Yes — this is the working file |
-| `editorial-duplicates.tsv` | Entries matching ReadLex (word, shaw) | Reference only |
-| `editorial-drops.tsv` | Fragments, affixes, other rejects | Recoverable — move rows to editorial.tsv if wanted |
+| `editorial.csv` | Entries needing editorial review | Yes — this is the working file |
+| `editorial-duplicates.csv` | Entries matching ReadLex (word, shaw) | Reference only |
+| `editorial-drops.csv` | Fragments, affixes, other rejects | Recoverable — move rows to editorial.csv if wanted |
 | `readlex-reference.tsv` | All upstream ReadLex entries | Reference only |
 
 ### Column Reference
@@ -54,7 +54,7 @@ Set during editorial review. Determines what happens to the entry in the final b
 | `keep` | Canonical entry — this is the preferred spelling |
 | `supplemental` | Accepted alternative — valid spelling, not the preferred one |
 | `drop` | Reject — do not include |
-| `duplicate` | Matches upstream ReadLex exactly (editorial-duplicates.tsv only) |
+| `duplicate` | Matches upstream ReadLex exactly (editorial-duplicates.csv only) |
 
 ### Dialect Collapsing
 
@@ -62,12 +62,12 @@ When RSSB and GenAm entries produce the same Shavian spelling for a word, they a
 
 ### Workflow
 
-1. **Generate**: `python3 src/tools/generate_editorial_tsv.py` creates/appends to the TSV files
-2. **Review**: Open `editorial.tsv` in Numbers. Filter by `status`, `confidence`, `source`, etc. Fill in `verdict` and any overrides
-3. **Export**: Export from Numbers back to TSV (UTF-8)
-4. **Build**: `generate_merged_readlex.py` reads the editorial TSV and applies verdicts when merging into `readlex.json`
+1. **Generate**: `python3 src/tools/generate_editorial_csv.py` creates/appends to the CSV files
+2. **Review**: Open `editorial.csv` in Numbers (or any IDE / spreadsheet). Filter by `status`, `confidence`, `source`, etc. Fill in `verdict` and any overrides
+3. **Export**: Save back as CSV (UTF-8)
+4. **Build**: `generate_merged_readlex.py` reads the editorial CSV and applies verdicts when merging into `readlex.json`
 
-New entries from updated data sources are appended to the existing editorial.tsv, preserving all previous verdicts.
+New entries from updated data sources are appended to the existing editorial.csv, preserving all previous verdicts.
 
 ### Override columns
 
@@ -81,7 +81,7 @@ This lets you fix IPA-to-Shavian conversion errors, reassign POS tags, or change
 
 ### Recovering drops
 
-The `editorial-drops.tsv` file contains fragments and affixes pre-tagged with `verdict=drop`. If any of these are actually useful (e.g. a fragment that captures a valid alternative pronunciation), copy the row into `editorial.tsv` and change the verdict.
+The `editorial-drops.csv` file contains fragments and affixes pre-tagged with `verdict=drop`. If any of these are actually useful (e.g. a fragment that captures a valid alternative pronunciation), copy the row into `editorial.csv` and change the verdict.
 
 ## Other Data Files
 

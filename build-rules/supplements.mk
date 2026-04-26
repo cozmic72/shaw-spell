@@ -49,8 +49,8 @@ $(READLEX_PATH): $(SRC_TOOLS)/generate_merged_readlex.py external/readlex/readle
 
 .PHONY: editorial
 editorial: $(SUPPLEMENT_DEPS)
-	@echo "Updating editorial TSV files..."
-	$(RUN) python3 $(SRC_TOOLS)/generate_editorial_tsv.py
+	@echo "Updating editorial CSV files..."
+	$(RUN) python3 $(SRC_TOOLS)/generate_editorial_csv.py
 
 ###########################################
 # Wiktionary definitions

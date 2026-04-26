@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Regenerate data/editorial-pos-gaps.tsv from current supplement + ReadLex state.
+Regenerate data/editorial-pos-gaps.csv from current supplement + ReadLex state.
 
 Re-runs the gap analysis (a word in ReadLex with POS-tags missing that
 supplements can fill) and preserves any verdict/overrides/notes from the
-existing editorial-pos-gaps.tsv via (word_lower, pos, var) key.
+existing editorial-pos-gaps.csv via (word_lower, pos, var) key.
 
 Usage:
     python3 src/tools/regenerate_pos_gaps.py
@@ -18,7 +18,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 READLEX_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
-POS_GAPS_PATH = PROJECT_ROOT / "data" / "editorial-pos-gaps.tsv"
+POS_GAPS_PATH = PROJECT_ROOT / "data" / "editorial-pos-gaps.csv"
 SUPPLEMENTS = [
     ("wordnet",    PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
     ("wiktionary", PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json"),
@@ -35,34 +35,19 @@ PRESERVED_FIELDS = [
 ]
 
 
-def format_field(val):
-    s = str(val).replace("\t", " ").replace("\n", " ").replace("\r", "")
-    if '"' in s:
-        s = '"' + s.replace('"', '""') + '"'
-    elif "," in s:
-        s = '"' + s + '"'
-    return s
-
-
 def load_existing(path: Path) -> dict[tuple, dict]:
     """Index existing pos-gaps rows by (word_lower, pos, var) → row."""
     if not path.exists():
         return {}
-    with open(path, "rb") as f:
-        content = f.read().decode("utf-8")
-    lines = content.split("\n")
-    reader = csv.DictReader(lines, delimiter="\t")
     index: dict[tuple, dict] = {}
-    for row in reader:
-        cleaned = {}
-        for k, v in row.items():
-            if k is None:
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            cleaned = {(k or "").strip(): (v or "").strip() for k, v in row.items() if k is not None}
+            if not cleaned.get("word"):
                 continue
-            cleaned[k.strip().rstrip("\r")] = v.strip().rstrip("\r") if v else ""
-        if not cleaned.get("word"):
-            continue
-        key = (cleaned["word"].lower(), cleaned["pos"], cleaned["var"])
-        index[key] = cleaned
+            key = (cleaned["word"].lower(), cleaned["pos"], cleaned["var"])
+            index[key] = cleaned
     return index
 
 
@@ -221,11 +206,12 @@ def main():
 
     rows.sort(key=lambda r: (r["word"].lower(), r["pos"], r["shaw"]))
 
-    out_lines = ["\t".join(COLUMNS)]
-    for r in rows:
-        out_lines.append("\t".join(format_field(r.get(c, "")) for c in COLUMNS))
-    with open(POS_GAPS_PATH, "wb") as f:
-        f.write("\r\n".join(out_lines).encode("utf-8"))
+    with open(POS_GAPS_PATH, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL,
+                                lineterminator="\n", extrasaction="ignore")
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({c: str(r.get(c, "")) for c in COLUMNS})
 
     print(f"Wrote {POS_GAPS_PATH}: {len(rows):,} rows")
     print(f"  Preserved edits from prior version: {preserved:,}")

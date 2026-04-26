@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Left-join existing editorial.tsv edits onto a freshly-generated editorial.tsv.
+Left-join existing editorial.csv edits onto a freshly-generated editorial.csv.
 
-Used after regenerating editorial.tsv from updated supplement data. Preserves
+Used after regenerating editorial.csv from updated supplement data. Preserves
 the user's verdict, shaw_override/pos_override/var_override/ipa_override, and
 (for verdicted rows) notes. Also emits an audit file listing rows where the
 regenerated shaw or ipa differs from the version the user originally reviewed.
 
 Usage:
     python3 src/tools/merge_editorial_edits.py \
-        --old data/editorial-preregen.tsv \
-        --new data/editorial.tsv \
-        --audit data/editorial-review-changes.tsv
+        --old data/editorial-preregen.csv \
+        --new data/editorial.csv \
+        --audit data/editorial-review-changes.csv
 """
 
 import argparse
@@ -31,50 +31,36 @@ PRESERVED_FIELDS = [
 ]
 
 
-def read_tsv(path: Path) -> list[dict]:
-    """Read a TSV into a list of clean dicts, tolerating CRLF."""
-    with open(path, "rb") as f:
-        content = f.read().decode("utf-8")
-    lines = content.split("\n")
-    reader = csv.DictReader(lines, delimiter="\t")
+def read_csv(path: Path) -> list[dict]:
+    """Read a CSV into a list of clean dicts."""
     rows = []
-    for row in reader:
-        cleaned = {}
-        for k, v in row.items():
-            if k is None:
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            cleaned = {(k or "").strip(): (v or "").strip() for k, v in row.items() if k is not None}
+            if not cleaned.get("word"):
                 continue
-            k = k.strip().rstrip("\r")
-            cleaned[k] = v.strip().rstrip("\r") if v else ""
-        if not cleaned.get("word"):
-            continue
-        for c in COLUMNS:
-            if c not in cleaned:
-                cleaned[c] = ""
-        rows.append(cleaned)
+            for c in COLUMNS:
+                if c not in cleaned:
+                    cleaned[c] = ""
+            rows.append(cleaned)
     return rows
 
 
-def format_field(val):
-    s = str(val).replace("\t", " ").replace("\n", " ").replace("\r", "")
-    if '"' in s:
-        s = '"' + s.replace('"', '""') + '"'
-    elif "," in s:
-        s = '"' + s + '"'
-    return s
-
-
-def write_tsv(path: Path, rows: list[dict]):
-    out_lines = ["\t".join(COLUMNS)]
-    for r in rows:
-        out_lines.append("\t".join(format_field(r.get(c, "")) for c in COLUMNS))
-    with open(path, "wb") as f:
-        f.write("\r\n".join(out_lines).encode("utf-8"))
+def write_csv(path: Path, rows: list[dict], columns: list[str] = COLUMNS):
+    """Write CSV with minimal quoting (lossless — preserves embedded commas/newlines)."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=columns, quoting=csv.QUOTE_MINIMAL,
+                                lineterminator="\n", extrasaction="ignore")
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({c: str(r.get(c, "")) for c in columns})
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--old", required=True, help="editorial.tsv BEFORE regeneration (the user's edits)")
-    ap.add_argument("--new", required=True, help="editorial.tsv AFTER regeneration (fresh from supplements)")
+    ap.add_argument("--old", required=True, help="editorial.csv BEFORE regeneration (the user's edits)")
+    ap.add_argument("--new", required=True, help="editorial.csv AFTER regeneration (fresh from supplements)")
     ap.add_argument("--audit", required=True, help="where to write the audit file for changed rows")
     args = ap.parse_args()
 
@@ -83,11 +69,11 @@ def main():
     audit_path = Path(args.audit)
 
     print(f"Reading old (pre-regen): {old_path}")
-    old_rows = read_tsv(old_path)
+    old_rows = read_csv(old_path)
     print(f"  {len(old_rows):,} rows")
 
     print(f"Reading new (post-regen): {new_path}")
-    new_rows = read_tsv(new_path)
+    new_rows = read_csv(new_path)
     print(f"  {len(new_rows):,} rows")
 
     # Index old rows by (word_lower, pos, var) — survives shaw/ipa changes
@@ -204,8 +190,8 @@ def main():
         if id(r) not in matched_ids:
             lost_verdicts.append(r)
 
-    # Write the merged new.tsv back in place
-    write_tsv(new_path, new_rows)
+    # Write the merged new.csv back in place
+    write_csv(new_path, new_rows)
     print(f"Wrote merged {new_path}")
     print(f"  Preserved decisions:     {preserved:,}")
     print(f"  Shaw changed under edit: {changed_shaw:,}")
@@ -214,17 +200,16 @@ def main():
 
     # Write audit
     audit_cols = ["word","pos","var","verdict","old_shaw","new_shaw","old_ipa","new_ipa","shaw_override","ipa_override","notes"]
-    with open(audit_path, "wb") as f:
-        f.write("\t".join(audit_cols).encode("utf-8"))
-        f.write(b"\r\n")
+    with open(audit_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
+        writer.writerow(audit_cols)
         for r in audit_rows:
-            f.write("\t".join(format_field(r.get(c, "")) for c in audit_cols).encode("utf-8"))
-            f.write(b"\r\n")
-        # Also dump lost verdicts as a second section (prefix with #)
+            writer.writerow([str(r.get(c, "")) for c in audit_cols])
+        # Lost verdicts as a second section, separated by a comment row.
         if lost_verdicts:
-            f.write("\r\n# LOST VERDICTS - existed in pre-regen with a verdict but not in post-regen\r\n".encode("utf-8"))
-            f.write("\t".join(audit_cols).encode("utf-8"))
-            f.write(b"\r\n")
+            writer.writerow([])
+            writer.writerow(["# LOST VERDICTS - existed in pre-regen with a verdict but not in post-regen"])
+            writer.writerow(audit_cols)
             for r in lost_verdicts:
                 lost_row = {
                     "word": r["word"], "pos": r["pos"], "var": r["var"],
@@ -235,8 +220,7 @@ def main():
                     "ipa_override": r.get("ipa_override",""),
                     "notes": r.get("notes",""),
                 }
-                f.write("\t".join(format_field(lost_row.get(c, "")) for c in audit_cols).encode("utf-8"))
-                f.write(b"\r\n")
+                writer.writerow([str(lost_row.get(c, "")) for c in audit_cols])
     print(f"Wrote audit: {audit_path}")
     print(f"  Rows where reviewed shaw/ipa differs from post-regen: {len(audit_rows):,}")
     print(f"  Lost verdicts:                                        {len(lost_verdicts):,}")

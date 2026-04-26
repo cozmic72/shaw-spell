@@ -3,9 +3,9 @@
 Generate a merged readlex.json that includes the original ReadLex entries
 plus editorially approved supplement entries.
 
-When an editorial.tsv exists, only entries with verdict "keep" or "supplemental"
+When an editorial.csv exists, only entries with verdict "keep" or "supplemental"
 are included. Override columns (shaw_override, pos_override, var_override) are
-applied. When no editorial.tsv exists, falls back to confidence-based filtering.
+applied. When no editorial.csv exists, falls back to confidence-based filtering.
 
 Original ReadLex entries: untouched (no new fields)
 Supplement entries: tagged with source, confidence, status="supplement"
@@ -24,9 +24,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 READLEX_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex.json"
-EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.tsv"
-EDITORIAL_MANUAL_PATH = PROJECT_ROOT / "data" / "editorial-manual.tsv"
-EDITORIAL_POS_GAPS_PATH = PROJECT_ROOT / "data" / "editorial-pos-gaps.tsv"
+EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.csv"
+EDITORIAL_MANUAL_PATH = PROJECT_ROOT / "data" / "editorial-manual.csv"
+EDITORIAL_POS_GAPS_PATH = PROJECT_ROOT / "data" / "editorial-pos-gaps.csv"
 
 SUPPLEMENTS = [
     ("wordnet", PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
@@ -35,42 +35,31 @@ SUPPLEMENTS = [
 
 
 def load_editorial():
-    """Load editorial verdicts from TSV. Returns dict keyed by (word_lower, pos, shaw)."""
+    """Load editorial verdicts from CSV. Returns dict keyed by (word_lower, pos, shaw)."""
     if not EDITORIAL_PATH.exists():
         return None
 
     editorial = {}
     with open(EDITORIAL_PATH, "r", encoding="utf-8", newline="") as f:
-        content = f.read()
-    lines = content.split("\n")
-    reader = csv.DictReader(lines, delimiter="\t")
-    for row in reader:
-        # Clean CRLF artifacts
-        cleaned = {}
-        for k, v in row.items():
-            if k is None:
-                continue
-            k = k.strip().rstrip("\r")
-            cleaned[k] = v.strip().rstrip("\r") if v else ""
-
-        word = cleaned.get("word", "")
-        pos = cleaned.get("pos", "")
-        shaw = cleaned.get("shaw", "")
-        key = (word.lower(), pos, shaw)
-
-        editorial[key] = {
-            "verdict": cleaned.get("verdict", ""),
-            "shaw_override": cleaned.get("shaw_override", ""),
-            "pos_override": cleaned.get("pos_override", ""),
-            "var_override": cleaned.get("var_override", ""),
-            "ipa_override": cleaned.get("ipa_override", ""),
-        }
+        reader = csv.DictReader(f)
+        for row in reader:
+            cleaned = {(k or "").strip(): (v or "").strip() for k, v in row.items() if k is not None}
+            word = cleaned.get("word", "")
+            pos = cleaned.get("pos", "")
+            shaw = cleaned.get("shaw", "")
+            editorial[(word.lower(), pos, shaw)] = {
+                "verdict": cleaned.get("verdict", ""),
+                "shaw_override": cleaned.get("shaw_override", ""),
+                "pos_override": cleaned.get("pos_override", ""),
+                "var_override": cleaned.get("var_override", ""),
+                "ipa_override": cleaned.get("ipa_override", ""),
+            }
 
     return editorial
 
 
-def load_editorial_tsv(path, require_keep_verdict=False):
-    """Load editorial entries from a TSV with the standard column layout.
+def load_editorial_csv(path, require_keep_verdict=False):
+    """Load editorial entries from a CSV with the standard column layout.
 
     Returns a list of row-dicts (one per row). When require_keep_verdict is
     True, only rows with verdict == 'keep' are returned — used for the
@@ -81,21 +70,14 @@ def load_editorial_tsv(path, require_keep_verdict=False):
 
     rows = []
     with open(path, "r", encoding="utf-8", newline="") as f:
-        content = f.read()
-    lines = content.split("\n")
-    reader = csv.DictReader(lines, delimiter="\t")
-    for row in reader:
-        cleaned = {}
-        for k, v in row.items():
-            if k is None:
+        reader = csv.DictReader(f)
+        for row in reader:
+            cleaned = {(k or "").strip(): (v or "").strip() for k, v in row.items() if k is not None}
+            if not cleaned.get("word"):
                 continue
-            k = k.strip().rstrip("\r")
-            cleaned[k] = v.strip().rstrip("\r") if v else ""
-        if not cleaned.get("word"):
-            continue
-        if require_keep_verdict and cleaned.get("verdict") != "keep":
-            continue
-        rows.append(cleaned)
+            if require_keep_verdict and cleaned.get("verdict") != "keep":
+                continue
+            rows.append(cleaned)
     return rows
 
 
@@ -251,7 +233,7 @@ def main():
                 var = entry.get("var", "UNC")
                 ipa_override = ""
 
-                # Editorial filtering (when editorial.tsv exists)
+                # Editorial filtering (when editorial.csv exists)
                 if use_editorial:
                     ed_key = (word.lower(), pos, shaw)
                     ed = editorial.get(ed_key)
@@ -353,7 +335,7 @@ def main():
 
     # Apply pos-gaps (only verdict=keep rows) before manual, so manual still wins
     # on any slot collision.
-    pos_gap_rows = load_editorial_tsv(EDITORIAL_POS_GAPS_PATH, require_keep_verdict=True)
+    pos_gap_rows = load_editorial_csv(EDITORIAL_POS_GAPS_PATH, require_keep_verdict=True)
     if pos_gap_rows is not None:
         print(f"\nApplying pos-gaps from {EDITORIAL_POS_GAPS_PATH.name} "
               f"({len(pos_gap_rows):,} approved rows)...")
@@ -367,7 +349,7 @@ def main():
         print(f"\nNo pos-gaps file at {EDITORIAL_POS_GAPS_PATH} — skipping.")
 
     # Apply manual editorial overrides last so they trump everything above.
-    manual_rows = load_editorial_tsv(EDITORIAL_MANUAL_PATH)
+    manual_rows = load_editorial_csv(EDITORIAL_MANUAL_PATH)
     if manual_rows is not None:
         print(f"\nApplying manual editorial from {EDITORIAL_MANUAL_PATH.name} "
               f"({len(manual_rows):,} rows)...")

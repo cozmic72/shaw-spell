@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Deduplicate editorial.tsv in-place: collapse rows that differ only in source.
+Deduplicate editorial.csv in-place: collapse rows that differ only in source.
 
 When multiple rows share the same (word, pos, var, shaw), keeps the one with
 the most editorial content (non-blank verdict/overrides), merges sources with +.
@@ -16,7 +16,7 @@ from collections import defaultdict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.tsv"
+EDITORIAL_PATH = PROJECT_ROOT / "data" / "editorial.csv"
 
 COLUMNS = [
     "word", "pos", "var", "shaw", "ipa", "verdict",
@@ -25,24 +25,17 @@ COLUMNS = [
 ]
 
 
-def read_tsv(path):
-    """Read editorial TSV, handling CRLF."""
+def read_csv(path):
+    """Read editorial CSV."""
     rows = []
     with open(path, "r", encoding="utf-8", newline="") as f:
-        content = f.read()
-    lines = content.split("\n")
-    reader = csv.DictReader(lines, delimiter="\t")
-    for row in reader:
-        cleaned = {}
-        for k, v in row.items():
-            if k is None:
-                continue
-            k = k.strip().rstrip("\r")
-            cleaned[k] = v.strip().rstrip("\r") if v else ""
-        for col in COLUMNS:
-            if col not in cleaned:
-                cleaned[col] = ""
-        rows.append(cleaned)
+        reader = csv.DictReader(f)
+        for row in reader:
+            cleaned = {(k or "").strip(): (v or "").strip() for k, v in row.items() if k is not None}
+            for col in COLUMNS:
+                if col not in cleaned:
+                    cleaned[col] = ""
+            rows.append(cleaned)
     return rows
 
 
@@ -79,27 +72,19 @@ def merge_rows(group):
     return best
 
 
-def write_tsv(path, rows):
-    """Write TSV in Apple Numbers-compatible format."""
-    with open(path, "wb") as f:
-        lines = ["\t".join(COLUMNS)]
+def write_csv(path, rows):
+    """Write CSV with minimal quoting (lossless — preserves embedded commas/newlines)."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL,
+                                lineterminator="\n", extrasaction="ignore")
+        writer.writeheader()
         for row in rows:
-            fields = []
-            for col in COLUMNS:
-                val = str(row.get(col, ""))
-                val = val.replace("\t", " ").replace("\n", " ").replace("\r", "")
-                if '"' in val:
-                    val = '"' + val.replace('"', '""') + '"'
-                elif ',' in val:
-                    val = '"' + val + '"'
-                fields.append(val)
-            lines.append("\t".join(fields))
-        f.write("\r\n".join(lines).encode("utf-8"))
+            writer.writerow({col: str(row.get(col, "")) for col in COLUMNS})
 
 
 def main():
     print(f"Reading {EDITORIAL_PATH}...")
-    rows = read_tsv(EDITORIAL_PATH)
+    rows = read_csv(EDITORIAL_PATH)
     print(f"  {len(rows):,} rows")
 
     # Group by identity key
@@ -124,7 +109,7 @@ def main():
     print(f"  Merged {dupes_merged:,} duplicate rows")
     print(f"  {len(merged):,} rows after dedup")
 
-    write_tsv(EDITORIAL_PATH, merged)
+    write_csv(EDITORIAL_PATH, merged)
     print(f"  Written to {EDITORIAL_PATH}")
 
 

@@ -2,24 +2,25 @@
 /* Based on shaw-type styling with Inter-Alia fonts */
 
 @font-face {
-    font-family: 'Bernie Sans 0.878';
-    src: url('{{FONT_URL}}/BernieSans0.878VF.ttf') format('truetype-variations');
-    font-weight: 100 900;
-    font-stretch: 75% 125%;
+    font-family: 'Bernie Sans Beta';
+    src: url('{{FONT_URL}}/BernieSansBetaVF.woff2') format('woff2-variations');
+    font-weight: 400 700;
+    font-stretch: 67% 150%;
+    font-style: oblique -15deg 0deg;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Bernie Sans 0.878', sans-serif;
+    font-family: 'Bernie Sans Beta', sans-serif;
     /* Enable OpenType features for ZWJ ligatures everywhere */
     font-feature-settings: "calt" 1, "clig" 1, "liga" 1;
     font-variant-ligatures: contextual common-ligatures;
 }
 
 body {
-    font-family: 'Bernie Sans 0.878', sans-serif;
+    font-family: 'Bernie Sans Beta', sans-serif;
     background: linear-gradient(to bottom, #667eea 0%, #9d4268 100%);
     min-height: 100vh;
     display: flex;
@@ -102,7 +103,7 @@ h1 {
     margin: 0;
     font-size: 40px;
     font-weight: bold;
-    font-family: 'Bernie Sans 0.878', sans-serif;
+    font-family: 'Bernie Sans Beta', sans-serif;
     flex: 1;
 }
 
@@ -180,7 +181,7 @@ h1 {
     max-width: 240px;
     padding: 15px 20px;
     font-size: 20px;
-    font-family: 'Bernie Sans 0.878', sans-serif;
+    font-family: 'Bernie Sans Beta', sans-serif;
     border: 2px solid #e0e0e0;
     border-radius: 12px;
     transition: border-color 0.3s;
@@ -264,35 +265,64 @@ span.w:hover {
     font-size: 28px;
     color: #333;
     margin-bottom: 15px;
-    font-family: 'Bernie Sans 0.878', sans-serif;
+    font-family: 'Bernie Sans Beta', sans-serif;
     text-align: left;
 }
 
 .entry-container .forms {
     margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: max-content max-content 1fr;
+    column-gap: 1em;
+    row-gap: 8px;
+    align-items: baseline;
+}
+
+.entry-container .lemma-form,
+.entry-container .derived-form {
+    display: contents;
+}
+
+/* The word spans inside each form line occupy column 1.
+   .ipa occupies column 2, .form-label / .variant occupy column 3.
+   This keeps IPAs and labels vertically aligned across lemma + derived rows. */
+.entry-container .lemma-form > :first-child,
+.entry-container .derived-form > :first-child {
+    grid-column: 1;
 }
 
 .entry-container .lemma-form {
     font-size: 20px;
-    margin-bottom: 8px;
 }
 
 .entry-container .derived-form {
     font-size: 16px;
-    margin-bottom: 8px;
+}
+
+/* Indent the first column of derived-form rows without disturbing the
+   lemma indent. The grid lays them out independently per row. */
+.entry-container .derived-form > :first-child {
     margin-left: 3em;
 }
 
 .entry-container .ipa {
     color: #666;
     font-style: italic;
-    margin-left: 1em;
+    grid-column: 2;
+    margin-left: 0;
+}
+
+.entry-container .form-label {
+    color: #888;
+    font-size: 0.85em;
+    font-style: italic;
+    grid-column: 3;
 }
 
 .entry-container .variant {
     color: #888;
     font-size: 0.85em;
-    margin-left: 1em;
+    grid-column: 3;
 }
 
 .entry-container .definitions {
@@ -340,8 +370,40 @@ span.w:hover {
 .no-results {
     text-align: center;
     color: #666;
-    padding: 40px 20px;
+    padding: 40px 20px 10px;
     font-size: 16px;
+}
+
+.suggestions {
+    text-align: center;
+    padding: 0 20px 30px;
+}
+
+.suggestions-label {
+    color: #888;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.suggestions-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 14px;
+}
+
+.suggestions a.suggestion {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 18px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.suggestions a.suggestion:hover {
+    background-color: #f0f0ff;
+    text-decoration: underline;
 }
 
 
@@ -543,9 +605,24 @@ span.w:hover {
         flex-shrink: 0;
     }
 
+    /* On narrow screens, collapse the forms grid to a single column so IPA
+       and form-label wrap under the word rather than getting crushed. */
+    .entry-container .forms {
+        grid-template-columns: 1fr;
+        row-gap: 4px;
+    }
+
+    .entry-container .lemma-form > :first-child,
+    .entry-container .derived-form > :first-child,
+    .entry-container .ipa,
+    .entry-container .form-label,
     .entry-container .variant {
-        display: block;
+        grid-column: 1;
+    }
+
+    .entry-container .ipa,
+    .entry-container .form-label,
+    .entry-container .variant {
         margin-left: 3em;
-        margin-top: 4px;
     }
 }

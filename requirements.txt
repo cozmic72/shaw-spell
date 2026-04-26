@@ -1,2 +1,12 @@
 # Python dependencies for Shaw-Spell build system
 PyYAML>=6.0
+
+# Used by the web-UI backing daemon (src/site-daemon/suggestd.py). Required
+# to run the site locally via src/tools/test_site.py and on any host that
+# runs the daemon. Not needed to build the macOS installer.
+#
+# The PyPI package is `hunspell` (aka pyhunspell) — exposes HunSpell(dic, aff).
+# Requires the Hunspell system library: on macOS `brew install hunspell`
+# (plus the symlink noted in README.md); on Debian/Ubuntu `apt install
+# libhunspell-dev`.
+hunspell>=0.5.5

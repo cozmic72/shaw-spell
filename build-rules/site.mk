@@ -47,7 +47,18 @@ SITE_DATA_FILES = $(BUILD_SITE_DATA)/english-shavian-gb-index.json \
                   $(BUILD_SITE_DATA)/shavian-shavian-us-entries.json
 
 # Deploy site files to build/site (using index.cgi as representative target)
-$(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) $(shell find $(SRC_SITE) -type f 2>/dev/null) Makefile $(SRC_FONTS)/*.otf
+# Depends on:
+#   - built site data indexes (JSON)
+#   - everything under src/site (HTML, CSS, JS, CGI)
+#   - everything under src/site-daemon (suggestd.py, systemd unit)
+#   - font source files (any format)
+#   - hunspell dictionaries (bundled for the daemon)
+$(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
+                         $(shell find $(SRC_SITE) -type f 2>/dev/null) \
+                         $(shell find $(SRC_SITE_DAEMON) -type f 2>/dev/null) \
+                         $(HUNSPELL_FILES) \
+                         Makefile \
+                         $(wildcard $(SRC_FONTS)/*)
 	@echo "Deploying web frontend..."
 	$(RUN) $(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL)
 
@@ -76,8 +87,21 @@ site-tarball:
 	@echo ""
 	@echo "To deploy on Linux:"
 	@echo "  1. Extract: tar xzf shaw-spell-site-$(VERSION).tar.gz"
-	@echo "  2. Configure web server to serve site/ directory with CGI support"
-	@echo "  3. Requires: Python 3 (standard library only)"
+	@echo "  2. Configure web server to serve site/ with CGI support (index.cgi)"
+	@echo "  3. Install the backing daemon (see site/site-daemon/README.md):"
+	@echo "       sudo apt install libhunspell-dev"
+	@echo "       sudo pip3 install hunspell"
+	@echo "       sudo mkdir -p /opt/shaw-spell"
+	@echo "       sudo cp -r site/site-daemon /opt/shaw-spell/"
+	@echo "       sudo cp -r site/hunspell    /opt/shaw-spell/"
+	@echo "       sudo cp -r site/site-data   /opt/shaw-spell/"
+	@echo "       sudo cp /opt/shaw-spell/site-daemon/shaw-spell-suggestd.service \\"
+	@echo "               /etc/systemd/system/"
+	@echo "       sudo systemctl daemon-reload"
+	@echo "       sudo systemctl enable --now shaw-spell-suggestd"
+	@echo ""
+	@echo "  The CGI talks to the daemon over /run/shaw-spell/suggestd.sock."
+	@echo "  If the daemon is down, the site will return errors."
 	@echo ""
 	@echo "Configuration:"
 	@echo "  Font URL: $(FONT_URL)"

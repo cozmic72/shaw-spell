@@ -18,9 +18,11 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
     """Deploy site files with variable interpolation to output directory."""
     project_root = Path(__file__).parent.parent.parent
     site_src = project_root / 'src' / 'site'
+    site_daemon_src = project_root / 'src' / 'site-daemon'
     fonts_src = project_root / 'src' / 'fonts'
     output_path = project_root / output_dir
     data_dir = project_root / 'build' / 'site-data'
+    hunspell_dir = project_root / 'build' / 'spellcheck' / 'hunspell'
 
     # Ensure source directory exists
     if not site_src.exists():
@@ -152,23 +154,65 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
     fonts_output = output_path / 'fonts'
     fonts_output.mkdir(exist_ok=True)
 
-    for font_file in fonts_src.glob('*.otf'):
-        dest = fonts_output / font_file.name
-        shutil.copy2(font_file, dest)
-        print(f"  ✓ fonts/{font_file.name}")
-        stats['other'] += 1
+    for pattern in ('*.otf', '*.ttf', '*.woff', '*.woff2'):
+        for font_file in fonts_src.glob(pattern):
+            dest = fonts_output / font_file.name
+            shutil.copy2(font_file, dest)
+            print(f"  ✓ fonts/{font_file.name}")
+            stats['other'] += 1
 
-    # Copy data files to output
+    # Copy dictionary JSONs. These are read by the suggest daemon, not by
+    # the CGI — ops installs this directory at /opt/shaw-spell/site-data/
+    # (matching the --data-dir path in the systemd unit).
     print()
     print("Copying dictionary data files...")
-    data_output = output_path / 'data'
+    data_output = output_path / 'site-data'
     data_output.mkdir(exist_ok=True)
 
     for data_file in data_dir.glob('*.json'):
         dest = data_output / data_file.name
         shutil.copy2(data_file, dest)
-        print(f"  ✓ data/{data_file.name}")
+        print(f"  ✓ site-data/{data_file.name}")
         stats['other'] += 1
+
+    # Copy spelling-suggestion daemon sources. These live alongside the
+    # site but aren't served directly — ops installs them under
+    # /opt/shaw-spell/site-daemon/ and enables the systemd unit.
+    if site_daemon_src.exists():
+        print()
+        print("Copying suggest daemon...")
+        daemon_output = output_path / 'site-daemon'
+        daemon_output.mkdir(exist_ok=True)
+        for src_file in site_daemon_src.rglob('*'):
+            if src_file.is_file() and src_file.name != '.DS_Store':
+                rel = src_file.relative_to(site_daemon_src)
+                dest = daemon_output / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src_file, dest)
+                print(f"  ✓ site-daemon/{rel}")
+                stats['other'] += 1
+    else:
+        print()
+        print(f"Warning: {site_daemon_src} not found — skipping daemon bundle")
+
+    # Copy Hunspell dictionaries. The daemon needs these at runtime; ops
+    # installs them under /opt/shaw-spell/hunspell/ (matches the path in
+    # the systemd unit). Ship them inside the tarball so deployment is
+    # a single tar-extract.
+    if hunspell_dir.exists():
+        print()
+        print("Copying Hunspell dictionaries...")
+        hunspell_output = output_path / 'hunspell'
+        hunspell_output.mkdir(exist_ok=True)
+        for hunspell_file in hunspell_dir.iterdir():
+            if hunspell_file.suffix in ('.aff', '.dic') and hunspell_file.is_file():
+                dest = hunspell_output / hunspell_file.name
+                shutil.copy2(hunspell_file, dest)
+                print(f"  ✓ hunspell/{hunspell_file.name}")
+                stats['other'] += 1
+    else:
+        print()
+        print(f"Warning: {hunspell_dir} not found — run 'make spellcheck' first")
 
     print()
     print(f"Deployed {stats['html']} HTML files, {stats['css']} CSS files, "

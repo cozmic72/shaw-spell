@@ -1,0 +1,36 @@
+[Unit]
+Description=Shaw-Spell dictionary + spell-suggestion daemon
+Documentation=https://joro.io/
+After=network.target
+
+[Service]
+Type=simple
+# The daemon runs unprivileged. Adjust User/Group to match the web server
+# account; the socket is created with mode 0666 so any UID can connect.
+User=www-data
+Group=www-data
+
+# /run/shaw-spell is auto-created for the socket.
+RuntimeDirectory=shaw-spell
+RuntimeDirectoryMode=0755
+
+ExecStart=/usr/bin/python3 /opt/shaw-spell/site-daemon/suggestd.py \
+    --socket /run/shaw-spell/suggestd.sock \
+    --hunspell-dir /opt/shaw-spell/hunspell \
+    --data-dir /opt/shaw-spell/site-data
+
+Restart=on-failure
+RestartSec=2s
+
+# Loading 6 entry caches takes a few seconds; give it some slack before
+# systemd declares the service failed to start.
+TimeoutStartSec=60s
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/shaw-spell
+
+[Install]
+WantedBy=multi-user.target

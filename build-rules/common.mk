@@ -65,6 +65,7 @@ SRC_SERVER := src/server
 SRC_INSTALLER := src/installer
 SRC_UNINSTALLER := src/uninstaller
 SRC_SITE := src/site
+SRC_SITE_DAEMON := src/site-daemon
 SRC_TOOLS := src/tools
 SRC_FONTS := src/fonts
 SRC_IMAGES := src/images

@@ -18,11 +18,21 @@ Shaw-Spell provides dictionaries for Dictionary.app and system-wide spell checki
 xcode-select --install
 
 # Install dependencies via Homebrew
-brew install hunspell      # Spell checking library
+brew install hunspell      # Spell checking library (also needed by the web-UI daemon)
 brew install python@3      # For build scripts
 
-# Install Python dependencies
-pip3 install PyYAML
+# Homebrew installs libhunspell as libhunspell-1.7.dylib. cyhunspell (the
+# Python binding used by the web-UI daemon) hard-codes `-lhunspell`, so
+# add an unversioned symlink so it links. Production Linux hosts don't
+# need this — `apt install libhunspell-dev` already ships libhunspell.so.
+ln -sf "$(brew --prefix hunspell)/lib/libhunspell-1.7.dylib" \
+       "$(brew --prefix hunspell)/lib/libhunspell.dylib"
+
+# Install Python dependencies (PyYAML for the build system, cyhunspell for
+# the web-UI backing daemon — see src/site-daemon/README.md).
+CPPFLAGS="-I$(brew --prefix hunspell)/include/hunspell" \
+LDFLAGS="-L$(brew --prefix hunspell)/lib" \
+pip3 install -r requirements.txt
 
 # Install shave tool (for Shavian transliteration)
 # See: https://github.com/Shavian-info/shave

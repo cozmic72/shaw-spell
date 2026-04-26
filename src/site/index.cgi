@@ -1,78 +1,78 @@
 #!/usr/bin/env python3
 """
 Shaw-Spell Dictionary CGI
-Main page generator - handles both search form and results display.
+
+Thin HTTP frontend. Parses the request, asks the suggestd daemon for the
+dictionary entry (and spelling suggestions on miss), and renders the page.
+All heavy state — indexes, entry caches, Hunspell dicts — lives in the
+daemon; this script loads nothing from disk beyond its own source.
 """
 
 import json
-import sys
 import os
-from pathlib import Path
-from urllib.parse import parse_qs
+import socket
+import sys
+from urllib.parse import parse_qs, urlencode
 from http import cookies
 import html as html_module
 
 
-def load_index(dict_type, data_dir):
-    """Load the search index for a dictionary type."""
-    index_file = data_dir / f'{dict_type}-index.json'
-    if not index_file.exists():
-        return None
-    with open(index_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+# Unix socket served by suggestd. Must match the path in the systemd unit.
+DAEMON_SOCKET = os.environ.get('SHAW_SPELL_SUGGEST_SOCKET',
+                               '/run/shaw-spell/suggestd.sock')
+DAEMON_TIMEOUT_SEC = 2.0
 
 
-def load_entries(dict_type, data_dir):
-    """Load the entry cache for a dictionary type."""
-    entries_file = data_dir / f'{dict_type}-entries.json'
-    if not entries_file.exists():
-        return None
-    with open(entries_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+class DaemonError(Exception):
+    """Raised when the daemon is unreachable or returns an error. Caller
+    surfaces this to the user rather than silently papering over it."""
 
 
-def search_word(word, dict_type, data_dir):
-    """Search for a word in the specified dictionary."""
-    index = load_index(dict_type, data_dir)
-    if index is None:
-        return None
+def daemon_request(request):
+    """Send one JSON request to suggestd, return its JSON response.
 
-    # Try exact match first, then case-insensitive
-    entry_ids = index.get(word) or index.get(word.lower())
-    if not entry_ids:
-        return None
+    Raises DaemonError on any protocol or transport failure. No fallbacks —
+    if the daemon is down the page should fail fast and loud.
+    """
+    payload = (json.dumps(request, ensure_ascii=False) + '\n').encode('utf-8')
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(DAEMON_TIMEOUT_SEC)
+        sock.connect(DAEMON_SOCKET)
+        sock.sendall(payload)
+        # Daemon writes a single line then closes.
+        chunks = []
+        while True:
+            chunk = sock.recv(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        sock.close()
+    except (OSError, socket.timeout) as exc:
+        raise DaemonError(f'cannot reach suggestd: {exc}') from exc
 
-    entries = load_entries(dict_type, data_dir)
-    if entries is None:
-        return None
+    raw = b''.join(chunks).decode('utf-8').strip()
+    if not raw:
+        raise DaemonError('empty response from suggestd')
+    try:
+        response = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise DaemonError(f'malformed response: {exc}') from exc
 
-    # Collect all matching entries (for homographs)
-    entry_htmls = []
-    for entry_id in entry_ids:
-        entry_html = entries.get(entry_id)
-        if entry_html:
-            entry_htmls.append(entry_html)
-
-    if not entry_htmls:
-        return None
-
-    # Concatenate all entries
-    return '\n'.join(entry_htmls)
+    if 'error' in response:
+        raise DaemonError(response['error'])
+    return response
 
 
 def contains_shavian(text):
-    """Check if text contains Shavian characters (U+10450–U+1047F)."""
+    """True if text contains any Shavian character (U+10450–U+1047F)."""
     return any('\U00010450' <= c <= '\U0001047F' for c in text)
 
 
 def get_settings(query_params, cookie):
-    """Get settings from query params or cookies."""
-    settings = {
-        'dialect': 'gb',
-        'shavianDefs': 'english'
-    }
+    """Merge settings from query params and cookies; params win."""
+    settings = {'dialect': 'gb', 'shavianDefs': 'english'}
 
-    # Try query params first
     if 'dialect' in query_params:
         settings['dialect'] = query_params['dialect'][0]
     elif cookie and 'dialect' in cookie:
@@ -86,44 +86,70 @@ def get_settings(query_params, cookie):
     return settings
 
 
-def load_template(name):
-    """Load an HTML template snippet."""
-    template_path = Path(__file__).parent.parent / 'templates' / f'{name}.html'
-    if template_path.exists():
-        with open(template_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    return ''
+def choose_dict_type(word, settings):
+    """Pick the dict_type for a lookup given the word's script + settings."""
+    is_shavian = contains_shavian(word)
+    if is_shavian and settings['shavianDefs'] == 'shavian':
+        return f"shavian-shavian-{settings['dialect']}"
+    direction = 'shavian-english' if is_shavian else 'english-shavian'
+    return f"{direction}-{settings['dialect']}"
 
 
-def generate_page(word=None, entry_html=None, error=None, settings=None):
-    """Generate the complete HTML page."""
+def choose_suggest_dict(word, dialect):
+    """Pick the Hunspell dict that matches the input word's script."""
+    if contains_shavian(word):
+        return f'shavian-{dialect}'  # shavian-gb / shavian-us
+    return 'en_GB' if dialect == 'gb' else 'en_US'
+
+
+def render_suggestions(suggestions, settings):
+    """Render 'Did you mean …?' links preserving settings."""
+    if not suggestions:
+        return ''
+    links = []
+    for s in suggestions:
+        qs = urlencode({
+            'word': s,
+            'dialect': settings['dialect'],
+            'shavianDefs': settings['shavianDefs'],
+        })
+        links.append(
+            f'<a class="suggestion" href="index.cgi?{qs}">'
+            f'{html_module.escape(s)}</a>'
+        )
+    return (
+        '<div class="suggestions">'
+        '<div class="suggestions-label">Did you mean:</div>'
+        '<div class="suggestions-list">' + ' '.join(links) + '</div>'
+        '</div>'
+    )
+
+
+def generate_page(word=None, entry_html=None, error=None, settings=None,
+                  suggestions=None):
+    """Assemble the full HTML page."""
     settings = settings or {'dialect': 'gb', 'shavianDefs': 'english'}
 
-    # Choose templates based on immersive mode
     immersive = settings['shavianDefs'] == 'shavian'
     welcome_top_template = '{{WELCOME_TOP_SHAVIAN}}' if immersive else '{{WELCOME_TOP}}'
     welcome_bottom_template = '{{WELCOME_BOTTOM_SHAVIAN}}' if immersive else '{{WELCOME_BOTTOM}}'
 
-    # Determine welcome top display
     welcome_top = f'<div class="welcome-top">{welcome_top_template}</div>' if not word else ''
 
-    # Determine entry display
     if error:
-        entry_section = f'<div class="entry-container"><div class="no-results">{html_module.escape(error)}</div></div>'
+        suggestions_html = render_suggestions(suggestions or [], settings)
+        entry_section = (
+            f'<div class="entry-container">'
+            f'<div class="no-results">{html_module.escape(error)}</div>'
+            f'{suggestions_html}'
+            f'</div>'
+        )
     elif entry_html:
         entry_section = f'<div class="entry-container">{entry_html}</div>'
     elif not word:
         entry_section = f'<div class="entry-container">{welcome_bottom_template}</div>'
     else:
         entry_section = '<div class="entry-container hidden"></div>'
-
-    # Build settings checkboxes
-    gb_checked = 'checked' if settings['dialect'] == 'gb' else ''
-    us_checked = 'checked' if settings['dialect'] == 'us' else ''
-    eng_defs_checked = 'checked' if settings['shavianDefs'] == 'english' else ''
-    shaw_defs_checked = 'checked' if settings['shavianDefs'] == 'shavian' else ''
-
-    word_value = html_module.escape(word or '')
 
     return f'''<!DOCTYPE html>
 <html lang="en">
@@ -178,7 +204,6 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
         @2025 <a href="https://joro.io">joro.io</a> · Shaw-Spell $VERSION$
     </div>
 
-    <!-- Modals -->
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal">
             <button class="close-modal" onclick="closeModal()">&times;</button>
@@ -186,7 +211,6 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
         </div>
     </div>
 
-    <!-- Settings data for JavaScript -->
     <script>
         window.SETTINGS = {{
             dialect: '{settings['dialect']}',
@@ -199,55 +223,40 @@ def generate_page(word=None, entry_html=None, error=None, settings=None):
 
 
 def main():
-    """Main CGI handler."""
-    # Parse query string
-    query_string = os.environ.get('QUERY_STRING', '')
-    params = parse_qs(query_string)
+    params = parse_qs(os.environ.get('QUERY_STRING', ''))
 
-    # Parse cookies
     cookie = cookies.SimpleCookie()
     if 'HTTP_COOKIE' in os.environ:
         cookie.load(os.environ['HTTP_COOKIE'])
 
-    # Get settings
     settings = get_settings(params, cookie)
-
-    # Get search word
     word = params.get('word', [''])[0].strip()
 
-    # Prepare response
     entry_html = None
     error = None
+    suggestions = None
 
     if word:
-        # Detect direction
-        is_shavian = contains_shavian(word)
-        direction = 'shavian-english' if is_shavian else 'english-shavian'
-
-        # Choose dictionary
-        if is_shavian and settings['shavianDefs'] == 'shavian':
-            dict_type = f"shavian-shavian-{settings['dialect']}"
-        else:
-            dict_type = f"{direction}-{settings['dialect']}"
-
-        # Perform search
-        data_dir = Path(__file__).parent / 'data'
-        entry_html = search_word(word, dict_type, data_dir)
-
+        response = daemon_request({
+            'op': 'lookup',
+            'dict_type': choose_dict_type(word, settings),
+            'word': word,
+            'suggest_dict': choose_suggest_dict(word, settings['dialect']),
+        })
+        entry_html = response.get('entry_html')
         if not entry_html:
-            error = f'No entry found for "{html_module.escape(word)}"'
+            suggestions = response.get('suggestions') or []
+            error = f'No entry found for "{word}"'
 
-    # Generate page
-    html = generate_page(word, entry_html, error, settings)
+    html = generate_page(word, entry_html, error, settings, suggestions)
 
-    # Output response
     print('Content-Type: text/html; charset=utf-8')
 
-    # Set cookies for settings
+    # Persist settings for a year.
     settings_cookie = cookies.SimpleCookie()
     settings_cookie['dialect'] = settings['dialect']
     settings_cookie['dialect']['path'] = '/'
-    settings_cookie['dialect']['max-age'] = 31536000  # 1 year
+    settings_cookie['dialect']['max-age'] = 31536000
     settings_cookie['shavianDefs'] = settings['shavianDefs']
     settings_cookie['shavianDefs']['path'] = '/'
     settings_cookie['shavianDefs']['max-age'] = 31536000

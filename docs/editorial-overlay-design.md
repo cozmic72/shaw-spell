@@ -120,6 +120,17 @@ Determinism: total apply order = `(old.word, pos, shaw, var, meta.ts, id)`. Same
 - Trust model (collaborator patches direct-to-prod vs. review gate): **deferred** to
   Phase 2 (moot for single-user Phase 0/1).
 
+## Known open issues
+
+- **RSSB var reaches output.** RSSB is our own dialect addition; no downstream system
+  (spell-check, site, installer dicts) knows how to handle it. The legacy build
+  DELIBERATELY normalised these to `RRP`. The new patch-authoritative + var-independent
+  applicator preserves the real RSSB var instead — so ~376 records that were `RRP` under
+  legacy now surface as `RSSB`/`GenAm`. Harmless on this branch (not wired to production
+  output), but if this readlex.json ever feeds production, RSSB would break downstream
+  consumers. **Jury still out** (2026-07-16) — pending a decision on what to do with RSSB
+  generally. Do NOT special-case it away without that decision.
+
 ## Deferred / open
 
 - Combined keep+override vs. separate ops: settled as **one shape** (the rewrite).

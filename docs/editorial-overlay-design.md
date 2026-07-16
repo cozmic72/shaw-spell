@@ -131,3 +131,40 @@ Determinism: total apply order = `(old.word, pos, shaw, var, meta.ts, id)`. Same
   re-derivable.
 - Phasing: 0) applicator rewrite (invisible, output byte-identical) → 1) local
   single-user editor → 2) multi-user via git → 3) live online + SQLite cache.
+
+## Phase 1 — the editor UI (MVP)
+
+North star: **an editable version of the dictionary with extra ways of searching** —
+not a bespoke review tool. The "review queue" is just a filter plus a stepping mode.
+
+**Backend** — a sibling **`editord`** daemon in `src/editor/`, built on the SAME pattern
+as the production `src/site-daemon/suggestd.py`: `socketserver` Unix-socket daemon,
+line-oriented `{op: ...}` JSON protocol, in-memory state, deploy/systemd idiom. It holds
+the basis (upstream + supplements) plus `patches.jsonl` and serves editor ops
+(`op: entries` → filtered basis annotated with patch-state; `op: patch` → append/update a
+patch). A thin CGI/HTTP frontend fronts it. **`suggestd` and the read-only production
+spell-check path are untouched** — the read-write editorial tool is its own process, no
+new deps.
+
+**The annotated view** (the one non-trivial piece): the UI browses the basis with each
+record annotated by its **patch-state** — untouched / kept / dropped / respelled /
+authored — computed by overlaying `patches.jsonl` on the basis. This shares the anchor
+matching logic with `apply_patches.py` (var-independent `(word,pos,shaw)`); factor it so
+both use one implementation rather than a parallel copy.
+
+**Filters:** `confidence` (threshold/range), `source`, `status` (supplement / new /
+pos-gap / manual), `pos`, `var`, `word`/`shaw` substring, and patch-state.
+
+**Layout:** filter bar on top; left panel = scrollable list/table of matches; right =
+detail editor for the focused entry with **editable Shavian, focused by default**.
+Stepping = arrow keys through the list.
+
+**Accept / reject (pure patch model):**
+- Accept → patch `{old: anchor, new: edits}` promoting the entry; any Shavian edit folds
+  into `new.shaw` (edit-then-accept = a respell).
+- Reject → removal patch `{old: anchor, new: null}`.
+- Keyboard shortcuts for accept / reject / next / prev.
+
+**Deferred to a later Phase-1 iteration:** editing the transliterated **definitions**
+(`definitions-*.json`) — the same editor, extended. Design the entry model so definitions
+can be added as an editable field later without reshaping the patch store.

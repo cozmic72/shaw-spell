@@ -50,45 +50,59 @@ Determined empirically against `data/readlex.json` (112,385 entries):
 Identity must stay **minimal** — every field in the key is a field whose upstream drift
 can orphan a patch.
 
-## The patch record
+## The patch record (settled model — 2026-07-16)
 
-A patch is a **record rewrite**. One shape; behaviour falls out of `old`/`new`:
+A patch is `{ anchor, record | null, meta }`:
 
 ```jsonc
 {
-  "id": "p_01H…",                                   // ULID, stable, never reused
-  "old": {"word","pos","shaw","var"} | null,        // identity of the basis record acted on
-  "new": {                                          // full record, or null
-    "word","pos","shaw","var",                      //   identity
-    "ipa","freq",                                   //   payload
-    "source","status","confidence","note"           //   provenance (speaks the record's language)
+  "id": "p_…",
+  "anchor": {"word","pos","shaw","var"} | null,   // the source record's natural key; null = authorship
+  "record": {                                     // the COMPLETE record you want, or null to drop
+    "word","pos","shaw","var","ipa","freq","status", "…"
   } | null,
   "meta": {"author","ts","note"}
 }
 ```
 
-| `old` | `new` | key change | Meaning |
-|-------|-------|------------|---------|
-| identity | record | (usually none) | **update** a basis record (e.g. keep: status → sanctioned) |
-| identity | record | key differs (`shaw`) | **rewrite** — remove old identity, insert new (respell) |
-| identity | null | — | **remove** a basis record (drop / suppress) |
-| null | record | — | **authorship** — a record no source attests (manual/invented) |
+**The anchor is the record's immutable identity.** It is the natural key
+`(word, pos, shaw, var)` of the source record the patch reviews, assigned once at first
+touch and **never changed when you edit** — even if you edit the `shaw` or `var`. The
+system tracks entries by anchor, so **an entry never moves or disappears as a consequence
+of being edited**; only its displayed content changes. (Authorship — a brand-new word no
+source attests — has `anchor: null`; the patch simply *is* the record.)
 
-**`old` is present for every decision on an attested basis record** (keep / respell /
-drop / pos-gap). **`old: null` is reserved for pure authorship** — confirmed empirically:
-of 48 manual entries, 35 are genuinely invented (contractions like `this'll`, names like
-`Joro`, coinages like `e-book`/`EPUB`) with no basis record, and the other 13 have the
-word attested but no exact `(pos,shaw,var)` match.
+**The `record` is the complete record you want**, self-contained — every field editable
+(`shaw`, `var`, `ipa`, `status`, …). Not an edits-diff: what is stored is what is shown is
+what ships, with no source+patch merge step to get subtly wrong (that merge was the source
+of the "edit invisible in the UI" bug). `record: null` means drop. `status` lives **in**
+the record because downstream consumers read it (`supplemental` → `sanctioned` on accept).
 
-### Two schemas, opposite needs
+| `anchor` | `record` | Meaning |
+|----------|----------|---------|
+| key | record | **edit / accept** the source record (change fields and/or status) |
+| key | null | **drop** the source record |
+| null | record | **authorship** — a record no source attests |
 
-- **Identity key** — kept *minimal* for drift-resistance.
-- **Record payload** (of `new`) — kept *rich*, because the UI's whole job is filtering
-  and every filter axis must be a field on the record. A patch's `new` speaks the same
-  language as the intermediate/basis record (carries `source`, `status`, `confidence`,
-  `note`, etc.), snapshotted as accepted — so there is no impedance seam between what an
-  editor sees and what they write. But that richness is *derived at view time* on the
-  basis; only the patch's own fields are persisted.
+### Actions, reviewed-ness, rollback
+
+- **Actions** are just ways to produce a patch: **Accept** (record with `status: sanctioned`),
+  **Drop** (`record: null`), **Edit** (record with corrected shaw/var/ipa/status).
+- **Reviewed** = a patch exists for the anchor. Primary filter partition (reviewed vs
+  unreviewed) — no stored flag; the patch's presence *is* the flag.
+- **Rollback** = delete the patch. The source basis was never mutated, so the record
+  reverts to its untouched source and returns to *unreviewed*. No undo log — the intact
+  basis *is* the undo.
+
+### Why full-record, not edits-only
+
+The earlier design stored only the changed fields (edits-only `new`, inheriting var/freq
+from the candidate). That is leaner but forces a source+patch *merge* to display or ship a
+record — and getting that merge wrong is exactly what made edits invisible in the UI.
+Full-record is self-describing and satisfies "don't throw away information": the patch
+carries the whole intended record, the basis stays intact underneath, so both the wanted
+state and the source state are always recoverable. A diff *view* can be derived from
+(source, record) at display time if wanted; the stored thing is complete.
 
 ## The apply/build process
 
@@ -96,17 +110,16 @@ word attested but no exact `(pos,shaw,var)` match.
 and the same Make target (`$(READLEX_PATH)`), so nothing downstream changes:
 
 1. Compute the basis (upstream + supplements) on-demand.
-2. For each patch: resolve `old` against the current basis by identity
-   `(word,pos,shaw,var)`; remove it; insert `new` (if non-null).
-3. **Fail loud** on an authoritative patch (`old` present, but no longer resolves —
-   upstream changed the shaw) rather than silently dropping it; surface it to an
-   "orphaned decisions" queue. This is the re-anchor/drift problem `merge_editorial_edits.py`
-   solves today, now formalized into the apply step instead of an ad-hoc CSV re-join.
-   `merge_editorial_edits.py` and `generate_editorial_csv.py` are retired from the
-   editorial path.
+2. For each patch: resolve `anchor` against the current basis by natural key
+   `(word,pos,shaw,var)`; remove that source record; emit `record` (if non-null).
+   `record` is authoritative and complete — emitted verbatim, no merge with the source.
+   Authorship (`anchor: null`) simply emits `record`.
+3. **Fail loud** on a patch whose `anchor` no longer resolves (upstream drifted out from
+   under the decision) rather than silently dropping it — surface it to an "orphaned
+   decisions" queue. `merge_editorial_edits.py` and `generate_editorial_csv.py` are
+   retired from the editorial path.
 
-Determinism: total apply order = `(old.word, pos, shaw, var, meta.ts, id)`. Same inputs
-→ same `readlex.json`.
+Determinism: total apply order over `(anchor…, id)`. Same inputs → same `readlex.json`.
 
 ## Decisions locked (2026-07-16)
 

@@ -13,8 +13,17 @@
 const AUTHOR = "editor";
 const PAGE_LIMIT = 200;
 const ACCEPTED_STATUS = "sanctioned";
+const SESSION_KEY = "shaw-spell.editor.session";
 
 const EDITABLE_FIELDS = ["shaw", "var", "ipa", "status"];
+
+// Dictionaries to look the word up in while deciding. {word} is URL-encoded so
+// phrases and apostrophes ("A for effort", "don't") stay valid.
+const REFERENCES = [
+    ["Wiktionary", "https://en.wiktionary.org/wiki/{word}"],
+    ["Merriam-Webster", "https://www.merriam-webster.com/dictionary/{word}"],
+    ["OED", "https://www.oed.com/search/dictionary/?scope=Entries&q={word}"],
+];
 
 const FILTER_FORM = document.getElementById("filters");
 const TALLY = document.getElementById("tally");
@@ -22,6 +31,9 @@ const LEDGER = document.getElementById("ledgerList");
 const LEDGER_FOOT = document.getElementById("ledgerFoot");
 const DETAIL = document.getElementById("detail");
 const TOAST = document.getElementById("toast");
+const WORKBENCH = document.getElementById("workbench");
+const DRAWER_TOGGLE = document.getElementById("drawerToggle");
+const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
 
 const state = {
     records: [],
@@ -59,8 +71,9 @@ function readFilters() {
 
 // Re-run the filter: materialise a fresh working set. This is the ONLY point at
 // which the list re-syncs to latest state — membership and order are fixed here
-// and stay put until the next re-run.
-async function runQuery(offset = 0) {
+// and stay put until the next re-run. preferredAnchor lands the selection on that
+// entry (session restore); if it fell out of the set, on the nearest neighbour.
+async function runQuery(offset = 0, preferredAnchor = null) {
     state.filters = readFilters();
     state.offset = offset;
     const result = await callDaemon({
@@ -74,7 +87,50 @@ async function runQuery(offset = 0) {
     TALLY.textContent = `${result.total.toLocaleString()} matching`;
     renderLedger();
     renderFoot();
-    select(state.records.length ? 0 : -1);
+    select(landingIndex(preferredAnchor));
+}
+
+// Where to land the selection after a query. Prefer the exact anchor; if it is no
+// longer present (e.g. it was reviewed and the new filter excludes it), the nearest
+// neighbour — the first entry that sorts at or after it in the list's own order
+// (word, pos, shaw, var) — rather than jumping to the top.
+function landingIndex(preferredAnchor) {
+    if (!state.records.length) {
+        return -1;
+    }
+    if (!preferredAnchor) {
+        return 0;
+    }
+    const exact = state.records.findIndex(
+        (record) => sameAnchor(record.anchor, preferredAnchor),
+    );
+    if (exact >= 0) {
+        return exact;
+    }
+    const after = state.records.findIndex(
+        (record) => compareAnchors(record.anchor, preferredAnchor) >= 0,
+    );
+    return after >= 0 ? after : state.records.length - 1;
+}
+
+// Mirrors the daemon's list ordering (editord.py: word.lower, pos, shaw, var) so a
+// dropped-out anchor can be placed among its neighbours.
+function compareAnchors(a, b) {
+    const fields = [
+        [a.word.toLowerCase(), b.word.toLowerCase()],
+        [a.pos, b.pos], [a.shaw, b.shaw], [a.var, b.var],
+    ];
+    for (const [left, right] of fields) {
+        if (left < right) return -1;
+        if (left > right) return 1;
+    }
+    return 0;
+}
+
+function sameAnchor(a, b) {
+    return a && b
+        && a.word === b.word && a.pos === b.pos
+        && a.shaw === b.shaw && a.var === b.var;
 }
 
 // A record's immutable anchor {word, pos, shaw, var} — its identity, unchanged
@@ -103,7 +159,10 @@ function ledgerRow(record, index) {
         cell("col-var", record.var),
         cell("col-pos", record.pos),
     );
-    row.addEventListener("click", () => select(index));
+    row.addEventListener("click", () => {
+        select(index);
+        setDrawer(false);
+    });
     return row;
 }
 
@@ -144,13 +203,14 @@ function select(index, { focusFirst = true } = {}) {
     }
     if (index < 0) {
         renderEmptyDetail();
-        return;
+    } else {
+        const active = LEDGER.children[index];
+        if (active) {
+            active.scrollIntoView({ block: "nearest" });
+        }
+        renderDetail(state.records[index], focusFirst);
     }
-    const active = LEDGER.children[index];
-    if (active) {
-        active.scrollIntoView({ block: "nearest" });
-    }
-    renderDetail(state.records[index], focusFirst);
+    saveSession();
 }
 
 function renderEmptyDetail() {
@@ -167,9 +227,13 @@ function renderDetail(record, focusFirst) {
     heading.className = "detail-word";
     heading.append(cell("latin", record.word), cell("pos", record.pos));
 
-    const fields = fieldGrid(record);
-
-    DETAIL.replaceChildren(heading, fields, provenanceGrid(record), actionBar());
+    DETAIL.replaceChildren(
+        heading,
+        referenceLinks(record.word),
+        fieldGrid(record),
+        provenanceGrid(record),
+        actionBar(),
+    );
 
     if (focusFirst) {
         const first = document.getElementById("field-shaw");
@@ -178,18 +242,38 @@ function renderDetail(record, focusFirst) {
     }
 }
 
+// A row of external dictionary look-ups for the focused word, each opening in a
+// new tab. The word is URL-encoded so phrases and apostrophes stay valid.
+function referenceLinks(word) {
+    const row = document.createElement("nav");
+    row.className = "references";
+    row.setAttribute("aria-label", "Look up in external dictionaries");
+    for (const [label, template] of REFERENCES) {
+        const link = document.createElement("a");
+        link.className = "reference";
+        link.href = template.replace("{word}", encodeURIComponent(word));
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = label;
+        row.append(link);
+    }
+    return row;
+}
+
 // The record is self-contained, so every field is editable. shaw/var/ipa/status
 // are the edit surface; word/pos are the anchor's Latin identity, shown read-only.
+// Every field is a full-width labelled row (label above a large value) — pivoted,
+// not a cramped grid — so the payload Shavian and the IPA read comfortably.
 function fieldGrid(record) {
-    const grid = document.createElement("div");
-    grid.className = "field-editor";
-    grid.append(
+    const stack = document.createElement("div");
+    stack.className = "field-stack";
+    stack.append(
         editField("shaw", "Shavian", record.shaw, "shaw-field"),
-        editField("var", "Dialect (var)", record.var, ""),
         editField("ipa", "IPA", record.ipa, "ipa-field"),
+        editField("var", "Dialect (var)", record.var, ""),
         statusField(record.status),
     );
-    return grid;
+    return stack;
 }
 
 function editField(name, label, value, extraClass) {
@@ -452,6 +536,49 @@ function onGlobalKey(event) {
     }
 }
 
+// Session continuity: the active filter plus the ANCHOR of the focused entry — not
+// a row index, which is meaningless once the list re-materialises. On load the
+// filter is restored, the list pulled, then the anchor re-selected (or its nearest
+// neighbour). Persisted on every query and selection.
+function saveSession() {
+    const selected = state.records[state.selected];
+    const session = {
+        filters: state.filters,
+        anchor: selected ? selected.anchor : null,
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function loadSession() {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) {
+        return null;
+    }
+    return JSON.parse(raw);
+}
+
+// Populate the filter form from a saved filter set so the restored query matches
+// what the user last ran.
+function restoreFilters(filters) {
+    for (const [name, value] of Object.entries(filters)) {
+        const field = FILTER_FORM.elements[name];
+        if (field) {
+            field.value = value;
+        }
+    }
+}
+
+// Off-canvas ledger drawer for narrow screens. On wide screens the list is always
+// visible and the toggle is hidden by CSS, so this only bites on mobile.
+function setDrawer(open) {
+    WORKBENCH.classList.toggle("drawer-open", open);
+    DRAWER_TOGGLE.setAttribute("aria-expanded", String(open));
+}
+
+function toggleDrawer() {
+    setDrawer(!WORKBENCH.classList.contains("drawer-open"));
+}
+
 let toastTimer = null;
 function showToast(message, isError = false) {
     TOAST.textContent = message;
@@ -466,6 +593,20 @@ FILTER_FORM.addEventListener("submit", (event) => {
     runQuery(0).catch((error) => showToast(error.message, true));
 });
 
+DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
+DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
+
 document.addEventListener("keydown", onGlobalKey);
 
-runQuery(0).catch((error) => showToast(error.message, true));
+// Boot: resume the saved session (filter + anchor) if one exists, else a plain
+// first query.
+function boot() {
+    const session = loadSession();
+    if (session && session.filters) {
+        restoreFilters(session.filters);
+        return runQuery(0, session.anchor);
+    }
+    return runQuery(0);
+}
+
+boot().catch((error) => showToast(error.message, true));

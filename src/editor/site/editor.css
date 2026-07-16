@@ -52,6 +52,7 @@ body {
     height: 100vh;
     display: grid;
     grid-template-rows: auto auto 1fr;
+    grid-template-columns: minmax(0, 1fr);
     overflow: hidden;
 }
 
@@ -87,6 +88,23 @@ body {
     font-size: 12px;
     letter-spacing: 0.04em;
 }
+/* Ledger drawer trigger — only shown once the layout collapses (see mobile block). */
+.drawer-toggle {
+    display: none;
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    min-height: 40px;
+    padding: 6px 16px;
+    cursor: pointer;
+}
+.drawer-backdrop { display: none; }
 
 /* ---- filter bar ---- */
 .filters {
@@ -138,6 +156,7 @@ body {
 
 /* ---- workbench split ---- */
 .workbench {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(360px, 44%) 1fr;
     overflow: hidden;
@@ -230,44 +249,65 @@ body {
 .stamp.dropped { color: var(--state-dropped); }
 .stamp.authored { color: var(--state-authored); }
 
-/* ---- detail (right) ---- */
-.detail { overflow-y: auto; padding: 26px 30px; }
+/* ---- detail (right) — the card the editor stares at while deciding ---- */
+.detail {
+    overflow-y: auto;
+    padding: 30px 34px;
+    max-width: 760px;
+}
 .detail-empty { color: var(--ink-soft); font-style: italic; }
 
 .detail-word {
     display: flex;
     align-items: baseline;
     gap: 14px;
-    margin-bottom: 4px;
+    margin-bottom: 12px;
 }
-.detail-word .latin { font-size: 22px; font-weight: 700; }
-.detail-word .pos { color: var(--ink-soft); font-size: 13px; }
+.detail-word .latin { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+.detail-word .pos { color: var(--ink-soft); font-size: 14px; }
 
-.field-editor {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px 18px;
-    margin: 20px 0 24px;
+/* External look-ups, sitting just under the word. */
+.references {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-bottom: 26px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--rule);
 }
-/* The Shavian field is the payload — it spans the row and stays prominent. */
-.edit-field:has(.shaw-field) { grid-column: 1 / -1; }
+.reference {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+.reference:hover, .reference:focus-visible { border-bottom-color: var(--accent); }
 
-.edit-field { display: flex; flex-direction: column; gap: 6px; }
+/* Pivoted: every field is a full-width labelled row, label above a LARGE value. */
+.field-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin-bottom: 30px;
+}
+.edit-field { display: flex; flex-direction: column; gap: 8px; }
 .edit-label {
-    font-size: 10px;
-    letter-spacing: 0.12em;
+    font-size: 11px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--ink-soft);
 }
 .edit-input {
     font-family: var(--mono);
-    font-size: 15px;
+    font-size: 18px;
     color: var(--ink);
     background: var(--paper-raised);
     border: 1px solid var(--rule);
     border-bottom: 2px solid var(--rule);
     border-radius: 3px;
-    padding: 9px 12px;
+    padding: 12px 14px;
     width: 100%;
 }
 .edit-input:focus {
@@ -276,14 +316,15 @@ body {
     border-bottom-color: var(--accent);
 }
 .edit-input.dirty { border-bottom-color: var(--state-edited); }
+/* The Shavian spelling is the dictionary's payload — the biggest thing on the card. */
 .shaw-field {
     font-family: var(--shaw);
-    font-size: 44px;
-    line-height: 1.2;
-    padding: 10px 16px;
+    font-size: 56px;
+    line-height: 1.25;
+    padding: 14px 18px;
     border-bottom-color: var(--accent);
 }
-.ipa-field { font-style: italic; }
+.ipa-field { font-size: 26px; font-style: italic; }
 
 .provenance {
     display: grid;
@@ -308,7 +349,7 @@ body {
 }
 .prov dd { font-size: 13px; word-break: break-word; }
 
-.actions { display: flex; gap: 12px; align-items: center; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .act {
     font-family: var(--mono);
     font-size: 13px;
@@ -316,7 +357,8 @@ body {
     text-transform: uppercase;
     border: 1px solid currentColor;
     border-radius: 2px;
-    padding: 9px 22px;
+    min-height: 44px;
+    padding: 10px 24px;
     cursor: pointer;
     background: none;
 }
@@ -358,7 +400,83 @@ kbd {
     .toast { transition: none; }
 }
 
+/* ---- mobile: one big detail card, ledger tucked into a drawer ---- */
 @media (max-width: 860px) {
-    .workbench { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-    .ledger { border-right: none; border-bottom: 1px solid var(--rule); }
+    /* The detail card fills the screen; the ledger is a full-height panel that
+       slides in from the left over a backdrop, summoned by the header toggle.
+       minmax(0,1fr) lets the column shrink below its content's min width so a long
+       word or wide field can't push the whole layout past the viewport. */
+    .workbench { grid-template-columns: minmax(0, 1fr); }
+
+    .drawer-toggle { display: inline-block; }
+    .tally { display: none; }
+
+    .ledger {
+        position: absolute;
+        z-index: 20;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(86vw, 420px);
+        background: var(--paper);
+        border-right: 1px solid var(--rule);
+        transform: translateX(-100%);
+        transition: transform 0.22s ease;
+    }
+    .drawer-open .ledger { transform: translateX(0); }
+
+    .drawer-backdrop {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.22s ease;
+    }
+    .drawer-open .drawer-backdrop { opacity: 1; pointer-events: auto; }
+
+    .detail { max-width: none; padding: 22px 18px; }
+
+    /* Filters become a two-column grid whose tracks can shrink to zero, so nothing
+       demands a min width that would overflow the viewport. */
+    .filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: end;
+        padding: 12px 18px;
+    }
+    .field input, .field select { min-width: 0; width: 100%; }
+    .field.narrow input { min-width: 0; }
+    .apply { grid-column: 1 / -1; justify-self: start; }
+
+    /* Compact masthead so the drawer toggle always fits: drop the strap, shrink the
+       mark, let the title take the middle and truncate, toggle pinned right. The
+       flex-basis:0 on the title means it never demands its content width, so the
+       row can never grow past the viewport and push the toggle off-screen. */
+    .masthead { padding: 12px 18px; gap: 10px; align-items: center; overflow: hidden; }
+    .strap { display: none; }
+    .mark { font-size: 22px; flex: 0 0 auto; }
+    .masthead-text { flex: 1 1 0; min-width: 0; }
+    .masthead-text h1 {
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .drawer-toggle { flex: 0 0 auto; }
+
+    .shaw-field { font-size: 46px; }
+    .ipa-field { font-size: 22px; }
+
+    /* Full-width, thumb-sized decision buttons. */
+    .actions { gap: 10px; }
+    .act { flex: 1 1 auto; text-align: center; }
+    .act-hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ledger, .drawer-backdrop { transition: none; }
 }

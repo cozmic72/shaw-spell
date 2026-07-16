@@ -90,6 +90,8 @@ PAGE = """<!DOCTYPE html>
             <h1>Editorial Workbench</h1>
             <p class="strap">The dictionary as an editable overlay — accept, edit, drop, author.</p>
         </div>
+        <button type="button" class="drawer-toggle" id="drawerToggle"
+                aria-controls="ledger" aria-expanded="false">Entries</button>
         <div class="tally" id="tally" aria-live="polite"></div>
     </header>
 
@@ -149,8 +151,9 @@ PAGE = """<!DOCTYPE html>
         <button type="submit" class="apply">Filter</button>
     </form>
 
-    <main class="workbench">
-        <section class="ledger" aria-label="Matching entries">
+    <main class="workbench" id="workbench">
+        <div class="drawer-backdrop" id="drawerBackdrop"></div>
+        <section class="ledger" id="ledger" aria-label="Matching entries">
             <div class="ledger-head">
                 <span class="col-state">state</span>
                 <span class="col-word">word</span>

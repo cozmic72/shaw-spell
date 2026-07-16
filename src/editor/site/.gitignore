@@ -1,0 +1,4 @@
+# Local test-server artifacts (see src/tools/test_editor.py)
+fonts
+.editord.sock
+.editord.log

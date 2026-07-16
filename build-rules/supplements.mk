@@ -39,9 +39,13 @@ rescore-full: data/supplement-wordnet-reliable.json data/supplement-wiktionary-r
 
 SUPPLEMENT_DEPS := data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 
-$(READLEX_PATH): $(SRC_TOOLS)/generate_merged_readlex.py external/readlex/readlex.json $(SUPPLEMENT_DEPS)
-	@echo "Generating merged readlex..."
-	$(RUN) python3 $(SRC_TOOLS)/generate_merged_readlex.py
+# Merged readlex is now produced by applying the editorial patch store
+# (data/patches/patches.jsonl) to upstream + supplements. The legacy
+# generate_merged_readlex.py is retained on disk for reference but no longer
+# on the build path.
+$(READLEX_PATH): $(SRC_TOOLS)/apply_patches.py external/readlex/readlex.json $(SUPPLEMENT_DEPS) data/patches/patches.jsonl
+	@echo "Applying editorial patches to produce merged readlex..."
+	$(RUN) python3 $(SRC_TOOLS)/apply_patches.py
 
 ###########################################
 # Editorial review
@@ -80,8 +84,8 @@ supplements: $(READLEX_PATH)
 supplements-from-source: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring with full shave..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
-	@echo "Merging into readlex..."
-	$(RUN) python3 $(SRC_TOOLS)/generate_merged_readlex.py
+	@echo "Applying editorial patches into readlex..."
+	$(RUN) python3 $(SRC_TOOLS)/apply_patches.py
 	@echo "Generating review files..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_review_files.py
 	@echo "✓ All supplements rebuilt from source"

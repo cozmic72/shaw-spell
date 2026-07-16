@@ -70,6 +70,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         buttonContainer.addSubview(nextButton)
     }
 
+    func showInstallingPage() {
+        loadHTMLResource("installing")
+
+        // Replace buttons with a centred indeterminate progress bar.
+        // No accurate progress: the install script is a flat sequence of
+        // shell commands, so a determinate bar would either be fake or
+        // require restructuring the script. A spinner conveys "working,
+        // please wait" without lying.
+        buttonContainer.subviews.forEach { $0.removeFromSuperview() }
+
+        let progressBarWidth: CGFloat = 300
+        let progressBar = NSProgressIndicator(frame: NSRect(
+            x: (700 - progressBarWidth) / 2, y: 22,
+            width: progressBarWidth, height: 16))
+        progressBar.style = .bar
+        progressBar.isIndeterminate = true
+        progressBar.startAnimation(nil)
+        buttonContainer.addSubview(progressBar)
+    }
+
     func showDictionaryPage() {
         currentPage = 1
         loadHTMLResource("dictionary")
@@ -123,7 +143,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     // MARK: - Button Actions
 
     @objc func nextButtonClicked() {
-        // Skip the installing page - installation is fast enough to just do it and show dictionary page
+        showInstallingPage()
         performInstallation()
     }
 

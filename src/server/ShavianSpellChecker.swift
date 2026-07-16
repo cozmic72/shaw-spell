@@ -75,62 +75,111 @@ private let skipSpanRegex: NSRegularExpression = {
     return try! NSRegularExpression(pattern: combined, options: [])
 }()
 
-// LRU Cache for spell-check results
-private class SpellCheckCache {
-    private let capacity: Int
-    private var cache: [String: Bool] = [:]
-    private var accessOrder: [String] = []
+// Thread-safe fixed-capacity LRU cache. O(1) get/set/evict via hashmap +
+// intrusive doubly-linked list. Locking uses os_unfair_lock — non-recursive,
+// so no public method may call another while holding the lock.
+//
+// NSSpellServer can deliver delegate calls on background threads, so the
+// cache must be safe under concurrent access.
+private final class LRUCache<Key: Hashable, Value> {
 
-    init(capacity: Int = 2000) {
+    private final class Node {
+        let key: Key
+        var value: Value
+        var prev: Node?
+        var next: Node?
+
+        init(key: Key, value: Value) {
+            self.key = key
+            self.value = value
+        }
+    }
+
+    private let capacity: Int
+    private var entries: [Key: Node] = [:]
+    private var mostRecent: Node?  // Head: most-recently-used
+    private var leastRecent: Node?  // Tail: least-recently-used (eviction end)
+    private var lock = os_unfair_lock_s()
+
+    init(capacity: Int) {
+        precondition(capacity > 0, "LRUCache capacity must be positive")
         self.capacity = capacity
     }
 
-    func get(_ word: String) -> Bool? {
-        guard let result = cache[word] else {
-            return nil
-        }
+    func get(_ key: Key) -> Value? {
+        os_unfair_lock_lock(&lock)
+        defer { os_unfair_lock_unlock(&lock) }
 
-        // Update LRU order
-        if let index = accessOrder.firstIndex(of: word) {
-            accessOrder.remove(at: index)
-        }
-        accessOrder.append(word)
-
-        return result
+        guard let node = entries[key] else { return nil }
+        moveToFront(node)
+        return node.value
     }
 
-    func set(_ word: String, _ isCorrect: Bool) {
-        // If already exists, update access order
-        if cache[word] != nil {
-            if let index = accessOrder.firstIndex(of: word) {
-                accessOrder.remove(at: index)
-            }
-        } else if cache.count >= capacity {
-            // Evict oldest entry
-            if let oldest = accessOrder.first {
-                cache.removeValue(forKey: oldest)
-                accessOrder.removeFirst()
-            }
+    func set(_ key: Key, _ value: Value) {
+        os_unfair_lock_lock(&lock)
+        defer { os_unfair_lock_unlock(&lock) }
+
+        if let existing = entries[key] {
+            existing.value = value
+            moveToFront(existing)
+            return
         }
 
-        cache[word] = isCorrect
-        accessOrder.append(word)
+        if entries.count >= capacity {
+            evictLeastRecentlyUsed()
+        }
+
+        let node = Node(key: key, value: value)
+        entries[key] = node
+        insertAtFront(node)
     }
 
-    func clear() {
-        cache.removeAll()
-        accessOrder.removeAll()
+    // MARK: - Linked-list operations (caller must hold the lock)
+
+    private func insertAtFront(_ node: Node) {
+        node.prev = nil
+        node.next = mostRecent
+        mostRecent?.prev = node
+        mostRecent = node
+        if leastRecent == nil {
+            leastRecent = node
+        }
     }
 
-    var hitCount: Int {
-        return cache.count
+    private func unlink(_ node: Node) {
+        let prev = node.prev
+        let next = node.next
+        prev?.next = next
+        next?.prev = prev
+        if mostRecent === node { mostRecent = next }
+        if leastRecent === node { leastRecent = prev }
+        node.prev = nil
+        node.next = nil
+    }
+
+    private func moveToFront(_ node: Node) {
+        guard mostRecent !== node else { return }
+        unlink(node)
+        insertAtFront(node)
+    }
+
+    private func evictLeastRecentlyUsed() {
+        guard let victim = leastRecent else { return }
+        entries.removeValue(forKey: victim.key)
+        unlink(victim)
     }
 }
 
 class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
     private var shavianHandle: OpaquePointer?
     private var englishHandle: OpaquePointer?
-    private var spellCheckCache = SpellCheckCache(capacity: 2000)
+    private let spellCheckCache = LRUCache<String, Bool>(capacity: 2000)
+    private let suggestCache = LRUCache<String, [String]>(capacity: 2000)
+
+    // Trace logging is gated on SHAW_SPELL_TRACE=1 in the environment, read
+    // once at init. When off, the trace branches are dead and incur no
+    // string-formatting or allocation cost in the hot path.
+    private let traceEnabled = ProcessInfo.processInfo.environment["SHAW_SPELL_TRACE"] == "1"
 
     // Performance statistics
     private var cacheHits: Int = 0
@@ -511,6 +560,12 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
                     wordCount: UnsafeMutablePointer<Int>,
                     countOnly: Bool) -> NSRange {
 
+        let t0 = traceEnabled ? DispatchTime.now().uptimeNanoseconds : 0
+        if traceEnabled {
+            fputs("[findMisspelledWordIn] sender=\(sender) language=\(language) countOnly=\(countOnly) wordCount.in=\(wordCount.pointee) stringToCheck=\(stringToCheck.debugDescription)\n", stderr)
+            fflush(stderr)
+        }
+
         // One scan per request to find URI/email spans we should never
         // flag. Cheap on clean text (no matches) and lets checkWord skip
         // tokens that CFStringTokenizer has already split out of a URI.
@@ -539,6 +594,11 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
                               skipRanges: skipRanges) {
                     // Found misspelled word
                     wordCount.pointee = count
+                    if traceEnabled {
+                        let elapsedMs = Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000.0
+                        fputs("[findMisspelledWordIn] -> wordCount=\(count) range=loc:\(wordRange.location) len:\(wordRange.length)  [\(String(format: "%.2f", elapsedMs))ms]\n", stderr)
+                        fflush(stderr)
+                    }
                     return wordRange
                 }
             }
@@ -548,6 +608,11 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
         }
 
         wordCount.pointee = count
+        if traceEnabled {
+            let elapsedMs = Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000.0
+            fputs("[findMisspelledWordIn] -> wordCount=\(count) range=NSNotFound  [\(String(format: "%.2f", elapsedMs))ms]\n", stderr)
+            fflush(stderr)
+        }
         return NSRange(location: NSNotFound, length: 0)  // No misspelled words found
     }
 
@@ -555,14 +620,36 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
                     suggestGuessesForWord word: String,
                     inLanguage language: String) -> [String]? {
 
+        let t0 = traceEnabled ? DispatchTime.now().uptimeNanoseconds : 0
+        if traceEnabled {
+            fputs("[suggestGuessesForWord] sender=\(sender) language=\(language) word=\(word.debugDescription)\n", stderr)
+            fflush(stderr)
+        }
+
         // Determine which dictionary to use based on script
         let isShavian = containsShavianScript(word)
         guard let handle = isShavian ? shavianHandle : englishHandle else {
+            if traceEnabled {
+                let elapsedMs = Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000.0
+                fputs("[suggestGuessesForWord] -> [] (no dictionary handle for script)  [\(String(format: "%.2f", elapsedMs))ms]\n", stderr)
+                fflush(stderr)
+            }
             return []
         }
 
+        if let cached = suggestCache.get(word) {
+            if traceEnabled {
+                let totalMs = Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000.0
+                fputs("[suggestGuessesForWord] -> \(cached)  cache=hit  [\(String(format: "%.2f", totalMs))ms total]\n", stderr)
+                fflush(stderr)
+            }
+            return cached
+        }
+
+        let tHunspellStart = traceEnabled ? DispatchTime.now().uptimeNanoseconds : 0
         var suggestions: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
         let count = Hunspell_suggest(handle, &suggestions, word)
+        let hunspellMs = traceEnabled ? Double(DispatchTime.now().uptimeNanoseconds - tHunspellStart) / 1_000_000.0 : 0
 
         var results: [String] = []
         if let suggestionList = suggestions {
@@ -577,6 +664,14 @@ class ShavianSpellChecker: NSObject, NSSpellServerDelegate {
 
             // Free Hunspell suggestions
             Hunspell_free_list(handle, &suggestions, count)
+        }
+
+        suggestCache.set(word, results)
+
+        if traceEnabled {
+            let totalMs = Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000.0
+            fputs("[suggestGuessesForWord] -> \(results)  cache=miss  [\(String(format: "%.2f", totalMs))ms total, \(String(format: "%.2f", hunspellMs))ms in Hunspell_suggest]\n", stderr)
+            fflush(stderr)
         }
 
         return results

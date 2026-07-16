@@ -68,12 +68,35 @@ def patch_id(old, new):
     return "p_" + hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]
 
 
-def identity(word, pos, shaw, var):
-    return {"word": word, "pos": pos, "shaw": shaw, "var": var}
+def anchor(word, pos, shaw):
+    """A patch's `old` anchor — the record(s) in the basis this decision acts on.
+
+    Var-INDEPENDENT (unified rule for all patch origins). The editorial CSV
+    collapses dialect variants that share a spelling into one verdict row, so a
+    decision on (word, pos, shaw) applies to every basis candidate with that
+    (word, pos, shaw); each matched candidate keeps its own var. Record identity
+    still includes var — that's a property of the produced record, not of the
+    decision anchor.
+    """
+    return {"word": word, "pos": pos, "shaw": shaw}
 
 
-def record(word, pos, shaw, var, ipa, freq, source, status, confidence, note):
-    """Full record payload for a patch's `new` side."""
+def edits(pos, shaw, ipa, source, status, confidence, note):
+    """A patch's `new` side for keep/respell/pos-gap: the edits to apply to each
+    matched candidate. `var` and `freq` are NOT asserted — inherited from each
+    matched candidate at apply time.
+    """
+    e = {"pos": pos, "shaw": shaw, "ipa": ipa, "source": source, "status": status}
+    if confidence != "":
+        e["confidence"] = int(confidence)
+    if note:
+        e["note"] = note
+    return e
+
+
+def authored_record(word, pos, shaw, var, ipa, freq, source, status, confidence, note):
+    """A full standalone record for an authorship (manual) patch — old=null, so
+    there is no candidate to inherit var/freq from; the record is complete."""
     rec = {"word": word, "pos": pos, "shaw": shaw, "var": var,
            "ipa": ipa, "freq": freq,
            "source": source, "status": status}
@@ -92,29 +115,32 @@ def make_patch(old, new, author, origin, note):
 
 
 def salvage_editorial(rows):
-    """keep / drop / mistake rows from editorial.csv. Overrides fold into `new`."""
+    """keep / drop / mistake rows from editorial.csv.
+
+    old = (word, reviewed-pos, reviewed-shaw) — anchors the basis candidate(s).
+    Overrides fold into `new` edits. drop → new=null.
+    """
     out = []
     for r in rows:
         verdict = r.get("verdict", "")
         if verdict not in ("keep", "drop", MISTAKE_VERDICT):
             continue
 
-        word, pos, var = r["word"], r["pos"], (r.get("var") or "RRP")
+        word, pos = r["word"], r["pos"]
         reviewed_shaw = r["shaw"]           # what the human saw / anchored to
-        # Overrides fold into the authoritative `new` fields.
+        # Overrides fold into the `new` edits.
         new_pos = r.get("pos_override") or pos
-        new_var = r.get("var_override") or var
         new_shaw = r.get("shaw_override") or reviewed_shaw
         new_ipa = r.get("ipa_override") or r.get("ipa", "")
 
-        old = identity(word, pos, reviewed_shaw, var)
+        old = anchor(word, pos, reviewed_shaw)
 
         if verdict == "drop":
             new = None
         else:  # keep or mistake-correction
-            new = record(word, new_pos, new_shaw, new_var, new_ipa,
-                         int(r.get("freq") or 0), r.get("source", ""), r.get("status", ""),
-                         r.get("confidence", ""), r.get("notes", ""))
+            new = edits(new_pos, new_shaw, new_ipa,
+                        r.get("source", ""), r.get("status", ""),
+                        r.get("confidence", ""), r.get("notes", ""))
 
         out.append(make_patch(old, new, DEFAULT_AUTHOR,
                               origin="editorial",
@@ -123,23 +149,24 @@ def salvage_editorial(rows):
 
 
 def salvage_pos_gaps(rows):
-    """verdict==keep rows from editorial-pos-gaps.csv."""
+    """verdict==keep rows from editorial-pos-gaps.csv.
+
+    old = (word, reviewed-pos, reviewed-shaw); overrides fold into `new` edits.
+    """
     out = []
     for r in rows:
         if r.get("verdict") != "keep":
             continue
         word = r["word"]
-        pos = r.get("pos_override") or r["pos"]
-        var = r.get("var_override") or (r.get("var") or "RRP")
-        shaw = r.get("shaw_override") or r["shaw"]
-        ipa = r.get("ipa_override") or r.get("ipa", "")
-        reviewed_shaw = r["shaw"]
-        reviewed_var = r.get("var") or "RRP"
+        reviewed_pos, reviewed_shaw = r["pos"], r["shaw"]
+        new_pos = r.get("pos_override") or reviewed_pos
+        new_shaw = r.get("shaw_override") or reviewed_shaw
+        new_ipa = r.get("ipa_override") or r.get("ipa", "")
 
-        old = identity(word, r["pos"], reviewed_shaw, reviewed_var)
-        new = record(word, pos, shaw, var, ipa, int(r.get("freq") or 0),
-                     r.get("source", ""), r.get("status", ""),
-                     r.get("confidence", ""), r.get("notes", ""))
+        old = anchor(word, reviewed_pos, reviewed_shaw)
+        new = edits(new_pos, new_shaw, new_ipa,
+                    r.get("source", ""), r.get("status", ""),
+                    r.get("confidence", ""), r.get("notes", ""))
         out.append(make_patch(old, new, DEFAULT_AUTHOR, origin="pos-gap", note=""))
     return out
 
@@ -153,9 +180,10 @@ def salvage_manual(rows):
         var = r.get("var_override") or (r.get("var") or "RRP")
         shaw = r.get("shaw_override") or r["shaw"]
         ipa = r.get("ipa_override") or r.get("ipa", "")
-        new = record(word, pos, shaw, var, ipa, int(r.get("freq") or 0),
-                     r.get("source", "manual") or "manual", r.get("status", "manual") or "manual",
-                     r.get("confidence", ""), r.get("notes", ""))
+        new = authored_record(word, pos, shaw, var, ipa, int(r.get("freq") or 0),
+                              r.get("source", "manual") or "manual",
+                              r.get("status", "manual") or "manual",
+                              r.get("confidence", ""), r.get("notes", ""))
         out.append(make_patch(None, new, DEFAULT_AUTHOR, origin="manual", note=""))
     return out
 
@@ -176,12 +204,14 @@ def main():
         dupes = [i for i in set(ids) if ids.count(i) > 1]
         raise SystemExit(f"FATAL: {len(dupes)} duplicate patch ids: {dupes[:5]}")
 
+    # Classify. `new` for an edit patch is edits-only (pos, shaw, ...); a respell
+    # is one whose edits change pos or shaw versus the anchor.
     n_add = sum(1 for p in patches if p["old"] is None)
     n_remove = sum(1 for p in patches if p["new"] is None)
     n_respell = sum(1 for p in patches
                     if p["old"] and p["new"]
-                    and (p["old"]["shaw"], p["old"]["pos"], p["old"]["var"])
-                    != (p["new"]["shaw"], p["new"]["pos"], p["new"]["var"]))
+                    and (p["new"]["shaw"], p["new"]["pos"])
+                    != (p["old"]["shaw"], p["old"]["pos"]))
     n_update = len(patches) - n_add - n_remove - n_respell
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)

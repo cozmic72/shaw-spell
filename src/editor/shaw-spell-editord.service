@@ -1,0 +1,36 @@
+[Unit]
+Description=Shaw-Spell editorial editor daemon
+Documentation=https://joro.io/
+After=network.target
+
+[Service]
+Type=simple
+# The daemon runs unprivileged. Adjust User/Group to match the web server
+# account; the socket is created with mode 0666 so any UID can connect.
+User=www-data
+Group=www-data
+
+# /run/shaw-spell is auto-created for the socket.
+RuntimeDirectory=shaw-spell
+RuntimeDirectoryMode=0755
+
+ExecStart=/usr/bin/python3 /opt/shaw-spell/editor/editord.py \
+    --socket /run/shaw-spell/editord.sock
+
+Restart=on-failure
+RestartSec=2s
+
+# Building the annotated view (basis + patch overlay) takes a few seconds; give
+# it slack before systemd declares the service failed to start.
+TimeoutStartSec=60s
+
+# Unlike suggestd, editord WRITES the patch store, so the deploy tree is not
+# read-only: data/patches/patches.jsonl must be writable by the service user.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/shaw-spell/data/patches
+
+[Install]
+WantedBy=multi-user.target

@@ -8,25 +8,30 @@ blank-verdict candidates) are NOT migrated: in the new model they have no
 persistence footprint; they are re-derived live from the basis (upstream +
 supplements) and only acquire a patch once a human rules on them.
 
-Patch shape (see docs/editorial-overlay-design.md):
+Patch shape (see docs/editorial-overlay-design.md, "The patch record"):
 
     {
-      "id":  "p_<hash>",                            # deterministic, content-derived
-      "old": {"word","pos","shaw","var"} | null,    # basis record acted on; null = authorship
-      "new": {"word","pos","shaw","var","ipa","freq",
-              "source","status","confidence","note"} | null,   # null = removal
-      "meta": {"author","origin","note"}
+      "id":     "p_<hash>",                                # deterministic, content-derived
+      "anchor": {"word","pos","shaw","var"} | null,        # basis record reviewed; null = authorship
+      "record": {"word","pos","shaw","var","ipa","freq",
+                 "source","status","confidence?","note?"} | null,   # complete record; null = drop
+      "meta":   {"author","origin","note?"}
     }
 
-Identity key = (word, pos, shaw, var). ipa/freq/source/status are payload, not identity.
+The natural key (word, pos, shaw, var) is identity; ipa/freq/source/status are
+payload. The legacy CSV salvage was VAR-INDEPENDENT (one verdict per
+(word, pos, shaw)) and edits-only. Each salvaged decision is resolved against
+the basis to the full source record(s) it applied to; a decision spanning
+several dialect vars fans out to ONE patch per resolved record, each carrying
+that var/ipa/freq. FAIL LOUD on any decision that resolves to nothing.
 
 Salvaged sources:
-  editorial.csv         verdict in {keep, drop, "mistake in ml and shave"}  (+ overrides)
+  editorial.csv           verdict in {keep, drop, "mistake in ml and shave"}  (+ overrides)
   editorial-pos-gaps.csv  verdict == keep
-  editorial-manual.csv    all rows  (authorship: old = null)
+  editorial-manual.csv    all rows  (authorship: anchor = null)
 
 NOT salvaged:
-  editorial-drops.csv   machine-dropped affixes/fragments — re-derivable
+  editorial-drops.csv       machine-dropped affixes/fragments — re-derivable
   editorial-duplicates.csv  reference only
 
 Usage:
@@ -38,7 +43,8 @@ import hashlib
 import json
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+from basis import PROJECT_ROOT, anchor_key, build_basis, output_to_record
+
 EDITORIAL = PROJECT_ROOT / "data" / "editorial.csv"
 POS_GAPS = PROJECT_ROOT / "data" / "editorial-pos-gaps.csv"
 MANUAL = PROJECT_ROOT / "data" / "editorial-manual.csv"
@@ -62,157 +68,171 @@ def read_csv(path):
         return [clean_row(r) for r in csv.DictReader(f) if (r.get("word") or "").strip()]
 
 
-def patch_id(old, new):
+def patch_id(anchor, record):
     """Deterministic, content-derived id so re-running is idempotent (no clock/random)."""
-    basis = json.dumps({"old": old, "new": new}, ensure_ascii=False, sort_keys=True)
-    return "p_" + hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]
+    payload = json.dumps({"anchor": anchor, "record": record},
+                         ensure_ascii=False, sort_keys=True)
+    return "p_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
-def anchor(word, pos, shaw):
-    """A patch's `old` anchor — the record(s) in the basis this decision acts on.
-
-    Var-INDEPENDENT (unified rule for all patch origins). The editorial CSV
-    collapses dialect variants that share a spelling into one verdict row, so a
-    decision on (word, pos, shaw) applies to every basis candidate with that
-    (word, pos, shaw); each matched candidate keeps its own var. Record identity
-    still includes var — that's a property of the produced record, not of the
-    decision anchor.
-    """
-    return {"word": word, "pos": pos, "shaw": shaw}
-
-
-def edits(pos, shaw, ipa, source, status, confidence, note):
-    """A patch's `new` side for keep/respell/pos-gap: the edits to apply to each
-    matched candidate. `var` and `freq` are NOT asserted — inherited from each
-    matched candidate at apply time.
-    """
-    e = {"pos": pos, "shaw": shaw, "ipa": ipa, "source": source, "status": status}
-    if confidence != "":
-        e["confidence"] = int(confidence)
-    if note:
-        e["note"] = note
-    return e
-
-
-def authored_record(word, pos, shaw, var, ipa, freq, source, status, confidence, note):
-    """A full standalone record for an authorship (manual) patch — old=null, so
-    there is no candidate to inherit var/freq from; the record is complete."""
-    rec = {"word": word, "pos": pos, "shaw": shaw, "var": var,
-           "ipa": ipa, "freq": freq,
-           "source": source, "status": status}
-    if confidence != "":
-        rec["confidence"] = int(confidence)
-    if note:
-        rec["note"] = note
-    return rec
-
-
-def make_patch(old, new, author, origin, note):
+def make_patch(anchor, record, author, origin, note):
     meta = {"author": author, "origin": origin}
     if note:
         meta["note"] = note
-    return {"id": patch_id(old, new), "old": old, "new": new, "meta": meta}
+    return {"id": patch_id(anchor, record), "anchor": anchor, "record": record, "meta": meta}
 
 
-def salvage_editorial(rows):
-    """keep / drop / mistake rows from editorial.csv.
+def index_by_var_independent(basis_index, basis_origin):
+    """Group basis records by the var-independent (word_lower, pos, shaw) the
+    legacy CSV verdicts anchored to — one lookup structure, built once. Each
+    grouped record carries its basis origin (the source file that supplied it),
+    which becomes the record's `source` — a fact of the basis, not the CSV."""
+    grouped = {}
+    for key, record in basis_index.items():
+        grouped.setdefault(key[:3], []).append((record, basis_origin[key]))
+    return grouped
 
-    old = (word, reviewed-pos, reviewed-shaw) — anchors the basis candidate(s).
-    Overrides fold into `new` edits. drop → new=null.
-    """
+
+def resolve_sources(var_independent, word, pos, shaw):
+    """The (record, origin) pairs a var-independent (word, pos, shaw) decision
+    applied to. The new key is var-qualified, so one legacy decision fans out to
+    every var whose (word_lower, pos, shaw) matches; each keeps its own
+    var/ipa/freq/origin."""
+    return var_independent.get((word.lower(), pos, shaw), [])
+
+
+def apply_edits(record, origin, pos_override, shaw_override, ipa_override, status):
+    """Fold a decision's edits onto a resolved source record. Overrides win; an
+    absent override leaves the source field intact (its real ipa, not the CSV's
+    var-collapsed one). `source` is the basis origin and `confidence` is the
+    basis record's own value (both deterministic per var, NOT the CSV columns) —
+    so two decisions on one record no longer split into divergent patches. Only
+    the decision's `status` and any explicit overrides come from the CSV; the
+    reviewer's free-text note is patch metadata, kept in meta (not the record)."""
+    edited = dict(record)
+    if pos_override:
+        edited["pos"] = pos_override
+    if shaw_override:
+        edited["shaw"] = shaw_override
+    if ipa_override:
+        edited["ipa"] = ipa_override
+    edited["source"] = origin
+    if status:
+        edited["status"] = status
+    return edited
+
+
+def salvage_edits(rows, var_independent, origin, keep_verdicts, drop_verdicts):
+    """keep/drop/mistake rows resolved to full-record patches, one per matched var.
+
+    The anchor is each resolved source record's natural key (word, pos, shaw, var);
+    the record is that source record with the decision's edits folded in (a drop
+    yields record=null). FAIL LOUD on a decision that resolves to no source."""
     out = []
-    for r in rows:
-        verdict = r.get("verdict", "")
-        if verdict not in ("keep", "drop", MISTAKE_VERDICT):
+    for row in rows:
+        verdict = row.get("verdict", "")
+        if verdict not in keep_verdicts and verdict not in drop_verdicts:
             continue
 
-        word, pos = r["word"], r["pos"]
-        reviewed_shaw = r["shaw"]           # what the human saw / anchored to
-        # Overrides fold into the `new` edits.
-        new_pos = r.get("pos_override") or pos
-        new_shaw = r.get("shaw_override") or reviewed_shaw
-        new_ipa = r.get("ipa_override") or r.get("ipa", "")
+        word, pos, shaw = row["word"], row["pos"], row["shaw"]
+        sources = resolve_sources(var_independent, word, pos, shaw)
+        if not sources:
+            raise SystemExit(
+                f"FATAL: {origin} decision resolves to no basis record: "
+                f"{word!r} pos={pos} shaw={shaw} verdict={verdict!r}")
 
-        old = anchor(word, pos, reviewed_shaw)
-
-        if verdict == "drop":
-            new = None
-        else:  # keep or mistake-correction
-            new = edits(new_pos, new_shaw, new_ipa,
-                        r.get("source", ""), r.get("status", ""),
-                        r.get("confidence", ""), r.get("notes", ""))
-
-        out.append(make_patch(old, new, DEFAULT_AUTHOR,
-                              origin="editorial",
-                              note=(r.get("notes", "") if verdict == MISTAKE_VERDICT else "")))
-    return out
-
-
-def salvage_pos_gaps(rows):
-    """verdict==keep rows from editorial-pos-gaps.csv.
-
-    old = (word, reviewed-pos, reviewed-shaw); overrides fold into `new` edits.
-    """
-    out = []
-    for r in rows:
-        if r.get("verdict") != "keep":
-            continue
-        word = r["word"]
-        reviewed_pos, reviewed_shaw = r["pos"], r["shaw"]
-        new_pos = r.get("pos_override") or reviewed_pos
-        new_shaw = r.get("shaw_override") or reviewed_shaw
-        new_ipa = r.get("ipa_override") or r.get("ipa", "")
-
-        old = anchor(word, reviewed_pos, reviewed_shaw)
-        new = edits(new_pos, new_shaw, new_ipa,
-                    r.get("source", ""), r.get("status", ""),
-                    r.get("confidence", ""), r.get("notes", ""))
-        out.append(make_patch(old, new, DEFAULT_AUTHOR, origin="pos-gap", note=""))
+        for source_record, source_origin in sources:
+            anchor = {"word": source_record["Latn"], "pos": source_record["pos"],
+                      "shaw": source_record["Shaw"], "var": source_record["var"]}
+            if verdict in drop_verdicts:
+                record = None
+            else:
+                record = apply_edits(
+                    output_to_record(source_record), source_origin,
+                    row.get("pos_override", ""), row.get("shaw_override", ""),
+                    row.get("ipa_override", ""), row.get("status", ""))
+            out.append(make_patch(anchor, record, DEFAULT_AUTHOR, origin,
+                                  row.get("notes", "")))
     return out
 
 
 def salvage_manual(rows):
-    """editorial-manual.csv — authorship: old = null (records no source attests)."""
+    """editorial-manual.csv — authorship: anchor = null (records no source
+    attests). The record is complete and self-contained; nothing to resolve."""
     out = []
-    for r in rows:
-        word = r["word"]
-        pos = r.get("pos_override") or r["pos"]
-        var = r.get("var_override") or (r.get("var") or "RRP")
-        shaw = r.get("shaw_override") or r["shaw"]
-        ipa = r.get("ipa_override") or r.get("ipa", "")
-        new = authored_record(word, pos, shaw, var, ipa, int(r.get("freq") or 0),
-                              r.get("source", "manual") or "manual",
-                              r.get("status", "manual") or "manual",
-                              r.get("confidence", ""), r.get("notes", ""))
-        out.append(make_patch(None, new, DEFAULT_AUTHOR, origin="manual", note=""))
+    for row in rows:
+        record = {
+            "word": row["word"],
+            "pos": row.get("pos_override") or row["pos"],
+            "shaw": row.get("shaw_override") or row["shaw"],
+            "var": row.get("var_override") or (row.get("var") or "RRP"),
+            "ipa": row.get("ipa_override") or row.get("ipa", ""),
+            "freq": int(row.get("freq") or 0),
+            "source": row.get("source", "manual") or "manual",
+            "status": row.get("status", "manual") or "manual",
+        }
+        if row.get("confidence", "") != "":
+            record["confidence"] = int(row["confidence"])
+        out.append(make_patch(None, record, DEFAULT_AUTHOR, origin="manual",
+                              note=row.get("notes", "")))
     return out
 
 
+def dedup_identical(patches):
+    """Coalesce byte-identical patches (same id AND same content) — the legacy
+    CSVs record some decisions on the same record twice, which is idempotent, not
+    a conflict. FAIL LOUD on a true id collision: same id, DIFFERENT content."""
+    seen = {}
+    for patch in patches:
+        existing = seen.get(patch["id"])
+        if existing is None:
+            seen[patch["id"]] = patch
+        elif existing != patch:
+            raise SystemExit(
+                f"FATAL: patch id collision with differing content: {patch['id']} "
+                f"({existing['anchor']} vs {patch['anchor']})")
+    return list(seen.values())
+
+
+def reject_anchor_conflicts(patches):
+    """FAIL LOUD if two distinct patches target the same anchor. One record has
+    one decision; two conflicting verdicts on the same natural key mean the source
+    CSVs disagree and a human must reconcile them — never silently last-wins."""
+    by_anchor = {}
+    for patch in patches:
+        anchor = patch["anchor"]
+        if anchor is None:
+            continue
+        key = anchor_key(anchor)
+        if key in by_anchor:
+            raise SystemExit(
+                f"FATAL: two conflicting patches on anchor {key}: "
+                f"{by_anchor[key]} vs {patch['id']}")
+        by_anchor[key] = patch["id"]
+
+
 def main():
+    basis_index, basis_origin = build_basis()
+    var_independent = index_by_var_independent(basis_index, basis_origin)
+
     editorial_rows = read_csv(EDITORIAL)
     pos_gap_rows = read_csv(POS_GAPS)
     manual_rows = read_csv(MANUAL)
 
     patches = []
-    patches += salvage_editorial(editorial_rows)
-    patches += salvage_pos_gaps(pos_gap_rows)
+    patches += salvage_edits(editorial_rows, var_independent, "editorial",
+                             keep_verdicts=("keep", MISTAKE_VERDICT),
+                             drop_verdicts=("drop",))
+    patches += salvage_edits(pos_gap_rows, var_independent, "pos-gap",
+                             keep_verdicts=("keep",), drop_verdicts=())
     patches += salvage_manual(manual_rows)
 
-    # Report + integrity checks (fail loud on duplicate ids or malformed patches).
-    ids = [p["id"] for p in patches]
-    if len(ids) != len(set(ids)):
-        dupes = [i for i in set(ids) if ids.count(i) > 1]
-        raise SystemExit(f"FATAL: {len(dupes)} duplicate patch ids: {dupes[:5]}")
+    patches = dedup_identical(patches)
+    reject_anchor_conflicts(patches)
 
-    # Classify. `new` for an edit patch is edits-only (pos, shaw, ...); a respell
-    # is one whose edits change pos or shaw versus the anchor.
-    n_add = sum(1 for p in patches if p["old"] is None)
-    n_remove = sum(1 for p in patches if p["new"] is None)
-    n_respell = sum(1 for p in patches
-                    if p["old"] and p["new"]
-                    and (p["new"]["shaw"], p["new"]["pos"])
-                    != (p["old"]["shaw"], p["old"]["pos"]))
-    n_update = len(patches) - n_add - n_remove - n_respell
+    n_add = sum(1 for p in patches if p["anchor"] is None)
+    n_remove = sum(1 for p in patches if p["record"] is None)
+    n_edit = len(patches) - n_add - n_remove
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
@@ -220,13 +240,12 @@ def main():
             f.write(json.dumps(p, ensure_ascii=False) + "\n")
 
     print(f"Wrote {len(patches):,} patches → {OUT_PATH.relative_to(PROJECT_ROOT)}")
-    print(f"  authorship (old=null):      {n_add:,}")
-    print(f"  removal    (new=null):      {n_remove:,}")
-    print(f"  respell    (key changes):   {n_respell:,}")
-    print(f"  update     (same key):      {n_update:,}")
+    print(f"  authorship (anchor=null):  {n_add:,}")
+    print(f"  drop       (record=null):  {n_remove:,}")
+    print(f"  edit       (full record):  {n_edit:,}")
     print(f"  by origin:")
-    for o in sorted(set(p["meta"]["origin"] for p in patches)):
-        print(f"    {o:12s} {sum(1 for p in patches if p['meta']['origin']==o):,}")
+    for origin in sorted(set(p["meta"]["origin"] for p in patches)):
+        print(f"    {origin:12s} {sum(1 for p in patches if p['meta']['origin']==origin):,}")
 
 
 if __name__ == "__main__":

@@ -127,9 +127,14 @@ Determinism: total apply order over `(anchor…, id)`. Same inputs → same `rea
   online phase as a derived coordination layer that flushes back to the JSONL (git stays
   authoritative). Small-team framing confirmed — no Postgres-of-record.
 - Basis is **computed on-demand**, never persisted as an editorial artifact.
-- Natural key `(word, pos, shaw, var)`; `ipa`/`freq`/`source`/`status` are payload, not
-  identity.
-- Patch = record rewrite via `old`/`new`; `old:null` = authorship, `new:null` = removal.
+- Natural key = anchor `(word, pos, shaw, var)`; `ipa`/`freq`/`source`/`status` are
+  payload, not identity.
+- Patch = `{anchor, record|null, meta}` (see "The patch record (settled model)"):
+  `anchor:null` = authorship, `record:null` = drop. `record` is complete + authoritative.
+- **`source` and `confidence` are basis-derived provenance, not reviewer decisions.** The
+  reviewer edits shaw/var/ipa/status; source and confidence come from the basis record and
+  are carried through. (Treating them as per-CSV-row editable would reintroduce anchor
+  conflicts — one anchor could get two divergent patches — so they stay basis-derived.)
 - Trust model (collaborator patches direct-to-prod vs. review gate): **deferred** to
   Phase 2 (moot for single-user Phase 0/1).
 
@@ -179,15 +184,52 @@ both use one implementation rather than a parallel copy.
 **Filters:** `confidence` (threshold/range), `source`, `status` (supplement / new /
 pos-gap / manual), `pos`, `var`, `word`/`shaw` substring, and patch-state.
 
-**Layout:** filter bar on top; left panel = scrollable list/table of matches; right =
-detail editor for the focused entry with **editable Shavian, focused by default**.
-Stepping = arrow keys through the list.
+**Layout:** filter bar on top; left panel = scrollable list/table of matches (incl. a
+**var/dialect column**); right = detail editor for the focused entry with **editable
+Shavian, focused by default**. Stepping = arrow keys through the list.
 
-**Accept / reject (pure patch model):**
-- Accept → patch `{old: anchor, new: edits}` promoting the entry; any Shavian edit folds
-  into `new.shaw` (edit-then-accept = a respell).
-- Reject → removal patch `{old: anchor, new: null}`.
-- Keyboard shortcuts for accept / reject / next / prev.
+**Detail panel — readable, not a cramped inspector.** The detail editor is the thing the
+editor stares at while deciding; it must BREATHE. Lay each field out vertically as a
+labelled row (label + LARGE value) — pivoted, not jammed into a compact grid. Shavian and
+IPA especially must be big and comfortably readable. Err on the side of bigger type. The
+whole reason for this tool is to stop squinting at tiny spreadsheet cells.
+
+**Mobile-first / responsive.** It must work well on a phone. On narrow screens the
+two-panel layout collapses: the **list becomes a collapsible panel** (drawer/overlay), so
+the phone shows one big readable detail card at a time, with the list pulled out on demand.
+Accept/Drop need real touch targets (not keyboard-only). This converges on a focused
+review-card shape on mobile — one entry, large, edit + accept/drop, step, list tucked away.
+
+**External reference links.** In the detail panel, near the word, a small row of labelled
+links (open in a new tab) to look the word up while deciding — keyed on the record's
+`word`, URL-encoded (handles phrases/apostrophes):
+- Wiktionary — `https://en.wiktionary.org/wiki/{word}`
+- Merriam-Webster — `https://www.merriam-webster.com/dictionary/{word}`
+- OED — `https://www.oed.com/search/dictionary/?scope=Entries&q={word}` (search form; OED
+  is subscription-only with no stable public deep-link, so we link to their search)
+
+**Continuity (localStorage).** Persist the editor's session so a reload — or coming back
+later, or on the phone — resumes where you left off. Store the **active filter** and your
+**position**. Position must be the **anchor** of the entry you were on (`{word,pos,shaw,var}`),
+NOT a row index — an index is meaningless once the pull-and-refresh list re-materialises.
+On load: restore the saved filter → pull the list → re-select the entry with that anchor;
+if it's no longer in the set (e.g. you reviewed it and it fell out), land on the nearest
+sensible neighbour rather than jumping to the top.
+
+**Shavian font.** Render Shavian in **Bernie Sans Beta**, the project's Shavian webfont at
+`src/fonts/BernieSansBetaVF.woff2` (the single canonical asset — do NOT duplicate it). The
+editor CSS already declares the `@font-face`; the missing piece is exposing `src/fonts/` at
+`fonts/` under the editor doc root, exactly as `deploy_site.py` copies `src/fonts/* →
+output/fonts/` for the production site. The local launcher (`test_editor.py`) must serve
+`src/fonts/` at `/fonts` so the font resolves; verify Shavian renders in Bernie Sans Beta,
+not a fallback.
+
+**Actions (pure patch model — see "The patch record (settled model)"):**
+- Accept → patch `{anchor, record}` where `record.status = sanctioned` (promote from
+  supplemental). Any field edit (shaw/var/ipa/status) is already in `record`.
+- Drop → `{anchor, record: null}`.
+- Edit → `{anchor, record}` with the corrected fields; the anchor never changes.
+- Buttons + keyboard shortcuts for accept / drop / edit / next / prev.
 
 **Deferred to a later Phase-1 iteration:** editing the transliterated **definitions**
 (`definitions-*.json`) — the same editor, extended. Design the entry model so definitions

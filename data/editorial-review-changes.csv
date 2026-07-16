@@ -1,0 +1,192 @@
+word,pos,var,verdict,old_shaw,new_shaw,old_ipa,new_ipa,shaw_override,ipa_override,notes
+aar,NN1,GenAm,keep,𐑸,𐑸,ɑːr,ɑːR,,,shave_agrees
+aardwolf,NN1,RRP,keep,𐑸𐑛𐑢𐑫𐑤𐑓,𐑸𐑛𐑢𐑫𐑤𐑓,ɑːRdwʊlf,ˈɑːRdˌwʊlf,,,shave_agrees
+aare,NN1,GenAm,keep,𐑸𐑩,𐑸𐑩,ɑːrə,ˈɑːRə,,,shave_says:𐑱𐑸
+abalone,NN1,RRP,keep,𐑨𐑚𐑩𐑤𐑴𐑯𐑦,𐑨𐑚𐑩𐑤𐑴𐑯𐑦,æbəˈləʊni,æbəˈloʊni,,,shave_agrees
+abelmosk,NN1,RRP,keep,𐑱𐑚𐑩𐑤𐑥𐑪𐑕𐑒,𐑱𐑚𐑩𐑤𐑥𐑪𐑕𐑒,ˈeɪbəlmɒsk,ˈeɪbəlˌmɒsk,,,shave_says:𐑨𐑚𐑧𐑤𐑥𐑴𐑕𐑒
+abettor,NN1,RRP,keep,𐑩𐑚𐑧𐑑𐑼,𐑩𐑚𐑧𐑑𐑼,əbetəR,əˈbetəR,,,shave_agrees
+aboral,AJ0,RRP,keep,𐑨𐑚𐑹𐑩𐑤,𐑨𐑚𐑹𐑩𐑤,æbɔːrəl,æbˈɔːRəl,,,shave_says:𐑩𐑚𐑹𐑩𐑤
+abrogate,VVI,RRP,keep,𐑨𐑚𐑮𐑩𐑜𐑩𐑑,𐑨𐑚𐑮𐑩𐑜𐑩𐑑,æbrəɡət,ˈæbrəˌɡət,,,shave_says:𐑨𐑚𐑮𐑩𐑜𐑱𐑑
+absurda,NN1,RRP,keep,𐑩𐑚𐑕𐑻𐑛𐑩,𐑩𐑚𐑕𐑻𐑛𐑩,əbˈsɜːdə,əbsɜːRdə,,,"r_gap:spelling=1,ipa=0; shave_agrees"
+acadian,NN1,RRP,keep,𐑩𐑒𐑱𐑛𐑦𐑩𐑯,𐑩𐑒𐑱𐑛𐑾𐑯,əˈkeɪdiən,əˈkeɪdiən,,,shave_agrees
+accentor,NN1,RRP,keep,𐑩𐑒𐑕𐑧𐑯𐑑𐑼,𐑩𐑒𐑕𐑧𐑯𐑑𐑼,əksentəR,əkˈsentəR,,,shave_says:𐑨𐑒𐑕𐑧𐑯𐑑𐑼
+acceptor,NN1,RRP,keep,𐑩𐑒𐑕𐑧𐑐𐑑𐑼,𐑩𐑒𐑕𐑧𐑐𐑑𐑼,əkseptəR,əkˈseptəR,,,shave_agrees
+acerb,AJ0,RRP,keep,𐑩𐑕𐑻𐑚,𐑩𐑕𐑻𐑚,əsɜːRb,əˈsɜːRb,,,shave_agrees
+acerbate,VVI,RRP,keep,𐑨𐑕𐑼𐑚𐑱𐑑,𐑨𐑕𐑼𐑚𐑱𐑑,asəRbeɪt,ˈæsərˌbeɪt,,,shave_says:𐑩𐑕𐑻𐑚𐑱𐑑
+acerbic,AJ0,RRP,keep,𐑩𐑕𐑻𐑚𐑦𐑒,𐑩𐑕𐑻𐑚𐑦𐑒,əˈsɜːbɪk,əsɜːrbɪk,,,"r_gap:spelling=1,ipa=0; shave_agrees"
+acervate,AJ0,RRP,keep,𐑨𐑕𐑼𐑝𐑱𐑑,𐑨𐑕𐑼𐑝𐑱𐑑,æsəRveɪt,ˈæsəRveɪt,,,shave_says:𐑱𐑕𐑻𐑝𐑱𐑑
+acetabular,AJ0,RRP,keep,𐑨𐑕𐑦𐑑𐑨𐑚𐑘𐑩𐑤𐑼,𐑨𐑕𐑦𐑑𐑨𐑚𐑘𐑩𐑤𐑼,æsɪtæbjələR,ˌæsɪˈtæbjələR,,,shave_says:𐑩𐑕𐑰𐑖𐑩𐑚𐑿𐑤𐑼
+acetose,AJ0,RRP,keep,𐑨𐑕𐑦𐑑𐑴𐑕,𐑨𐑕𐑦𐑑𐑴𐑕,ˈæsɪtəʊs,ˈæsɪtoʊs,,,shave_says:𐑩𐑕𐑰𐑑𐑴𐑕
+adopter,NN1,RRP,keep,𐑩𐑛𐑪𐑐𐑑𐑼,𐑩𐑛𐑪𐑐𐑑𐑼,ədɒptəR,əˈdɒptəR,,,shave_agrees
+adorableness,NN1,RRP,keep,𐑩𐑛𐑹𐑩𐑚𐑩𐑤𐑯𐑩𐑕,𐑩𐑛𐑹𐑩𐑚𐑩𐑤𐑯𐑩𐑕,ədɔːrəbəlnəs,əˈdɔːrəbəlnəs,,,shave_agrees
+aflutter,AJ0,RRP,keep,𐑩𐑓𐑤𐑳𐑑𐑼,𐑩𐑓𐑤𐑳𐑑𐑼,əflʌtəR,əˈflʌtəR,,,shave_agrees
+aforementioned,AJ0,RRP,keep,𐑩𐑓𐑹𐑥𐑧𐑯𐑖𐑩𐑯𐑛,𐑩𐑓𐑹𐑥𐑧𐑯𐑖𐑩𐑯𐑛,əfɔːRmenʃənd,əˈfɔːRˌmenʃənd,,,shave_agrees
+ahorse,AV0,RRP,keep,𐑩𐑣𐑹𐑕,𐑩𐑣𐑹𐑕,əhɔːRs,əˈhɔːRs,,,shave_says:𐑱𐑣𐑹𐑕
+aioli,NN1,RRP,keep,𐑲𐑴𐑤𐑦,𐑲𐑴𐑤𐑦,aɪˈəʊlɪ,aɪˈoʊli,𐑱𐑴𐑤𐑦,,eɪˈəʊli is the shared / more common (?) pronunciation.  We need a IPA override!
+anadromous,AJ0,RRP,keep,𐑩𐑯𐑨𐑛𐑮𐑩𐑥𐑩𐑕,𐑩𐑯𐑨𐑛𐑮𐑩𐑥𐑩𐑕,ənadrəməs,əˈnædrəməs,,,shave_says:𐑨𐑯𐑩𐑛𐑮𐑴𐑥𐑩𐑕
+anamorphic,AJ0,RRP,keep,𐑨𐑯𐑩𐑥𐑹𐑓𐑦𐑒,𐑨𐑯𐑩𐑥𐑹𐑓𐑦𐑒,ænəmɔːRfɪk,ˌænəˈmɔːRfɪk,,,shave_agrees
+androgyny,NN1,RRP,keep,𐑨𐑯𐑛𐑮𐑪𐑡𐑩𐑯𐑦,𐑨𐑯𐑛𐑮𐑪𐑡𐑩𐑯𐑦,ændrɒdʒəni,ænˈdrɒdʒəni,,,shave_agrees
+aneurysm,NN1,RRP,keep,𐑨𐑯𐑘𐑼𐑦𐑟𐑩𐑥,𐑨𐑯𐑘𐑼𐑦𐑟𐑩𐑥,anjərɪzəm,ˈænjərɪzəm,,,shave_agrees
+anglerfish,NN1,RRP,keep,𐑨𐑙𐑜𐑤𐑼𐑓𐑦𐑖,𐑨𐑙𐑜𐑤𐑼𐑓𐑦𐑖,æŋɡləRfɪʃ,ˈæŋɡləRˌfɪʃ,,,shave_agrees
+anglo-norman,NN1,RRP,keep,𐑨𐑙𐑜𐑤𐑴𐑯𐑹𐑥𐑩𐑯,𐑨𐑙𐑜𐑤𐑴𐑯𐑹𐑥𐑩𐑯,æŋɡləʊnɔːRmən,æŋɡloʊnɔːrmən,,,shave_says:anglo-𐑯𐑹𐑥𐑩𐑯
+anthroposophy,NN1,RRP,keep,𐑨𐑯𐑔𐑮𐑩𐑐𐑪𐑕𐑩𐑓𐑦,𐑨𐑯𐑔𐑮𐑩𐑐𐑪𐑕𐑩𐑓𐑦,ænθrəpɒsəfi,ˌænθrəˈpɒsəfi,,,shave_says:𐑨𐑯𐑔𐑮𐑪𐑐𐑩𐑕𐑴𐑓𐑦
+badass,AJ0,RRP,keep,𐑚𐑨𐑛𐑨𐑕,𐑚𐑨𐑛𐑨𐑕,ˈbædæs,ˈbædˌæs,,,shave_agrees
+badass,NN1,RRP,keep,𐑚𐑨𐑛𐑨𐑕,𐑚𐑨𐑛𐑨𐑕,ˈbædæs,ˈbædˌæs,,,shave_agrees
+banquette,NN1,RRP,keep,𐑚𐑨𐑙𐑒𐑧𐑑,𐑚𐑨𐑙𐑒𐑧𐑑,baŋˈket,bæŋˈket,,,shave_agrees
+bargello,NN1,RRP,keep,𐑚𐑸𐑡𐑧𐑤𐑴,𐑚𐑸𐑡𐑧𐑤𐑴,bɑːRdʒeləʊ,bɑːRˈdʒeloʊ,,,shave_agrees
+baster,NN1,RRP,keep,𐑚𐑱𐑕𐑑𐑼,𐑚𐑱𐑕𐑑𐑼,beɪstəR,ˈbeɪstəR,,,shave_agrees
+beignet,NN1,RRP,keep,𐑚𐑧𐑯𐑘𐑱,𐑚𐑧𐑯𐑘𐑱,ˈbenjeɪ,benˈjeɪ,,,shave_says:𐑚𐑦𐑦𐑜𐑯𐑧𐑑
+bemire,VVI,RRP,keep,𐑚𐑩𐑥𐑲𐑼,𐑚𐑩𐑥𐑲𐑼,bəmaɪəR,bəˌmaɪər,,,shave_says:𐑚𐑦𐑥𐑲𐑼
+bioweapon,NN1,RRP,keep,𐑚𐑲𐑴𐑢𐑧𐑐𐑩𐑯,𐑚𐑲𐑴𐑢𐑧𐑐𐑩𐑯,ˈbaɪəʊˌwepən,ˈbaɪoʊˌwepən,,,shave_agrees
+birdie,NN1,RRP,keep,𐑚𐑻𐑛𐑦,𐑚𐑻𐑛𐑦,bɜːRdi,ˈbɜːRdi,,,shave_agrees
+birdie,VVI,RRP,keep,𐑚𐑻𐑛𐑦,𐑚𐑻𐑛𐑦,bɜːRdi,ˈbɜːRdi,,,shave_agrees
+biter,NN1,RRP,keep,𐑚𐑲𐑑𐑼,𐑚𐑲𐑑𐑼,baɪtəR,ˈbaɪtəR,,,shave_agrees
+bizarreness,NN1,RRP,keep,𐑚𐑦𐑟𐑸𐑯𐑩𐑕,𐑚𐑦𐑟𐑸𐑯𐑩𐑕,bɪzɑːRnəs,bɪˈzɑːRnəs,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+blender,NN1,RRP,keep,𐑚𐑤𐑧𐑯𐑛𐑼,𐑚𐑤𐑧𐑯𐑛𐑼,blendəR,ˈblendəR,,,shave_agrees
+blither,VVI,RRP,keep,𐑚𐑤𐑦𐑞𐑼,𐑚𐑤𐑦𐑞𐑼,blɪðəR,ˈblɪðəR,,,shave_agrees
+blowhard,NN1,RRP,keep,𐑚𐑤𐑴𐑣𐑸𐑛,𐑚𐑤𐑴𐑣𐑸𐑛,bləʊhɑːRd,ˈbloʊhɑːRd,,,shave_agrees
+blowjob,NN1,RRP,keep,𐑚𐑤𐑴𐑡𐑪𐑚,𐑚𐑤𐑴𐑡𐑪𐑚,ˈbləʊdʒɒb,ˈbloʊdʒɒb,,,shave_agrees
+bonobo,NN1,RRP,keep,𐑚𐑩𐑯𐑴𐑚𐑴,𐑚𐑩𐑯𐑴𐑚𐑴,bəˈnəʊˌbəʊ,bəˈnoʊˌboʊ,,,shave_agrees
+bordelaise,NN1,RRP,keep,𐑚𐑹𐑛𐑩𐑤𐑱𐑟,𐑚𐑹𐑛𐑩𐑤𐑱𐑟,bɔːRdəleɪz,ˌbɔːRdəˈleɪz,,,shave_says:𐑚𐑹𐑛𐑫𐑤𐑧𐑟
+bowstring,NN1,RRP,keep,𐑚𐑴𐑕𐑑𐑮𐑦𐑙,𐑚𐑴𐑕𐑑𐑮𐑦𐑙,ˈbəʊstrɪŋ,ˈboʊstrɪŋ,,,shave_agrees
+bowtie,NN1,RRP,keep,𐑚𐑴𐑑𐑲,𐑚𐑴𐑑𐑲,bəʊˈtaɪ,boʊˈtaɪ,,,shave_agrees
+bracer,NN1,RRP,keep,𐑚𐑮𐑱𐑕𐑼,𐑚𐑮𐑱𐑕𐑼,breɪsəR,ˈbreɪsəR,,,shave_agrees
+bromance,NN1,RRP,keep,𐑚𐑮𐑴𐑥𐑨𐑯𐑕,𐑚𐑮𐑴𐑥𐑨𐑯𐑕,ˈbrəʊmæns,ˈbroʊmæns,,,shave_agrees
+brony,NN1,RRP,keep,𐑚𐑮𐑴𐑯𐑦,𐑚𐑮𐑴𐑯𐑦,ˈbrəʊni,ˈbroʊni,,,shave_agrees
+buddha,NN1,RRP,keep,𐑚𐑫𐑛𐑩,𐑚𐑫𐑛𐑩,ˈbʊdə,ˈbudə,,,shave_agrees
+burgrave,NN1,RRP,keep,𐑚𐑻𐑜𐑮𐑱𐑝,𐑚𐑻𐑜𐑮𐑱𐑝,bɜːRɡreɪv,ˈbɜːRɡreɪv,,,shave_agrees
+butterfat,NN1,RRP,keep,𐑚𐑳𐑑𐑼𐑓𐑨𐑑,𐑚𐑳𐑑𐑼𐑓𐑨𐑑,bʌtəRfæt,ˈbʌtəRfæt,,,shave_agrees
+butterfingered,AJ0,RRP,keep,𐑚𐑳𐑑𐑼𐑓𐑦𐑙𐑜𐑼𐑛,𐑚𐑳𐑑𐑼𐑓𐑦𐑙𐑜𐑼𐑛,bʌtəRfɪŋɡəRd,ˈbʌtəRˌfɪŋɡəRd,,,shave_agrees
+butterfish,NN1,RRP,keep,𐑚𐑳𐑑𐑼𐑓𐑦𐑖,𐑚𐑳𐑑𐑼𐑓𐑦𐑖,bʌtəRfɪʃ,ˈbʌtərfɪʃ,,,shave_agrees
+caliber,NN1,RRP,keep,𐑒𐑨𐑤𐑦𐑚𐑼,𐑒𐑨𐑤𐑦𐑚𐑼,kælɪbəR,ˈkælɪbəR,,,shave_agrees
+candor,NN1,RRP,keep,𐑒𐑨𐑯𐑛𐑼,𐑒𐑨𐑯𐑛𐑼,kændəR,ˈkændəR,,,shave_agrees
+carbonara,NN1,RRP,keep,𐑒𐑸𐑚𐑩𐑯𐑸𐑩,𐑒𐑸𐑚𐑩𐑯𐑸𐑩,kɑːRbənɑːrə,ˌkɑːRbəˈnɑːRə,,,shave_says:𐑒𐑸𐑚𐑩𐑯𐑼𐑩
+carbonarism,NN1,RRP,keep,𐑒𐑸𐑚𐑩𐑯𐑸𐑦𐑟𐑩𐑥,𐑒𐑸𐑚𐑩𐑯𐑸𐑦𐑟𐑩𐑥,kɑːRbənɑːrɪzəm,ˌkɑːRbəˈnɑːRɪzəm,,,shave_says:𐑒𐑸𐑚𐑩𐑯𐑼𐑦𐑟𐑩𐑥
+carjack,VVI,RRP,keep,𐑒𐑸𐑡𐑨𐑒,𐑒𐑸𐑡𐑨𐑒,kɑːRdʒæk,ˈkɑːRdʒæk,,,shave_agrees
+carload,NN1,RRP,keep,𐑒𐑸𐑤𐑴𐑛,𐑒𐑸𐑤𐑴𐑛,kɑːRləʊd,ˈkɑːRloʊd,,,shave_agrees
+carpus,NN1,RRP,keep,𐑒𐑸𐑐𐑩𐑕,𐑒𐑸𐑐𐑩𐑕,kɑːRpəs,ˈkɑːRpəs,,,shave_agrees
+carrier,NN1,RRP,keep,𐑒𐑨𐑮𐑽,𐑒𐑨𐑮𐑽,kærɪəR,ˈkærɪəR,,,"r_gap:spelling=3,ipa=2; shave_agrees"
+catheter,NN1,RRP,keep,𐑒𐑨𐑔𐑦𐑑𐑼,𐑒𐑨𐑔𐑦𐑑𐑼,kæθɪtəR,ˈkæθɪtəR,,,shave_says:𐑒𐑨𐑔𐑩𐑑𐑼
+centerfold,NN1,RRP,keep,𐑕𐑧𐑯𐑑𐑼𐑓𐑴𐑤𐑛,𐑕𐑧𐑯𐑑𐑼𐑓𐑴𐑤𐑛,sentəRfəʊld,ˈsentəRfoʊld,,,shave_agrees
+chipotle,NN1,RRP,keep,𐑗𐑦𐑐𐑴𐑑𐑤𐑱,𐑗𐑦𐑐𐑴𐑑𐑤𐑱,tʃɪˈpəʊtleɪ,tʃɪˈpoʊtleɪ,,,shave_says:𐑗𐑦𐑐𐑴𐑑𐑤𐑧
+chiromancer,NN1,GenAm,keep,𐑒𐑲𐑮𐑩𐑥𐑨𐑯𐑕𐑼,𐑒𐑲𐑮𐑩𐑥𐑨𐑯𐑕𐑼,kaɪrəmænsəR,ˈkaɪrəˌmænsəR,,,shave_says:𐑒𐑲𐑮𐑴𐑥𐑩𐑯𐑕𐑼
+chiromancer,NN1,GenAm,keep,𐑒𐑲𐑮𐑩𐑥𐑨𐑯𐑕𐑼,𐑒𐑲𐑮𐑩𐑥𐑨𐑯𐑕𐑼,kaɪrəmænsəR,ˈkaɪrəˌmænsəR,,,shave_says:𐑒𐑲𐑮𐑴𐑥𐑩𐑯𐑕𐑼
+chroma,NN1,RRP,keep,𐑒𐑮𐑴𐑥𐑩,𐑒𐑮𐑴𐑥𐑩,krəʊmə,ˈkroʊmə,,,shave_agrees
+chronoscope,NN1,RRP,keep,𐑒𐑮𐑪𐑯𐑩𐑕𐑒𐑴𐑐,𐑒𐑮𐑪𐑯𐑩𐑕𐑒𐑴𐑐,krɒnəskəʊp,ˈkrɒnəˌskoʊp,,,shave_agrees
+classifier,NN1,RRP,keep,𐑒𐑤𐑨𐑕𐑦𐑓𐑲𐑼,𐑒𐑤𐑨𐑕𐑦𐑓𐑲𐑼,klæsɪfaɪəR,ˈklæsɪfaɪəR,,,shave_agrees
+claustrophobe,NN1,RRP,keep,𐑒𐑤𐑪𐑕𐑑𐑮𐑩𐑓𐑴𐑚,𐑒𐑤𐑪𐑕𐑑𐑮𐑩𐑓𐑴𐑚,klɒstrəfəʊb,ˈklɒstrəˌfoʊb,,,shave_says:𐑒𐑤𐑷𐑕𐑑𐑮𐑴𐑓𐑴𐑚
+clitoral,AJ0,RRP,keep,𐑒𐑤𐑦𐑑𐑼𐑩𐑤,𐑒𐑤𐑦𐑑𐑼𐑩𐑤,klɪtərəl,ˈklɪtərəl,,,shave_says:𐑒𐑤𐑦𐑑𐑹𐑩𐑤
+cloaca,NN1,RRP,keep,𐑒𐑤𐑴𐑱𐑒𐑩,𐑒𐑤𐑴𐑱𐑒𐑩,kləʊˈeɪkə,kloʊˈeɪkə,,,shave_agrees
+clusterfuck,NN1,RRP,keep,𐑒𐑤𐑳𐑕𐑑𐑼𐑓𐑳𐑒,𐑒𐑤𐑳𐑕𐑑𐑼𐑓𐑳𐑒,klʌstəRfʌk,ˈklʌstəRˌfʌk,,,shave_agrees
+coaxial,AJ0,RRP,keep,𐑒𐑴𐑨𐑒𐑕𐑰𐑩𐑤,𐑒𐑴𐑨𐑒𐑕𐑰𐑩𐑤,kəʊˈæksiːəl,koʊˈæksiːəl,𐑒𐑴𐑨𐑒𐑕𐑾𐑤,,"ML is messing up Air, Ian and Ear."
+cofounder,NN1,RRP,keep,𐑒𐑴𐑓𐑬𐑯𐑛𐑼,𐑒𐑴𐑓𐑬𐑯𐑛𐑼,kəʊfaʊndəR,ˈkoʊfaʊndəR,,,shave_agrees
+conferral,NN1,RRP,keep,𐑒𐑩𐑯𐑓𐑻𐑩𐑤,𐑒𐑩𐑯𐑓𐑻𐑩𐑤,kənfɜːrəl,kənˈfɜːRəl,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+congregationalism,NN1,RRP,keep,𐑒𐑪𐑙𐑜𐑮𐑩𐑜𐑱𐑖𐑩𐑯𐑩𐑤𐑦𐑟𐑩𐑥,𐑒𐑪𐑙𐑜𐑮𐑩𐑜𐑱𐑖𐑩𐑯𐑩𐑤𐑦𐑟𐑩𐑥,kɒŋɡrəɡeɪʃənəlɪzəm,ˌkɒŋɡrəˈɡeɪʃənəˌlɪzəm,,,shave_says:𐑒𐑪𐑙𐑜𐑮𐑦𐑜𐑱𐑖𐑩𐑯𐑩𐑤𐑦𐑟𐑩𐑥
+congregationalist,NN1,RRP,keep,𐑒𐑪𐑙𐑜𐑮𐑩𐑜𐑱𐑖𐑩𐑯𐑩𐑤𐑦𐑕𐑑,𐑒𐑪𐑙𐑜𐑮𐑩𐑜𐑱𐑖𐑩𐑯𐑩𐑤𐑦𐑕𐑑,kɒŋɡrəɡeɪʃənəlɪst,kɒŋɡrəˈɡeɪʃənəlɪst,,,shave_says:𐑒𐑪𐑙𐑜𐑮𐑦𐑜𐑱𐑖𐑩𐑯𐑩𐑤𐑦𐑕𐑑
+constrictor,NN1,RRP,keep,𐑒𐑩𐑯𐑕𐑑𐑮𐑦𐑒𐑑𐑼,𐑒𐑩𐑯𐑕𐑑𐑮𐑦𐑒𐑑𐑼,kənstrɪktəR,kənˈstrɪktəR,,,shave_agrees
+cordate,AJ0,RRP,keep,𐑒𐑹𐑛𐑱𐑑,𐑒𐑹𐑛𐑱𐑑,kɔːRdeɪt,ˈkɔːrdeɪt,,,shave_agrees
+cosign,VVI,RRP,keep,𐑒𐑴𐑕𐑲𐑯,𐑒𐑴𐑕𐑲𐑯,ˈkəʊsaɪn,ˈkoʊsaɪn,,,shave_agrees
+croat,NN1,RRP,keep,𐑒𐑮𐑴𐑨𐑑,𐑒𐑮𐑴𐑨𐑑,ˈkrəʊæt,ˈkroʊæt,,,shave_agrees
+croatian,AJ0,RRP,keep,𐑒𐑮𐑴𐑱𐑖𐑩𐑯,𐑒𐑮𐑴𐑱𐑖𐑩𐑯,krəʊeɪʃən,ˌkroʊˈeɪʃən,,,shave_agrees
+croatian,NN1,RRP,keep,𐑒𐑮𐑴𐑱𐑖𐑩𐑯,𐑒𐑮𐑴𐑱𐑖𐑩𐑯,krəʊeɪʃən,ˌkroʊˈeɪʃən,,,shave_agrees
+cromulent,AJ0,RRP,keep,𐑒𐑮𐑪𐑥𐑘𐑩𐑤𐑩𐑯𐑑,𐑒𐑮𐑪𐑥𐑘𐑩𐑤𐑩𐑯𐑑,krɒmjələnt,ˈkrɒmjələnt,,,shave_says:𐑒𐑮𐑪𐑥𐑿𐑤𐑩𐑯𐑑
+cronyism,NN1,RRP,keep,𐑒𐑮𐑴𐑯𐑦𐑦𐑟𐑩𐑥,𐑒𐑮𐑴𐑯𐑦𐑦𐑟𐑩𐑥,krəʊniɪzəm,ˈkroʊniɪzəm,,,shave_agrees
+cross-dresser,NN1,RRP,keep,𐑒𐑮𐑪𐑕𐑛𐑮𐑧𐑕𐑼,𐑒𐑮𐑪𐑕𐑛𐑮𐑧𐑕𐑼,krɒsdresəR,ˈkrɒsˌdresəR,𐑒𐑮𐑪𐑕-𐑛𐑮𐑧𐑕𐑼,,We should maybe try to reconstruct spaces in our interpretation of the IPA?
+cryptology,NN1,RRP,keep,𐑒𐑮𐑦𐑐𐑑𐑪𐑤𐑩𐑡𐑦,𐑒𐑮𐑦𐑐𐑑𐑪𐑤𐑩𐑡𐑦,krɪptɒlədʒi,krɪpˈtɒlədʒi,,,shave_agrees
+curvy,AJ0,RRP,keep,𐑒𐑻𐑝𐑦,𐑒𐑻𐑝𐑦,kɜːRvi,ˈkɜːRvi,,,shave_agrees
+dartboard,NN1,RRP,keep,𐑛𐑸𐑑𐑚𐑹𐑛,𐑛𐑸𐑑𐑚𐑹𐑛,dɑːRtbɔːRd,ˈdɑːRtbɔːrd,,,shave_agrees
+daystar,NN1,RRP,keep,𐑛𐑱𐑕𐑑𐑸,𐑛𐑱𐑕𐑑𐑸,deɪstɑːR,ˈdeɪstɑːR,,,shave_agrees
+deferral,NN1,RRP,keep,𐑛𐑦𐑓𐑻𐑩𐑤,𐑛𐑦𐑓𐑻𐑩𐑤,dɪfɜːrəl,dɪˈfɜːRəl,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+demurral,NN1,RRP,keep,𐑛𐑦𐑥𐑻𐑩𐑤,𐑛𐑦𐑥𐑻𐑩𐑤,dɪmɜːrəl,dɪˈmɜːRəl,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+depressor,NN1,RRP,keep,𐑛𐑦𐑐𐑮𐑧𐑕𐑼,𐑛𐑦𐑐𐑮𐑧𐑕𐑼,dɪpresəR,dɪˈpresəR,,,shave_agrees
+dermis,NN1,RRP,keep,𐑛𐑻𐑥𐑦𐑕,𐑛𐑻𐑥𐑦𐑕,dɜːRmɪs,ˈdɜːRmɪs,,,shave_agrees
+derringer,NN1,RSSB,keep,𐑛𐑧𐑮𐑦𐑯𐑡𐑼,𐑛𐑧𐑮𐑦𐑯𐑡𐑼,derɪndʒəR,derɪndʒər,,,"r_gap:spelling=3,ipa=2; shave_agrees"
+dhole,NN1,RRP,keep,𐑛𐑴𐑤,𐑛𐑴𐑤,dəʊl,doʊl,,,shave_agrees
+diachronic,AJ0,RRP,keep,𐑛𐑲𐑩𐑒𐑮𐑪𐑯𐑦𐑒,𐑛𐑲𐑩𐑒𐑮𐑪𐑯𐑦𐑒,daɪəkrɒnɪk,daɪəˈkrɒnɪk,,,shave_agrees
+diathesis,NN1,RRP,keep,𐑛𐑲𐑨𐑔𐑩𐑕𐑦𐑕,𐑛𐑲𐑨𐑔𐑩𐑕𐑦𐑕,daɪˈaθəsɪs,daɪˈæθəsɪs,,,shave_says:𐑛𐑲𐑩𐑞𐑰𐑟𐑦𐑕
+dimorphic,AJ0,RRP,keep,𐑛𐑲𐑥𐑹𐑓𐑦𐑒,𐑛𐑲𐑥𐑹𐑓𐑦𐑒,daɪmɔːRfɪk,ˌdaɪˈmɔːRfɪk,,,shave_agrees
+disharmonize,VVI,RRP,keep,𐑛𐑦𐑕𐑣𐑸𐑥𐑩𐑯𐑲𐑟,𐑛𐑦𐑕𐑣𐑸𐑥𐑩𐑯𐑲𐑟,dɪshɑːRmənaɪz,dɪsˈhɑːRmənˌaɪz,,,shave_agrees
+docent,NN1,RRP,keep,𐑛𐑴𐑕𐑩𐑯𐑑,𐑛𐑴𐑕𐑩𐑯𐑑,ˈdəʊsənt,ˈdoʊsənt,,,shave_agrees
+dodecahedron,NN1,RRP,keep,𐑛𐑴𐑛𐑧𐑒𐑩𐑣𐑰𐑛𐑮𐑩𐑯,𐑛𐑴𐑛𐑧𐑒𐑩𐑣𐑰𐑛𐑮𐑩𐑯,dəʊdekəhiːdrən,ˌdoʊdekəˈhiːdrən,,,shave_agrees
+dogie,NN1,RRP,keep,𐑛𐑴𐑜𐑦,𐑛𐑴𐑜𐑦,ˈdəʊɡi,ˈdoʊɡi,,,shave_agrees
+dogleg,NN1,RRP,keep,𐑛𐑪𐑜𐑤𐑧𐑜,𐑛𐑪𐑜𐑤𐑧𐑜,ˈdɒɡleɡ,ˈdɒɡˌleɡ,,,shave_says:𐑛𐑴𐑜𐑤𐑧𐑜
+dorsum,NN1,RRP,keep,𐑛𐑹𐑕𐑩𐑥,𐑛𐑹𐑕𐑩𐑥,dɔːRsəm,ˈdɔːRsəm,,,shave_agrees
+downer,NN1,RRP,keep,𐑛𐑬𐑯𐑼,𐑛𐑬𐑯𐑼,daʊnəR,ˈdaʊnəR,,,shave_agrees
+duchess,NN1,RSSB,keep,𐑛𐑳𐑗𐑩𐑕,𐑛𐑳𐑗𐑦𐑕,ˈdʌtʃɪs,ˈdʌtʃɪs,,,ml_disagrees:𐑛𐑳𐑗𐑩𐑕; overridden:was=𐑛𐑳𐑗𐑦𐑕; shave+ml_consensus
+dystopia,NN1,RRP,keep,𐑛𐑦𐑕𐑑𐑴𐑐𐑦𐑩,𐑛𐑦𐑕𐑑𐑴𐑐𐑾,dɪsˈtoʊpiə,dɪsˈtoʊpiə,,,shave_agrees
+effloresce,VVI,RRP,keep,𐑧𐑓𐑤𐑼𐑧𐑕,𐑧𐑓𐑤𐑼𐑧𐑕,efləres,ˌefləˈres,,,shave_agrees
+effortlessness,NN1,RRP,keep,𐑧𐑓𐑼𐑑𐑤𐑩𐑕𐑯𐑩𐑕,𐑧𐑓𐑼𐑑𐑤𐑩𐑕𐑯𐑩𐑕,efəRtləsnəs,ˈefəRtləsnəs,,,shave_agrees
+eggar,NN1,RRP,keep,𐑧𐑜𐑼,𐑧𐑜𐑼,eɡəR,ˈeɡəR,,,shave_agrees
+eggnog,NN1,RRP,keep,𐑧𐑜𐑯𐑪𐑜,𐑧𐑜𐑯𐑪𐑜,ˌeɡˈnɒɡ,ˈeɡnɒɡ,,,shave_agrees
+embattle,NN1,RSSB,keep,𐑦𐑥𐑚𐑨𐑑𐑩𐑤,𐑦𐑥𐑚𐑨𐑑𐑩𐑤,emˈbætəl,ɪmˈbætəl,,,ml_disagrees:𐑦𐑥𐑚𐑨𐑑𐑩𐑤; overridden:was=𐑧𐑥𐑚𐑨𐑑𐑩𐑤; shave+ml_consensus
+embattle,VVI,RSSB,keep,𐑦𐑥𐑚𐑨𐑑𐑩𐑤,𐑦𐑥𐑚𐑨𐑑𐑩𐑤,emˈbætəl,ɪmˈbætəl,,,ml_disagrees:𐑦𐑥𐑚𐑨𐑑𐑩𐑤; overridden:was=𐑧𐑥𐑚𐑨𐑑𐑩𐑤; shave+ml_consensus
+embrighten,VVI,RSSB,keep,𐑦𐑥𐑚𐑮𐑲𐑑𐑩𐑯,𐑧𐑥𐑚𐑮𐑲𐑑𐑩𐑯,embraɪtən,embraɪtən,,,ml_disagrees:𐑦𐑥𐑚𐑮𐑲𐑑𐑩𐑯; overridden:was=𐑧𐑥𐑚𐑮𐑲𐑑𐑩𐑯; shave+ml_consensus
+escalade,NN1,RRP,keep,𐑧𐑕𐑒𐑩𐑤𐑱𐑛,𐑧𐑕𐑒𐑩𐑤𐑱𐑛,ˌeskəˈleɪd,ˈeskəˌleɪd,,,shave_agrees
+escalade,VVI,RRP,keep,𐑧𐑕𐑒𐑩𐑤𐑱𐑛,𐑧𐑕𐑒𐑩𐑤𐑱𐑛,ˌeskəˈleɪd,ˈeskəˌleɪd,,,shave_agrees
+escarole,NN1,RRP,keep,𐑧𐑕𐑒𐑼𐑴𐑤,𐑧𐑕𐑒𐑼𐑴𐑤,eskərəʊl,ˈeskəroʊl,,,shave_says:𐑧𐑕𐑒𐑸𐑴𐑤
+escrow,NN1,RRP,keep,𐑧𐑕𐑒𐑮𐑴,𐑧𐑕𐑒𐑮𐑴,ˈeskrəʊ,ˈeskroʊ,,,shave_agrees
+exorcism,NN1,RRP,keep,𐑧𐑒𐑕𐑹𐑕𐑦𐑟𐑩𐑥,𐑧𐑒𐑕𐑹𐑕𐑦𐑟𐑩𐑥,eksɔːRsɪzəm,ˈeksɔːRˌsɪzəm,𐑧𐑒𐑕𐑼𐑕𐑦𐑟𐑩𐑥,,shave_agrees
+exorcist,NN1,RRP,keep,𐑧𐑒𐑕𐑹𐑕𐑦𐑕𐑑,𐑧𐑒𐑕𐑹𐑕𐑦𐑕𐑑,eksɔːRsɪst,ˈeksɔːRˌsɪst,𐑧𐑒𐑕𐑼𐑕𐑦𐑕𐑑,,wrong
+exterminator,NN1,RRP,keep,𐑦𐑒𐑕𐑑𐑻𐑥𐑦𐑯𐑱𐑑𐑼,𐑦𐑒𐑕𐑑𐑻𐑥𐑦𐑯𐑱𐑑𐑼,ɪkstɜːRmɪneɪtəR,ɪkˈstɜːRmɪˌneɪtəR,,,shave_agrees
+externality,NN1,RRP,keep,𐑧𐑒𐑕𐑑𐑼𐑯𐑨𐑤𐑦𐑑𐑦,𐑧𐑒𐑕𐑑𐑼𐑯𐑨𐑤𐑦𐑑𐑦,ekstəRnælɪti,ekstəRˈnælɪti,,,shave_says:𐑦𐑒𐑕𐑑𐑻𐑯𐑨𐑤𐑦𐑑𐑦
+extractor,NN1,RRP,keep,𐑦𐑒𐑕𐑑𐑮𐑨𐑒𐑑𐑼,𐑦𐑒𐑕𐑑𐑮𐑨𐑒𐑑𐑼,ɪkstræktəR,ɪkˈstræktəR,,,shave_agrees
+extroverted,AJ0,RRP,keep,𐑧𐑒𐑕𐑑𐑮𐑩𐑝𐑼𐑑𐑩𐑛,𐑧𐑒𐑕𐑑𐑮𐑩𐑝𐑼𐑑𐑩𐑛,ekstrəvəRːtƏd,ˈekstrəˌvərtƏd,,,shave_says:𐑧𐑒𐑕𐑑𐑮𐑩𐑝𐑻𐑑𐑩𐑛
+fellatio,NN1,GenAm,keep,𐑓𐑩𐑤𐑱𐑖𐑦𐑴,𐑓𐑩𐑤𐑱𐑖𐑦𐑴,fəˈleɪʃiəʊ,fəˈleɪʃioʊ,,,shave_says:𐑓𐑧𐑤𐑱𐑖𐑴
+fellatio,NN1,GenAm,keep,𐑓𐑩𐑤𐑱𐑖𐑦𐑴,𐑓𐑩𐑤𐑱𐑖𐑦𐑴,fəˈleɪʃiəʊ,fəˈleɪʃioʊ,,,shave_says:𐑓𐑧𐑤𐑱𐑖𐑴
+felloe,NN1,RRP,keep,𐑓𐑧𐑤𐑴,𐑓𐑧𐑤𐑴,ˈfeləʊ,ˈfeloʊ,,,shave_agrees
+fermata,NN1,RRP,keep,𐑓𐑻𐑥𐑭𐑑𐑩,𐑓𐑻𐑥𐑭𐑑𐑩,fɜːRmɑːtə,fɜːrˈmɑːtə,,,shave_says:𐑓𐑼𐑥𐑭𐑖𐑩
+fifo,NN1,RRP,keep,𐑓𐑲𐑓𐑴,𐑓𐑲𐑓𐑴,ˈfaɪfəʊ,ˈfaɪfoʊ,,,shave_agrees
+finisher,NN1,RRP,keep,𐑓𐑦𐑯𐑦𐑖𐑼,𐑓𐑦𐑯𐑦𐑖𐑼,fɪnɪʃəR,ˈfɪnɪʃəR,,,shave_agrees
+flavorsome,AJ0,RRP,keep,𐑓𐑤𐑱𐑝𐑼𐑕𐑩𐑥,𐑓𐑤𐑱𐑝𐑼𐑕𐑩𐑥,fleɪvəRsəm,ˈfleɪvəRsəm,,,shave_agrees
+floater,NN1,RRP,keep,𐑓𐑤𐑴𐑑𐑼,𐑓𐑤𐑴𐑑𐑼,fləʊtəR,ˈfloʊtər,,,shave_agrees
+gainer,NN1,RRP,keep,𐑜𐑱𐑯𐑼,𐑜𐑱𐑯𐑼,ɡeɪnəR,ˈɡeɪnəR,,,shave_agrees
+gameboard,NN1,RRP,keep,𐑜𐑱𐑥𐑚𐑹𐑛,𐑜𐑱𐑥𐑚𐑹𐑛,ɡeɪmbɔːRd,ˈɡeɪmbɔːRd,,,shave_agrees
+garlicky,AJ0,RRP,keep,𐑜𐑸𐑤𐑦𐑒𐑦,𐑜𐑸𐑤𐑦𐑒𐑦,ɡɑːRlɪki,ˈɡɑːRlɪki,,,shave_agrees
+gaur,NN1,RRP,keep,𐑜𐑬𐑼,𐑜𐑬𐑼,ɡaʊəR,ɡaʊər,,,shave_agrees
+gazebo,NN1,RRP,keep,𐑜𐑩𐑟𐑰𐑚𐑴,𐑜𐑩𐑟𐑰𐑚𐑴,ɡəˈziːbəʊ,ɡəˈziːboʊ,,,shave_agrees
+geode,NN1,RRP,keep,𐑡𐑰𐑴𐑛,𐑡𐑰𐑴𐑛,ˈdʒiːəʊd,ˈdʒiːoʊd,,,shave_agrees
+geordie,NN1,RRP,keep,𐑡𐑹𐑛𐑦,𐑡𐑹𐑛𐑦,dʒɔːRdi,ˈdʒɔːRdi,,,shave_says:𐑡𐑦𐑹𐑛𐑦
+gerbil,NN1,RRP,keep,𐑡𐑻𐑚𐑩𐑤,𐑡𐑻𐑚𐑩𐑤,dʒɜːRbəl,ˈdʒɜːRbəl,,,shave_agrees
+germander,NN1,RRP,keep,𐑡𐑼𐑥𐑨𐑯𐑛𐑼,𐑡𐑼𐑥𐑨𐑯𐑛𐑼,dʒəRmændəR,dʒəRˈmændəR,,,shave_says:𐑡𐑻𐑥𐑨𐑯𐑛𐑼
+ghillie,NN1,RRP,keep,𐑜𐑦𐑤𐑦,𐑜𐑦𐑤𐑦,ˈɡɪli,ˈɡili,,,shave_agrees
+gillyflower,NN1,RRP,keep,𐑡𐑦𐑤𐑦𐑓𐑤𐑬𐑼,𐑡𐑦𐑤𐑦𐑓𐑤𐑬𐑼,dʒɪlɪflaʊəR,ˈdʒɪliˌflaʊəR,,,shave_says:𐑜𐑦𐑤𐑦𐑓𐑤𐑬𐑼
+glottogenetic,AJ0,RRP,keep,𐑜𐑤𐑪𐑑𐑴𐑡𐑩𐑯𐑧𐑑𐑦𐑒,𐑜𐑤𐑪𐑑𐑴𐑡𐑩𐑯𐑧𐑑𐑦𐑒,ˌɡlɒtəʊdʒəˈnetɪk,ˌɡlɒtoʊdʒəˈnetɪk,,,ml_disagrees:𐑜𐑤𐑪𐑑𐑴𐑡𐑦𐑯𐑧𐑑𐑦𐑒; shave_agrees
+gnomon,NN1,RRP,keep,𐑯𐑴𐑥𐑪𐑯,𐑯𐑴𐑥𐑪𐑯,ˈnəʊˌmɒn,ˈnoʊˌmɒn,,,shave_says:𐑯𐑴𐑥𐑩𐑯
+goiter,NN1,RRP,keep,𐑜𐑶𐑑𐑼,𐑜𐑶𐑑𐑼,ɡɔɪtəR,ˈɡɔɪtəR,,,shave_agrees
+golem,NN1,RRP,keep,𐑜𐑴𐑤𐑩𐑥,𐑜𐑴𐑤𐑩𐑥,ˈɡəʊləm,ˈɡoʊləm,,,shave_says:𐑜𐑴𐑤𐑧𐑥
+gonzo,AJ0,RRP,keep,𐑜𐑪𐑯𐑟𐑴,𐑜𐑪𐑯𐑟𐑴,ˈɡɒnzəʊ,ˈɡɒnzoʊ,,,shave_agrees
+gouger,NN1,RRP,keep,𐑜𐑬𐑡𐑼,𐑜𐑬𐑡𐑼,ɡaʊdʒəR,ˈɡaʊdʒəR,,,shave_agrees
+grifter,NN1,RRP,keep,𐑜𐑮𐑦𐑓𐑑𐑼,𐑜𐑮𐑦𐑓𐑑𐑼,ɡrɪftəR,ˈɡrɪftəR,,,shave_agrees
+guernsey,NN1,RRP,keep,𐑜𐑻𐑯𐑟𐑦,𐑜𐑻𐑯𐑟𐑦,ɡɜːRnzi,ˈɡɜːRnzi,,,shave_agrees
+hearthstone,NN1,RRP,keep,𐑣𐑸𐑔𐑕𐑑𐑴𐑯,𐑣𐑸𐑔𐑕𐑑𐑴𐑯,hɑːRθstəʊn,ˈhɑːRθstoʊn,,,shave_agrees
+heliocentric,AJ0,GenAm,keep,𐑣𐑰𐑤𐑦𐑴𐑕𐑧𐑯𐑑𐑮𐑦𐑒,𐑣𐑰𐑤𐑦𐑴𐑕𐑧𐑯𐑑𐑮𐑦𐑒,ˌhiːliəʊˈsentrɪk,ˌhiːlioʊˈsentrɪk,,,shave_says:𐑣𐑰𐑤𐑾𐑕𐑧𐑯𐑑𐑮𐑦𐑒
+heliocentric,AJ0,GenAm,keep,𐑣𐑰𐑤𐑦𐑴𐑕𐑧𐑯𐑑𐑮𐑦𐑒,𐑣𐑰𐑤𐑦𐑴𐑕𐑧𐑯𐑑𐑮𐑦𐑒,ˌhiːliəʊˈsentrɪk,ˌhiːlioʊˈsentrɪk,,,shave_says:𐑣𐑰𐑤𐑾𐑕𐑧𐑯𐑑𐑮𐑦𐑒
+hellebore,NN1,RRP,keep,𐑣𐑧𐑤𐑦𐑚𐑹,𐑣𐑧𐑤𐑦𐑚𐑹,helɪbɔːR,ˈhelɪbɔːr,,,shave_says:𐑣𐑧𐑤𐑩𐑚𐑹
+hellfire,NN1,RRP,keep,𐑣𐑧𐑤𐑓𐑲𐑼,𐑣𐑧𐑤𐑓𐑲𐑼,helfaɪəR,ˈhelˌfaɪər,,,shave_agrees
+herbivore,NN1,RRP,keep,𐑣𐑻𐑚𐑦𐑝𐑹,𐑣𐑻𐑚𐑦𐑝𐑹,hɜːRbɪvɔːR,ˈhɜːrbɪvɔːr,,,shave_agrees
+herder,NN1,RRP,keep,𐑣𐑻𐑛𐑼,𐑣𐑻𐑛𐑼,hɜːRdəR,ˈhɜːRdəR,,,shave_agrees
+herpes,NN1,RRP,keep,𐑣𐑻𐑐𐑦𐑟,𐑣𐑻𐑐𐑦𐑟,hɜːRpiz,ˈhɜːRpiz,,,shave_says:𐑣𐑻𐑐𐑰𐑟
+hipster,NN1,RRP,keep,𐑣𐑦𐑐𐑕𐑑𐑼,𐑣𐑦𐑐𐑕𐑑𐑼,hɪpstəR,ˈhɪpstəR,,,shave_agrees
+lengthsman,NN1,RRP,keep,𐑤𐑧𐑙𐑔𐑕𐑥𐑩𐑯,𐑤𐑧𐑙𐑔𐑕𐑥𐑩𐑯,ˈleŋθsmən,ˈleŋθsˌmən,,,ml_disagrees:𐑤𐑧𐑙𐑔𐑕𐑥𐑧𐑯; shave_agrees
+logorrhea,NN1,RRP,keep,𐑤𐑪𐑜𐑼𐑾,𐑤𐑪𐑜𐑼𐑾,lɒɡərɪə,ˌlɒɡəˈriə,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+optometrist,NN1,RRP,keep,𐑪𐑐𐑑𐑪𐑥𐑩𐑑𐑮𐑦𐑕𐑑,𐑪𐑐𐑑𐑪𐑥𐑩𐑑𐑮𐑦𐑕𐑑,ɒptɒmətrɪst,ɒpˈtɒmətrɪst,,,ml_disagrees:𐑪𐑐𐑑𐑪𐑥𐑩𐑑𐑮𐑩𐑕𐑑; shave_agrees
+radiophoto,NN1,RSSB,keep,𐑮𐑱𐑛𐑦𐑴𐑓𐑴𐑑𐑴,𐑮𐑱𐑛𐑾𐑫𐑓𐑴𐑑𐑴,reɪdɪəʊfəʊtəʊ,reɪdɪəʊfəʊtəʊ,,,ml_disagrees:𐑮𐑱𐑛𐑦𐑴𐑓𐑴𐑑𐑴; overridden:was=𐑮𐑱𐑛𐑾𐑫𐑓𐑴𐑑𐑴; shave+ml_consensus
+scrimshaw,NN1,CotCaught,keep,𐑕𐑒𐑮𐑦𐑥𐑖𐑷,𐑕𐑒𐑮𐑦𐑥𐑖𐑷,skrɪmʃɔː,ˈskrɪmˌʃɒ,,,ml_disagrees:𐑕𐑒𐑮𐑦𐑥𐑖𐑷𐑮; shave_agrees
+scrimshaw,VVI,CotCaught,keep,𐑕𐑒𐑮𐑦𐑥𐑖𐑷,𐑕𐑒𐑮𐑦𐑥𐑖𐑷,skrɪmʃɔː,ˈskrɪmˌʃɒ,,,ml_disagrees:𐑕𐑒𐑮𐑦𐑥𐑖𐑷𐑮; shave_agrees
+stirrer,NN1,RRP,keep,𐑕𐑑𐑻𐑼,𐑕𐑑𐑻𐑼,stɜːrəR,ˈstɜːRəR,,,"r_gap:spelling=3,ipa=2; shave_agrees"
+tear gas,NN1,RSSB,mistake in ml and shave,𐑑𐑺 𐑜𐑨𐑕,𐑑𐑽 𐑜𐑨𐑕,tɪəR ɡæs,tɪəR ɡæs,,,ml_disagrees:𐑑𐑺 𐑜𐑨𐑕; overridden:was=𐑑𐑽 𐑜𐑨𐑕; shave+ml_consensus
+tear gas,VVI,RSSB,mistake in ml and shave,𐑑𐑺 𐑜𐑨𐑕,𐑑𐑽 𐑜𐑨𐑕,tɪəR ɡæs,tɪəR ɡæs,,,ml_disagrees:𐑑𐑺 𐑜𐑨𐑕; overridden:was=𐑑𐑽 𐑜𐑨𐑕; shave+ml_consensus
+teared,VVI,RRP,keep,𐑑𐑽𐑛,𐑑𐑽𐑛,tɪəRd,tiəRd,,,ml_disagrees:𐑑𐑺𐑛; shave_agrees
+whirry,AJ0,RSSB,keep,𐑢𐑻𐑦,𐑢𐑻𐑦,wɜːri,ʍɜːri,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+whirry,NN1,RSSB,keep,𐑢𐑻𐑦,𐑢𐑻𐑦,wɜːri,ʍɜːri,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+whirry,VVI,RSSB,keep,𐑢𐑻𐑦,𐑢𐑻𐑦,wɜːri,ʍɜːri,,,"r_gap:spelling=2,ipa=1; shave_agrees"
+
+# LOST VERDICTS - existed in pre-regen with a verdict but not in post-regen
+word,pos,var,verdict,old_shaw,new_shaw,old_ipa,new_ipa,shaw_override,ipa_override,notes
+a closed mouth gathers no feet,UNC,RRP,drop,𐑩 𐑒𐑤𐑴𐑟𐑛 𐑥𐑬𐑔 𐑜𐑨𐑞𐑼𐑟 𐑯𐑴 𐑓𐑰𐑑,(MISSING),ə ˈkləʊzd ˌmaʊθ ɡæðəRz nəʊ ˈfiːt,(MISSING),,,
+a whole nother,DT0,RRP,drop,𐑩 𐑣𐑴𐑤 𐑯𐑳𐑞𐑼,(MISSING),ə ˈhəʊl nʌðəR,(MISSING),,,
+a woman without a man is like a fish without a bicycle,UNC,RRP,drop,𐑩 𐑢𐑫𐑥𐑩𐑯 𐑢𐑦𐑞𐑬𐑑 𐑩 𐑥𐑨𐑯 𐑦𐑟 𐑤𐑲𐑒 𐑩 𐑓𐑦𐑖 𐑢𐑦𐑞𐑬𐑑 𐑩 𐑚𐑲𐑕𐑦𐑒𐑩𐑤,(MISSING),ə ˈwʊmən wɪðˌaʊt ə ˈmæn ɪz laɪk ə ˈfɪʃ wɪðˌaʊt ə ˈbaɪsɪkəl,(MISSING),,,
+bisexual lighting,NN1,RSSB,drop,𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑩𐑤 𐑤𐑲𐑑𐑦𐑙,(MISSING),baɪˌsekʃʊəl ˈlaɪtɪŋ,(MISSING),,,ml_disagrees:𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑩𐑤 𐑤𐑲𐑑𐑦𐑙; overridden:was=𐑚𐑲𐑕𐑧𐑒𐑖𐑫𐑼𐑤 𐑤𐑲𐑑𐑦𐑙; shave+ml_consensus
+crucible,NN1,RSSB,keep,𐑒𐑮𐑵𐑕𐑩𐑚𐑩𐑤,(MISSING),kruːsɪbəl,(MISSING),,,ml_disagrees:𐑒𐑮𐑵𐑕𐑩𐑚𐑩𐑤; overridden:was=𐑒𐑮𐑵𐑕𐑦𐑚𐑩𐑤; shave+ml_consensus
+greatest common divisor,NN1,RSSB,drop,𐑜𐑮𐑱𐑑𐑩𐑕𐑑 𐑒𐑪𐑥𐑩𐑯 𐑛𐑦𐑝𐑲𐑟𐑼,(MISSING),ˈɡreɪtɪst ˈkɒmən dɪvaɪzəR,(MISSING),,,ml_disagrees:𐑜𐑮𐑱𐑑𐑩𐑕𐑑 𐑒𐑪𐑥𐑩𐑯 𐑛𐑦𐑝𐑲𐑟𐑼; overridden:was=𐑜𐑮𐑱𐑑𐑦𐑕𐑑 𐑒𐑪𐑥𐑩𐑯 𐑛𐑦𐑝𐑲𐑟𐑼; shave+ml_consensus
+job market,NN1,RSSB,drop,𐑡𐑪𐑚 𐑥𐑸𐑒𐑩𐑑,(MISSING),ˈdʒɒb mɑːRkɪt,(MISSING),,,ml_disagrees:𐑡𐑪𐑚 𐑥𐑸𐑒𐑩𐑑; overridden:was=𐑡𐑪𐑚 𐑥𐑸𐑒𐑦𐑑; shave+ml_consensus

@@ -79,10 +79,23 @@ async function callDaemon(request) {
     return payload;
 }
 
+// The categorical facets are multi-select: each checked chip contributes its
+// value to that facet's array (OR within the facet; the daemon ANDs across
+// facets). word/shaw stay substring scalars, confidence_* numeric scalars. An
+// empty array is omitted, so an untouched facet does not constrain.
+const CATEGORICAL_FACETS = new Set([
+    "source", "status", "pos", "var", "patch_state",
+    "reviewed", "word_kind", "novelty",
+]);
+
 function readFilters() {
     const filters = {};
-    for (const [name, value] of new FormData(FILTER_FORM).entries()) {
-        const trimmed = value.trim();
+    for (const [name, rawValue] of new FormData(FILTER_FORM).entries()) {
+        if (CATEGORICAL_FACETS.has(name)) {
+            (filters[name] ??= []).push(rawValue);
+            continue;
+        }
+        const trimmed = rawValue.trim();
         if (!trimmed) {
             continue;
         }
@@ -1105,7 +1118,8 @@ function refreshPacing() {
 // under any other filter the total is not a remaining count, so we show it only
 // when the active filter is unreviewed.
 function countUnreviewedRemaining() {
-    if (state.filters.reviewed !== "unreviewed") {
+    const reviewed = state.filters.reviewed;
+    if (!Array.isArray(reviewed) || reviewed.length !== 1 || reviewed[0] !== "unreviewed") {
         return null;
     }
     const decidedInSet = state.records.filter(
@@ -1149,13 +1163,27 @@ function loadSession() {
 }
 
 // Populate the filter form + sort from a saved session so the restored query
-// matches what the user last ran.
+// matches what the user last ran. A categorical facet's persisted array re-checks
+// exactly its chips; a scalar sets its input value. Values with no matching chip
+// (e.g. a POS chip not yet populated, or a value dropped from the enum) are simply
+// left unchecked — the restore reflects only what the form can currently express.
 function restoreFilters(filters) {
     for (const [name, value] of Object.entries(filters)) {
-        const field = FILTER_FORM.elements[name];
-        if (field) {
-            field.value = value;
+        if (CATEGORICAL_FACETS.has(name)) {
+            restoreChips(name, value);
+        } else {
+            const field = FILTER_FORM.elements[name];
+            if (field) {
+                field.value = value;
+            }
         }
+    }
+}
+
+function restoreChips(facet, values) {
+    const wanted = new Set(values);
+    for (const box of FILTER_FORM.querySelectorAll(`input[name="${facet}"]`)) {
+        box.checked = wanted.has(box.value);
     }
 }
 
@@ -1191,8 +1219,17 @@ const FILTER_DEBOUNCE_MS = 250;
 // runQuery() stamps this after every materialise (live change, paging, or boot).
 let materialisedSignature = null;
 
+// A canonical string for a query so a no-op change (chip toggled off then on, a
+// re-order, focus churn) does not re-fire. Facet keys are sorted, and each facet's
+// array is sorted, so [a,b] and [b,a] compare equal (selection is a set, not an
+// ordered list). Scalars serialise as-is.
 function querySignature(filters, sort) {
-    return JSON.stringify([filters, sort]);
+    const canonical = {};
+    for (const key of Object.keys(filters).sort()) {
+        const value = filters[key];
+        canonical[key] = Array.isArray(value) ? [...value].sort() : value;
+    }
+    return JSON.stringify([canonical, sort]);
 }
 
 // Re-run the filter only if the form's current criteria differ from what is
@@ -1218,14 +1255,13 @@ function requestFilterQueryDebounced() {
     filterDebounceTimer = setTimeout(requestFilterQuery, FILTER_DEBOUNCE_MS);
 }
 
-// Selects commit immediately; free-text and numeric inputs debounce. Binding by
-// element type keeps the wiring declarative — a new filter field needs no change
-// here, only the right input element in the CGI form.
-// The sort <select> lives inside the filter form, so it is covered by this loop
-// alongside the source/reviewed/state/word_kind selects — no separate binding.
+// Chips and the sort <select> commit immediately on change; free-text and numeric
+// inputs debounce. Binding by element/input type keeps the wiring declarative — a
+// new filter field needs no change here, only the right control in the CGI form.
+// The sort <select> lives inside the filter form, so it is covered by this loop.
 function bindLiveFilters() {
     for (const field of FILTER_FORM.elements) {
-        if (field.tagName === "SELECT") {
+        if (field.tagName === "SELECT" || field.type === "checkbox") {
             field.addEventListener("change", requestFilterQuery);
         } else if (field.tagName === "INPUT") {
             field.addEventListener("input", requestFilterQueryDebounced);
@@ -1249,10 +1285,42 @@ HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 
 document.addEventListener("keydown", onGlobalKey);
 
-// Boot: resume the saved session (filter + sort + anchor) if one exists, else a
-// plain first query at the review default sort (highest confidence first).
-function boot() {
+// The data-derived facets' chips are the distinct values the daemon reports, built
+// at boot before the filters are bound or a saved session restored, so a persisted
+// selection can re-check its chip. The daemon returns one sorted list per facet
+// ({pos: [...], var: [...], status: [...], source: [...]}); each populates the
+// matching fieldset, so a value present in the data (however drifted) stays
+// filterable and a value absent from it grows no dead chip.
+async function populateDataDerivedChips() {
+    const facets = await callDaemon({ op: "facets" });
+    for (const [facet, values] of Object.entries(facets)) {
+        const fieldset = FILTER_FORM.querySelector(`.chips[data-facet="${facet}"]`);
+        for (const value of values) {
+            fieldset.append(chip(facet, value, value));
+        }
+    }
+}
+
+function chip(facet, value, label) {
+    const wrap = document.createElement("label");
+    wrap.className = "chip";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.name = facet;
+    input.value = value;
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    wrap.append(input, caption);
+    return wrap;
+}
+
+// Boot: fetch the data-derived facet values, then resume the saved session (filter
+// + sort + anchor) if one exists, else a plain first query at the review default
+// sort (highest confidence first). Filters are bound AFTER the chips exist so every
+// chip, dynamic ones included, re-runs the query on toggle.
+async function boot() {
     buildCheatsheet();
+    await populateDataDerivedChips();
     bindLiveFilters();
     const stored = loadSession();
     if (stored && stored.filters) {

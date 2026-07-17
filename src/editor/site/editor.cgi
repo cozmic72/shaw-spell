@@ -106,61 +106,46 @@ PAGE = """<!DOCTYPE html>
             <span>Shaw</span>
             <input type="text" name="shaw" placeholder="𐑖𐑷 substring" class="shavian-input">
         </label>
-        <label class="field">
-            <span>Source</span>
-            <select name="source">
-                <option value="">any</option>
-                <option value="readlex">readlex</option>
-                <option value="wordnet">wordnet</option>
-                <option value="wiktionary">wiktionary</option>
-                <option value="manual">manual</option>
-            </select>
-        </label>
-        <label class="field">
-            <span>Words</span>
-            <select name="word_kind">
-                <option value="">any</option>
-                <option value="multi">multi-word</option>
-                <option value="single">single-word</option>
-            </select>
-        </label>
-        <label class="field">
-            <span>Novelty</span>
-            <select name="novelty">
-                <option value="">any</option>
-                <option value="new-word">new word</option>
-                <option value="new-spelling">new spelling</option>
-                <option value="new-pos">new POS</option>
-            </select>
-        </label>
-        <label class="field">
-            <span>Reviewed</span>
-            <select name="reviewed">
-                <option value="">any</option>
-                <option value="unreviewed">unreviewed</option>
-                <option value="flagged">flagged</option>
-                <option value="decided">decided</option>
-            </select>
-        </label>
-        <label class="field">
-            <span>State</span>
-            <select name="patch_state">
-                <option value="">any</option>
-                <option value="unreviewed">unreviewed</option>
-                <option value="edited">edited</option>
-                <option value="dropped">dropped</option>
-                <option value="flagged">flagged</option>
-                <option value="authored">authored</option>
-            </select>
-        </label>
-        <label class="field">
-            <span>POS</span>
-            <input type="text" name="pos" placeholder="e.g. NN1">
-        </label>
-        <label class="field">
-            <span>Var</span>
-            <input type="text" name="var" placeholder="e.g. RRP">
-        </label>
+        <!-- source/status/var/pos chips are populated at boot from the daemon's
+             distinct-value facets op, so they track the data rather than drift
+             from a hardcoded enum. -->
+        <fieldset class="field chips" data-facet="source">
+            <legend>Source</legend>
+        </fieldset>
+        <fieldset class="field chips" data-facet="status">
+            <legend>Status</legend>
+        </fieldset>
+        <fieldset class="field chips" data-facet="word_kind">
+            <legend>Words</legend>
+            <label class="chip"><input type="checkbox" name="word_kind" value="multi"><span>multi-word</span></label>
+            <label class="chip"><input type="checkbox" name="word_kind" value="single"><span>single-word</span></label>
+        </fieldset>
+        <fieldset class="field chips state-chips" data-facet="novelty">
+            <legend>Novelty</legend>
+            <label class="chip"><input type="checkbox" name="novelty" value="new-word"><span>new word</span></label>
+            <label class="chip"><input type="checkbox" name="novelty" value="new-spelling"><span>new spelling</span></label>
+            <label class="chip"><input type="checkbox" name="novelty" value="new-pos"><span>new POS</span></label>
+        </fieldset>
+        <fieldset class="field chips state-chips" data-facet="reviewed">
+            <legend>Reviewed</legend>
+            <label class="chip"><input type="checkbox" name="reviewed" value="unreviewed"><span>unreviewed</span></label>
+            <label class="chip"><input type="checkbox" name="reviewed" value="flagged"><span>flagged</span></label>
+            <label class="chip"><input type="checkbox" name="reviewed" value="decided"><span>decided</span></label>
+        </fieldset>
+        <fieldset class="field chips state-chips" data-facet="patch_state">
+            <legend>State</legend>
+            <label class="chip"><input type="checkbox" name="patch_state" value="unreviewed"><span>unreviewed</span></label>
+            <label class="chip"><input type="checkbox" name="patch_state" value="edited"><span>edited</span></label>
+            <label class="chip"><input type="checkbox" name="patch_state" value="dropped"><span>dropped</span></label>
+            <label class="chip"><input type="checkbox" name="patch_state" value="flagged"><span>flagged</span></label>
+            <label class="chip"><input type="checkbox" name="patch_state" value="authored"><span>authored</span></label>
+        </fieldset>
+        <fieldset class="field chips" data-facet="pos">
+            <legend>POS</legend>
+        </fieldset>
+        <fieldset class="field chips" data-facet="var">
+            <legend>Var</legend>
+        </fieldset>
         <label class="field narrow">
             <span>Conf ≥</span>
             <input type="number" name="confidence_min" min="0" max="100">

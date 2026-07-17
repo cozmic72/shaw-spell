@@ -174,6 +174,98 @@ body {
 }
 .apply:hover { background: var(--accent); }
 
+/* ---- multi-select facet chips ----
+   Every categorical filter is a group of toggle pills: tap a chip to add its
+   value (OR within a facet, AND across facets). Chips reuse the ledger's chip
+   vocabulary — mono, uppercase, hairline-ruled, square-cornered — so the bar
+   still reads as the same ledger. The native checkbox drives state and keyboard
+   focus but is hidden; its label pill is the ≥44px touch target. */
+/* A facet column: the legend spans the full width, then the chips wrap below it,
+   so a facet with many values (POS) flows onto further lines without widening the
+   bar. max-width caps that wrapping so no one facet dominates the row. */
+.field.chips {
+    border: none;
+    display: flex;
+    flex-flow: row wrap;
+    align-items: flex-end;
+    gap: 5px;
+    min-width: 0;
+    max-width: 260px;
+}
+.field.chips legend {
+    flex: 1 0 100%;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 0;
+    margin-bottom: 1px;
+}
+.chip {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+.chip input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+.chip span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    white-space: nowrap;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.chip:hover span { border-color: var(--ink-soft); }
+/* Selected: fill with the accent (or, for state facets, the outcome's own hue),
+   so which values are active is unmistakable at a glance and off-colour too — the
+   filled vs hairline pill is the non-colour channel. */
+.chip input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--paper);
+    font-weight: 700;
+}
+/* Keyboard focus lands on the hidden checkbox; ring its pill so it stays visible. */
+.chip input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* State facets (novelty / reviewed / patch_state) tint a selected chip with the
+   ledger's colour for that outcome, so the filter bar doubles as a legend for the
+   stamps. Values without a ledger colour keep the accent fill. */
+.state-chips .chip input[value="edited"]:checked + span,
+.state-chips .chip input[value="decided"]:checked + span {
+    background: var(--state-edited); border-color: var(--state-edited);
+}
+.state-chips .chip input[value="dropped"]:checked + span {
+    background: var(--state-dropped); border-color: var(--state-dropped);
+}
+.state-chips .chip input[value="flagged"]:checked + span {
+    background: var(--state-flagged); border-color: var(--state-flagged);
+}
+.state-chips .chip input[value="unreviewed"]:checked + span,
+.state-chips .chip input[value="new-word"]:checked + span,
+.state-chips .chip input[value="new-spelling"]:checked + span,
+.state-chips .chip input[value="new-pos"]:checked + span {
+    background: var(--state-unreviewed); border-color: var(--state-unreviewed);
+}
+.state-chips .chip input[value="authored"]:checked + span {
+    background: var(--state-authored); border-color: var(--state-authored);
+}
+
 /* ---- workbench split ---- */
 .workbench {
     position: relative;
@@ -736,6 +828,9 @@ kbd {
     }
     .field input, .field select { min-width: 0; width: 100%; }
     .field.narrow input { min-width: 0; }
+    /* Chip facets span the full width so their pills have room to wrap into a
+       comfortable touch grid rather than being crushed into a half-width track. */
+    .field.chips { grid-column: 1 / -1; max-width: none; }
     .apply { grid-column: 1 / -1; justify-self: start; }
 
     /* Compact masthead so the drawer toggle always fits: drop the strap, shrink the

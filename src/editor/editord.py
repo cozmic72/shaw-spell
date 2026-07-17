@@ -17,7 +17,15 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
 
     Request:   {"op": "entries", "filters": {...}, "sort": "confidence_desc",
                 "offset": 0, "limit": 50}
+                # Categorical facets take a LIST, OR-ed within the facet and
+                # AND-ed across facets, e.g. {"source": ["wordnet","wiktionary"],
+                # "novelty": ["new-word"]}; an empty/absent list is unconstrained.
+                # word/shaw are substring scalars; confidence_min/max are numeric.
     Response:  {"total": 1234, "offset": 0, "limit": 50, "records": [...]}
+
+    Request:   {"op": "facets"}
+    Response:  {"pos": [...]}   # the distinct POS tags present, sorted — the
+                # open-ended facet's filter chips (fixed-enum facets are in the page)
 
     Request:   {"op": "entry", "anchor": {"word","pos","shaw","var"}}
     Response:  {"records": [...]}   # the record on that natural key
@@ -100,31 +108,40 @@ class State:
         self.view = load_view()
 
 
+# The categorical facets are multi-select: the request carries a LIST of values
+# per facet (source, status, pos, var, patch_state, reviewed, word_kind,
+# novelty), and a record matches the facet if its value is ANY of them (OR).
+# Facets still AND across each other. The substring (word/shaw) and numeric
+# (confidence_min/max) filters stay scalar. An empty list is no constraint.
 def matches(record, filters, established):
     """Whether an annotated record passes every supplied filter. Absent filters
     do not constrain; a present filter that the record fails excludes it.
     `established` is the view's EstablishedIndex, needed by the novelty filter."""
     for key, value in filters.items():
-        if value in (None, ""):
+        if value in (None, "", []):
             continue
         if not _field_matches(record, key, value, established):
             return False
     return True
 
 
+# A categorical facet matches if ANY selected value matches (OR within the facet).
+# The equality facets test membership; the custom matchers are asked per value.
 def _field_matches(record, key, value, established):
     if key == "word":
         return value.lower() in record["word"].lower()
     if key == "shaw":
         return value in record["shaw"]
     if key in ("source", "status", "pos", "var", "patch_state"):
-        return record.get(key) == value
+        if not isinstance(value, list):
+            raise ValueError(f"{key} filter wants a list, got {value!r}")
+        return record.get(key) in value
     if key == "reviewed":
-        return _matches_review_state(record, value)
+        return any(_matches_review_state(record, v) for v in value)
     if key == "word_kind":
-        return _matches_word_kind(record, value)
+        return any(_matches_word_kind(record, v) for v in value)
     if key == "novelty":
-        return _matches_novelty(record, value, established)
+        return any(_matches_novelty(record, v, established) for v in value)
     if key == "confidence_min":
         conf = record.get("confidence")
         return conf is not None and conf >= value
@@ -254,6 +271,33 @@ def handle_entries(state, request):
         "limit": limit,
         "records": [serialisable(r) for r in page],
     }
+
+
+# The data-derived facets — pos, var, status, source — take their chips from the
+# distinct values actually present in the view, sorted, rather than a hardcoded
+# subset that would drift from the data (an unenumerated var like RRPVar becomes
+# unfilterable; a dead chip like source=pos-gap matches nothing). POS is the long
+# tail (100+ CLAWS tags); var/status/source are small but drift as upstream data
+# and cleanup targets come and go. The closed vocabularies the code itself defines
+# (reviewed/word_kind/novelty/patch_state) can't drift, so they stay in the page.
+DATA_DERIVED_FACETS = ("pos", "var", "status", "source")
+
+
+def handle_facets(state, _request):
+    return {facet: _distinct_values(state.view, facet)
+            for facet in DATA_DERIVED_FACETS}
+
+
+def _distinct_values(view, field):
+    """The sorted distinct non-empty values of `field` across the view. Read-only;
+    takes the view lock (like by_word) since it iterates the shared index while a
+    concurrent write may mutate it."""
+    with view._lock:
+        values = {record[field]
+                  for group in view.by_anchor_index.values()
+                  for record in group
+                  if record[field]}
+    return sorted(values)
 
 
 def handle_entry(state, request):
@@ -470,6 +514,7 @@ def _now_iso():
 
 HANDLERS = {
     "entries": handle_entries,
+    "facets": handle_facets,
     "entry": handle_entry,
     "related": handle_related,
     "patch": handle_patch,

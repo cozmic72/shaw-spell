@@ -944,7 +944,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "algerian_AJ0_𐑨𐑤𐑡𐑦𐑮𐑾𐑯": [
@@ -9716,7 +9719,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑩𐑓𐑹𐑔𐑷𐑑"
+            "review": "shave_says:𐑩𐑓𐑹𐑔𐑷𐑑",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "afresh_AV0_𐑳𐑓𐑮𐑧𐑖": [
@@ -9824,7 +9830,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "afternoon_NN1_𐑨𐑓𐑑𐑼𐑯𐑫𐑯": [
@@ -12248,7 +12257,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼"
+            "review": "shave_says:𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "altogether_AV0_𐑷𐑤𐑑𐑫𐑜𐑧𐑞𐑼": [
@@ -12272,7 +12284,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼"
+            "review": "shave_says:𐑷𐑤𐑑𐑩𐑜𐑧𐑞𐑼",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "altricial_AJ0_𐑩𐑤𐑑𐑮𐑦𐑖𐑩𐑤": [
@@ -14708,7 +14723,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑨𐑯𐑕𐑼𐑩𐑚𐑩𐑤"
+            "review": "shave_says:𐑨𐑯𐑕𐑼𐑩𐑚𐑩𐑤",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "answerer_NN1_𐑭𐑯𐑕𐑼𐑼": [
@@ -14732,7 +14750,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "ante_VVI_𐑨𐑯𐑑𐑦": [
@@ -19988,7 +20009,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑷𐑑𐑪𐑒𐑔𐑩𐑯"
+            "review": "shave_says:𐑷𐑑𐑪𐑒𐑔𐑩𐑯",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "autochthonous_AJ0_𐑷𐑑𐑪𐑒𐑔𐑩𐑯𐑩𐑕": [
@@ -20012,7 +20036,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑷𐑑𐑪𐑒𐑔𐑩𐑯𐑩𐑕"
+            "review": "shave_says:𐑷𐑑𐑪𐑒𐑔𐑩𐑯𐑩𐑕",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "autochthony_NN1_𐑷𐑑𐑪𐑒𐑔𐑩𐑯𐑦": [
@@ -20324,7 +20351,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑷𐑑𐑴𐑕𐑴𐑥"
+            "review": "shave_says:𐑷𐑑𐑴𐑕𐑴𐑥",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "autotomy_NN1_𐑷𐑑𐑪𐑑𐑩𐑥𐑦": [
@@ -20360,7 +20390,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑷𐑑𐑴𐑑𐑮𐑴𐑓"
+            "review": "shave_says:𐑷𐑑𐑴𐑑𐑮𐑴𐑓",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "autumn_NN1_𐑪𐑑𐑩𐑥": [
@@ -20792,7 +20825,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑷𐑤𐑩𐑕"
+            "review": "shave_says:𐑷𐑤𐑩𐑕",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "awesome_AJ0_𐑪𐑕𐑩𐑥": [
@@ -21368,7 +21404,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑚𐑷𐑤𐑑𐑦𐑥𐑹"
+            "review": "shave_says:𐑚𐑷𐑤𐑑𐑦𐑥𐑹",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "balzacian_AJ0_𐑚𐑨𐑤𐑟𐑨𐑒𐑾𐑯": [
@@ -21752,7 +21791,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑚𐑧𐑙𐑜𐑷𐑤"
+            "review": "shave_says:𐑚𐑧𐑙𐑜𐑷𐑤",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "benjamin_NN1_𐑚𐑧𐑯𐑡𐑩𐑥𐑦𐑯": [
@@ -24368,7 +24410,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑚𐑨𐑕𐑒𐑩𐑑"
+            "review": "shave_says:𐑚𐑨𐑕𐑒𐑩𐑑",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "basketball_NN1_𐑚𐑭𐑕𐑒𐑦𐑑𐑚𐑷𐑤": [
@@ -24392,7 +24437,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑚𐑨𐑕𐑒𐑩𐑑𐑚𐑷𐑤"
+            "review": "shave_says:𐑚𐑨𐑕𐑒𐑩𐑑𐑚𐑷𐑤",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "basophil_NN1_𐑚𐑱𐑕𐑩𐑓𐑦𐑤": [
@@ -24488,7 +24536,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "bastard_NN1_𐑚𐑨𐑕𐑑𐑼𐑛": [
@@ -27884,7 +27935,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "blastoderm_NN1_𐑚𐑤𐑨𐑕𐑑𐑩𐑛𐑼𐑥": [
@@ -30056,7 +30110,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑚𐑮𐑧𐑛𐑚𐑨𐑕𐑒𐑩𐑑"
+            "review": "shave_says:𐑚𐑮𐑧𐑛𐑚𐑨𐑕𐑒𐑩𐑑",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "breakable_AJ0_𐑚𐑮𐑱𐑒𐑩𐑚𐑤": [
@@ -30860,7 +30917,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷"
+            "review": "shave_says:𐑚𐑮𐑳𐑞𐑼-𐑦𐑯-𐑤𐑷",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "brotherly_AV0_𐑚𐑮𐑳𐑞𐑼𐑤𐑦": [
@@ -34904,7 +34964,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑒𐑷𐑤𐑼"
+            "review": "shave_says:𐑒𐑷𐑤𐑼",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "caller_NN1_𐑒𐑪𐑤𐑼": [
@@ -38024,7 +38087,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑒𐑷𐑒𐑩𐑕"
+            "review": "shave_says:𐑒𐑷𐑒𐑩𐑕",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "caudal_AJ0_𐑒𐑷𐑛𐑩𐑤": [
@@ -39596,7 +39662,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "chanterelle_NN1_𐑗𐑨𐑯𐑑𐑼𐑧𐑤": [
@@ -42536,7 +42605,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "clast_NN1_𐑒𐑤𐑨𐑕𐑑": [
@@ -47912,7 +47984,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "contretemps_NN1_𐑒𐑪𐑯𐑑𐑮𐑩𐑑𐑭𐑙": [
@@ -49604,7 +49679,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "countermand_VVI_𐑒𐑬𐑯𐑑𐑼𐑥𐑨𐑯𐑛": [
@@ -53648,7 +53726,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "dagga_NN1_𐑛𐑨𐑜𐑩": [
@@ -54044,7 +54125,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "dastard_NN1_𐑛𐑭𐑕𐑑𐑼𐑛": [
@@ -60380,7 +60464,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "digitalization_NN1_𐑛𐑦𐑡𐑦𐑑𐑩𐑤𐑲𐑟𐑱𐑖𐑩𐑯": [
@@ -61400,7 +61487,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "disaffect_VVI_𐑛𐑦𐑕𐑩𐑓𐑧𐑒𐑑": [
@@ -62696,7 +62786,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "distaff_NN1_𐑛𐑦𐑕𐑑𐑨𐑓": [
@@ -63884,7 +63977,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "downer_NN1_𐑛𐑬𐑯𐑼": [
@@ -64112,7 +64208,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "drain_NN1_𐑡𐑮𐑱𐑯": [
@@ -73400,7 +73499,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "evert_VVI_𐑦𐑝𐑻𐑑": [
@@ -74204,7 +74306,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝"
+            "review": "shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "exhaustively_AV0_𐑧𐑜𐑟𐑷𐑕𐑑𐑦𐑝𐑤𐑦": [
@@ -74228,7 +74333,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝𐑤𐑦"
+            "review": "shave_says:𐑦𐑜𐑟𐑷𐑕𐑑𐑦𐑝𐑤𐑦",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "exhort_VVI_𐑧𐑜𐑟𐑹𐑑": [
@@ -77192,7 +77300,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "fastness_NN1_𐑓𐑨𐑕𐑑𐑯𐑩𐑕": [
@@ -77444,7 +77555,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑓𐑷𐑕𐑩𐑑"
+            "review": "shave_says:𐑓𐑷𐑕𐑩𐑑",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "fault_NN1_𐑓𐑪𐑤𐑑": [
@@ -79928,7 +80042,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑓𐑤𐑷"
+            "review": "shave_says:𐑓𐑤𐑷",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "flawless_AJ0_𐑓𐑤𐑪𐑤𐑩𐑕": [
@@ -80972,7 +81089,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "footfall_NN1_𐑓𐑫𐑑𐑓𐑪𐑤": [
@@ -81488,7 +81608,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑓𐑹𐑔𐑷𐑑𐑓𐑩𐑤"
+            "review": "shave_says:𐑓𐑹𐑔𐑷𐑑𐑓𐑩𐑤",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "forevermore_AV0_𐑓𐑹𐑧𐑝𐑼𐑥𐑹": [
@@ -86168,7 +86291,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑜𐑨𐑕𐑑𐑤𐑦"
+            "review": "shave_says:𐑜𐑨𐑕𐑑𐑤𐑦",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "ghat_NN1_𐑜𐑷𐑑": [
@@ -88508,7 +88634,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "granule_NN1_𐑜𐑮𐑨𐑯𐑘𐑫𐑤": [
@@ -88568,7 +88697,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "grappling_NN1_𐑜𐑮𐑨𐑐𐑤𐑦𐑙": [
@@ -88640,7 +88772,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "grasshopper_NN1_𐑜𐑮𐑨𐑕𐑣𐑪𐑐𐑼": [
@@ -91616,7 +91751,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "half_NN1_𐑣𐑨𐑓": [
@@ -91676,7 +91814,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑣𐑨𐑓-timbered"
+            "review": "shave_says:𐑣𐑨𐑓-timbered",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "halfpennyworth_NN1_𐑣𐑱𐑐𐑯𐑦𐑢𐑼𐑔": [
@@ -91820,7 +91961,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑣𐑨𐑤𐑥"
+            "review": "shave_says:𐑣𐑨𐑤𐑥",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "halogen_NN1_𐑣𐑨𐑤𐑩𐑡𐑩𐑯": [
@@ -92636,7 +92780,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑣𐑷𐑟"
+            "review": "shave_says:𐑣𐑷𐑟",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "hawthorn_NN1_𐑣𐑪𐑔𐑹𐑯": [
@@ -98648,7 +98795,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "iroquois_NN1_𐑦𐑮𐑩𐑒𐑢𐑶": [
@@ -110864,7 +111014,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑤𐑨𐑯𐑕𐑩𐑑"
+            "review": "shave_says:𐑤𐑨𐑯𐑕𐑩𐑑",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "lancinating_AJ0_𐑤𐑭𐑯𐑕𐑦𐑯𐑱𐑑𐑦𐑙": [
@@ -111272,7 +111425,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "lastly_AV0_𐑤𐑨𐑕𐑑𐑤𐑦": [
@@ -111872,7 +112028,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑤𐑷𐑥𐑩𐑯"
+            "review": "shave_says:𐑤𐑷𐑥𐑩𐑯",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "lawrencium_NN1_𐑤𐑼𐑧𐑯𐑕𐑾𐑥": [
@@ -115916,7 +116075,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑥𐑷𐑤𐑑𐑩"
+            "review": "shave_says:𐑥𐑷𐑤𐑑𐑩",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "maltese_AJ0_𐑥𐑪𐑤𐑑𐑰𐑟": [
@@ -116360,7 +116522,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "maundy_NN1_𐑥𐑷𐑯𐑛𐑦": [
@@ -119588,7 +119753,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑥𐑭𐑕𐑩𐑟𐑩𐑳𐑜𐑩"
+            "review": "shave_says:𐑥𐑭𐑕𐑩𐑟𐑩𐑳𐑜𐑩",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "masses_NN1_𐑥𐑨𐑕𐑩𐑟": [
@@ -119708,7 +119876,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑥𐑨𐑕𐑑𐑼𐑓𐑩𐑤𐑦"
+            "review": "shave_says:𐑥𐑨𐑕𐑑𐑼𐑓𐑩𐑤𐑦",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "mastermind_NN1_𐑥𐑭𐑕𐑑𐑼𐑥𐑳𐑦𐑯𐑛": [
@@ -124448,7 +124619,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "mnemonic_AJ0_𐑯𐑩𐑥𐑭𐑯𐑦𐑒": [
@@ -136580,7 +136754,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "overdo_VVI_𐑴𐑝𐑼𐑛𐑫": [
@@ -137552,7 +137729,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "pastor_NN1_𐑐𐑨𐑕𐑑𐑼": [
@@ -146912,7 +147092,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "plantigrade_AJ0_𐑐𐑤𐑨𐑯𐑑𐑦𐑜𐑮𐑱𐑛": [
@@ -147656,7 +147839,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "podiatrist_NN1_𐑐𐑩𐑛𐑲𐑩𐑑𐑮𐑦𐑕𐑑": [
@@ -157508,7 +157694,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "ragwort_NN1_𐑮𐑨𐑜𐑢𐑼𐑑": [
@@ -157568,7 +157757,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑮𐑭𐑤"
+            "review": "shave_says:𐑮𐑭𐑤",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "rambunctious_AJ0_𐑮𐑨𐑥𐑚𐑳𐑙𐑖𐑩𐑕": [
@@ -158228,7 +158420,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑮𐑷𐑣𐑲𐑛"
+            "review": "shave_says:𐑮𐑷𐑣𐑲𐑛",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "razz_NN1_𐑮𐑨𐑟": [
@@ -166832,7 +167027,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "sandgrouse_NN1_𐑕𐑨𐑯𐑛𐑜𐑮𐑬𐑕": [
@@ -167648,7 +167846,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑕𐑷𐑐𐑦𐑑"
+            "review": "shave_says:𐑕𐑷𐑐𐑦𐑑",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "sawtooth_NN1_𐑕𐑷𐑑𐑵𐑔": [
@@ -171296,7 +171497,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "shako_NN1_𐑖𐑱𐑒𐑴": [
@@ -172868,7 +173072,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑕𐑦𐑕𐑑𐑼-𐑦𐑯-𐑤𐑷"
+            "review": "shave_says:𐑕𐑦𐑕𐑑𐑼-𐑦𐑯-𐑤𐑷",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "sit-up_NN1_𐑕𐑦𐑑𐑳𐑐": [
@@ -173720,7 +173927,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑕𐑥𐑷𐑤𐑼"
+            "review": "shave_says:𐑕𐑥𐑷𐑤𐑼",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "smallpox_NN1_𐑕𐑥𐑪𐑤𐑐𐑪𐑒𐑕": [
@@ -174320,7 +174530,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑕𐑴-𐑒𐑷𐑤𐑛"
+            "review": "shave_says:𐑕𐑴-𐑒𐑷𐑤𐑛",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "so-so_AJ0_𐑕𐑴𐑕𐑴": [
@@ -177560,7 +177773,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑕𐑑𐑭𐑯𐑗"
+            "review": "shave_says:𐑕𐑑𐑭𐑯𐑗",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "stanchion_NN1_𐑕𐑑𐑨𐑯𐑖𐑩𐑯": [
@@ -178940,7 +179156,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑕𐑑𐑮𐑷"
+            "review": "shave_says:𐑕𐑑𐑮𐑷",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "straw_NN1_𐑕𐑑𐑮𐑪": [
@@ -184424,7 +184643,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑑𐑷𐑤"
+            "review": "shave_says:𐑑𐑷𐑤",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "tamandua_NN1_𐑑𐑩𐑥𐑨𐑯𐑛𐑫𐑩": [
@@ -187196,7 +187418,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑔𐑷𐑥𐑩𐑑𐑻𐑡𐑦"
+            "review": "shave_says:𐑔𐑷𐑥𐑩𐑑𐑻𐑡𐑦",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "theater_NN1_𐑔𐑰𐑩𐑑𐑼": [
@@ -188216,7 +188441,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕"
+            "review": "shave_says:𐑔𐑷𐑑𐑓𐑩𐑤𐑯𐑩𐑕",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "thoughtless_AJ0_𐑔𐑪𐑑𐑤𐑩𐑕": [
@@ -190424,7 +190652,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 97,
-            "review": "shave_agrees"
+            "review": "shave_agrees",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "tranche_NN1_𐑑𐑮𐑭𐑯𐑖": [
@@ -190772,7 +191003,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑑𐑮𐑨𐑯𐑕𐑐𐑤𐑨𐑯𐑑"
+            "review": "shave_says:𐑑𐑮𐑨𐑯𐑕𐑐𐑤𐑨𐑯𐑑",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "transplant_VVI_𐑑𐑮𐑭𐑯𐑟𐑐𐑤𐑭𐑯𐑑": [
@@ -190796,7 +191030,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑑𐑮𐑨𐑯𐑕𐑐𐑤𐑨𐑯𐑑"
+            "review": "shave_says:𐑑𐑮𐑨𐑯𐑕𐑐𐑤𐑨𐑯𐑑",
+            "mergers": [
+                "trap-bath"
+            ]
         }
     ],
     "transport_NN1_𐑑𐑮𐑨𐑯𐑟𐑐𐑹𐑑": [
@@ -200204,7 +200441,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑢𐑷𐑑𐑼𐑤𐑵"
+            "review": "shave_says:𐑢𐑷𐑑𐑼𐑤𐑵",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "waters_NN1_𐑢𐑷𐑑𐑼𐑟": [
@@ -200228,7 +200468,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑢𐑷𐑑𐑼𐑟"
+            "review": "shave_says:𐑢𐑷𐑑𐑼𐑟",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "weber_NN1_𐑢𐑧𐑚𐑼": [
@@ -200636,7 +200879,10 @@
             "freq": 0,
             "var": "GenAm",
             "confidence": 89,
-            "review": "shave_says:𐑢𐑷𐑒𐑢𐑱"
+            "review": "shave_says:𐑢𐑷𐑒𐑢𐑱",
+            "mergers": [
+                "cot-caught"
+            ]
         }
     ],
     "wallah_NN1_𐑢𐑭𐑤𐑩": [

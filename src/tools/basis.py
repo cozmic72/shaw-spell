@@ -29,17 +29,29 @@ import json
 import sys
 from pathlib import Path
 
+from dialect_mergers import MERGER_TRAP_BATH
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 
 # Supplement candidate sources that make up the basis alongside upstream ReadLex.
-# These are the DUPLICATE-FILTERED views (see filter_supplement_duplicates.py):
-# candidates an established entry already resolves to are dropped upstream, so
-# the basis — and thus the editor's review surface — never sees them.
+# These are the PHRASE-FILTERED views of the merger-classified candidates
+# (reliable -> deduped -> classified -> filtered; see the supplement pruning
+# chain): candidates an established entry already resolves to, or sum-of-parts
+# phrase noise, are dropped upstream, so the basis — and thus the editor's review
+# surface — never sees them. Each record carries its `mergers` annotation.
 SUPPLEMENT_PATHS = [
     PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json",
     PROJECT_ROOT / "data" / "supplement-wiktionary-filtered.json",
 ]
+
+# ReadLex's read-only `var: "TrapBath"` records ARE the trap-bath-merged form. The
+# dialect model separates base accent from merger, so the pipeline reinterprets
+# them at consumption (ReadLex is a read-only submodule): base accent RRP, with
+# the merger carried in the additive `mergers` field. This is the one intended
+# break from the old scalar-var shape.
+UPSTREAM_MERGER_VAR = "TrapBath"
+UPSTREAM_MERGER_BASE = "RRP"
 
 # The record's origin, derived from which basis file supplied it. Upstream
 # ReadLex is the sanctioned dictionary; the supplements are candidates.
@@ -58,6 +70,29 @@ PROVENANCE_FIELDS = ["confidence", "source", "status"]
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def reinterpret_upstream(entry):
+    """Map a raw upstream ReadLex entry onto the dialect model, in place. A
+    `var: "TrapBath"` record is the trap-bath-merged form: its base accent is RRP
+    and the merger moves to the additive `mergers` field. Every other entry is
+    returned untouched. The single reinterpretation shared by the basis loader and
+    the applicator, so the anchor identity (which includes var) is consistent
+    wherever the pipeline consumes ReadLex."""
+    if entry.get("var") == UPSTREAM_MERGER_VAR:
+        entry["var"] = UPSTREAM_MERGER_BASE
+        entry["mergers"] = [MERGER_TRAP_BATH]
+    return entry
+
+
+def load_upstream():
+    """Upstream ReadLex with its TrapBath records reinterpreted onto the dialect
+    model (see reinterpret_upstream). The shape every pipeline reader sees."""
+    data = load_json(UPSTREAM_PATH)
+    for entries in data.values():
+        for entry in entries:
+            reinterpret_upstream(entry)
+    return data
 
 
 def anchor_of(entry):
@@ -94,6 +129,8 @@ def record_to_output(record):
         "freq": record.get("freq", 0),
         "var": record.get("var", ""),
     }
+    if record.get("mergers"):
+        entry["mergers"] = record["mergers"]
     for field in PROVENANCE_FIELDS:
         if record.get(field) not in (None, ""):
             entry[field] = record[field]
@@ -111,6 +148,8 @@ def output_to_record(entry):
         "freq": entry.get("freq", 0),
         "var": entry.get("var", ""),
     }
+    if entry.get("mergers"):
+        record["mergers"] = entry["mergers"]
     for field in PROVENANCE_FIELDS:
         if entry.get(field) not in (None, ""):
             record[field] = entry[field]
@@ -171,7 +210,9 @@ def build_basis(enrich_freq=False):
     source = {}
     for source_path in [UPSTREAM_PATH, *SUPPLEMENT_PATHS]:
         label = basis_source(source_path)
-        for entries in load_json(source_path).values():
+        data = (load_upstream() if source_path == UPSTREAM_PATH
+                else load_json(source_path))
+        for entries in data.values():
             for entry in entries:
                 key = anchor_of(entry)
                 index.setdefault(key, entry)

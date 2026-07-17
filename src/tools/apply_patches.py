@@ -40,12 +40,11 @@ import sys
 from basis import (
     PROJECT_ROOT,
     SUPPLEMENT_PATHS,
-    UPSTREAM_PATH,
     anchor_key,
     anchor_of,
     build_basis_index,
     is_flag_patch,
-    load_json,
+    load_upstream,
     record_to_output,
 )
 
@@ -162,7 +161,7 @@ def main():
                     help="where to write the merged readlex (default: data/readlex.json)")
     out_path = Path(ap.parse_args().out_path)
 
-    output = load_json(UPSTREAM_PATH)
+    output = load_upstream()
     print(f"Upstream: {len(output):,} keys, {sum(len(v) for v in output.values()):,} entries")
 
     basis_index = build_basis_index()

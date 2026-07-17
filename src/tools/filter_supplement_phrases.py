@@ -18,15 +18,17 @@ are outside the phrase classifier's scope and always pass through. A candidate a
 patch already anchors to has left the review surface and is exempt — dropping it
 would orphan the patch's anchor (apply_patches.py fails loud on that).
 
-This is the second pass of supplement candidate pruning, chained after the
-duplicate filter: reliable -> filter_supplement_duplicates (deduped) -> here
-(filtered) -> basis. The classification logic is reused wholesale from
-detect_phrase_divergence; this module only decides drop/keep and rewrites files.
+This is the last pass of supplement candidate pruning, chained after the
+duplicate filter and the merger classifier: reliable -> deduped -> classified ->
+here (filtered) -> basis. Records pass through verbatim (only `matches` phrases
+are dropped), so each candidate's `mergers` annotation survives to the basis. The
+classification logic is reused wholesale from detect_phrase_divergence; this
+module only decides drop/keep and rewrites files.
 
-Inputs:  data/supplement-{wordnet,wiktionary}-deduped.json  (the duplicate
-         filter's output).
+Inputs:  data/supplement-{wordnet,wiktionary}-classified.json  (the merger
+         classifier's output).
 Outputs: data/supplement-{wordnet,wiktionary}-filtered.json  — the basis reads
-         these (see src/tools/basis.py). The -deduped.json files are left
+         these (see src/tools/basis.py). The -classified.json files are left
          untouched.
 
 Usage:
@@ -43,11 +45,11 @@ from detect_phrase_divergence import (
 )
 from filter_supplement_duplicates import anchored_keys, load_patches
 
-# (deduped input, filtered output) per supplement source.
+# (classified input, filtered output) per supplement source.
 SUPPLEMENTS = [
-    (PROJECT_ROOT / "data" / "supplement-wordnet-deduped.json",
+    (PROJECT_ROOT / "data" / "supplement-wordnet-classified.json",
      PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json"),
-    (PROJECT_ROOT / "data" / "supplement-wiktionary-deduped.json",
+    (PROJECT_ROOT / "data" / "supplement-wiktionary-classified.json",
      PROJECT_ROOT / "data" / "supplement-wiktionary-filtered.json"),
 ]
 
@@ -115,8 +117,8 @@ def main():
     total_phrases = 0
     total_dropped = 0
 
-    for deduped_path, filtered_path in SUPPLEMENTS:
-        supplement = load_json(deduped_path)
+    for classified_path, filtered_path in SUPPLEMENTS:
+        supplement = load_json(classified_path)
         total_phrases += sum(
             1 for entries in supplement.values()
             for entry in entries if is_phrase_record(entry))

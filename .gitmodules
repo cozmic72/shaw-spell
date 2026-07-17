@@ -7,3 +7,7 @@
 [submodule "external/frequency-words"]
 	path = external/frequency-words
 	url = https://github.com/hermitdave/FrequencyWords.git
+	# ~1.4 GB of all languages; we use only content/2018/en/en_full.txt.
+	# `make setup` checks this out lean (sparse-checkout). See
+	# src/tools/setup-submodules.sh.
+	shallow = true

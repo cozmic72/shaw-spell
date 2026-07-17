@@ -45,11 +45,17 @@ You'll also need the [Apple Dictionary Development Kit](https://github.com/Sebas
 ```bash
 git clone https://github.com/cozmic72/shaw-spell.git
 cd shaw-spell
-git submodule update --init --recursive
+make setup
 make install
 ```
 
 This builds and installs the spell checker and the dictionaries under ~/Library.
+
+`make setup` initialises the git submodules. The `frequency-words` submodule
+(hermitdave/FrequencyWords) ships every language at ~1.4 GB, but Shaw-Spell uses
+only `content/2018/en/en_full.txt`. `make setup` checks it out with a
+sparse-checkout so the tree stays ~30 MB instead of 1.4 GB; the other submodules
+init normally. The target is re-runnable and safe to run on an existing tree.
 
 ## Supplement Data Pipeline
 

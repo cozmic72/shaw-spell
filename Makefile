@@ -1,7 +1,7 @@
 # Makefile for Shaw-Spell
 # Provides incremental builds for dictionaries and spell checker
 
-.PHONY: all clean install uninstall help spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache site site-tarball clean-site test
+.PHONY: all clean install uninstall help setup spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache site site-tarball clean-site test
 .PHONY: shavian-english-gb shavian-english-us english-shavian-gb english-shavian-us shavian-shavian-gb shavian-shavian-us
 .DEFAULT_GOAL := help
 
@@ -30,6 +30,7 @@ help:
 	@echo "Shaw-Spell Build System"
 	@echo ""
 	@echo "Common targets:"
+	@echo "  make setup          Init submodules (frequency-words checked out lean)"
 	@echo "  make                Build complete installer DMG"
 	@echo "  make install        Build and install to ~/Library"
 	@echo "  make notarize       Notarize DMG for distribution"

@@ -9,8 +9,9 @@ and serves the editor's filter/step/accept/reject ops. It NEVER touches suggestd
 or the read-only production spell-check path.
 
 The basis is large (~189K anchors); it is loaded once at startup, like suggestd
-loads its indexes, and filtered in memory per request. A write rebuilds the
-annotated view so the next read reflects the new patch-state.
+loads its indexes, and filtered in memory per request. A write updates only the
+affected anchor's annotation in the in-memory view (not a full reload), so the
+next read reflects the new patch-state without a ~1s rebuild.
 
 Protocol (line-oriented, UTF-8, one request -> one response, then close):
 
@@ -77,8 +78,9 @@ MAX_LIMIT = 500
 
 
 class State:
-    """The annotated view plus the lock guarding a rebuild. One instance lives
-    for the daemon's lifetime; a write swaps in a freshly built view."""
+    """The annotated view for the daemon's lifetime. A write updates the affected
+    anchor in the view incrementally (see AnnotatedView.apply_patch); rebuild()
+    reloads the whole view from disk and is kept for startup only."""
 
     def __init__(self, view):
         self.view = view
@@ -275,7 +277,7 @@ def handle_patch(state, request):
     meta = _meta(author, request.get("note"))
     patch = make_patch(anchor, record, meta)
     result, _previous = upsert_patch(patch)
-    state.rebuild()
+    state.view.apply_patch(patch)
 
     key = anchor_key(anchor) if anchor is not None else anchor_key(record)
     return _write_result(state, key, result, patch["id"])
@@ -305,7 +307,7 @@ def handle_flag(state, request):
     meta["flag"] = True
     patch = make_patch(anchor, record, meta)
     result, _previous = upsert_patch(patch)
-    state.rebuild()
+    state.view.apply_patch(patch)
     return _write_result(state, anchor_key(anchor), result, patch["id"])
 
 
@@ -321,16 +323,20 @@ def handle_unpatch(state, request):
         error = _validate_patch(anchor, None)
         if error:
             return {"error": error}
-        deletion, key = lambda: delete_patch(anchor), anchor_key(anchor)
+        key = anchor_key(anchor)
+        store_delete, view_revert = lambda: delete_patch(anchor), \
+            lambda: state.view.apply_unpatch_anchor(anchor)
     elif patch_id:
-        deletion, key = lambda: delete_patch_by_id(patch_id), None
+        key = None
+        store_delete, view_revert = lambda: delete_patch_by_id(patch_id), \
+            lambda: state.view.apply_unpatch_id(patch_id)
     else:
         return {"error": "unpatch requires an anchor or patch_id"}
     try:
-        deletion()
+        store_delete()
     except KeyError as exc:
         return {"error": str(exc)}
-    state.rebuild()
+    view_revert()
     records = state.view.by_anchor(key) if key is not None else []
     return {"result": "deleted", "id": None,
             "records": [serialisable(r) for r in records]}
@@ -426,9 +432,10 @@ class RequestHandler(socketserver.StreamRequestHandler):
 
 
 class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
-    """Threaded so a slow client can't block others. A patch write rebuilds the
-    view under the server's single-writer assumption (this is a single-user
-    editor); concurrent writers are a Phase-2 concern, not handled here."""
+    """Threaded so a slow client can't block others. A patch write updates the
+    view in place under the server's single-writer assumption (this is a
+    single-user editor); concurrent writers are a Phase-2 concern, not handled
+    here."""
     daemon_threads = True
     allow_reuse_address = True
 

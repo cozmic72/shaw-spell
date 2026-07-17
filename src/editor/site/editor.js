@@ -108,6 +108,7 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     });
     state.records = result.records;
     state.total = result.total;
+    materialisedSignature = querySignature(state.filters, state.sort);
     TALLY.textContent = `${result.total.toLocaleString()} matching`;
     renderLedger();
     renderFoot();
@@ -1049,13 +1050,68 @@ function showToast(message, isError = false) {
     toastTimer = setTimeout(() => TOAST.classList.remove("show"), 2400);
 }
 
+// Live filtering: the filter form re-runs the query the moment the criteria
+// change, so there is no separate "apply" step. A <select> (or the sort) commits
+// on `change`; a free-text or numeric input debounces, re-running once the user
+// pauses. Re-running the filter IS the pull-and-refresh re-sync point (an
+// explicit filter change, so re-syncing membership is the intended behaviour).
+const FILTER_DEBOUNCE_MS = 250;
+
+// The signature of the query currently materialised, so an event that leaves the
+// criteria unchanged (e.g. focus churn, a no-op keystroke) does not re-fire it.
+// runQuery() stamps this after every materialise (live change, paging, or boot).
+let materialisedSignature = null;
+
+function querySignature(filters, sort) {
+    return JSON.stringify([filters, sort]);
+}
+
+// Re-run the filter only if the form's current criteria differ from what is
+// already on screen — the live change/input path, which must not re-fire on a
+// no-op event. Always resets to the first page: a criteria change invalidates
+// the old offset.
+function requestFilterQuery() {
+    const filters = readFilters();
+    const sort = SORT_SELECT.value || DEFAULT_SORT;
+    if (querySignature(filters, sort) === materialisedSignature) {
+        return;
+    }
+    runFilterQuery();
+}
+
+function runFilterQuery() {
+    runQuery(0).catch((error) => showToast(error.message, true));
+}
+
+let filterDebounceTimer = null;
+function requestFilterQueryDebounced() {
+    clearTimeout(filterDebounceTimer);
+    filterDebounceTimer = setTimeout(requestFilterQuery, FILTER_DEBOUNCE_MS);
+}
+
+// Selects commit immediately; free-text and numeric inputs debounce. Binding by
+// element type keeps the wiring declarative — a new filter field needs no change
+// here, only the right input element in the CGI form.
+// The sort <select> lives inside the filter form, so it is covered by this loop
+// alongside the source/reviewed/state/word_kind selects — no separate binding.
+function bindLiveFilters() {
+    for (const field of FILTER_FORM.elements) {
+        if (field.tagName === "SELECT") {
+            field.addEventListener("change", requestFilterQuery);
+        } else if (field.tagName === "INPUT") {
+            field.addEventListener("input", requestFilterQueryDebounced);
+        }
+    }
+}
+
+// Submit (the Filter button / Enter in a field) is the explicit manual re-sync:
+// it re-pulls unconditionally — even when the criteria are unchanged — so the
+// user can deliberately drop just-reviewed rows from the working set. It bypasses
+// the debounce and the redundant-query guard.
 FILTER_FORM.addEventListener("submit", (event) => {
     event.preventDefault();
-    runQuery(0).catch((error) => showToast(error.message, true));
-});
-
-SORT_SELECT.addEventListener("change", () => {
-    runQuery(0).catch((error) => showToast(error.message, true));
+    clearTimeout(filterDebounceTimer);
+    runFilterQuery();
 });
 
 DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
@@ -1068,6 +1124,7 @@ document.addEventListener("keydown", onGlobalKey);
 // plain first query at the review default sort (highest confidence first).
 function boot() {
     buildCheatsheet();
+    bindLiveFilters();
     const stored = loadSession();
     if (stored && stored.filters) {
         restoreFilters(stored.filters);

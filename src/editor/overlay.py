@@ -29,6 +29,8 @@ must see a drop to roll it back). `authored` rows are not in the basis; they are
 synthesized into the view so the editor sees everything a human has ruled on.
 """
 
+import threading
+
 from basis import anchor_key, build_basis, is_flag_patch, output_to_record
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
@@ -103,40 +105,145 @@ def annotate_authored_record(patch):
 
 class AnnotatedView:
     """The basis overlaid with the patch store. Loaded once; filtered in memory
-    per request. Rebuilt only when patches change."""
+    per request. A write updates the affected anchor incrementally rather than
+    rebuilding the whole ~238K-record view (see apply_patch / apply_unpatch).
+
+    The basis (index + per-anchor origin) and the patch overlay (anchored map +
+    authored map) are retained so a write can re-annotate one anchor in place.
+    `by_anchor_index` maps an anchor key to the records carrying it, so both the
+    per-anchor read and the in-place update are O(1).
+
+    The daemon is multithreaded (ThreadingMixIn): an in-place write mutates the
+    shared index while readers iterate it, so a lock guards every mutating op and
+    every read that touches the structure. Readers hand back a snapshot, never a
+    live reference the caller would iterate after releasing the lock."""
 
     def __init__(self, basis_index, basis_source, patches):
-        self.records = _build_records(basis_index, basis_source, patches)
+        self.basis_index = basis_index
+        self.basis_source = basis_source
+        self.anchored, self.authored = _index_patches_by_anchor(patches)
+        self.by_anchor_index = _build_records(
+            basis_index, basis_source, self.anchored, self.authored)
+        self._lock = threading.Lock()
+
+    @property
+    def records(self):
+        """Every annotated row, in basis-then-authored order (the order a full
+        rebuild produces). Flattened from the per-anchor index on demand — the
+        list the request handler filters and sorts. (Flattening the whole ~205K
+        view each read is a known ~5.7ms cost, accepted for now.)"""
+        with self._lock:
+            return [record for group in self.by_anchor_index.values() for record in group]
 
     def by_anchor(self, key):
-        return [r for r in self.records if anchor_key(r["anchor"]) == key]
+        """A snapshot of the records on `key` — a copy, so the caller may iterate
+        it after the lock is released without racing a concurrent write."""
+        with self._lock:
+            return list(self.by_anchor_index.get(key, ()))
+
+    def apply_patch(self, patch):
+        """Overlay a written patch on its anchor, re-annotating only the affected
+        records in place. An anchored patch re-annotates the basis record on that
+        anchor; an authorship patch (anchor null) adds or replaces the authored
+        record for its record's natural key. The result is identical to what a
+        full rebuild would produce for that anchor — the same annotate_* function
+        is applied to the same inputs."""
+        with self._lock:
+            if patch["anchor"] is None:
+                self._apply_authored_patch(patch)
+            else:
+                self._reannotate_basis_anchor(anchor_key(patch["anchor"]), patch)
+
+    def apply_unpatch_anchor(self, anchor):
+        """Remove the anchored patch on the given anchor, reverting its basis
+        record to the untouched source annotation."""
+        key = anchor_key(anchor)
+        with self._lock:
+            self.anchored.pop(key, None)
+            self._reannotate_basis_anchor(key, None)
+
+    def apply_unpatch_id(self, patch_id):
+        """Remove the authorship patch with the given id, dropping its row."""
+        with self._lock:
+            removed = self.authored.pop(patch_id, None)
+            if removed is None:
+                raise KeyError(f"no authored patch in view: {patch_id}")
+            key = anchor_key(removed["anchor"] or removed["record"])
+            self._forget_record(key, lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
+                                and r["patch"]["id"] == patch_id)
+
+    def _reannotate_basis_anchor(self, key, patch):
+        """Replace the basis record on `key` with its re-annotation under `patch`.
+        Fails loud if the basis holds no such anchor — an anchored write must
+        resolve to a basis record, never silently no-op."""
+        candidate = self.basis_index.get(key)
+        if candidate is None:
+            raise KeyError(f"no basis record on anchor: {key}")
+        if patch is not None:
+            self.anchored[key] = patch
+        annotated = annotate_basis_record(candidate, self.basis_source[key], patch)
+        self._replace_record(key, annotated,
+                             lambda r: r["patch_state"] != PATCH_STATE_AUTHORED)
+
+    def _apply_authored_patch(self, patch):
+        self.authored[patch["id"]] = patch
+        annotated = annotate_authored_record(patch)
+        key = anchor_key(patch["record"])
+        self._replace_record(
+            key, annotated,
+            lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
+            and r["patch"]["id"] == patch["id"])
+
+    def _replace_record(self, key, annotated, predicate):
+        """Swap the record on `key` matching `predicate` for `annotated`,
+        keeping its position; append if none matched (a new row)."""
+        records = self.by_anchor_index.setdefault(key, [])
+        for i, record in enumerate(records):
+            if predicate(record):
+                records[i] = annotated
+                return
+        records.append(annotated)
+
+    def _forget_record(self, key, predicate):
+        """Drop the record on `key` matching `predicate` from the index."""
+        records = self.by_anchor_index.get(key, [])
+        for i, record in enumerate(records):
+            if predicate(record):
+                del records[i]
+                if not records:
+                    self.by_anchor_index.pop(key, None)
+                return
+        raise KeyError(f"no record to forget on anchor: {key}")
 
 
 def _index_patches_by_anchor(patches):
-    """Map (word_lower, pos, shaw, var) -> patch, for patches acting on the basis
-    (anchor present). Authorship patches (anchor null) are returned separately."""
+    """Split the store: anchored patches keyed by (word_lower, pos, shaw, var),
+    authorship patches (anchor null) keyed by patch id. Both are the live overlay
+    a write mutates in step with the patch store."""
     anchored = {}
-    authored = []
+    authored = {}
     for patch in patches:
         if patch["anchor"] is None:
-            authored.append(patch)
+            authored[patch["id"]] = patch
         else:
             anchored[anchor_key(patch["anchor"])] = patch
     return anchored, authored
 
 
-def _build_records(basis_index, basis_source, patches):
-    anchored, authored = _index_patches_by_anchor(patches)
-
-    records = []
+def _build_records(basis_index, basis_source, anchored, authored):
+    """The per-anchor record index: anchor key -> its annotated rows, built once
+    from the basis and overlay. Basis anchors come first (in basis order), then
+    authored rows appended — the order the flattened `records` view preserves."""
+    index = {}
     for key, candidate in basis_index.items():
-        records.append(
+        index.setdefault(key, []).append(
             annotate_basis_record(candidate, basis_source[key], anchored.get(key)))
 
-    for patch in authored:
-        records.append(annotate_authored_record(patch))
+    for patch in authored.values():
+        record = annotate_authored_record(patch)
+        index.setdefault(anchor_key(record["anchor"]), []).append(record)
 
-    return records
+    return index
 
 
 def load_view():

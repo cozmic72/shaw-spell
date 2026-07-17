@@ -360,5 +360,5 @@ def load_view():
     """Build the annotated view from the current basis and patch store."""
     from patchstore import load_patches
 
-    basis_index, basis_source = build_basis()
+    basis_index, basis_source = build_basis(enrich_freq=True)
     return AnnotatedView(basis_index, basis_source, load_patches())

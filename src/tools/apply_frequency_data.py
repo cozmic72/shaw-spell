@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
 """
-Fill missing frequency data on data/readlex.json from a subtitle-derived corpus.
+Set every record's frequency from a subtitle-derived corpus, one coherent scale.
 
-ReadLex ships a `freq` field, but ~13.5K of our distinct headwords carry no
-ReadLex frequency (freq == 0): inflections, technical terms, rare words, and
-every editorial supplement. This step credits those words with a frequency drawn
-from an OpenSubtitles-derived word list (external/frequency-words, MIT-licensed).
+ReadLex ships a `freq` field, but its counts are on ReadLex's own corpus scale —
+not comparable to the OpenSubtitles-derived list (external/frequency-words,
+MIT-licensed) we use for the ~13.5K headwords ReadLex leaves at freq 0. A mixed
+dictionary (some words on ReadLex's scale, some on ours) cannot be sorted or
+thresholded meaningfully. So we put EVERY word on ONE scale — ours.
 
-Policy: FILL-WHERE-MISSING. A record whose freq is already > 0 (an authoritative
-ReadLex frequency) is left untouched — the two corpora are scaled differently and
-ReadLex is the primary authority where it speaks. Only freq == 0 records are
-enriched, and the value written is tagged with `freq_source` so the provenance is
-never ambiguous.
+Policy: REPLACE-ALL-FROM-CORPUS. Each record's `freq` becomes its OpenSubtitles
+count (via the word and its UK/US variants, taking the max). Records the corpus
+does not cover drop to freq 0. To honour "don't throw away data", a record that
+HAD a non-zero ReadLex freq keeps it in `freq_readlex` before we overwrite `freq`;
+records that never had a ReadLex freq gain no such field. Corpus-sourced freq is
+tagged `freq_source` so provenance is never ambiguous.
 
 UK/US variants: the corpus is a single mixed-dialect "en" list holding both
-spellings of a transatlantic pair, each with its own count. For a headword absent
-from the corpus we consult its spelling variants (see spelling_variants.py) and
-take the maximum count found across the headword and its variants — the dominant
-attested form, without double-counting when both spellings coexist.
+spellings of a transatlantic pair, each with its own count. We consult a
+headword's spelling variants (see spelling_variants.py) and take the maximum
+count across the headword and its variants — the dominant attested form, without
+double-counting when both spellings coexist.
 
-Idempotent and deterministic: re-running touches only freq == 0 records and reads
-a fixed corpus file, so identical inputs yield an identical readlex.json.
+The enrichment logic (enrich_all) is shared: the editor's basis (src/tools/basis.py)
+applies the SAME replace-all pass to its review-pool candidates, so a candidate and
+the readlex record it eventually becomes carry an identical freq.
+
+Idempotent and deterministic: the value written depends only on the fixed corpus,
+so identical inputs yield an identical readlex.json.
 
 Usage:
     python3 src/tools/apply_frequency_data.py
@@ -71,9 +77,46 @@ def corpus_frequency(word, corpus):
     return best
 
 
+def enrich_entry(entry, corpus, stats):
+    """Set `entry["freq"]` to its corpus frequency, replacing any prior value.
+
+    A non-zero ReadLex freq being overwritten is preserved in `freq_readlex`
+    first. The corpus value (including 0 when uncovered) becomes `freq`; a covered
+    record is tagged `freq_source`. Mutates `entry` in place and tallies `stats`.
+    """
+    # A record already carrying our tag holds a prior corpus value, not a ReadLex
+    # one — re-running must not mistake it for a ReadLex freq to stash. So the
+    # original ReadLex freq is captured only on the first pass (no tag yet).
+    was_readlex = entry.get("freq_source") != FREQ_SOURCE_TAG
+    prior = entry.get("freq", 0)
+    if was_readlex and prior > 0 and "freq_readlex" not in entry:
+        entry["freq_readlex"] = prior
+
+    frequency = corpus_frequency(entry["Latn"].lower(), corpus)
+    entry["freq"] = frequency
+    if frequency > 0:
+        entry["freq_source"] = FREQ_SOURCE_TAG
+        stats["gained"] += prior == 0
+        stats["replaced"] += prior > 0
+    else:
+        entry.pop("freq_source", None)
+        stats["dropped_to_zero"] += prior > 0
+        stats["uncovered"] += prior == 0
+
+
+def enrich_all(readlex, corpus):
+    """Apply the replace-all frequency pass to every record in a canonical
+    {key: [entry, ...]} structure, in place. Returns the tally."""
+    stats = {"replaced": 0, "gained": 0, "dropped_to_zero": 0, "uncovered": 0}
+    for entries in readlex.values():
+        for entry in entries:
+            enrich_entry(entry, corpus, stats)
+    return stats
+
+
 def main():
     import argparse
-    ap = argparse.ArgumentParser(description="Fill missing freq from the subtitle corpus")
+    ap = argparse.ArgumentParser(description="Set freq from the subtitle corpus (replace-all)")
     ap.add_argument("--in", dest="in_path", default=str(READLEX_PATH),
                     help="merged readlex to read (default: data/readlex.json)")
     ap.add_argument("--out", dest="out_path", default=str(READLEX_PATH),
@@ -86,31 +129,16 @@ def main():
     with open(in_path, "r", encoding="utf-8") as f:
         readlex = json.load(f)
 
-    records_filled = 0
-    words_filled = set()
-    records_unmatched = 0
-
-    for entries in readlex.values():
-        for entry in entries:
-            if entry.get("freq", 0) > 0:
-                continue
-            word = entry["Latn"].lower()
-            frequency = corpus_frequency(word, corpus)
-            if frequency > 0:
-                entry["freq"] = frequency
-                entry["freq_source"] = FREQ_SOURCE_TAG
-                records_filled += 1
-                words_filled.add(word)
-            else:
-                records_unmatched += 1
+    stats = enrich_all(readlex, corpus)
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(readlex, f, ensure_ascii=False, indent=4)
 
-    print(f"Corpus entries loaded:     {len(corpus)}")
-    print(f"Records filled:            {records_filled}")
-    print(f"Distinct words filled:     {len(words_filled)}")
-    print(f"Records still without freq:{records_unmatched}")
+    print(f"Corpus entries loaded:      {len(corpus):,}")
+    print(f"ReadLex freq replaced:      {stats['replaced']:,}")
+    print(f"Newly gained (was freq 0):  {stats['gained']:,}")
+    print(f"Dropped to 0 (had ReadLex): {stats['dropped_to_zero']:,}")
+    print(f"Still 0 (never had freq):   {stats['uncovered']:,}")
     print(f"\nWrote {out_path}")
 
 

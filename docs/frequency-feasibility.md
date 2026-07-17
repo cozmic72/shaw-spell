@@ -128,17 +128,24 @@ able to credit the UK headword `colour`, and vice versa. Strategy:
   fresh clone: `git submodule add https://github.com/hermitdave/FrequencyWords.git external/frequency-words`.
   Note: the full repo is ~1.4 GB (all languages); a sparse/partial checkout of just
   `content/2018/en/en_full.txt` would trim it substantially if size matters.
-- **Scripts:** `src/tools/apply_frequency_data.py` (fill-where-missing enrichment)
-  and `src/tools/spelling_variants.py` (UK/US ruleset).
-- **Make target:** `make frequency` — depends on `data/readlex.json`, the script,
-  the ruleset, and the corpus file. Kept **off** the critical `$(READLEX_PATH)`
-  build path: it rewrites `data/readlex.json` in place, is **idempotent**
-  (re-running fills 0 records, byte-identical output) and deterministic, and is run
-  explicitly after a merge.
-- **Policy — fill-where-missing:** records with an existing ReadLex `freq > 0` are
-  left untouched (ReadLex is the primary authority and the two corpora are scaled
-  differently); only `freq == 0` records are enriched. Every filled record is
-  tagged `"freq_source": "opensubtitles-2018"` for provenance.
+- **Scripts:** `src/tools/apply_frequency_data.py` (replace-all enrichment, whose
+  `enrich_all` is reused by `src/tools/basis.py` to enrich the editor's review-pool
+  candidates too) and `src/tools/spelling_variants.py` (UK/US ruleset).
+- **Make target:** `make frequency` — the second stage of the two-stage
+  `$(READLEX_PATH)` build (`apply_patches` → `apply_frequency_data`, sequential): it
+  is **idempotent** (a tagged record's corpus freq is not re-stashed, byte-identical
+  re-run) and deterministic.
+- **Policy — replace-all-from-corpus:** EVERY record's `freq` is set to its
+  OpenSubtitles count (word + UK/US variant max) so the whole dictionary is on ONE
+  comparable scale. ReadLex counts are on a different scale and are NOT kept as
+  `freq` — but a record that HAD a non-zero ReadLex freq keeps it in `freq_readlex`
+  (don't-throw-away-data). Corpus-uncovered records drop to `freq 0`. Corpus-sourced
+  freq is tagged `"freq_source": "opensubtitles-2018"`.
+- **Editor uniformity:** `basis.build_basis(enrich_freq=True)` runs the SAME
+  `enrich_all` pass at view-load, so a review-pool candidate carries the exact freq
+  the readlex record it becomes will ship with. If the corpus is absent (fresh clone,
+  pre-`make setup`) the editor logs a skip and starts without freq; production's
+  `apply_frequency_data` still fails loud on a missing corpus.
 
 ## Follow-up (deferred — NOT done here)
 

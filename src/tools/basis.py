@@ -26,6 +26,7 @@ Two record shapes meet here, and the mapping between them lives in one place:
 """
 
 import json
+import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -126,7 +127,32 @@ def basis_source(path):
     return source
 
 
-def build_basis():
+def enrich_basis_frequency(index):
+    """Put every basis record on the corpus frequency scale, in place — the SAME
+    replace-all pass the production build applies to readlex.json (see
+    apply_frequency_data.enrich_entry), so a review-pool candidate carries the
+    exact freq the record it becomes will ship with. Reuses the corpus + UK/US
+    variant logic rather than reimplementing it.
+
+    The imports are function-local: apply_frequency_data imports PROJECT_ROOT from
+    this module, so a module-level import here would be a cycle.
+
+    Corpus-absent is the ONE justified graceful skip: the editor must start on a
+    fresh clone (before `make setup`) even without frequency data. Production's
+    apply_frequency_data still fails loud on a missing corpus — this skip only
+    spares the editor, and is logged so a silent freq-0 basis is never a mystery.
+    """
+    from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
+
+    if not CORPUS_PATH.exists():
+        print(f"basis: frequency corpus absent ({CORPUS_PATH.name}); "
+              "review-pool candidates carry no freq. Run `make setup`.",
+              file=sys.stderr)
+        return
+    enrich_all({None: list(index.values())}, load_corpus())
+
+
+def build_basis(enrich_freq=False):
     """Traverse the basis once, returning both the record index and the origin
     of each anchor.
 
@@ -134,6 +160,12 @@ def build_basis():
               ReadLex is seen first and wins over a supplement that attests the
               same natural key.
       source  same key -> origin label.
+
+    With enrich_freq, every record is put on the corpus frequency scale so the
+    editor's freq-desc sort triages the review pool by real frequency, uniformly
+    with production. The applicator does not emit basis freq (it enriches its
+    merged output separately) so it leaves this off — paying neither the corpus
+    load nor the pass.
     """
     index = {}
     source = {}
@@ -144,6 +176,8 @@ def build_basis():
                 key = anchor_of(entry)
                 index.setdefault(key, entry)
                 source.setdefault(key, label)
+    if enrich_freq:
+        enrich_basis_frequency(index)
     return index, source
 
 

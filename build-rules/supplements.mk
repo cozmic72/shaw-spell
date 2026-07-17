@@ -69,6 +69,19 @@ editorial: $(SUPPLEMENT_DEPS)
 	$(RUN) python3 $(SRC_TOOLS)/generate_editorial_csv.py
 
 ###########################################
+# Phrase divergence detection (flags multi-word phrases whose pronunciation
+# genuinely differs from their component words glued together — keepers — vs
+# those that are just concatenation noise. See docs/phrase-divergence.md.)
+###########################################
+
+data/phrase-divergence.tsv data/phrase-divergence.json: $(SRC_TOOLS)/detect_phrase_divergence.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json
+	@echo "Detecting phrase divergence..."
+	$(RUN) python3 $(SRC_TOOLS)/detect_phrase_divergence.py
+
+.PHONY: phrase-divergence
+phrase-divergence: data/phrase-divergence.tsv
+
+###########################################
 # Wiktionary definitions
 ###########################################
 

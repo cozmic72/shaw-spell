@@ -90,4 +90,17 @@ The `editorial-drops.csv` file contains fragments and affixes pre-tagged with `v
 | `readlex.json` | Merged ReadLex — the build output used by dictionaries and spell checker |
 | `supplement-wordnet-reliable.json` | WordNet supplement (GB+US IPA, definitions) |
 | `supplement-wiktionary-reliable.json` | Wiktionary supplement (RP, GenAm IPA, definitions) |
+| `supplement-wordnet-filtered.json` | WordNet supplement with duplicate candidates removed (the editorial basis reads this) |
+| `supplement-wiktionary-filtered.json` | Wiktionary supplement with duplicate candidates removed (the editorial basis reads this) |
 | `definitions-*.json` | Transliterated definition caches for dictionary builds |
+
+### Duplicate filtering
+
+`filter_supplement_duplicates.py` produces the `*-filtered.json` views the
+editorial basis reads. A supplement candidate is dropped when an established
+entry (upstream ReadLex plus sanctioned patches) already resolves to the same
+Shavian spelling for the candidate's scope — i.e. a same-word, same-shaw
+established entry whose `(var, pos)` is the same as or broader than the
+candidate's. RRP is the var wildcard (covers every dialect); UNC is the broadest
+POS and NN0 is broader than NN1/NN2; compound `+tags` only self-match. A
+candidate a patch already anchors to is exempt (it has left the review surface).

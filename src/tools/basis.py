@@ -32,17 +32,20 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 
 # Supplement candidate sources that make up the basis alongside upstream ReadLex.
+# These are the DUPLICATE-FILTERED views (see filter_supplement_duplicates.py):
+# candidates an established entry already resolves to are dropped upstream, so
+# the basis — and thus the editor's review surface — never sees them.
 SUPPLEMENT_PATHS = [
-    PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json",
-    PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json",
+    PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json",
+    PROJECT_ROOT / "data" / "supplement-wiktionary-filtered.json",
 ]
 
 # The record's origin, derived from which basis file supplied it. Upstream
 # ReadLex is the sanctioned dictionary; the supplements are candidates.
 UPSTREAM_SOURCE = "readlex"
 SUPPLEMENT_SOURCES = {
-    "supplement-wordnet-reliable.json": "wordnet",
-    "supplement-wiktionary-reliable.json": "wiktionary",
+    "supplement-wordnet-filtered.json": "wordnet",
+    "supplement-wiktionary-filtered.json": "wiktionary",
 }
 
 # Provenance fields a record may carry beyond the canonical core, in output

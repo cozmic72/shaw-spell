@@ -34,10 +34,22 @@ rescore-full: data/supplement-wordnet-reliable.json data/supplement-wiktionary-r
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
 
 ###########################################
+# Duplicate filtering (removes candidates an established entry already resolves)
+###########################################
+
+# The filtered supplement views the editorial basis reads. A candidate whose
+# (word, shaw) an established entry (upstream ReadLex + sanctioned patches)
+# already covers on both the var and pos axes is dropped here, so the review
+# surface never sees it. See src/tools/filter_supplement_duplicates.py.
+data/supplement-wordnet-filtered.json data/supplement-wiktionary-filtered.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json data/patches/patches.jsonl
+	@echo "Filtering duplicate supplement candidates..."
+	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_duplicates.py
+
+###########################################
 # Merged readlex (combines original + supplements)
 ###########################################
 
-SUPPLEMENT_DEPS := data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+SUPPLEMENT_DEPS := data/supplement-wordnet-filtered.json data/supplement-wiktionary-filtered.json
 
 # Merged readlex is now produced by applying the editorial patch store
 # (data/patches/patches.jsonl) to upstream + supplements. The legacy

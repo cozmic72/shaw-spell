@@ -42,6 +42,7 @@ const DETAIL = document.getElementById("detail");
 const TOAST = document.getElementById("toast");
 const WORKBENCH = document.getElementById("workbench");
 const DRAWER_TOGGLE = document.getElementById("drawerToggle");
+const HELP_TOGGLE = document.getElementById("helpToggle");
 const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
 const CHEATSHEET = document.getElementById("cheatsheet");
 const PACING = document.getElementById("pacing");
@@ -461,19 +462,15 @@ function actionBar(record) {
         actionButton("drop", "Drop", dropSelected),
         actionButton("flag", "Flag", flagSelected),
     );
+    if (record.reviewed) {
+        bar.append(actionButton("clear", "Clear", clearSelected));
+    }
     if (record.patch_state === "flagged") {
         bar.append(actionButton("unflag", "Unflag", unflagSelected));
     }
     if (session.undoStack.length) {
         bar.append(actionButton("undo", "Undo", undoLast));
     }
-
-    const help = document.createElement("button");
-    help.type = "button";
-    help.className = "act-help";
-    help.textContent = "? keys";
-    help.addEventListener("click", () => toggleCheatsheet(true));
-    bar.append(help);
 
     return bar;
 }
@@ -605,6 +602,27 @@ async function unflagSelected() {
     await unpatch(anchorOf(selected), "unflagged", { step: false });
 }
 
+// Clear: the general "reset this entry's state" — delete WHATEVER patch it holds
+// (accept/edit/drop/flag/authored, this session or a prior one), reverting a basis
+// record to its untouched source, or removing an authored record outright. Shown
+// whenever the entry is reviewed. An authored record has no anchor, so it is
+// cleared by its patch id; the daemon then returns no record and the row is dropped.
+async function clearSelected() {
+    const selected = state.records[state.selected];
+    if (!selected || !selected.reviewed) {
+        return;
+    }
+    if (selected.patch_state === "authored") {
+        if (!selected.patch_id) {
+            showToast("Can't clear: authored entry has no patch id.", true);
+            return;
+        }
+        await unpatch(null, "cleared", { step: false, patchId: selected.patch_id });
+    } else {
+        await unpatch(anchorOf(selected), "cleared", { step: false });
+    }
+}
+
 // Undo the last decision: if it created a patch (the anchor was previously
 // unreviewed), delete it to restore the untouched source; the row is restored in
 // place. If the anchor already had a patch before, we cannot faithfully restore
@@ -628,17 +646,36 @@ async function undoLast() {
     await unpatch(frame.anchor, "undone", { step: false, uncount: true });
 }
 
-async function unpatch(anchor, verb, { step = true, uncount = false } = {}) {
+async function unpatch(anchor, verb, { step = true, uncount = false, patchId = null } = {}) {
+    const request = patchId ? { op: "unpatch", patch_id: patchId } : { op: "unpatch", anchor };
     try {
-        const result = await callDaemon({ op: "unpatch", anchor });
+        const result = await callDaemon(request);
         if (uncount) {
             session.decisions = Math.max(0, session.decisions - 1);
         }
-        applyWriteResult(result.records, { step });
+        if (!result.records.length) {
+            removeSelectedRow();
+        } else {
+            applyWriteResult(result.records, { step });
+        }
         showToast(`${verb} · ${result.result}`);
     } catch (error) {
         showToast(error.message, true);
     }
+}
+
+// Clearing an authored entry leaves no record — the daemon returns an empty set.
+// Drop the row from the working set and DOM, then land on its neighbour so the
+// selection stays in view.
+function removeSelectedRow() {
+    const removed = state.selected;
+    if (removed < 0) {
+        return;
+    }
+    state.records.splice(removed, 1);
+    renderLedger();
+    refreshPacing();
+    select(Math.min(removed, state.records.length - 1));
 }
 
 function pushUndo(anchor, priorReviewed) {
@@ -759,6 +796,7 @@ const REVIEW_KEYS = {
     e: enterEdit,
     s: saveSelected,
     f: flagSelected,
+    c: clearSelected,
     u: undoLast,
     j: () => step(1),
     k: () => step(-1),
@@ -768,11 +806,16 @@ const REVIEW_KEYS = {
 };
 
 // Keys that mutate must not double-fire on auto-repeat when a key is held.
-const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "u"]);
+const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "c", "u"]);
 
 function onGlobalKey(event) {
-    if (event.key === "Escape" && isCheatsheetOpen()) {
-        toggleCheatsheet(false);
+    if (isCheatsheetOpen()) {
+        // While the dialog is open only its own keys act — Escape or ? close it;
+        // review verdicts must not leak through to the entry behind the backdrop.
+        if (event.key === "Escape" || event.key === "?") {
+            event.preventDefault();
+            toggleCheatsheet(false);
+        }
         return;
     }
     if (event.target instanceof Element && event.target.matches("input, select, textarea")) {
@@ -793,39 +836,58 @@ function onGlobalKey(event) {
     handler();
 }
 
-// ---- keyboard cheatsheet overlay ----
-const CHEATSHEET_ROWS = [
-    ["A", "Accept — promote & step on"],
-    ["X", "Drop — reject & step on"],
-    ["E", "Edit — focus the Shavian field"],
-    ["S", "Save the current edit & step on"],
-    ["F", "Flag for later — looked at, no verdict"],
-    ["U", "Undo the last decision"],
-    ["J / K", "Step next / previous"],
-    ["↑ / ↓", "Step next / previous"],
-    ["Esc", "Leave edit mode (in a field)"],
-    ["?", "Toggle this cheatsheet"],
+// ---- keyboard shortcuts dialog ----
+// Grouped so the sheet reads as a map of the workflow, not a flat key dump. Each
+// verdict row carries the same state class the ledger stamp uses, so its key chip
+// is tinted the colour the editor already associates with that outcome. `state`
+// null leaves a row in the neutral utility tone.
+const SHORTCUT_GROUPS = [
+    {
+        heading: "Review actions",
+        rows: [
+            { keys: ["A"], state: "edited", action: "Accept — promote & step on" },
+            { keys: ["X"], state: "dropped", action: "Drop — reject & step on" },
+            { keys: ["F"], state: "flagged", action: "Flag — looked at, no verdict yet" },
+            { keys: ["E"], state: null, action: "Edit — focus the Shavian field" },
+            { keys: ["S"], state: "edited", action: "Save the current edit & step on" },
+            { keys: ["C"], state: "unreviewed", action: "Clear — delete the patch, back to unreviewed" },
+        ],
+    },
+    {
+        heading: "Navigation",
+        rows: [
+            { keys: ["J", "K"], state: null, action: "Step next / previous" },
+            { keys: ["↑", "↓"], state: null, action: "Step next / previous" },
+        ],
+    },
+    {
+        heading: "Editing & session",
+        rows: [
+            { keys: ["Enter"], state: null, action: "Accept (in a field)" },
+            { keys: ["⇧", "Enter"], state: null, action: "Drop (in a field)" },
+            { keys: ["⌘", "Enter"], state: null, action: "Save (in a field)" },
+            { keys: ["Esc"], state: null, action: "Leave edit mode / close this dialog" },
+            { keys: ["U"], state: null, action: "Undo the last decision" },
+            { keys: ["?"], state: null, action: "Toggle this dialog" },
+        ],
+    },
 ];
+
+let cheatsheetReturnFocus = null;
 
 function buildCheatsheet() {
     const card = document.createElement("div");
     card.className = "cheatsheet-card";
+    card.setAttribute("role", "document");
+
     const title = document.createElement("h2");
-    title.textContent = "Keyboard";
+    title.id = "cheatsheet-title";
+    title.textContent = "Keyboard shortcuts";
     card.append(title);
 
-    const list = document.createElement("dl");
-    list.className = "cheat-list";
-    for (const [keys, description] of CHEATSHEET_ROWS) {
-        const dt = document.createElement("dt");
-        for (const label of keys.split(" / ")) {
-            dt.append(kbd(label));
-        }
-        const dd = document.createElement("dd");
-        dd.textContent = description;
-        list.append(dt, dd);
+    for (const group of SHORTCUT_GROUPS) {
+        card.append(shortcutGroup(group));
     }
-    card.append(list);
 
     const close = document.createElement("button");
     close.type = "button";
@@ -834,12 +896,39 @@ function buildCheatsheet() {
     close.addEventListener("click", () => toggleCheatsheet(false));
     card.append(close);
 
+    CHEATSHEET.setAttribute("aria-labelledby", "cheatsheet-title");
     CHEATSHEET.replaceChildren(card);
     CHEATSHEET.addEventListener("click", (event) => {
         if (event.target === CHEATSHEET) {
             toggleCheatsheet(false);
         }
     });
+}
+
+function shortcutGroup({ heading, rows }) {
+    const section = document.createElement("section");
+    section.className = "cheat-group";
+
+    const label = document.createElement("h3");
+    label.textContent = heading;
+    section.append(label);
+
+    const list = document.createElement("dl");
+    list.className = "cheat-list";
+    for (const row of rows) {
+        const dt = document.createElement("dt");
+        if (row.state) {
+            dt.className = `state-${row.state}`;
+        }
+        for (const label of row.keys) {
+            dt.append(kbd(label));
+        }
+        const dd = document.createElement("dd");
+        dd.textContent = row.action;
+        list.append(dt, dd);
+    }
+    section.append(list);
+    return section;
 }
 
 function kbd(label) {
@@ -852,10 +941,22 @@ function isCheatsheetOpen() {
     return CHEATSHEET.classList.contains("open");
 }
 
+// Open/close the modal, moving focus in on open and restoring it on close so the
+// dialog is keyboard-navigable and never strands focus behind the backdrop.
 function toggleCheatsheet(force) {
     const open = force === undefined ? !isCheatsheetOpen() : force;
+    if (open === isCheatsheetOpen()) {
+        return;
+    }
     CHEATSHEET.classList.toggle("open", open);
     CHEATSHEET.setAttribute("aria-hidden", String(!open));
+    if (open) {
+        cheatsheetReturnFocus = document.activeElement;
+        CHEATSHEET.querySelector(".cheat-close").focus();
+    } else if (cheatsheetReturnFocus) {
+        cheatsheetReturnFocus.focus();
+        cheatsheetReturnFocus = null;
+    }
 }
 
 // ---- session pacing strip ----
@@ -959,6 +1060,7 @@ SORT_SELECT.addEventListener("change", () => {
 
 DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
+HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 
 document.addEventListener("keydown", onGlobalKey);
 

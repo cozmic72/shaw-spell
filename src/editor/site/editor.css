@@ -107,6 +107,24 @@ body {
     cursor: pointer;
 }
 .drawer-backdrop { display: none; }
+/* Always-reachable shortcuts trigger, pinned to the masthead's right edge so a
+   mouse or touch user can find the keyboard help without an entry selected. */
+.help-toggle {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: none;
+    border: 1px dashed var(--rule);
+    border-radius: 2px;
+    min-height: 34px;
+    padding: 5px 14px;
+    cursor: pointer;
+}
+.help-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
+.help-toggle + .tally { margin-left: 0; }
 
 /* ---- filter bar ---- */
 .filters {
@@ -470,22 +488,9 @@ body {
 .act.flag:hover { background: var(--state-flagged); color: var(--paper); }
 .act.unflag, .act.undo { color: var(--ink-soft); }
 .act.unflag:hover, .act.undo:hover { background: var(--ink-soft); color: var(--paper); }
+.act.clear { color: var(--state-unreviewed); }
+.act.clear:hover { background: var(--state-unreviewed); color: var(--paper); }
 
-/* The cheatsheet trigger — quiet, pinned right, always reachable. */
-.act-help {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    color: var(--ink-soft);
-    background: none;
-    border: 1px dashed var(--rule);
-    border-radius: 2px;
-    min-height: 44px;
-    padding: 6px 14px;
-    cursor: pointer;
-}
-.act-help:hover { color: var(--ink); border-color: var(--ink-soft); }
 
 kbd {
     font-family: var(--mono);
@@ -542,7 +547,7 @@ kbd {
     color: var(--ink-soft);
 }
 
-/* ---- keyboard cheatsheet overlay ---- */
+/* ---- keyboard shortcuts dialog ---- */
 .cheatsheet {
     position: fixed;
     inset: 0;
@@ -559,8 +564,8 @@ kbd {
     border: 1px solid var(--rule);
     border-top: 3px solid var(--accent);
     border-radius: 4px;
-    padding: 24px 28px;
-    max-width: 420px;
+    padding: 24px 28px 28px;
+    max-width: 460px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
@@ -573,18 +578,36 @@ kbd {
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 18px;
+    margin-bottom: 20px;
+}
+.cheat-group + .cheat-group { margin-top: 20px; }
+.cheat-group h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
 }
 .cheat-list {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 12px 16px;
+    grid-template-columns: max-content 1fr;
+    gap: 9px 18px;
     align-items: baseline;
 }
-.cheat-list dt { display: flex; gap: 4px; }
-.cheat-list dd { color: var(--ink-soft); font-size: 12px; }
+.cheat-list dt { display: flex; gap: 4px; justify-self: start; }
+.cheat-list dd { color: var(--ink); font-size: 12px; }
+/* A verdict row's key chip wears the colour the ledger uses for that outcome, so
+   the sheet doubles as a legend for the stamps the reviewer reads all day. */
+.cheat-list dt.state-edited kbd { color: var(--state-edited); border-color: var(--state-edited); }
+.cheat-list dt.state-dropped kbd { color: var(--state-dropped); border-color: var(--state-dropped); }
+.cheat-list dt.state-flagged kbd { color: var(--state-flagged); border-color: var(--state-flagged); }
+.cheat-list dt.state-unreviewed kbd { color: var(--state-unreviewed); border-color: var(--state-unreviewed); }
 .cheat-close {
-    margin-top: 22px;
+    margin-top: 24px;
     font-family: var(--mono);
     font-size: 12px;
     letter-spacing: 0.06em;
@@ -666,6 +689,10 @@ kbd {
         text-overflow: ellipsis;
     }
     .drawer-toggle { flex: 0 0 auto; }
+    /* Keep the shortcuts trigger reachable but compact on the tight mobile row —
+       the label collapses to just the "?" glyph. */
+    .help-toggle { flex: 0 0 auto; margin-left: 0; padding: 5px 11px; font-size: 0; }
+    .help-toggle::before { content: "?"; font-size: 13px; }
 
     .shaw-field { font-size: 46px; }
     .ipa-field { font-size: 22px; }
@@ -679,7 +706,6 @@ kbd {
        by thumb; the cheatsheet trigger takes its own full-width row. */
     .actions { gap: 10px; }
     .act { flex: 1 1 auto; text-align: center; }
-    .act-help { flex: 1 1 100%; margin-left: 0; }
 
     /* The REVIEW/EDITING pill would collide with the shorter card; tuck it in. */
     .detail.mode-review::after, .detail.mode-edit::after { top: 10px; right: 12px; }

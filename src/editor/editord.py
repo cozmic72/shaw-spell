@@ -31,8 +31,11 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 for production (see is_flag_patch)
 
     Request:   {"op": "unpatch", "anchor": {"word","pos","shaw","var"}}
-    Response:  {"result": "deleted", "id": null, "records": [...]}   # patch removed,
-                the record reverts to its untouched source (undo / unflag)
+             | {"op": "unpatch", "patch_id": "p_…"}
+    Response:  {"result": "deleted", "id": null, "records": [...]}   # patch removed;
+                a basis record reverts to its untouched source (undo / unflag /
+                clear), keyed by anchor; an authorship record (anchor null) is
+                cleared by patch_id and its row removed (records empty)
 
     Errors:    {"error": "<message>"}
 
@@ -66,7 +69,8 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import anchor_key                                     # noqa: E402
 from overlay import PATCH_STATE_FLAGGED, load_view               # noqa: E402
-from patchstore import delete_patch, make_patch, upsert_patch    # noqa: E402
+from patchstore import (                                        # noqa: E402
+    delete_patch, delete_patch_by_id, make_patch, upsert_patch)
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
@@ -292,20 +296,30 @@ def handle_flag(state, request):
 
 
 def handle_unpatch(state, request):
-    """Delete the patch on an anchor (undo a decision / unflag), reverting the
-    record to its untouched source. Fails loud if no patch holds the anchor."""
+    """Clear the patch on an entry, reverting it to its untouched source (undo a
+    decision / unflag / general clear). A basis record is cleared by its `anchor`;
+    an authorship record — whose stored anchor is null — has no source to revert
+    to and is cleared by its `patch_id`, removing the row entirely. Fails loud if
+    the target patch is not there."""
     anchor = request.get("anchor")
-    if not anchor:
-        return {"error": "unpatch requires an anchor"}
-    error = _validate_patch(anchor, None)
-    if error:
-        return {"error": error}
+    patch_id = request.get("patch_id")
+    if anchor:
+        error = _validate_patch(anchor, None)
+        if error:
+            return {"error": error}
+        deletion, key = lambda: delete_patch(anchor), anchor_key(anchor)
+    elif patch_id:
+        deletion, key = lambda: delete_patch_by_id(patch_id), None
+    else:
+        return {"error": "unpatch requires an anchor or patch_id"}
     try:
-        delete_patch(anchor)
+        deletion()
     except KeyError as exc:
         return {"error": str(exc)}
     state.rebuild()
-    return _write_result(state, anchor_key(anchor), "deleted", None)
+    records = state.view.by_anchor(key) if key is not None else []
+    return {"result": "deleted", "id": None,
+            "records": [serialisable(r) for r in records]}
 
 
 # The editable-field subset of an annotated record, mapped back to a patch's

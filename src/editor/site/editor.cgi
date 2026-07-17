@@ -92,6 +92,8 @@ PAGE = """<!DOCTYPE html>
         </div>
         <button type="button" class="drawer-toggle" id="drawerToggle"
                 aria-controls="ledger" aria-expanded="false">Entries</button>
+        <button type="button" class="help-toggle" id="helpToggle"
+                aria-controls="cheatsheet" title="Keyboard shortcuts (?)">? keys</button>
         <div class="tally" id="tally" aria-live="polite"></div>
     </header>
 

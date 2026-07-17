@@ -94,6 +94,21 @@ def delete_patch(anchor, path=PATCHES_PATH):
     at = _index_of_anchor(patches, anchor_key(anchor))
     if at is None:
         raise KeyError(f"no patch on anchor: {anchor}")
+    return _pop_and_write(patches, at, path)
+
+
+def delete_patch_by_id(patch_id, path=PATCHES_PATH):
+    """Remove the patch with the given id — the deletion path for authorship
+    patches, whose stored anchor is null and so cannot be found by anchor. Fails
+    loud if no patch carries that id. Returns the removed patch."""
+    patches = load_patches(path)
+    at = _index_of_id(patches, patch_id)
+    if at is None:
+        raise KeyError(f"no patch with id: {patch_id}")
+    return _pop_and_write(patches, at, path)
+
+
+def _pop_and_write(patches, at, path):
     removed = patches.pop(at)
     write_patches(patches, path)
     return removed

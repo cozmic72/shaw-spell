@@ -106,9 +106,12 @@ PAGE = """<!DOCTYPE html>
             <span>Shaw</span>
             <input type="text" name="shaw" placeholder="𐑖𐑷 substring" class="shavian-input">
         </label>
-        <!-- source/status/var/pos chips are populated at boot from the daemon's
-             distinct-value facets op, so they track the data rather than drift
-             from a hardcoded enum. -->
+        <!-- Every categorical facet becomes a multi-select dropdown at boot (editor.js
+             buildFacetDropdowns). The data-derived facets (source/status/pos/var) take
+             their values from the daemon's distinct-value facets op, so they track the
+             data rather than drift from a hardcoded enum. The closed vocabularies carry
+             their value→label pairs in a <template> here (never rendered, harvested by
+             the JS), so those labels stay authored in one place. -->
         <fieldset class="field chips" data-facet="source">
             <legend>Source</legend>
         </fieldset>
@@ -117,28 +120,36 @@ PAGE = """<!DOCTYPE html>
         </fieldset>
         <fieldset class="field chips" data-facet="word_kind">
             <legend>Words</legend>
-            <label class="chip"><input type="checkbox" name="word_kind" value="multi"><span>multi-word</span></label>
-            <label class="chip"><input type="checkbox" name="word_kind" value="single"><span>single-word</span></label>
+            <template>
+                <label class="chip"><input type="checkbox" name="word_kind" value="multi"><span>multi-word</span></label>
+                <label class="chip"><input type="checkbox" name="word_kind" value="single"><span>single-word</span></label>
+            </template>
         </fieldset>
-        <fieldset class="field chips state-chips" data-facet="novelty">
+        <fieldset class="field chips" data-facet="novelty">
             <legend>Novelty</legend>
-            <label class="chip"><input type="checkbox" name="novelty" value="new-word"><span>new word</span></label>
-            <label class="chip"><input type="checkbox" name="novelty" value="new-spelling"><span>new spelling</span></label>
-            <label class="chip"><input type="checkbox" name="novelty" value="new-pos"><span>new POS</span></label>
+            <template>
+                <label class="chip"><input type="checkbox" name="novelty" value="new-word"><span>new word</span></label>
+                <label class="chip"><input type="checkbox" name="novelty" value="new-spelling"><span>new spelling</span></label>
+                <label class="chip"><input type="checkbox" name="novelty" value="new-pos"><span>new POS</span></label>
+            </template>
         </fieldset>
-        <fieldset class="field chips state-chips" data-facet="reviewed">
+        <fieldset class="field chips" data-facet="reviewed">
             <legend>Reviewed</legend>
-            <label class="chip"><input type="checkbox" name="reviewed" value="unreviewed"><span>unreviewed</span></label>
-            <label class="chip"><input type="checkbox" name="reviewed" value="flagged"><span>flagged</span></label>
-            <label class="chip"><input type="checkbox" name="reviewed" value="decided"><span>decided</span></label>
+            <template>
+                <label class="chip"><input type="checkbox" name="reviewed" value="unreviewed"><span>unreviewed</span></label>
+                <label class="chip"><input type="checkbox" name="reviewed" value="flagged"><span>flagged</span></label>
+                <label class="chip"><input type="checkbox" name="reviewed" value="decided"><span>decided</span></label>
+            </template>
         </fieldset>
-        <fieldset class="field chips state-chips" data-facet="patch_state">
+        <fieldset class="field chips" data-facet="patch_state">
             <legend>State</legend>
-            <label class="chip"><input type="checkbox" name="patch_state" value="unreviewed"><span>unreviewed</span></label>
-            <label class="chip"><input type="checkbox" name="patch_state" value="edited"><span>edited</span></label>
-            <label class="chip"><input type="checkbox" name="patch_state" value="dropped"><span>dropped</span></label>
-            <label class="chip"><input type="checkbox" name="patch_state" value="flagged"><span>flagged</span></label>
-            <label class="chip"><input type="checkbox" name="patch_state" value="authored"><span>authored</span></label>
+            <template>
+                <label class="chip"><input type="checkbox" name="patch_state" value="unreviewed"><span>unreviewed</span></label>
+                <label class="chip"><input type="checkbox" name="patch_state" value="edited"><span>edited</span></label>
+                <label class="chip"><input type="checkbox" name="patch_state" value="dropped"><span>dropped</span></label>
+                <label class="chip"><input type="checkbox" name="patch_state" value="flagged"><span>flagged</span></label>
+                <label class="chip"><input type="checkbox" name="patch_state" value="authored"><span>authored</span></label>
+            </template>
         </fieldset>
         <fieldset class="field chips" data-facet="pos">
             <legend>POS</legend>

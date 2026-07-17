@@ -1185,6 +1185,16 @@ function restoreChips(facet, values) {
     for (const box of FILTER_FORM.querySelectorAll(`input[name="${facet}"]`)) {
         box.checked = wanted.has(box.value);
     }
+    // Programmatic .checked does not fire `change`, so a dropdown's trigger label
+    // (built off the checked count) must be nudged to reflect the restored selection.
+    refreshFacetTrigger(facet);
+}
+
+// Re-sync a facet dropdown's trigger label to its current checked count, for the
+// paths that set .checked directly (session restore) rather than via a user toggle.
+function refreshFacetTrigger(facet) {
+    const list = FILTER_FORM.querySelector(`.chips[data-facet="${facet}"] .facet-list`);
+    list.dispatchEvent(new Event("change"));
 }
 
 // Off-canvas ledger drawer for narrow screens. On wide screens the list is always
@@ -1285,20 +1295,35 @@ HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 
 document.addEventListener("keydown", onGlobalKey);
 
-// The data-derived facets' chips are the distinct values the daemon reports, built
-// at boot before the filters are bound or a saved session restored, so a persisted
-// selection can re-check its chip. The daemon returns one sorted list per facet
-// ({pos: [...], var: [...], status: [...], source: [...]}); each populates the
-// matching fieldset, so a value present in the data (however drifted) stays
-// filterable and a value absent from it grows no dead chip.
-async function populateDataDerivedChips() {
-    const facets = await callDaemon({ op: "facets" });
-    for (const [facet, values] of Object.entries(facets)) {
-        const fieldset = FILTER_FORM.querySelector(`.chips[data-facet="${facet}"]`);
-        for (const value of values) {
-            fieldset.append(chip(facet, value, value));
-        }
+// Every categorical facet renders as the same compact dropdown, so the filter bar
+// stays one tidy row of triggers no matter a facet's cardinality (POS alone is 113
+// genuine CLAWS tags — 53 of them contraction portmanteaux like PNP+VHD — that a chip
+// each would explode the bar with). One control for all eight keeps the chrome
+// uniform. The data-derived facets (pos/var/status/source) take their values from the
+// daemon's distinct-value op; the closed vocabularies (word_kind/novelty/reviewed/
+// patch_state) carry their value→label pairs in the page markup as .chip templates,
+// harvested here. Either way each value becomes a name=facet/value=value checkbox, so
+// readFilters/restoreChips/querySignature/bindLiveFilters treat them identically.
+async function buildFacetDropdowns() {
+    const derived = await callDaemon({ op: "facets" });
+    for (const fieldset of FILTER_FORM.querySelectorAll(".chips[data-facet]")) {
+        const facet = fieldset.dataset.facet;
+        const entries = facet in derived
+            ? derived[facet].map((value) => ({ value, label: value }))
+            : harvestChipTemplates(fieldset);
+        fieldset.replaceChildren(fieldset.querySelector("legend"), facetDropdown(facet, entries));
     }
+}
+
+// A closed-vocabulary facet ships its value→label pairs in an unrendered <template>
+// in the page (e.g. value "new-pos" shown as "new POS"); read them off so the human
+// labels stay authored in one place rather than duplicated in JS.
+function harvestChipTemplates(fieldset) {
+    const template = fieldset.querySelector("template");
+    return [...template.content.querySelectorAll(".chip")].map((chip) => ({
+        value: chip.querySelector("input").value,
+        label: chip.querySelector("span").textContent,
+    }));
 }
 
 function chip(facet, value, label) {
@@ -1314,13 +1339,110 @@ function chip(facet, value, label) {
     return wrap;
 }
 
-// Boot: fetch the data-derived facet values, then resume the saved session (filter
-// + sort + anchor) if one exists, else a plain first query at the review default
-// sort (highest confidence first). Filters are bound AFTER the chips exist so every
-// chip, dynamic ones included, re-runs the query on toggle.
+// A single facet's dropdown: a compact trigger button whose label stays one line
+// however many values there are, and a popover holding a search box and a scrollable
+// checklist. The checkboxes are the same name=facet/value=value ones the chips use,
+// so every downstream reader (readFilters, restoreChips, querySignature, the
+// bindLiveFilters change-listener) treats them identically. The popover is
+// position:absolute so opening it overlays the layout rather than growing the bar.
+function facetDropdown(facet, entries) {
+    const wrap = document.createElement("div");
+    wrap.className = "facet-select";
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "facet-trigger";
+    trigger.setAttribute("aria-haspopup", "true");
+    trigger.setAttribute("aria-expanded", "false");
+
+    const panel = document.createElement("div");
+    panel.className = "facet-panel";
+    panel.hidden = true;
+
+    const search = document.createElement("input");
+    search.type = "text";
+    search.className = "facet-search";
+    search.placeholder = "filter…";
+    search.setAttribute("aria-label", `Filter ${facet} values`);
+
+    const list = document.createElement("div");
+    list.className = "facet-list";
+    for (const { value, label } of entries) {
+        list.append(chip(facet, value, label));
+    }
+    panel.append(search, list);
+    wrap.append(trigger, panel);
+
+    // The fieldset's legend already names the facet, so the trigger only summarises
+    // the selection: "All" when unconstrained, "N selected" when it filters.
+    const refreshLabel = () => {
+        const count = list.querySelectorAll("input:checked").length;
+        trigger.textContent = count ? `${count} selected` : "All";
+        trigger.classList.toggle("has-selection", count > 0);
+    };
+    refreshLabel();
+
+    // The trigger label reflects the checked count; the checkbox change also runs
+    // the live query via bindLiveFilters, so the two stay in step with no re-query
+    // wiring of our own.
+    list.addEventListener("change", refreshLabel);
+    // Filter the checklist to matching values — a plain substring match so 113 tags
+    // are reachable without scrolling. Hiding a checked box does not uncheck it, so
+    // the selection (and thus the query) is unaffected by searching.
+    search.addEventListener("input", () => {
+        const needle = search.value.trim().toLowerCase();
+        for (const label of list.querySelectorAll(".chip")) {
+            label.hidden = !label.textContent.toLowerCase().includes(needle);
+        }
+    });
+
+    trigger.addEventListener("click", () => toggleFacetPanel(panel, trigger, search));
+    return wrap;
+}
+
+// Only one facet panel is open at a time. Opening focuses the search box so the
+// keyboard user can type straight into it; the outside-click / Esc handlers
+// (installed once, below) close whatever is open.
+function toggleFacetPanel(panel, trigger, search) {
+    const opening = panel.hidden;
+    closeFacetPanels();
+    if (!opening) {
+        return;
+    }
+    panel.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    search.focus();
+}
+
+function closeFacetPanels() {
+    for (const panel of FILTER_FORM.querySelectorAll(".facet-panel:not([hidden])")) {
+        panel.hidden = true;
+        panel.previousElementSibling.setAttribute("aria-expanded", "false");
+    }
+}
+
+// Tap/click outside an open panel closes it (touch-friendly: no hover involved);
+// Esc closes it too. Scoped to the filter form so a click on a trigger toggles via
+// its own handler rather than being pre-closed here.
+document.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest(".facet-select")) {
+        closeFacetPanels();
+    }
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        closeFacetPanels();
+    }
+});
+
+// Boot: build the facet dropdowns (data-derived values from the daemon, closed
+// vocabularies from the page markup), then resume the saved session (filter + sort +
+// anchor) if one exists, else a plain first query at the review default sort (highest
+// confidence first). Filters are bound AFTER the dropdowns exist so every checkbox,
+// dynamic ones included, re-runs the query on toggle.
 async function boot() {
     buildCheatsheet();
-    await populateDataDerivedChips();
+    await buildFacetDropdowns();
     bindLiveFilters();
     const stored = loadSession();
     if (stored && stored.filters) {

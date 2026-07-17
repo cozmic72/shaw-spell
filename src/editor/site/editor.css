@@ -174,26 +174,21 @@ body {
 }
 .apply:hover { background: var(--accent); }
 
-/* ---- multi-select facet chips ----
-   Every categorical filter is a group of toggle pills: tap a chip to add its
-   value (OR within a facet, AND across facets). Chips reuse the ledger's chip
-   vocabulary — mono, uppercase, hairline-ruled, square-cornered — so the bar
-   still reads as the same ledger. The native checkbox drives state and keyboard
-   focus but is hidden; its label pill is the ≥44px touch target. */
-/* A facet column: the legend spans the full width, then the chips wrap below it,
-   so a facet with many values (POS) flows onto further lines without widening the
-   bar. max-width caps that wrapping so no one facet dominates the row. */
+/* ---- multi-select facet dropdowns ----
+   Every categorical filter (source/status/pos/var and the closed vocabularies) is
+   the same compact control: a legend, a single-line trigger summarising the
+   selection, and a popover checklist. One uniform control keeps the whole bar to one
+   tidy row of triggers however many values a facet has — POS alone is 113 CLAWS tags.
+   Each fieldset is a narrow column: legend on top, trigger below. */
 .field.chips {
     border: none;
     display: flex;
-    flex-flow: row wrap;
-    align-items: flex-end;
-    gap: 5px;
+    flex-flow: column;
+    align-items: stretch;
+    gap: 3px;
     min-width: 0;
-    max-width: 260px;
 }
 .field.chips legend {
-    flex: 1 0 100%;
     font-size: 10px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -201,69 +196,118 @@ body {
     padding: 0;
     margin-bottom: 1px;
 }
-.chip {
-    position: relative;
-    cursor: pointer;
-    user-select: none;
-}
-.chip input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    margin: 0;
-}
-.chip span {
+.facet-select { position: relative; }
+/* The trigger is a single line whatever the cardinality: "All" when unconstrained,
+   "N selected" when the facet filters. Sized to match the .field inputs so it sits
+   flush in the bar. */
+.facet-trigger {
     display: inline-flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     min-height: 44px;
-    padding: 4px 12px;
+    min-width: 128px;
+    padding: 5px 10px;
     font-family: var(--mono);
     font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: var(--ink);
     background: var(--paper);
     border: 1px solid var(--rule);
     border-radius: 2px;
+    cursor: pointer;
     white-space: nowrap;
-    transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.chip:hover span { border-color: var(--ink-soft); }
-/* Selected: fill with the accent (or, for state facets, the outcome's own hue),
-   so which values are active is unmistakable at a glance and off-colour too — the
-   filled vs hairline pill is the non-colour channel. */
-.chip input:checked + span {
+.facet-trigger::after {
+    content: "▾";
+    color: var(--ink-soft);
+    font-size: 10px;
+}
+.facet-trigger:hover { border-color: var(--ink-soft); }
+.facet-trigger.has-selection {
+    color: var(--paper);
     background: var(--accent);
     border-color: var(--accent);
-    color: var(--paper);
     font-weight: 700;
 }
-/* Keyboard focus lands on the hidden checkbox; ring its pill so it stays visible. */
-.chip input:focus-visible + span {
+.facet-trigger.has-selection::after { color: var(--paper); }
+.facet-trigger[aria-expanded="true"] {
     outline: 2px solid var(--accent);
-    outline-offset: 1px;
+    outline-offset: 0;
+    border-color: var(--accent);
 }
 
-/* State facets (novelty / reviewed / patch_state) tint a selected chip with the
-   ledger's colour for that outcome, so the filter bar doubles as a legend for the
-   stamps. Values without a ledger colour keep the accent fill. */
-.state-chips .chip input[value="edited"]:checked + span,
-.state-chips .chip input[value="decided"]:checked + span {
-    background: var(--state-edited); border-color: var(--state-edited);
+/* The popover overlays the layout (absolute) so it never grows the filter bar. Its
+   checklist scrolls internally at a capped height; the whole thing is width-capped
+   so a long tag can't stretch it across the screen. */
+.facet-panel {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 4px);
+    left: 0;
+    width: max-content;
+    min-width: 100%;
+    max-width: min(320px, 86vw);
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+    padding: 6px;
 }
-.state-chips .chip input[value="dropped"]:checked + span {
-    background: var(--state-dropped); border-color: var(--state-dropped);
+.facet-search {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 36px;
+    margin-bottom: 6px;
+    padding: 5px 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
 }
-.state-chips .chip input[value="flagged"]:checked + span {
-    background: var(--state-flagged); border-color: var(--state-flagged);
+.facet-search:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+    border-color: var(--accent);
 }
-.state-chips .chip input[value="unreviewed"]:checked + span,
-.state-chips .chip input[value="new-word"]:checked + span,
-.state-chips .chip input[value="new-spelling"]:checked + span,
-.state-chips .chip input[value="new-pos"]:checked + span {
-    background: var(--state-unreviewed); border-color: var(--state-unreviewed);
+.facet-list {
+    display: flex;
+    flex-flow: column;
+    max-height: 40vh;
+    overflow-y: auto;
 }
-.state-chips .chip input[value="authored"]:checked + span {
-    background: var(--state-authored); border-color: var(--state-authored);
+/* A checklist row: native checkbox shown, value beside it, the whole ≥44px row a
+   tap target. */
+.facet-list .chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 6px;
+    border-radius: 2px;
+    cursor: pointer;
+    user-select: none;
+}
+.facet-list .chip:hover { background: var(--paper); }
+.facet-list .chip input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+    flex: 0 0 auto;
+}
+.facet-list .chip span {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+}
+.facet-list .chip input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 
 /* ---- workbench split ---- */
@@ -828,9 +872,9 @@ kbd {
     }
     .field input, .field select { min-width: 0; width: 100%; }
     .field.narrow input { min-width: 0; }
-    /* Chip facets span the full width so their pills have room to wrap into a
-       comfortable touch grid rather than being crushed into a half-width track. */
-    .field.chips { grid-column: 1 / -1; max-width: none; }
+    /* Facet triggers are compact, so they sit two-per-row like the other fields; the
+       trigger fills its track and its popover overlays from there. */
+    .facet-trigger { min-width: 0; width: 100%; }
     .apply { grid-column: 1 / -1; justify-self: start; }
 
     /* Compact masthead so the drawer toggle always fits: drop the strap, shrink the

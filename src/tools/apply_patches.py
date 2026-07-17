@@ -44,6 +44,7 @@ from basis import (
     anchor_key,
     anchor_of,
     build_basis_index,
+    is_flag_patch,
     load_json,
     record_to_output,
 )
@@ -110,12 +111,19 @@ def patch_order_key(patch):
 
 
 def apply_patches(output, basis_index, patches):
-    stats = {"authorship": 0, "update": 0, "removal": 0, "orphaned": 0,
+    stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
              "skipped_numeral": 0, "skipped_shaw": 0}
     orphans = []
 
     for patch in sorted(patches, key=patch_order_key):
         anchor, record = patch["anchor"], patch["record"]
+
+        # A flag carries no editorial change ("looked at, no verdict yet"): it is
+        # a pure no-op for production. The record leaves the output exactly as
+        # upstream had it — no removal, no re-emit.
+        if is_flag_patch(patch):
+            stats["flag"] += 1
+            continue
 
         if anchor is None:
             # Authorship: a standalone record no source attests.
@@ -181,6 +189,7 @@ def main():
     print(f"  authorship (added):  {stats['authorship']:,}")
     print(f"  update/respell:      {stats['update']:,}")
     print(f"  removal:             {stats['removal']:,}")
+    print(f"  flag (no-op):        {stats['flag']:,}")
     print(f"  skipped (numeral):   {stats['skipped_numeral']:,}")
     print(f"  skipped (bad shaw):  {stats['skipped_shaw']:,}")
     print(f"\nWrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}")

@@ -2,18 +2,26 @@
 
 // The editor speaks editord's protocol directly: the CGI forwards each POSTed
 // body to the daemon verbatim and returns its reply. See editord.py for the op
-// shapes (entries / entry / patch) and overlay.py for patch_state semantics.
+// shapes (entries / entry / patch / flag / unpatch) and overlay.py for
+// patch_state semantics.
 //
 // Pull-and-refresh: runQuery() materialises a working set (state.records). While
 // the user works it, membership and order stay STABLE — a just-reviewed row keeps
 // its place, updated in-place with its new content and stamp, even if it no longer
 // matches the filter. The list only re-syncs (dropping non-matching rows and
 // re-sorting) when the user RE-RUNS the filter.
+//
+// Review mode vs edit mode: on landing the user is in REVIEW MODE — no field is
+// focused, and single-key verdicts (A/X/F/E/…) fire immediately. Edit mode is an
+// explicit choice (E, or clicking a field); saving or Escape returns to review
+// mode. A single-key verdict never fires while a field holds focus.
 
 const AUTHOR = "editor";
 const PAGE_LIMIT = 200;
 const ACCEPTED_STATUS = "sanctioned";
 const SESSION_KEY = "shaw-spell.editor.session";
+const DEFAULT_SORT = "confidence_desc";
+const RRP_VAR = "RRP";
 
 const EDITABLE_FIELDS = ["shaw", "var", "ipa", "status"];
 
@@ -26,6 +34,7 @@ const REFERENCES = [
 ];
 
 const FILTER_FORM = document.getElementById("filters");
+const SORT_SELECT = document.getElementById("sort");
 const TALLY = document.getElementById("tally");
 const LEDGER = document.getElementById("ledgerList");
 const LEDGER_FOOT = document.getElementById("ledgerFoot");
@@ -34,6 +43,8 @@ const TOAST = document.getElementById("toast");
 const WORKBENCH = document.getElementById("workbench");
 const DRAWER_TOGGLE = document.getElementById("drawerToggle");
 const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
+const CHEATSHEET = document.getElementById("cheatsheet");
+const PACING = document.getElementById("pacing");
 
 const state = {
     records: [],
@@ -41,7 +52,17 @@ const state = {
     offset: 0,
     limit: PAGE_LIMIT,
     filters: {},
+    sort: DEFAULT_SORT,
     selected: -1,
+    editing: false,
+};
+
+// Session pacing: decisions this session and when it began, to show rate and
+// progress. An "undo" pops the stack and does not inflate the count.
+const session = {
+    startedAt: Date.now(),
+    decisions: 0,
+    undoStack: [],
 };
 
 async function callDaemon(request) {
@@ -75,10 +96,12 @@ function readFilters() {
 // entry (session restore); if it fell out of the set, on the nearest neighbour.
 async function runQuery(offset = 0, preferredAnchor = null) {
     state.filters = readFilters();
+    state.sort = SORT_SELECT.value || DEFAULT_SORT;
     state.offset = offset;
     const result = await callDaemon({
         op: "entries",
         filters: state.filters,
+        sort: state.sort,
         offset,
         limit: state.limit,
     });
@@ -88,6 +111,7 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     renderLedger();
     renderFoot();
     select(landingIndex(preferredAnchor));
+    refreshPacing();
 }
 
 // Where to land the selection after a query. Prefer the exact anchor; if it is no
@@ -113,8 +137,10 @@ function landingIndex(preferredAnchor) {
     return after >= 0 ? after : state.records.length - 1;
 }
 
-// Mirrors the daemon's list ordering (editord.py: word.lower, pos, shaw, var) so a
-// dropped-out anchor can be placed among its neighbours.
+// Mirrors the daemon's natural-key tiebreak (word.lower, pos, shaw, var) so a
+// dropped-out anchor can be placed among its neighbours. The active sort may order
+// the visible list differently, but the anchor's neighbours in natural order are a
+// sensible fallback landing.
 function compareAnchors(a, b) {
     const fields = [
         [a.word.toLowerCase(), b.word.toLowerCase()],
@@ -149,14 +175,15 @@ function renderLedger() {
 
 function ledgerRow(record, index) {
     const row = document.createElement("li");
-    row.className = "ledger-row";
+    row.className = `ledger-row state-${record.patch_state}`;
     row.dataset.index = String(index);
 
     row.append(
         cell("stamp col-state " + record.patch_state, record.patch_state),
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
-        cell("col-var", record.var),
+        varCell(record.var),
+        confidenceCell(record.confidence),
         cell("col-pos", record.pos),
     );
     row.addEventListener("click", () => {
@@ -171,6 +198,45 @@ function cell(className, value) {
     span.className = className;
     span.textContent = value;
     return span;
+}
+
+// The dialect var, de-emphasised when it is the RRP default so the non-default
+// dialects (GenAm, TrapBath, RSSB, …) stand out at a glance.
+function varCell(value) {
+    const span = cell("col-var", value);
+    if (value === RRP_VAR) {
+        span.classList.add("var-default");
+    }
+    return span;
+}
+
+// Confidence as a compact three-pip meter (non-colour channel: filled vs empty
+// pips). Upstream records carry no confidence and show nothing.
+function confidenceCell(confidence) {
+    const meter = document.createElement("span");
+    meter.className = "col-conf";
+    if (confidence === null || confidence === undefined) {
+        return meter;
+    }
+    meter.append(confidenceMeter(confidence));
+    meter.title = `confidence ${confidence}`;
+    return meter;
+}
+
+const CONFIDENCE_PIPS = 3;
+
+function confidenceMeter(confidence) {
+    const meter = document.createElement("span");
+    meter.className = "conf-meter";
+    meter.setAttribute("role", "img");
+    meter.setAttribute("aria-label", `confidence ${confidence} of 100`);
+    const filled = Math.round((confidence / 100) * CONFIDENCE_PIPS);
+    for (let i = 0; i < CONFIDENCE_PIPS; i += 1) {
+        const pip = document.createElement("span");
+        pip.className = i < filled ? "pip on" : "pip";
+        meter.append(pip);
+    }
+    return meter;
 }
 
 function renderFoot() {
@@ -196,8 +262,11 @@ function pageButton(label, targetOffset) {
     return button;
 }
 
-function select(index, { focusFirst = true } = {}) {
+// Selecting an entry always lands in REVIEW MODE (no field focused). Edit mode is
+// entered explicitly (enterEdit), never as a side effect of stepping.
+function select(index) {
     state.selected = index;
+    state.editing = false;
     for (const row of LEDGER.children) {
         row.classList.toggle("active", Number(row.dataset.index) === index);
     }
@@ -208,7 +277,7 @@ function select(index, { focusFirst = true } = {}) {
         if (active) {
             active.scrollIntoView({ block: "nearest" });
         }
-        renderDetail(state.records[index], focusFirst);
+        renderDetail(state.records[index]);
     }
     saveSession();
 }
@@ -217,29 +286,51 @@ function renderEmptyDetail() {
     const message = document.createElement("p");
     message.className = "detail-empty";
     message.textContent = state.total
-        ? "Select an entry to edit it."
+        ? "Select an entry to review it."
         : "No entries match these filters.";
     DETAIL.replaceChildren(message);
+    setDetailMode();
 }
 
-function renderDetail(record, focusFirst) {
+function renderDetail(record) {
     const heading = document.createElement("div");
     heading.className = "detail-word";
-    heading.append(cell("latin", record.word), cell("pos", record.pos));
+    heading.append(
+        stateBadge(record.patch_state),
+        cell("latin", record.word),
+        cell("pos", record.pos),
+        confidenceBadge(record.confidence),
+    );
 
     DETAIL.replaceChildren(
         heading,
         referenceLinks(record.word),
         fieldGrid(record),
         provenanceGrid(record),
-        actionBar(),
+        actionBar(record),
     );
+    setDetailMode();
+}
 
-    if (focusFirst) {
-        const first = document.getElementById("field-shaw");
-        first.focus();
-        first.setSelectionRange(first.value.length, first.value.length);
+// The detail card reads its mode off the card element: review mode shows the
+// "REVIEW" affordance and keeps every field non-focused; edit mode lifts it.
+function setDetailMode() {
+    DETAIL.classList.toggle("mode-edit", state.editing);
+    DETAIL.classList.toggle("mode-review", !state.editing && state.selected >= 0);
+}
+
+function stateBadge(patchState) {
+    return cell(`state-badge ${patchState}`, patchState);
+}
+
+function confidenceBadge(confidence) {
+    const badge = document.createElement("span");
+    badge.className = "conf-badge";
+    if (confidence === null || confidence === undefined) {
+        return badge;
     }
+    badge.append(confidenceMeter(confidence), cell("conf-value", String(confidence)));
+    return badge;
 }
 
 // A row of external dictionary look-ups for the focused word, each opening in a
@@ -296,6 +387,7 @@ function editField(name, label, value, extraClass) {
     input.addEventListener("input", () => {
         input.classList.toggle("dirty", input.value !== (value ?? ""));
     });
+    input.addEventListener("focus", () => enterEdit());
     input.addEventListener("keydown", onFieldKey);
 
     wrap.append(caption, input);
@@ -327,6 +419,7 @@ function statusField(current) {
         option.selected = value === current;
         select.append(option);
     }
+    select.addEventListener("focus", () => enterEdit());
 
     wrap.append(caption, select);
     return wrap;
@@ -355,24 +448,33 @@ function provenanceGrid(record) {
     return grid;
 }
 
-function actionBar() {
+// The verdict controls. Unflag/undo appear only when they apply, so the bar shows
+// exactly the moves available on this record. The keyboard is the fast path; the
+// buttons mirror it and give mobile real touch targets.
+function actionBar(record) {
     const bar = document.createElement("div");
     bar.className = "actions";
 
-    const accept = actionButton("accept", "Accept", acceptSelected);
-    const save = actionButton("save", "Save edit", saveSelected);
-    const drop = actionButton("drop", "Drop", dropSelected);
-
-    const hint = document.createElement("span");
-    hint.className = "act-hint";
-    hint.append(
-        kbd("Enter"), text(" accept  "),
-        kbd("⌘"), text("+"), kbd("Enter"), text(" save  "),
-        kbd("⇧"), text("+"), kbd("Enter"), text(" drop  "),
-        kbd("↑"), kbd("↓"), text(" step"),
+    bar.append(
+        actionButton("accept", "Accept", acceptSelected),
+        actionButton("save", "Save edit", saveSelected),
+        actionButton("drop", "Drop", dropSelected),
+        actionButton("flag", "Flag", flagSelected),
     );
+    if (record.patch_state === "flagged") {
+        bar.append(actionButton("unflag", "Unflag", unflagSelected));
+    }
+    if (session.undoStack.length) {
+        bar.append(actionButton("undo", "Undo", undoLast));
+    }
 
-    bar.append(accept, save, drop, hint);
+    const help = document.createElement("button");
+    help.type = "button";
+    help.className = "act-help";
+    help.textContent = "? keys";
+    help.addEventListener("click", () => toggleCheatsheet(true));
+    bar.append(help);
+
     return bar;
 }
 
@@ -383,16 +485,6 @@ function actionButton(kind, label, handler) {
     button.textContent = label;
     button.addEventListener("click", handler);
     return button;
-}
-
-function kbd(label) {
-    const element = document.createElement("kbd");
-    element.textContent = label;
-    return element;
-}
-
-function text(value) {
-    return document.createTextNode(value);
 }
 
 // The complete record the detail editor currently shows: the selected record's
@@ -458,7 +550,12 @@ async function dropSelected() {
     await writePatch(anchorOf(selected), null, "dropped");
 }
 
+// A verdict (accept/drop/edit) produces a patch and steps on. It also records an
+// undo frame: whether the anchor already had a patch before, so undo restores the
+// right prior state.
 async function writePatch(anchor, record, verb) {
+    const selected = state.records[state.selected];
+    const priorReviewed = selected ? selected.reviewed : false;
     try {
         const result = await callDaemon({
             op: "patch",
@@ -466,24 +563,117 @@ async function writePatch(anchor, record, verb) {
             record,
             author: AUTHOR,
         });
-        applyPatchResult(result.records);
+        pushUndo(anchor, priorReviewed);
+        countDecision();
+        applyWriteResult(result.records);
         showToast(`${verb} · ${result.result}`);
     } catch (error) {
         showToast(error.message, true);
     }
 }
 
-// The patch response returns the anchor re-annotated (one record — the anchor is
+// Flag: "looked at, no verdict yet". The daemon writes a flag patch carrying the
+// source record unchanged; it counts as reviewed but not decided, and is a no-op
+// for production output.
+async function flagSelected() {
+    const selected = state.records[state.selected];
+    if (!selected) {
+        return;
+    }
+    const priorReviewed = selected.reviewed;
+    try {
+        const result = await callDaemon({
+            op: "flag",
+            anchor: anchorOf(selected),
+            author: AUTHOR,
+        });
+        pushUndo(anchorOf(selected), priorReviewed);
+        applyWriteResult(result.records);
+        showToast(`flagged · ${result.result}`);
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+
+// Unflag: remove the flag patch, reverting to unreviewed. Distinct from undo — an
+// explicit "actually, back to the pool" on a flagged row.
+async function unflagSelected() {
+    const selected = state.records[state.selected];
+    if (!selected || selected.patch_state !== "flagged") {
+        return;
+    }
+    await unpatch(anchorOf(selected), "unflagged", { step: false });
+}
+
+// Undo the last decision: if it created a patch (the anchor was previously
+// unreviewed), delete it to restore the untouched source; the row is restored in
+// place. If the anchor already had a patch before, we cannot faithfully restore
+// that prior patch from the client, so we surface that and leave the current
+// patch — the safe, honest behaviour.
+async function undoLast() {
+    const frame = session.undoStack.pop();
+    if (!frame) {
+        showToast("Nothing to undo.", true);
+        return;
+    }
+    if (frame.priorReviewed) {
+        showToast("Can't undo: the entry already had a decision before this one.", true);
+        renderDetail(state.records[state.selected]);
+        return;
+    }
+    const index = state.records.findIndex((r) => sameAnchor(r.anchor, frame.anchor));
+    if (index >= 0) {
+        state.selected = index;
+    }
+    await unpatch(frame.anchor, "undone", { step: false, uncount: true });
+}
+
+async function unpatch(anchor, verb, { step = true, uncount = false } = {}) {
+    try {
+        const result = await callDaemon({ op: "unpatch", anchor });
+        if (uncount) {
+            session.decisions = Math.max(0, session.decisions - 1);
+        }
+        applyWriteResult(result.records, { step });
+        showToast(`${verb} · ${result.result}`);
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+
+function pushUndo(anchor, priorReviewed) {
+    session.undoStack.push({ anchor, priorReviewed });
+}
+
+function countDecision() {
+    session.decisions += 1;
+    refreshPacing();
+}
+
+// The write response returns the anchor re-annotated (one record — the anchor is
 // a full natural key). Update the row IN PLACE: it keeps its index, so it stays
 // put in the working set showing its new content and stamp, even if it no longer
-// matches the active filter. Then step to the next entry.
-function applyPatchResult(records) {
+// matches the active filter. By default step to the next entry; a re-render in
+// place (unflag/undo) stays put.
+function applyWriteResult(records, { step: doStep = true } = {}) {
     const replacement = records[0];
-    if (replacement) {
-        state.records[state.selected] = replacement;
-        refreshRow(state.selected, replacement);
+    // Place the re-annotated record on its OWN row (matched by anchor), not
+    // blindly on state.selected — the affected row may not be the selected one
+    // (e.g. an undo after the filter was re-run moved the selection elsewhere).
+    const index = replacement
+        ? state.records.findIndex((r) => sameAnchor(r.anchor, replacement.anchor))
+        : state.selected;
+    if (replacement && index >= 0) {
+        state.records[index] = replacement;
+        refreshRow(index, replacement);
     }
-    step(1);
+    refreshPacing();
+    if (doStep) {
+        step(1);
+    } else if (index >= 0) {
+        state.selected = index;
+        select(index);
+    }
 }
 
 function refreshRow(index, record) {
@@ -491,11 +681,17 @@ function refreshRow(index, record) {
     if (!row) {
         return;
     }
+    row.className = `ledger-row state-${record.patch_state}`;
+    if (Number(row.dataset.index) === state.selected) {
+        row.classList.add("active");
+    }
     const stamp = row.querySelector(".col-state");
     stamp.className = `stamp col-state ${record.patch_state}`;
     stamp.textContent = record.patch_state;
     row.querySelector(".col-shaw").textContent = record.shaw;
-    row.querySelector(".col-var").textContent = record.var;
+    const varSpan = row.querySelector(".col-var");
+    varSpan.textContent = record.var;
+    varSpan.classList.toggle("var-default", record.var === RRP_VAR);
 }
 
 function step(delta) {
@@ -509,7 +705,38 @@ function step(delta) {
     select(next);
 }
 
+// Enter edit mode: focus the Shavian field and mark the card. Saving or Escape
+// returns to review mode. Called by E and by focusing any field directly.
+function enterEdit() {
+    if (state.selected < 0) {
+        return;
+    }
+    state.editing = true;
+    setDetailMode();
+    const shaw = document.getElementById("field-shaw");
+    if (shaw && document.activeElement !== shaw
+        && !DETAIL.contains(document.activeElement)) {
+        shaw.focus();
+        shaw.setSelectionRange(shaw.value.length, shaw.value.length);
+    }
+}
+
+// Leave edit mode without saving: blur the field and return to review mode, so
+// single-key verdicts work again.
+function exitEdit() {
+    state.editing = false;
+    if (DETAIL.contains(document.activeElement)) {
+        document.activeElement.blur();
+    }
+    setDetailMode();
+}
+
 function onFieldKey(event) {
+    if (event.key === "Escape") {
+        event.preventDefault();
+        exitEdit();
+        return;
+    }
     if (event.key !== "Enter") {
         return;
     }
@@ -523,30 +750,163 @@ function onFieldKey(event) {
     }
 }
 
+// Review-mode single-key bindings. These fire ONLY when no field holds focus (the
+// event target is not an input/select/textarea) — so typing Shavian never
+// triggers a verdict. The legacy arrow steppers stay as aliases (J/K mirror them).
+const REVIEW_KEYS = {
+    a: acceptSelected,
+    x: dropSelected,
+    e: enterEdit,
+    s: saveSelected,
+    f: flagSelected,
+    u: undoLast,
+    j: () => step(1),
+    k: () => step(-1),
+    arrowdown: () => step(1),
+    arrowup: () => step(-1),
+    "?": () => toggleCheatsheet(),
+};
+
+// Keys that mutate must not double-fire on auto-repeat when a key is held.
+const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "u"]);
+
 function onGlobalKey(event) {
+    if (event.key === "Escape" && isCheatsheetOpen()) {
+        toggleCheatsheet(false);
+        return;
+    }
     if (event.target.matches("input, select, textarea")) {
         return;
     }
-    if (event.key === "ArrowDown") {
-        event.preventDefault();
-        step(1);
-    } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        step(-1);
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
     }
+    const key = event.key.toLowerCase();
+    const handler = REVIEW_KEYS[key];
+    if (!handler) {
+        return;
+    }
+    if (event.repeat && NON_REPEAT_KEYS.has(key)) {
+        return;
+    }
+    event.preventDefault();
+    handler();
 }
 
-// Session continuity: the active filter plus the ANCHOR of the focused entry — not
-// a row index, which is meaningless once the list re-materialises. On load the
-// filter is restored, the list pulled, then the anchor re-selected (or its nearest
-// neighbour). Persisted on every query and selection.
+// ---- keyboard cheatsheet overlay ----
+const CHEATSHEET_ROWS = [
+    ["A", "Accept — promote & step on"],
+    ["X", "Drop — reject & step on"],
+    ["E", "Edit — focus the Shavian field"],
+    ["S", "Save the current edit & step on"],
+    ["F", "Flag for later — looked at, no verdict"],
+    ["U", "Undo the last decision"],
+    ["J / K", "Step next / previous"],
+    ["↑ / ↓", "Step next / previous"],
+    ["Esc", "Leave edit mode (in a field)"],
+    ["?", "Toggle this cheatsheet"],
+];
+
+function buildCheatsheet() {
+    const card = document.createElement("div");
+    card.className = "cheatsheet-card";
+    const title = document.createElement("h2");
+    title.textContent = "Keyboard";
+    card.append(title);
+
+    const list = document.createElement("dl");
+    list.className = "cheat-list";
+    for (const [keys, description] of CHEATSHEET_ROWS) {
+        const dt = document.createElement("dt");
+        for (const label of keys.split(" / ")) {
+            dt.append(kbd(label));
+        }
+        const dd = document.createElement("dd");
+        dd.textContent = description;
+        list.append(dt, dd);
+    }
+    card.append(list);
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "cheat-close";
+    close.textContent = "Close";
+    close.addEventListener("click", () => toggleCheatsheet(false));
+    card.append(close);
+
+    CHEATSHEET.replaceChildren(card);
+    CHEATSHEET.addEventListener("click", (event) => {
+        if (event.target === CHEATSHEET) {
+            toggleCheatsheet(false);
+        }
+    });
+}
+
+function kbd(label) {
+    const element = document.createElement("kbd");
+    element.textContent = label;
+    return element;
+}
+
+function isCheatsheetOpen() {
+    return CHEATSHEET.classList.contains("open");
+}
+
+function toggleCheatsheet(force) {
+    const open = force === undefined ? !isCheatsheetOpen() : force;
+    CHEATSHEET.classList.toggle("open", open);
+    CHEATSHEET.setAttribute("aria-hidden", String(!open));
+}
+
+// ---- session pacing strip ----
+function refreshPacing() {
+    const remaining = countUnreviewedRemaining();
+    const elapsedHours = (Date.now() - session.startedAt) / 3_600_000;
+    const rate = elapsedHours > 0 ? Math.round(session.decisions / elapsedHours) : 0;
+    PACING.replaceChildren(
+        pacingStat(String(session.decisions), "decided this session"),
+        pacingStat(session.decisions ? `${rate}/h` : "—", "pace"),
+        pacingStat(remaining === null ? "—" : remaining.toLocaleString(), "unreviewed left"),
+    );
+}
+
+// "Unreviewed remaining" is meaningful only while reviewing the unreviewed pool;
+// under any other filter the total is not a remaining count, so we show it only
+// when the active filter is unreviewed.
+function countUnreviewedRemaining() {
+    if (state.filters.reviewed !== "unreviewed") {
+        return null;
+    }
+    const decidedInSet = state.records.filter(
+        (r) => r.reviewed && r.patch_state !== "flagged",
+    ).length;
+    return Math.max(0, state.total - decidedInSet);
+}
+
+function pacingStat(value, label) {
+    const stat = document.createElement("span");
+    stat.className = "pace-stat";
+    const strong = document.createElement("strong");
+    strong.textContent = value;
+    const caption = document.createElement("span");
+    caption.className = "pace-label";
+    caption.textContent = label;
+    stat.append(strong, caption);
+    return stat;
+}
+
+// Session continuity: the active filter, sort, plus the ANCHOR of the focused
+// entry — not a row index, which is meaningless once the list re-materialises. On
+// load the filter/sort are restored, the list pulled, then the anchor re-selected
+// (or its nearest neighbour). Persisted on every query and selection.
 function saveSession() {
     const selected = state.records[state.selected];
-    const session = {
+    const stored = {
         filters: state.filters,
+        sort: state.sort,
         anchor: selected ? selected.anchor : null,
     };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(stored));
 }
 
 function loadSession() {
@@ -557,8 +917,8 @@ function loadSession() {
     return JSON.parse(raw);
 }
 
-// Populate the filter form from a saved filter set so the restored query matches
-// what the user last ran.
+// Populate the filter form + sort from a saved session so the restored query
+// matches what the user last ran.
 function restoreFilters(filters) {
     for (const [name, value] of Object.entries(filters)) {
         const field = FILTER_FORM.elements[name];
@@ -593,19 +953,26 @@ FILTER_FORM.addEventListener("submit", (event) => {
     runQuery(0).catch((error) => showToast(error.message, true));
 });
 
+SORT_SELECT.addEventListener("change", () => {
+    runQuery(0).catch((error) => showToast(error.message, true));
+});
+
 DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 
 document.addEventListener("keydown", onGlobalKey);
 
-// Boot: resume the saved session (filter + anchor) if one exists, else a plain
-// first query.
+// Boot: resume the saved session (filter + sort + anchor) if one exists, else a
+// plain first query at the review default sort (highest confidence first).
 function boot() {
-    const session = loadSession();
-    if (session && session.filters) {
-        restoreFilters(session.filters);
-        return runQuery(0, session.anchor);
+    buildCheatsheet();
+    const stored = loadSession();
+    if (stored && stored.filters) {
+        restoreFilters(stored.filters);
+        SORT_SELECT.value = stored.sort || DEFAULT_SORT;
+        return runQuery(0, stored.anchor);
     }
+    SORT_SELECT.value = DEFAULT_SORT;
     return runQuery(0);
 }
 

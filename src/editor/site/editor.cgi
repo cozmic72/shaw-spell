@@ -119,7 +119,8 @@ PAGE = """<!DOCTYPE html>
             <select name="reviewed">
                 <option value="">any</option>
                 <option value="unreviewed">unreviewed</option>
-                <option value="reviewed">reviewed</option>
+                <option value="flagged">flagged</option>
+                <option value="decided">decided</option>
             </select>
         </label>
         <label class="field">
@@ -129,6 +130,7 @@ PAGE = """<!DOCTYPE html>
                 <option value="unreviewed">unreviewed</option>
                 <option value="edited">edited</option>
                 <option value="dropped">dropped</option>
+                <option value="flagged">flagged</option>
                 <option value="authored">authored</option>
             </select>
         </label>
@@ -148,6 +150,15 @@ PAGE = """<!DOCTYPE html>
             <span>Conf ≤</span>
             <input type="number" name="confidence_max" min="0" max="100">
         </label>
+        <label class="field">
+            <span>Sort</span>
+            <select id="sort">
+                <option value="confidence_desc">confidence ↓</option>
+                <option value="confidence_asc">confidence ↑</option>
+                <option value="freq_desc">frequency ↓</option>
+                <option value="word">word</option>
+            </select>
+        </label>
         <button type="submit" class="apply">Filter</button>
     </form>
 
@@ -159,16 +170,22 @@ PAGE = """<!DOCTYPE html>
                 <span class="col-word">word</span>
                 <span class="col-shaw">shaw</span>
                 <span class="col-var">var</span>
+                <span class="col-conf">conf</span>
                 <span class="col-pos">pos</span>
             </div>
             <ul class="ledger-list" id="ledgerList" tabindex="0"></ul>
             <div class="ledger-foot" id="ledgerFoot"></div>
         </section>
 
-        <section class="detail" id="detail" aria-label="Focused entry">
-            <p class="detail-empty">Select an entry to edit it.</p>
+        <section class="detail mode-review" id="detail" aria-label="Focused entry">
+            <p class="detail-empty">Select an entry to review it.</p>
         </section>
     </main>
+
+    <footer class="pacing" id="pacing" aria-label="Session progress"></footer>
+
+    <div class="cheatsheet" id="cheatsheet" role="dialog" aria-modal="true"
+         aria-label="Keyboard shortcuts" aria-hidden="true"></div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

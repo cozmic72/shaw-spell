@@ -86,6 +86,19 @@ def upsert_patch(patch, path=PATCHES_PATH):
     return ("replaced", previous)
 
 
+def delete_patch(anchor, path=PATCHES_PATH):
+    """Remove the patch on the given anchor, reverting the record to its untouched
+    source (undo / unflag). Fails loud if no patch holds that anchor — the caller
+    asked to delete something that is not there. Returns the removed patch."""
+    patches = load_patches(path)
+    at = _index_of_anchor(patches, anchor_key(anchor))
+    if at is None:
+        raise KeyError(f"no patch on anchor: {anchor}")
+    removed = patches.pop(at)
+    write_patches(patches, path)
+    return removed
+
+
 def _index_of_anchor(patches, target):
     for i, patch in enumerate(patches):
         anchor = patch["anchor"]

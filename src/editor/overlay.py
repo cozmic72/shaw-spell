@@ -21,6 +21,7 @@ moves), a `reviewed` flag (a patch exists — the primary filter partition), and
     unreviewed  no patch resolves to this anchor
     edited      a patch supplies a record (accept / edit / respell)
     dropped     a patch drops it (record is null)
+    flagged     a patch marks it "looked at, no verdict yet" (see is_flag_patch)
     authored    a standalone record no basis anchor attests (anchor is null)
 
 `dropped` rows still DISPLAY the source content (flagged, not hidden — the editor
@@ -28,11 +29,12 @@ must see a drop to roll it back). `authored` rows are not in the basis; they are
 synthesized into the view so the editor sees everything a human has ruled on.
 """
 
-from basis import anchor_key, build_basis, output_to_record
+from basis import anchor_key, build_basis, is_flag_patch, output_to_record
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
 PATCH_STATE_EDITED = "edited"
 PATCH_STATE_DROPPED = "dropped"
+PATCH_STATE_FLAGGED = "flagged"
 PATCH_STATE_AUTHORED = "authored"
 
 UPSTREAM_STATUS = "sanctioned"
@@ -70,13 +72,16 @@ def annotate_basis_record(candidate, source, patch):
 
     Unpatched: displays the source record, unreviewed. Patched with a record:
     displays that record (accept/edit/respell), reviewed. Patched to a drop:
-    displays the source record, flagged dropped."""
+    displays the source record, flagged dropped. Flag patch: displays the source
+    record, reviewed-but-undecided."""
     anchor = {"word": candidate["Latn"], "pos": candidate["pos"],
               "shaw": candidate["Shaw"], "var": candidate.get("var", "")}
     default_status = UPSTREAM_STATUS if source == "readlex" else SUPPLEMENT_STATUS
 
     if patch is None:
         shown, reviewed, state = output_to_record(candidate), False, PATCH_STATE_UNREVIEWED
+    elif is_flag_patch(patch):
+        shown, reviewed, state = output_to_record(candidate), True, PATCH_STATE_FLAGGED
     elif patch["record"] is None:
         shown, reviewed, state = output_to_record(candidate), True, PATCH_STATE_DROPPED
     else:

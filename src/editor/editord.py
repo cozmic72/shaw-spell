@@ -14,7 +14,8 @@ annotated view so the next read reflects the new patch-state.
 
 Protocol (line-oriented, UTF-8, one request -> one response, then close):
 
-    Request:   {"op": "entries", "filters": {...}, "offset": 0, "limit": 50}
+    Request:   {"op": "entries", "filters": {...}, "sort": "confidence_desc",
+                "offset": 0, "limit": 50}
     Response:  {"total": 1234, "offset": 0, "limit": 50, "records": [...]}
 
     Request:   {"op": "entry", "anchor": {"word","pos","shaw","var"}}
@@ -24,6 +25,14 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 "record": {...} | null, "author": "…"}
     Response:  {"result": "appended"|"replaced", "id": "p_…",
                 "records": [...]}   # the anchor re-annotated after the write
+
+    Request:   {"op": "flag", "anchor": {"word","pos","shaw","var"}, "author": "…"}
+    Response:  {"result": …, "id": "p_…", "records": [...]}   # flagged, a no-op
+                for production (see is_flag_patch)
+
+    Request:   {"op": "unpatch", "anchor": {"word","pos","shaw","var"}}
+    Response:  {"result": "deleted", "id": null, "records": [...]}   # patch removed,
+                the record reverts to its untouched source (undo / unflag)
 
     Errors:    {"error": "<message>"}
 
@@ -56,8 +65,8 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import anchor_key                                     # noqa: E402
-from overlay import load_view                                    # noqa: E402
-from patchstore import make_patch, upsert_patch                  # noqa: E402
+from overlay import PATCH_STATE_FLAGGED, load_view               # noqa: E402
+from patchstore import delete_patch, make_patch, upsert_patch    # noqa: E402
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
@@ -93,7 +102,7 @@ def _field_matches(record, key, value):
     if key in ("source", "status", "pos", "var", "patch_state"):
         return record.get(key) == value
     if key == "reviewed":
-        return record["reviewed"] == _as_bool(value)
+        return _matches_review_state(record, value)
     if key == "confidence_min":
         conf = record.get("confidence")
         return conf is not None and conf >= value
@@ -103,20 +112,69 @@ def _field_matches(record, key, value):
     raise ValueError(f"unknown filter: {key}")
 
 
-def _as_bool(value):
-    """Coerce a filter value to bool. The UI sends 'reviewed'/'unreviewed' as the
-    select value; accept the JSON true/false forms too."""
-    if isinstance(value, bool):
-        return value
-    if value in ("reviewed", "true", "1"):
-        return True
-    if value in ("unreviewed", "false", "0"):
-        return False
-    raise ValueError(f"reviewed filter wants reviewed/unreviewed, got {value!r}")
+# The reviewed filter is three-way: a flag ("looked at, no verdict yet") is
+# reviewed but distinct from a real verdict, so "decided" excludes it while
+# "flagged" isolates it for a later sweep.
+def _matches_review_state(record, value):
+    reviewed = record["reviewed"]
+    flagged = record["patch_state"] == PATCH_STATE_FLAGGED
+    if value in ("unreviewed", "false", "0", False):
+        return not reviewed
+    if value == "flagged":
+        return flagged
+    if value == "decided":
+        return reviewed and not flagged
+    if value in ("reviewed", "true", "1", True):
+        return reviewed
+    raise ValueError(
+        f"reviewed filter wants unreviewed/flagged/decided/reviewed, got {value!r}")
 
 
 def filter_records(records, filters):
     return [r for r in records if matches(r, filters)]
+
+
+# The list's natural key — the deterministic tiebreak under every sort, and the
+# order the UI mirrors to place a dropped-out anchor among its neighbours.
+def _natural_key(record):
+    return (record["word"].lower(), record["pos"], record["shaw"], record["var"])
+
+
+# Confidence is only carried by supplemental review candidates; upstream ReadLex
+# records have none. A confidence sort ranks the CANDIDATES; records with no
+# confidence are not review targets, so the leading 0/1 pushes them to the END
+# under either direction (0 = has confidence, sorts first).
+def _confidence_desc_key(record):
+    conf = record.get("confidence")
+    has = conf is not None
+    return (0 if has else 1, -conf if has else 0, _natural_key(record))
+
+
+def _confidence_asc_key(record):
+    conf = record.get("confidence")
+    has = conf is not None
+    return (0 if has else 1, conf if has else 0, _natural_key(record))
+
+
+SORTS = {
+    "confidence_desc": _confidence_desc_key,
+    "confidence_asc": _confidence_asc_key,
+    "freq_desc": lambda r: (-_record_freq(r), _natural_key(r)),
+    "word": _natural_key,
+}
+DEFAULT_SORT = "word"
+
+
+def _record_freq(record):
+    freq = record.get("freq")
+    return freq if isinstance(freq, (int, float)) else 0
+
+
+def sort_records(records, sort):
+    key = SORTS.get(sort)
+    if key is None:
+        raise ValueError(f"unknown sort: {sort}")
+    return sorted(records, key=key)
 
 
 def serialisable(record):
@@ -134,7 +192,7 @@ def handle_entries(state, request):
     limit = min(int(request.get("limit", DEFAULT_LIMIT)), MAX_LIMIT)
 
     matched = filter_records(state.view.records, filters)
-    matched.sort(key=lambda r: (r["word"].lower(), r["pos"], r["shaw"], r["var"]))
+    matched = sort_records(matched, request.get("sort") or DEFAULT_SORT)
     page = matched[offset:offset + limit]
     return {
         "total": len(matched),
@@ -196,19 +254,84 @@ def handle_patch(state, request):
     if anchor is not None and not state.view.by_anchor(anchor_key(anchor)):
         return {"error": f"anchor resolves to no basis record: {anchor}"}
 
-    meta = {"author": author, "origin": "editor", "ts": _now_iso()}
-    note = request.get("note")
-    if note:
-        meta["note"] = note
-
+    meta = _meta(author, request.get("note"))
     patch = make_patch(anchor, record, meta)
     result, _previous = upsert_patch(patch)
     state.rebuild()
 
     key = anchor_key(anchor) if anchor is not None else anchor_key(record)
+    return _write_result(state, key, result, patch["id"])
+
+
+def handle_flag(state, request):
+    """Flag an anchor "looked at, no verdict yet". The flag patch carries the
+    source record UNCHANGED (built here from the basis, not the client, so it
+    provably equals the source) plus meta.flag. It replaces any prior verdict on
+    the anchor (upsert by anchor), and the applicator treats it as a no-op."""
+    anchor = request.get("anchor")
+    author = request.get("author")
+    if not author:
+        return {"error": "flag requires an author"}
+    if not anchor:
+        return {"error": "flag requires an anchor"}
+    error = _validate_patch(anchor, None)
+    if error:
+        return {"error": error}
+
+    source = state.view.by_anchor(anchor_key(anchor))
+    if not source:
+        return {"error": f"anchor resolves to no basis record: {anchor}"}
+
+    record = _source_record(source[0])
+    meta = _meta(author, request.get("note"))
+    meta["flag"] = True
+    patch = make_patch(anchor, record, meta)
+    result, _previous = upsert_patch(patch)
+    state.rebuild()
+    return _write_result(state, anchor_key(anchor), result, patch["id"])
+
+
+def handle_unpatch(state, request):
+    """Delete the patch on an anchor (undo a decision / unflag), reverting the
+    record to its untouched source. Fails loud if no patch holds the anchor."""
+    anchor = request.get("anchor")
+    if not anchor:
+        return {"error": "unpatch requires an anchor"}
+    error = _validate_patch(anchor, None)
+    if error:
+        return {"error": error}
+    try:
+        delete_patch(anchor)
+    except KeyError as exc:
+        return {"error": str(exc)}
+    state.rebuild()
+    return _write_result(state, anchor_key(anchor), "deleted", None)
+
+
+# The editable-field subset of an annotated record, mapped back to a patch's
+# self-contained `record` shape. A flag stores exactly what the basis holds.
+def _source_record(annotated):
+    record = {field: annotated[field] for field in ANCHOR_FIELDS}
+    for field in ("ipa", "freq", "source", "status", "confidence"):
+        value = annotated.get(field)
+        if value not in (None, ""):
+            record[field] = value
+    return record
+
+
+def _meta(author, note):
+    meta = {"author": author, "origin": "editor", "ts": _now_iso()}
+    if note:
+        meta["note"] = note
+    return meta
+
+
+def _write_result(state, key, result, patch_id):
+    """The response every write op returns: the re-annotated anchor plus the
+    outcome, so the UI updates the row in place."""
     return {
         "result": result,
-        "id": patch["id"],
+        "id": patch_id,
         "records": [serialisable(r) for r in state.view.by_anchor(key)],
     }
 
@@ -221,6 +344,8 @@ HANDLERS = {
     "entries": handle_entries,
     "entry": handle_entry,
     "patch": handle_patch,
+    "flag": handle_flag,
+    "unpatch": handle_unpatch,
 }
 
 

@@ -69,6 +69,14 @@ def anchor_key(anchor):
     return (anchor["word"].lower(), anchor["pos"], anchor["shaw"], anchor["var"])
 
 
+def is_flag_patch(patch):
+    """Whether a patch is a FLAG — "looked at, no verdict yet". A flag carries the
+    source record unchanged with a meta marker; it counts as reviewed (leaves the
+    unreviewed pool) but is NOT an editorial change, so the applicator treats it as
+    a no-op. The single definition shared by the overlay and the applicator."""
+    return bool(patch.get("meta", {}).get("flag"))
+
+
 def record_to_output(record):
     """The canonical dictionary entry (Latn/Shaw/...) for a patch's complete
     `record` (word/shaw/...). Emitted verbatim — no merge with the source. The

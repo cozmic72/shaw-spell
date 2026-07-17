@@ -4,3 +4,6 @@
 [submodule "external/readlex"]
 	path = external/readlex
 	url = https://github.com/Shavian-info/readlex.git
+[submodule "external/frequency-words"]
+	path = external/frequency-words
+	url = https://github.com/hermitdave/FrequencyWords.git

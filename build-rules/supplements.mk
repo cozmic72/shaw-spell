@@ -60,6 +60,22 @@ $(READLEX_PATH): $(SRC_TOOLS)/apply_patches.py external/readlex/readlex.json $(S
 	$(RUN) python3 $(SRC_TOOLS)/apply_patches.py
 
 ###########################################
+# Frequency enrichment (from subtitle corpus)
+###########################################
+
+# Fills freq on records that carry no ReadLex frequency (freq == 0) from the
+# OpenSubtitles-derived word list at external/frequency-words (MIT-licensed).
+# Deliberately OFF the $(READLEX_PATH) build path: it rewrites data/readlex.json
+# in place, is idempotent, and is run explicitly after a merge. See
+# docs/frequency-feasibility.md.
+FREQUENCY_CORPUS := external/frequency-words/content/2018/en/en_full.txt
+
+.PHONY: frequency
+frequency: $(READLEX_PATH) $(SRC_TOOLS)/apply_frequency_data.py $(SRC_TOOLS)/spelling_variants.py $(FREQUENCY_CORPUS)
+	@echo "Filling missing frequency data from subtitle corpus..."
+	$(RUN) python3 $(SRC_TOOLS)/apply_frequency_data.py
+
+###########################################
 # Editorial review
 ###########################################
 

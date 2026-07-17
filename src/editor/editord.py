@@ -107,6 +107,8 @@ def _field_matches(record, key, value):
         return record.get(key) == value
     if key == "reviewed":
         return _matches_review_state(record, value)
+    if key == "word_kind":
+        return _matches_word_kind(record, value)
     if key == "confidence_min":
         conf = record.get("confidence")
         return conf is not None and conf >= value
@@ -132,6 +134,18 @@ def _matches_review_state(record, value):
         return reviewed
     raise ValueError(
         f"reviewed filter wants unreviewed/flagged/decided/reviewed, got {value!r}")
+
+
+# A multi-word phrase is a Latin word carrying an internal whitespace after
+# trimming (e.g. "a priori", "outer space"). Hyphens do not count — only
+# whitespace splits a phrase into words.
+def _matches_word_kind(record, value):
+    multi = any(ch.isspace() for ch in record["word"].strip())
+    if value == "multi":
+        return multi
+    if value == "single":
+        return not multi
+    raise ValueError(f"word_kind filter wants multi/single, got {value!r}")
 
 
 def filter_records(records, filters):

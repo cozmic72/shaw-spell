@@ -117,6 +117,14 @@ PAGE = """<!DOCTYPE html>
             </select>
         </label>
         <label class="field">
+            <span>Words</span>
+            <select name="word_kind">
+                <option value="">any</option>
+                <option value="multi">multi-word</option>
+                <option value="single">single-word</option>
+            </select>
+        </label>
+        <label class="field">
             <span>Reviewed</span>
             <select name="reviewed">
                 <option value="">any</option>

@@ -196,13 +196,32 @@ def classify_phrase(phrase, citation_indexes):
     return label, expected_ipa, expected_shaw
 
 
+def is_phrase_record(entry):
+    """Whether a supplement record is a multi-word phrase (the classifier's
+    scope). Single-word candidates are never sum-of-parts and pass through."""
+    return " " in entry["Latn"].strip()
+
+
+def build_label_classifier():
+    """A callable phrase -> label ({divergent, matches, unknown}) backed by the
+    standard citation index. The single reuse entry point for consumers (the
+    phrase-pruning filter) that want a classification without the report I/O."""
+    citation_indexes = build_citation_index(READLEX_PATH, SUPPLEMENT_PATHS)
+
+    def label_of(phrase):
+        label, _expected_ipa, _expected_shaw = classify_phrase(phrase, citation_indexes)
+        return label
+
+    return label_of
+
+
 def iter_phrase_records(supplement_paths):
     """Every multi-word phrase record across the reliable supplements, in file
     then file-order — deterministic given the on-disk JSON."""
     for source in supplement_paths:
         for entries in load_json(source).values():
             for entry in entries:
-                if " " in entry["Latn"].strip():
+                if is_phrase_record(entry):
                     yield entry
 
 

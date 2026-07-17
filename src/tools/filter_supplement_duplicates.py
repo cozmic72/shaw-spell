@@ -24,11 +24,15 @@ The filter trims only the UNREVIEWED review surface: a candidate a patch already
 anchors to has left that surface, so it is exempt. Removing it would serve no
 purpose and would orphan the patch's anchor (see apply_patches.py).
 
+This is the first pass of supplement candidate pruning; the phrase-pruning pass
+(filter_supplement_phrases.py) reads the -deduped.json output next and produces
+the -filtered.json the basis consumes.
+
 Inputs:  data/supplement-{wordnet,wiktionary}-reliable.json  (the generators'
          output), external/readlex/readlex.json, data/patches/patches.jsonl.
-Outputs: data/supplement-{wordnet,wiktionary}-filtered.json  — the basis reads
-         these (see src/tools/basis.py). The -reliable.json files are left
-         untouched; the removed candidates are regenerable machine output.
+Outputs: data/supplement-{wordnet,wiktionary}-deduped.json  — the phrase filter
+         reads these. The -reliable.json files are left untouched; the removed
+         candidates are regenerable machine output.
 
 Usage:
     python3 src/tools/filter_supplement_duplicates.py
@@ -43,12 +47,12 @@ from basis import PROJECT_ROOT, anchor_key, anchor_of
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 
-# (reliable input, filtered output) per supplement source.
+# (reliable input, deduped output) per supplement source.
 SUPPLEMENTS = [
     (PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json",
-     PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json"),
+     PROJECT_ROOT / "data" / "supplement-wordnet-deduped.json"),
     (PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json",
-     PROJECT_ROOT / "data" / "supplement-wiktionary-filtered.json"),
+     PROJECT_ROOT / "data" / "supplement-wiktionary-deduped.json"),
 ]
 
 # An established entry counts only if the owner has sanctioned it; other patch

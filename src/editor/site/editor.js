@@ -25,6 +25,14 @@ const RRP_VAR = "RRP";
 
 const EDITABLE_FIELDS = ["shaw", "var", "ipa", "status"];
 
+// The within-accent vowel mergers a record's spelling reflects (additive, empty
+// == canonical). A closed vocabulary mirroring src/tools/dialect_mergers.py; the
+// reviewer toggles these on the detail card and they round-trip in the patch.
+const MERGERS = [
+    ["trap-bath", "TRAP–BATH"],
+    ["cot-caught", "COT–CAUGHT"],
+];
+
 // Dictionaries to look the word up in while deciding. {word} is URL-encoded so
 // phrases and apostrophes ("A for effort", "don't") stay valid.
 const REFERENCES = [
@@ -85,7 +93,7 @@ async function callDaemon(request) {
 // empty array is omitted, so an untouched facet does not constrain.
 const CATEGORICAL_FACETS = new Set([
     "source", "status", "pos", "var", "patch_state",
-    "reviewed", "word_kind", "novelty",
+    "reviewed", "word_kind", "novelty", "mergers",
 ]);
 
 function readFilters() {
@@ -314,6 +322,7 @@ function renderDetail(record) {
         stateBadge(record.patch_state),
         cell("latin", record.word),
         cell("pos", record.pos),
+        mergerBadges(record.mergers),
         confidenceBadge(record.confidence),
     );
 
@@ -452,6 +461,19 @@ function stateBadge(patchState) {
     return cell(`state-badge ${patchState}`, patchState);
 }
 
+// The record's active vowel mergers, as small badges beside the word. Empty (a
+// canonical record) shows nothing — the absence is the signal.
+const MERGER_LABELS = new Map(MERGERS);
+
+function mergerBadges(mergers) {
+    const wrap = document.createElement("span");
+    wrap.className = "merger-badges";
+    for (const value of mergers || []) {
+        wrap.append(cell(`merger-badge ${value}`, MERGER_LABELS.get(value) ?? value));
+    }
+    return wrap;
+}
+
 function confidenceBadge(confidence) {
     const badge = document.createElement("span");
     badge.className = "conf-badge";
@@ -491,9 +513,52 @@ function fieldGrid(record) {
         editField("shaw", "Shavian", record.shaw, "shaw-field"),
         editField("ipa", "IPA", record.ipa, "ipa-field"),
         editField("var", "Dialect (var)", record.var, ""),
+        mergersField(record.mergers),
         statusField(record.status),
     );
     return stack;
+}
+
+// The mergers are an additive set, not a scalar, so they edit as a row of toggle
+// chips rather than a text field. Each chip is a checkbox named "merger" carrying
+// its merger value; editedRecord harvests the checked ones. Toggling one enters
+// edit mode, like focusing any other field.
+function mergersField(current) {
+    const active = new Set(current || []);
+    const wrap = document.createElement("div");
+    wrap.className = "edit-field mergers-field";
+
+    const caption = document.createElement("span");
+    caption.className = "edit-label";
+    caption.textContent = "Mergers";
+
+    const toggles = document.createElement("div");
+    toggles.className = "merger-toggles";
+    for (const [value, label] of MERGERS) {
+        toggles.append(mergerToggle(value, label, active.has(value)));
+    }
+
+    wrap.append(caption, toggles);
+    return wrap;
+}
+
+function mergerToggle(value, label, checked) {
+    const chip = document.createElement("label");
+    chip.className = "merger-toggle";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "merger-check";
+    input.value = value;
+    input.checked = checked;
+    input.addEventListener("change", () => {
+        chip.classList.toggle("on", input.checked);
+        enterEdit();
+    });
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    chip.classList.toggle("on", checked);
+    chip.append(input, caption);
+    return chip;
 }
 
 function editField(name, label, value, extraClass) {
@@ -630,6 +695,11 @@ function editedRecord(record) {
     for (const name of EDITABLE_FIELDS) {
         const input = document.getElementById(`field-${name}`);
         result[name] = input.value.trim();
+    }
+    const mergers = [...DETAIL.querySelectorAll(".merger-check:checked")]
+        .map((box) => box.value);
+    if (mergers.length) {
+        result.mergers = mergers;
     }
     return result;
 }

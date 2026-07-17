@@ -86,6 +86,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import UPSTREAM_SOURCE, anchor_key                    # noqa: E402
+from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
                      NOVELTY_NEW_WORD, PATCH_STATE_FLAGGED, load_view)
 from patchstore import (                                        # noqa: E402
@@ -136,6 +137,8 @@ def _field_matches(record, key, value, established):
         if not isinstance(value, list):
             raise ValueError(f"{key} filter wants a list, got {value!r}")
         return record.get(key) in value
+    if key == "mergers":
+        return any(_matches_merger(record, v) for v in value)
     if key == "reviewed":
         return any(_matches_review_state(record, v) for v in value)
     if key == "word_kind":
@@ -199,6 +202,26 @@ def _matches_novelty(record, value, established):
         return False
     novelty = established.classify(record["word"], record["shaw"], record["pos"])
     return novelty == value
+
+
+# The mergers facet matches by membership: a record matches a selected merger if
+# it carries it. The "(none)" sentinel is the canonical partition — records with
+# no merger — which no real merger value can express (an empty list is absence,
+# not a value). The real values are the code-defined vocabulary (trap-bath/
+# cot-caught), so a chip outside {MERGER_NONE} ∪ MERGER_SWAPS fails loud.
+MERGER_NONE = "(none)"
+MERGER_FILTER_VALUES = frozenset(MERGER_SWAPS) | {MERGER_NONE}
+
+
+def _matches_merger(record, value):
+    if value not in MERGER_FILTER_VALUES:
+        raise ValueError(
+            f"mergers filter wants {'/'.join(sorted(MERGER_FILTER_VALUES))}, "
+            f"got {value!r}")
+    mergers = record.get("mergers") or []
+    if value == MERGER_NONE:
+        return not mergers
+    return value in mergers
 
 
 def filter_records(records, filters, established):
@@ -322,7 +345,7 @@ def handle_related(state, request):
 ANCHOR_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_REQUIRED_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_ALLOWED_FIELDS = {"word", "pos", "shaw", "var", "ipa", "freq",
-                         "source", "status", "confidence", "note"}
+                         "source", "status", "confidence", "note", "mergers"}
 
 
 def _validate_patch(anchor, record):
@@ -341,6 +364,23 @@ def _validate_patch(anchor, record):
         missing = [f for f in RECORD_REQUIRED_FIELDS if not record.get(f)]
         if missing:
             return f"patch record missing {', '.join(missing)}"
+        merger_error = _validate_mergers(record.get("mergers"))
+        if merger_error:
+            return merger_error
+    return None
+
+
+# mergers is additive: absent or an empty list means canonical. When present it
+# must be a list of the code-defined merger names (trap-bath/cot-caught) — an
+# invalid value or a non-list is rejected at the write, not deferred to a build.
+def _validate_mergers(mergers):
+    if mergers is None:
+        return None
+    if not isinstance(mergers, list):
+        return f"patch record mergers must be a list, got {mergers!r}"
+    unknown = [m for m in mergers if m not in MERGER_SWAPS]
+    if unknown:
+        return f"patch record has unknown mergers: {', '.join(map(str, unknown))}"
     return None
 
 
@@ -488,6 +528,8 @@ def _source_record(annotated):
         value = annotated.get(field)
         if value not in (None, ""):
             record[field] = value
+    if annotated.get("mergers"):
+        record["mergers"] = annotated["mergers"]
     return record
 
 

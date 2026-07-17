@@ -59,7 +59,11 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
 
     `anchor` is the record's stable natural key {word, pos, shaw, var}. It never
     changes when the record is edited, so an edited row keeps its place and is
-    still found by the anchor the patch was written against."""
+    still found by the anchor the patch was written against.
+
+    `mergers` is the additive within-accent vowel-merger list — always present in
+    the annotated shape (empty == canonical) so the UI can display and edit it,
+    though it is emitted to disk only when non-empty (see basis.record_to_output)."""
     return {
         "word": record.get("word", ""),
         "shaw": record.get("shaw", ""),
@@ -67,6 +71,7 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
         "ipa": record.get("ipa", ""),
         "freq": record.get("freq", 0),
         "var": record.get("var", ""),
+        "mergers": record.get("mergers", []),
         "source": record.get("source", source),
         "confidence": record.get("confidence"),
         "status": record.get("status", default_status),

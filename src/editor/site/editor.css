@@ -508,6 +508,26 @@ body {
 .state-badge.flagged { color: var(--state-flagged); }
 .state-badge.authored { color: var(--state-authored); }
 
+/* The record's active vowel mergers, read-at-a-glance beside the word. A
+   phonological attribute, not a decision-state, so it stays in the quiet accent
+   tone rather than borrowing a state colour. Empty renders nothing. */
+.merger-badges {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.merger-badge {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    color: var(--accent);
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+
 .conf-badge {
     align-self: center;
     margin-left: auto;
@@ -568,6 +588,38 @@ body {
     border-bottom-color: var(--accent);
 }
 .edit-input.dirty { border-bottom-color: var(--state-edited); }
+
+/* Mergers edit as a set of toggle chips, not a scalar field: an outlined pill
+   that fills with the accent when active. Mirrors the facet-trigger's selected
+   state so "on" reads the same way across the editor. */
+.merger-toggles { display: flex; flex-wrap: wrap; gap: 10px; }
+.merger-toggle {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+}
+.merger-toggle:hover { border-color: var(--ink-soft); }
+.merger-toggle.on {
+    color: var(--paper);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+/* The checkbox is the state, not the affordance — the pill is what you click. */
+.merger-toggle .merger-check { position: absolute; opacity: 0; pointer-events: none; }
+.merger-toggle:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
 /* The Shavian spelling is the dictionary's payload — the biggest thing on the card. */
 .shaw-field {
     font-family: var(--shaw);

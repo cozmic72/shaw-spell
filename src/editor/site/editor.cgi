@@ -157,6 +157,14 @@ PAGE = """<!DOCTYPE html>
         <fieldset class="field chips" data-facet="var">
             <legend>Var</legend>
         </fieldset>
+        <fieldset class="field chips" data-facet="mergers">
+            <legend>Mergers</legend>
+            <template>
+                <label class="chip"><input type="checkbox" name="mergers" value="trap-bath"><span>TRAP–BATH</span></label>
+                <label class="chip"><input type="checkbox" name="mergers" value="cot-caught"><span>COT–CAUGHT</span></label>
+                <label class="chip"><input type="checkbox" name="mergers" value="(none)"><span>(none / canonical)</span></label>
+            </template>
+        </fieldset>
         <label class="field narrow">
             <span>Conf ≥</span>
             <input type="number" name="confidence_min" min="0" max="100">

@@ -141,6 +141,12 @@ class AnnotatedView:
         with self._lock:
             return list(self.by_anchor_index.get(key, ()))
 
+    def authored_patch(self, patch_id):
+        """The authorship patch with `patch_id`, or None. A snapshot read under the
+        lock — the caller reads its record without racing a concurrent write."""
+        with self._lock:
+            return self.authored.get(patch_id)
+
     def apply_patch(self, patch):
         """Overlay a written patch on its anchor, re-annotating only the affected
         records in place. An anchored patch re-annotates the basis record on that
@@ -153,6 +159,20 @@ class AnnotatedView:
                 self._apply_authored_patch(patch)
             else:
                 self._reannotate_basis_anchor(anchor_key(patch["anchor"]), patch)
+
+    def apply_reauthor(self, patch, prior_id):
+        """Re-annotate an authorship entry re-decided in place: drop the row for
+        `prior_id` and overlay `patch` (anchor null). A re-authorship changes the
+        record, so `patch` has a NEW id; the prior authored row is found by
+        `prior_id`, not the new one. Fails loud if no authored row carries it."""
+        with self._lock:
+            removed = self.authored.pop(prior_id, None)
+            if removed is None:
+                raise KeyError(f"no authored patch in view: {prior_id}")
+            key = anchor_key(removed["record"])
+            self._forget_record(key, lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
+                                and r["patch"]["id"] == prior_id)
+            self._apply_authored_patch(patch)
 
     def apply_unpatch_anchor(self, anchor):
         """Remove the anchored patch on the given anchor, reverting its basis

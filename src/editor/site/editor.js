@@ -515,6 +515,14 @@ function requireShaw(record) {
     return true;
 }
 
+// An authored entry (anchor null, patch_state "authored") exists ONLY via its
+// authorship patch — no basis record backs it. Re-deciding it must edit THAT
+// patch in place (anchor stays null), not write an anchored patch that would
+// resolve to nothing and orphan the decision (failing the build).
+function isAuthored(record) {
+    return record.patch_state === "authored";
+}
+
 async function saveSelected() {
     const selected = state.records[state.selected];
     if (!selected) {
@@ -524,7 +532,7 @@ async function saveSelected() {
     if (!requireShaw(record)) {
         return;
     }
-    await writePatch(anchorOf(selected), record, "saved");
+    await writePatch(anchorOf(selected), record, "saved", selected);
 }
 
 async function acceptSelected() {
@@ -537,7 +545,7 @@ async function acceptSelected() {
     if (!requireShaw(record)) {
         return;
     }
-    await writePatch(anchorOf(selected), record, "accepted");
+    await writePatch(anchorOf(selected), record, "accepted", selected);
 }
 
 async function dropSelected() {
@@ -545,22 +553,30 @@ async function dropSelected() {
     if (!selected) {
         return;
     }
-    await writePatch(anchorOf(selected), null, "dropped");
+    // Dropping an authored entry means removing the word entirely — it exists only
+    // via its patch, so the drop IS deleting that patch (same as Clear).
+    if (isAuthored(selected)) {
+        if (!selected.patch_id) {
+            showToast("Can't drop: authored entry has no patch id.", true);
+            return;
+        }
+        await unpatch(null, "dropped", { step: true, patchId: selected.patch_id });
+        return;
+    }
+    await writePatch(anchorOf(selected), null, "dropped", selected);
 }
 
 // A verdict (accept/drop/edit) produces a patch and steps on. It also records an
 // undo frame: whether the anchor already had a patch before, so undo restores the
-// right prior state.
-async function writePatch(anchor, record, verb) {
-    const selected = state.records[state.selected];
+// right prior state. Re-deciding an authored entry edits its authorship patch in
+// place (anchor null + replaces), never writing an anchored patch.
+async function writePatch(anchor, record, verb, selected) {
     const priorReviewed = selected ? selected.reviewed : false;
+    const request = isAuthored(selected)
+        ? { op: "patch", anchor: null, record, author: AUTHOR, replaces: selected.patch_id }
+        : { op: "patch", anchor, record, author: AUTHOR };
     try {
-        const result = await callDaemon({
-            op: "patch",
-            anchor,
-            record,
-            author: AUTHOR,
-        });
+        const result = await callDaemon(request);
         pushUndo(anchor, priorReviewed);
         countDecision();
         applyWriteResult(result.records);
@@ -579,12 +595,11 @@ async function flagSelected() {
         return;
     }
     const priorReviewed = selected.reviewed;
+    const request = isAuthored(selected)
+        ? { op: "flag", anchor: null, author: AUTHOR, replaces: selected.patch_id }
+        : { op: "flag", anchor: anchorOf(selected), author: AUTHOR };
     try {
-        const result = await callDaemon({
-            op: "flag",
-            anchor: anchorOf(selected),
-            author: AUTHOR,
-        });
+        const result = await callDaemon(request);
         pushUndo(anchorOf(selected), priorReviewed);
         applyWriteResult(result.records);
         showToast(`flagged · ${result.result}`);

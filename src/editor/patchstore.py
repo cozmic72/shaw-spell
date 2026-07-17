@@ -86,6 +86,30 @@ def upsert_patch(patch, path=PATCHES_PATH):
     return ("replaced", previous)
 
 
+def replace_authored_patch(patch, prior_id, path=PATCHES_PATH):
+    """Re-author an existing authorship entry: drop the patch with `prior_id` and
+    write `patch` (anchor null) in its place, at the same position so the entry
+    keeps its order. A re-authorship changes the record (new status / flag / edited
+    fields), so `patch` carries a NEW content-derived id — the prior patch cannot be
+    found by the new id, which is why the caller names it explicitly.
+
+    Fails loud if no authorship patch carries `prior_id` (the re-decision named a
+    prior patch that is not there) or if `patch` still carries an anchor (an
+    authored re-decision must stay authorship). Returns the replaced patch."""
+    if patch["anchor"] is not None:
+        raise ValueError(f"authored re-decision must have anchor null: {patch['anchor']}")
+    patches = load_patches(path)
+    at = _index_of_id(patches, prior_id)
+    if at is None:
+        raise KeyError(f"no authored patch with id: {prior_id}")
+    if patches[at]["anchor"] is not None:
+        raise ValueError(f"patch {prior_id} is not authored: {patches[at]['anchor']}")
+    previous = patches[at]
+    patches[at] = patch
+    write_patches(patches, path)
+    return previous
+
+
 def delete_patch(anchor, path=PATCHES_PATH):
     """Remove the patch on the given anchor, reverting the record to its untouched
     source (undo / unflag). Fails loud if no patch holds that anchor — the caller

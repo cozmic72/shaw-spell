@@ -23,13 +23,18 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
     Response:  {"records": [...]}   # the record on that natural key
 
     Request:   {"op": "patch", "anchor": {"word","pos","shaw","var"} | null,
-                "record": {...} | null, "author": "…"}
+                "record": {...} | null, "author": "…", "replaces"?: "p_…"}
     Response:  {"result": "appended"|"replaced", "id": "p_…",
                 "records": [...]}   # the anchor re-annotated after the write
+                # anchor null + replaces = re-decide an AUTHORED entry: edits that
+                # authorship patch in place (anchor stays null), never an anchored
+                # patch (which would orphan the decision — see _reauthor).
 
     Request:   {"op": "flag", "anchor": {"word","pos","shaw","var"}, "author": "…"}
+             | {"op": "flag", "anchor": null, "replaces": "p_…", "author": "…"}
     Response:  {"result": …, "id": "p_…", "records": [...]}   # flagged, a no-op
-                for production (see is_flag_patch)
+                for production (see is_flag_patch). anchor null + replaces flags an
+                AUTHORED entry, keeping anchor null (see _flag_authored)
 
     Request:   {"op": "unpatch", "anchor": {"word","pos","shaw","var"}}
              | {"op": "unpatch", "patch_id": "p_…"}
@@ -71,7 +76,8 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 from basis import anchor_key                                     # noqa: E402
 from overlay import PATCH_STATE_FLAGGED, load_view               # noqa: E402
 from patchstore import (                                        # noqa: E402
-    delete_patch, delete_patch_by_id, make_patch, upsert_patch)
+    delete_patch, delete_patch_by_id, make_patch, replace_authored_patch,
+    upsert_patch)
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
@@ -259,6 +265,7 @@ def handle_patch(state, request):
     anchor = request.get("anchor")
     record = request.get("record")
     author = request.get("author")
+    replaces = request.get("replaces")
     if not author:
         return {"error": "patch requires an author"}
     if anchor is None and record is None:
@@ -266,6 +273,13 @@ def handle_patch(state, request):
     error = _validate_patch(anchor, record)
     if error:
         return {"error": error}
+
+    # Re-deciding an AUTHORED entry (anchor null, replacing a prior authorship
+    # patch) stays authorship: it edits that patch in place rather than minting an
+    # anchored patch, which would orphan the decision (an authored word has no
+    # basis record for the anchor to resolve against).
+    if anchor is None and replaces:
+        return _reauthor(state, record, _meta(author, request.get("note")), replaces)
 
     # An edit/drop must anchor to a record that exists in the basis right now.
     # Writing an anchor that resolves to nothing would create an orphan the build
@@ -283,6 +297,21 @@ def handle_patch(state, request):
     return _write_result(state, key, result, patch["id"])
 
 
+def _reauthor(state, record, meta, prior_id):
+    """Persist an authored re-decision (accept / edit) as a replacement of the
+    prior authorship patch, keeping anchor null. Fails loud if the prior patch is
+    not there (surfaced to the actor, never a silent new-patch fallback)."""
+    if record is None:
+        return {"error": "authored re-decision requires a record"}
+    patch = make_patch(None, record, meta)
+    try:
+        replace_authored_patch(patch, prior_id)
+    except (KeyError, ValueError) as exc:
+        return {"error": str(exc)}
+    state.view.apply_reauthor(patch, prior_id)
+    return _write_result(state, anchor_key(record), "replaced", patch["id"])
+
+
 def handle_flag(state, request):
     """Flag an anchor "looked at, no verdict yet". The flag patch carries the
     source record UNCHANGED (built here from the basis, not the client, so it
@@ -290,10 +319,17 @@ def handle_flag(state, request):
     the anchor (upsert by anchor), and the applicator treats it as a no-op."""
     anchor = request.get("anchor")
     author = request.get("author")
+    replaces = request.get("replaces")
     if not author:
         return {"error": "flag requires an author"}
+
+    # Flagging an AUTHORED entry re-authors it with meta.flag set, keeping anchor
+    # null — never an anchored flag patch that would orphan the decision.
+    if anchor is None and replaces:
+        return _flag_authored(state, author, request.get("note"), replaces)
+
     if not anchor:
-        return {"error": "flag requires an anchor"}
+        return {"error": "flag requires an anchor or a prior authored patch"}
     error = _validate_patch(anchor, None)
     if error:
         return {"error": error}
@@ -309,6 +345,25 @@ def handle_flag(state, request):
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)
     return _write_result(state, anchor_key(anchor), result, patch["id"])
+
+
+def _flag_authored(state, author, note, prior_id):
+    """Flag an authored entry: re-author it with the SAME record the prior patch
+    holds (a flag leaves the entry unchanged) plus meta.flag. The record is read
+    from the prior authored patch, not the client, so it provably equals it.
+    Fails loud if the prior patch is not there."""
+    prior = state.view.authored_patch(prior_id)
+    if prior is None:
+        return {"error": f"no authored patch with id: {prior_id}"}
+    meta = _meta(author, note)
+    meta["flag"] = True
+    patch = make_patch(None, prior["record"], meta)
+    try:
+        replace_authored_patch(patch, prior_id)
+    except (KeyError, ValueError) as exc:
+        return {"error": str(exc)}
+    state.view.apply_reauthor(patch, prior_id)
+    return _write_result(state, anchor_key(prior["record"]), "replaced", patch["id"])
 
 
 def handle_unpatch(state, request):

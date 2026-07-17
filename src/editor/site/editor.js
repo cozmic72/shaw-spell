@@ -394,7 +394,7 @@ function editField(name, label, value, extraClass) {
     return wrap;
 }
 
-const STATUS_OPTIONS = ["supplement", "supplemental", "new", "sanctioned", "manual"];
+const STATUS_OPTIONS = ["supplement", "new", "sanctioned", "manual"];
 
 function statusField(current) {
     const wrap = document.createElement("label");
@@ -775,7 +775,7 @@ function onGlobalKey(event) {
         toggleCheatsheet(false);
         return;
     }
-    if (event.target.matches("input, select, textarea")) {
+    if (event.target instanceof Element && event.target.matches("input, select, textarea")) {
         return;
     }
     if (event.metaKey || event.ctrlKey || event.altKey) {

@@ -304,14 +304,128 @@ function renderDetail(record) {
         confidenceBadge(record.confidence),
     );
 
+    const related = relatedSection();
     DETAIL.replaceChildren(
         heading,
         referenceLinks(record.word),
         fieldGrid(record),
         provenanceGrid(record),
         actionBar(record),
+        related,
     );
     setDetailMode();
+    loadRelated(record, related);
+}
+
+// ---- related-entries context ----
+// Every record sharing the focused entry's Latin word (case-insensitive), so
+// capitalisation dupes and proper-noun/common-word homographs surface together.
+// Fetched async so a landing never blocks the review loop; a stale response for a
+// previously-focused word is dropped (guarded by the focused anchor).
+
+const RELATED_TITLE = "Related entries";
+
+function relatedSection() {
+    const section = document.createElement("section");
+    section.className = "related";
+    section.setAttribute("aria-label", RELATED_TITLE);
+    const loading = document.createElement("p");
+    loading.className = "related-loading";
+    loading.textContent = "Finding related entries…";
+    section.append(relatedHeading(null), loading);
+    return section;
+}
+
+function relatedHeading(count) {
+    const heading = document.createElement("h2");
+    heading.className = "related-title";
+    heading.textContent = count === null
+        ? RELATED_TITLE
+        : `${RELATED_TITLE} · ${count}`;
+    return heading;
+}
+
+// Fetch related for the focused record and fill `section` when it returns. The
+// selection may have moved on by then (fast stepping); render only if the record
+// still occupies the focused slot, matched by anchor — a stale response for a
+// prior word must never overwrite the current card.
+async function loadRelated(record, section) {
+    const focused = record.anchor;
+    try {
+        const result = await callDaemon({ op: "related", word: record.word });
+        const current = state.records[state.selected];
+        if (!current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
+            return;
+        }
+        renderRelated(section, result.records, focused);
+    } catch (error) {
+        if (section.isConnected) {
+            renderRelatedError(section, error.message);
+        }
+    }
+}
+
+function renderRelated(section, records, focusedAnchor) {
+    const list = document.createElement("ul");
+    list.className = "related-list";
+    for (const record of records) {
+        list.append(relatedRow(record, focusedAnchor));
+    }
+    section.replaceChildren(relatedHeading(records.length), list);
+}
+
+function renderRelatedError(section, message) {
+    const note = document.createElement("p");
+    note.className = "related-loading";
+    note.textContent = `Couldn't load related entries: ${message}`;
+    section.replaceChildren(relatedHeading(null), note);
+}
+
+function relatedRow(record, focusedAnchor) {
+    const provenance = relatedProvenance(record);
+    const row = document.createElement("li");
+    row.className = `related-row state-${provenance.state}`;
+    const here = sameAnchor(record.anchor, focusedAnchor);
+    if (here) {
+        row.classList.add("here");
+    }
+
+    const badge = cell(`related-badge ${provenance.state}`, provenance.glyph);
+    badge.title = provenance.label;
+    row.append(
+        badge,
+        cell("related-label", here ? "you are here" : provenance.label),
+        cell("related-word", record.word),
+        cell("related-pos", record.pos),
+        varCell(record.var),
+        cell("related-shaw", record.shaw),
+    );
+    return row;
+}
+
+// Provenance + review state of a related record, from the fields the view already
+// carries. patch_state decides first (a patch's verdict overrides origin); an
+// untouched row falls back to its origin. `state` is a --state-* class so the
+// badge reuses the ledger palette; `glyph` is the non-colour channel.
+function relatedProvenance(record) {
+    switch (record.patch_state) {
+        case "authored":
+            return { state: "authored", glyph: "✎", label: "authored" };
+        case "dropped":
+            return { state: "dropped", glyph: "✕", label: "dropped" };
+        case "flagged":
+            return { state: "flagged", glyph: "⚑", label: "flagged" };
+        case "edited":
+            return {
+                state: "edited",
+                glyph: "✓",
+                label: record.status === ACCEPTED_STATUS ? "sanctioned" : "edited",
+            };
+        default:
+            return record.source === "readlex"
+                ? { state: "unreviewed", glyph: "✓", label: "upstream" }
+                : { state: "unreviewed", glyph: "○", label: `candidate · ${record.source}` };
+    }
 }
 
 // The detail card reads its mode off the card element: review mode shows the

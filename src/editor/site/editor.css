@@ -492,6 +492,71 @@ body {
 .act.clear:hover { background: var(--state-unreviewed); color: var(--paper); }
 
 
+/* ---- related entries — the context index below the focused card ---- */
+/* Secondary to the card above: a quiet, hairline-ruled list of every entry that
+   shares this Latin word (capitalisation dupes, homographs), each stamped by its
+   provenance + review state. Colour rides the same --state-* palette as the
+   ledger; the glyph and text label carry the meaning off-colour too. */
+.related {
+    margin-top: 30px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+}
+.related-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+}
+.related-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
+.related-list { list-style: none; }
+.related-row {
+    display: grid;
+    grid-template-columns: 22px minmax(96px, max-content) 1fr auto auto auto;
+    gap: 8px 12px;
+    align-items: baseline;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--rule);
+    border-left: 3px solid transparent;
+}
+.related-row:last-child { border-bottom: none; }
+/* "You are here" — the focused entry, edged with the same accent the detail card
+   wears, so the eye ties the row to the card above it. */
+.related-row.here {
+    background: var(--paper-raised);
+    border-left-color: var(--accent);
+}
+.related-badge {
+    justify-self: center;
+    font-size: 13px;
+    line-height: 1;
+}
+.related-badge.unreviewed { color: var(--state-unreviewed); }
+.related-badge.edited { color: var(--state-edited); }
+.related-badge.dropped { color: var(--state-dropped); }
+.related-badge.flagged { color: var(--state-flagged); }
+.related-badge.authored { color: var(--state-authored); }
+.related-label {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.related-row.here .related-label { color: var(--accent); font-weight: 700; }
+.related-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.related-pos { color: var(--ink-soft); font-size: 11px; }
+.related-shaw {
+    font-family: var(--shaw);
+    font-size: 20px;
+    justify-self: end;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 kbd {
     font-family: var(--mono);
     font-size: 10px;
@@ -711,6 +776,16 @@ kbd {
     .detail.mode-review::after, .detail.mode-edit::after { top: 10px; right: 12px; }
 
     .pacing { gap: 20px; padding: 8px 18px; }
+
+    /* Related rows: drop the POS column and let the word take the slack so the
+       badge, label, word, var and Shavian all fit a phone width without overflow.
+       Five rendered children (POS hidden), five tracks. */
+    .related-row {
+        grid-template-columns: 20px minmax(76px, max-content) 1fr auto auto;
+        gap: 6px 10px;
+    }
+    .related-pos { display: none; }
+    .related-shaw { font-size: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

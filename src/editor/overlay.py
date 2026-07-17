@@ -111,7 +111,10 @@ class AnnotatedView:
     The basis (index + per-anchor origin) and the patch overlay (anchored map +
     authored map) are retained so a write can re-annotate one anchor in place.
     `by_anchor_index` maps an anchor key to the records carrying it, so both the
-    per-anchor read and the in-place update are O(1).
+    per-anchor read and the in-place update are O(1). `by_word_index` maps a
+    lowercased Latin word to the anchor keys carrying it, so the related-entries
+    read is O(hits) rather than a full-view scan; it is kept in step with
+    by_anchor_index as authored rows are added and removed.
 
     The daemon is multithreaded (ThreadingMixIn): an in-place write mutates the
     shared index while readers iterate it, so a lock guards every mutating op and
@@ -124,6 +127,7 @@ class AnnotatedView:
         self.anchored, self.authored = _index_patches_by_anchor(patches)
         self.by_anchor_index = _build_records(
             basis_index, basis_source, self.anchored, self.authored)
+        self.by_word_index = _build_word_index(self.by_anchor_index)
         self._lock = threading.Lock()
 
     @property
@@ -140,6 +144,15 @@ class AnnotatedView:
         it after the lock is released without racing a concurrent write."""
         with self._lock:
             return list(self.by_anchor_index.get(key, ()))
+
+    def by_word(self, word):
+        """A snapshot of every annotated record whose Latin word matches `word`
+        case-insensitively — the related-entries read. Resolved through the
+        lowercased-word index (O(hits), not a full-view scan) under the lock."""
+        with self._lock:
+            return [record
+                    for key in self.by_word_index.get(word.lower(), ())
+                    for record in self.by_anchor_index.get(key, ())]
 
     def authored_patch(self, patch_id):
         """The authorship patch with `patch_id`, or None. A snapshot read under the
@@ -216,24 +229,37 @@ class AnnotatedView:
 
     def _replace_record(self, key, annotated, predicate):
         """Swap the record on `key` matching `predicate` for `annotated`,
-        keeping its position; append if none matched (a new row)."""
+        keeping its position; append if none matched (a new row). A new anchor
+        key (an authored word absent from the basis) is registered on the word
+        index so the related read finds it."""
         records = self.by_anchor_index.setdefault(key, [])
         for i, record in enumerate(records):
             if predicate(record):
                 records[i] = annotated
                 return
+        if not records:
+            self.by_word_index.setdefault(key[0], set()).add(key)
         records.append(annotated)
 
     def _forget_record(self, key, predicate):
-        """Drop the record on `key` matching `predicate` from the index."""
+        """Drop the record on `key` matching `predicate` from the index. When the
+        anchor empties, deregister it from the word index too."""
         records = self.by_anchor_index.get(key, [])
         for i, record in enumerate(records):
             if predicate(record):
                 del records[i]
                 if not records:
                     self.by_anchor_index.pop(key, None)
+                    self._deregister_word(key)
                 return
         raise KeyError(f"no record to forget on anchor: {key}")
+
+    def _deregister_word(self, key):
+        keys = self.by_word_index.get(key[0])
+        if keys is not None:
+            keys.discard(key)
+            if not keys:
+                self.by_word_index.pop(key[0], None)
 
 
 def _index_patches_by_anchor(patches):
@@ -264,6 +290,16 @@ def _build_records(basis_index, basis_source, anchored, authored):
         index.setdefault(anchor_key(record["anchor"]), []).append(record)
 
     return index
+
+
+def _build_word_index(by_anchor_index):
+    """Map each lowercased Latin word to the set of anchor keys carrying it — the
+    related-entries lookup. The anchor key's first element IS that lowercased word
+    (see anchor_key), so this is a regrouping of the existing keys."""
+    word_index = {}
+    for key in by_anchor_index:
+        word_index.setdefault(key[0], set()).add(key)
+    return word_index
 
 
 def load_view():

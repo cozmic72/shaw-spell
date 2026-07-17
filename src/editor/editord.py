@@ -22,6 +22,10 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
     Request:   {"op": "entry", "anchor": {"word","pos","shaw","var"}}
     Response:  {"records": [...]}   # the record on that natural key
 
+    Request:   {"op": "related", "word": "polish"}
+    Response:  {"records": [...]}   # every record whose word matches, case-
+                # insensitively — the related-entries context for a landing
+
     Request:   {"op": "patch", "anchor": {"word","pos","shaw","var"} | null,
                 "record": {...} | null, "author": "…", "replaces"?: "p_…"}
     Response:  {"result": "appended"|"replaced", "id": "p_…",
@@ -236,6 +240,17 @@ def handle_entry(state, request):
     return {"records": [serialisable(r) for r in records]}
 
 
+def handle_related(state, request):
+    """Every annotated record sharing the given Latin word, matched
+    case-insensitively — the focused entry's related-entries context. Read-only;
+    the UI labels each row by its already-carried provenance/patch-state."""
+    word = request.get("word")
+    if not word:
+        return {"error": "related requires a word"}
+    records = state.view.by_word(word)
+    return {"records": [serialisable(r) for r in records]}
+
+
 ANCHOR_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_REQUIRED_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_ALLOWED_FIELDS = {"word", "pos", "shaw", "var", "ipa", "freq",
@@ -432,6 +447,7 @@ def _now_iso():
 HANDLERS = {
     "entries": handle_entries,
     "entry": handle_entry,
+    "related": handle_related,
     "patch": handle_patch,
     "flag": handle_flag,
     "unpatch": handle_unpatch,

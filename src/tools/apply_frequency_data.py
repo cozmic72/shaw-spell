@@ -28,6 +28,7 @@ Usage:
 
 import json
 import sys
+from pathlib import Path
 
 from basis import PROJECT_ROOT
 from spelling_variants import spelling_variants
@@ -42,9 +43,8 @@ def load_corpus():
     if not CORPUS_PATH.exists():
         sys.exit(
             f"Corpus not found at {CORPUS_PATH.relative_to(PROJECT_ROOT)}.\n"
-            "Add the submodule with:\n"
-            "  git submodule add https://github.com/hermitdave/FrequencyWords.git "
-            "external/frequency-words"
+            "Check out the frequency-words submodule (lean, ~30 MB) with:\n"
+            "  make setup"
         )
 
     corpus = {}
@@ -72,9 +72,18 @@ def corpus_frequency(word, corpus):
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description="Fill missing freq from the subtitle corpus")
+    ap.add_argument("--in", dest="in_path", default=str(READLEX_PATH),
+                    help="merged readlex to read (default: data/readlex.json)")
+    ap.add_argument("--out", dest="out_path", default=str(READLEX_PATH),
+                    help="enriched readlex to write (default: data/readlex.json)")
+    args = ap.parse_args()
+    in_path, out_path = Path(args.in_path), Path(args.out_path)
+
     corpus = load_corpus()
 
-    with open(READLEX_PATH, "r", encoding="utf-8") as f:
+    with open(in_path, "r", encoding="utf-8") as f:
         readlex = json.load(f)
 
     records_filled = 0
@@ -95,14 +104,14 @@ def main():
             else:
                 records_unmatched += 1
 
-    with open(READLEX_PATH, "w", encoding="utf-8") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(readlex, f, ensure_ascii=False, indent=4)
 
     print(f"Corpus entries loaded:     {len(corpus)}")
     print(f"Records filled:            {records_filled}")
     print(f"Distinct words filled:     {len(words_filled)}")
     print(f"Records still without freq:{records_unmatched}")
-    print(f"\nWrote {READLEX_PATH.relative_to(PROJECT_ROOT)}")
+    print(f"\nWrote {out_path}")
 
 
 if __name__ == "__main__":

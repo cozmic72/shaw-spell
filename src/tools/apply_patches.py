@@ -155,6 +155,13 @@ def apply_patches(output, basis_index, patches):
 
 
 def main():
+    import argparse
+    from pathlib import Path
+    ap = argparse.ArgumentParser(description="Apply the patch store to produce merged readlex")
+    ap.add_argument("--out", dest="out_path", default=str(OUTPUT_PATH),
+                    help="where to write the merged readlex (default: data/readlex.json)")
+    out_path = Path(ap.parse_args().out_path)
+
     output = load_json(UPSTREAM_PATH)
     print(f"Upstream: {len(output):,} keys, {sum(len(v) for v in output.values()):,} entries")
 
@@ -181,8 +188,8 @@ def main():
                   f"var={anchor['var']} (id={patch['id']})", file=sys.stderr)
         raise SystemExit(1)
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=4)
 
     print(f"\nMerged:   {len(output):,} keys, {sum(len(v) for v in output.values()):,} entries")
@@ -192,7 +199,7 @@ def main():
     print(f"  flag (no-op):        {stats['flag']:,}")
     print(f"  skipped (numeral):   {stats['skipped_numeral']:,}")
     print(f"  skipped (bad shaw):  {stats['skipped_shaw']:,}")
-    print(f"\nWrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}")
+    print(f"\nWrote {out_path}")
 
 
 if __name__ == "__main__":

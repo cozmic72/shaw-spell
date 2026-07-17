@@ -6347,6 +6347,42 @@
             "review": "shave_says:𐑩𐑒𐑳𐑥𐑐𐑤𐑦𐑖𐑥𐑩𐑯𐑑"
         }
     ],
+    "accord_NN1_𐑩𐑒𐑹𐑛": [
+        {
+            "Latn": "accord",
+            "Shaw": "𐑩𐑒𐑹𐑛",
+            "pos": "NN1",
+            "ipa": "əˈkɔːRd",
+            "freq": 0,
+            "var": "GenAm",
+            "confidence": 97,
+            "review": "shave_agrees"
+        }
+    ],
+    "accord_VVI_𐑩𐑒𐑹𐑛": [
+        {
+            "Latn": "accord",
+            "Shaw": "𐑩𐑒𐑹𐑛",
+            "pos": "VVI",
+            "ipa": "əˈkɔːRd",
+            "freq": 0,
+            "var": "GenAm",
+            "confidence": 97,
+            "review": "shave_agrees"
+        }
+    ],
+    "accordance_NN1_𐑩𐑒𐑹𐑛𐑩𐑯𐑕": [
+        {
+            "Latn": "accordance",
+            "Shaw": "𐑩𐑒𐑹𐑛𐑩𐑯𐑕",
+            "pos": "NN1",
+            "ipa": "əˈkɔːRdəns",
+            "freq": 0,
+            "var": "GenAm",
+            "confidence": 97,
+            "review": "shave_agrees"
+        }
+    ],
     "accordant_AJ0_𐑩𐑒𐑹𐑛𐑩𐑯𐑑": [
         {
             "Latn": "accordant",
@@ -6383,6 +6419,18 @@
             "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑩𐑒𐑹𐑛𐑾𐑯"
         }
     ],
+    "accordion_NN1_𐑩𐑒𐑹𐑛𐑾𐑯": [
+        {
+            "Latn": "accordion",
+            "Shaw": "𐑩𐑒𐑹𐑛𐑾𐑯",
+            "pos": "NN1",
+            "ipa": "əˈkɔːRdiən",
+            "freq": 0,
+            "var": "GenAm",
+            "confidence": 97,
+            "review": "shave_agrees"
+        }
+    ],
     "accordionist_NN1_𐑩𐑒𐑹𐑛𐑾𐑯𐑩𐑕𐑑": [
         {
             "Latn": "accordionist",
@@ -6393,6 +6441,18 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑩𐑒𐑹𐑛𐑾𐑯𐑦𐑕𐑑"
+        }
+    ],
+    "accost_VVI_𐑩𐑒𐑪𐑕𐑑": [
+        {
+            "Latn": "accost",
+            "Shaw": "𐑩𐑒𐑪𐑕𐑑",
+            "pos": "VVI",
+            "ipa": "əˈkɒst",
+            "freq": 0,
+            "var": "GenAm",
+            "confidence": 97,
+            "review": "shave_agrees"
         }
     ],
     "accouchement_NN1_𐑩𐑒𐑵𐑖𐑥𐑩𐑯𐑑": [
@@ -6431,6 +6491,30 @@
             "review": "shave_says:𐑩𐑒𐑬𐑯𐑑𐑩𐑚𐑦𐑤𐑦𐑑𐑦"
         }
     ],
+    "accountable_AJ0_𐑩𐑒𐑬𐑯𐑑𐑩𐑚𐑩𐑤": [
+        {
+            "Latn": "accountable",
+            "Shaw": "𐑩𐑒𐑬𐑯𐑑𐑩𐑚𐑩𐑤",
+            "pos": "AJ0",
+            "ipa": "əˈkaʊntəbəl",
+            "freq": 0,
+            "var": "RSSB",
+            "confidence": 97,
+            "review": "shave_agrees"
+        }
+    ],
+    "accountancy_NN1_𐑩𐑒𐑬𐑯𐑑𐑩𐑯𐑕𐑦": [
+        {
+            "Latn": "accountancy",
+            "Shaw": "𐑩𐑒𐑬𐑯𐑑𐑩𐑯𐑕𐑦",
+            "pos": "NN1",
+            "ipa": "əˈkaʊntənsi",
+            "freq": 0,
+            "var": "GenAm",
+            "confidence": 97,
+            "review": "shave_agrees"
+        }
+    ],
     "accountantship_NN1_𐑩𐑒𐑬𐑯𐑑𐑩𐑯𐑗𐑦𐑐": [
         {
             "Latn": "accountantship",
@@ -6441,6 +6525,18 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑩𐑒𐑬𐑯𐑖𐑩𐑯𐑑𐑖𐑦𐑐"
+        }
+    ],
+    "accounting_NN1_𐑩𐑒𐑬𐑯𐑑𐑦𐑙": [
+        {
+            "Latn": "accounting",
+            "Shaw": "𐑩𐑒𐑬𐑯𐑑𐑦𐑙",
+            "pos": "NN1",
+            "ipa": "əˈkaʊntɪŋ",
+            "freq": 0,
+            "var": "RSSB",
+            "confidence": 97,
+            "review": "shave_agrees"
         }
     ],
     "accouter_VVI_𐑩𐑒𐑫𐑑𐑼": [

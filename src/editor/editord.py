@@ -77,8 +77,9 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
-from basis import anchor_key                                     # noqa: E402
-from overlay import PATCH_STATE_FLAGGED, load_view               # noqa: E402
+from basis import UPSTREAM_SOURCE, anchor_key                    # noqa: E402
+from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
+                     NOVELTY_NEW_WORD, PATCH_STATE_FLAGGED, load_view)
 from patchstore import (                                        # noqa: E402
     delete_patch, delete_patch_by_id, make_patch, replace_authored_patch,
     upsert_patch)
@@ -99,18 +100,19 @@ class State:
         self.view = load_view()
 
 
-def matches(record, filters):
+def matches(record, filters, established):
     """Whether an annotated record passes every supplied filter. Absent filters
-    do not constrain; a present filter that the record fails excludes it."""
+    do not constrain; a present filter that the record fails excludes it.
+    `established` is the view's EstablishedIndex, needed by the novelty filter."""
     for key, value in filters.items():
         if value in (None, ""):
             continue
-        if not _field_matches(record, key, value):
+        if not _field_matches(record, key, value, established):
             return False
     return True
 
 
-def _field_matches(record, key, value):
+def _field_matches(record, key, value, established):
     if key == "word":
         return value.lower() in record["word"].lower()
     if key == "shaw":
@@ -121,6 +123,8 @@ def _field_matches(record, key, value):
         return _matches_review_state(record, value)
     if key == "word_kind":
         return _matches_word_kind(record, value)
+    if key == "novelty":
+        return _matches_novelty(record, value, established)
     if key == "confidence_min":
         conf = record.get("confidence")
         return conf is not None and conf >= value
@@ -160,8 +164,28 @@ def _matches_word_kind(record, value):
     raise ValueError(f"word_kind filter wants multi/single, got {value!r}")
 
 
-def filter_records(records, filters):
-    return [r for r in records if matches(r, filters)]
+# Novelty classifies an UNREVIEWED supplement candidate by its relationship to
+# the established data (upstream ReadLex + sanctioned patches) for its word — a
+# genuinely new word, a new spelling of a known word, or a new POS of a known
+# word+shaw. Upstream and reviewed rows are not candidates, so they never match a
+# novelty value (they are excluded whenever the filter is set). A "known"
+# candidate — word+shaw+pos all established — would be a duplicate the B1 filter
+# removes; it never matches new-* here, so it too is excluded.
+NOVELTY_VALUES = (NOVELTY_NEW_WORD, NOVELTY_NEW_SPELLING, NOVELTY_NEW_POS)
+
+
+def _matches_novelty(record, value, established):
+    if value not in NOVELTY_VALUES:
+        raise ValueError(
+            f"novelty filter wants {'/'.join(NOVELTY_VALUES)}, got {value!r}")
+    if record["reviewed"] or record.get("source") == UPSTREAM_SOURCE:
+        return False
+    novelty = established.classify(record["word"], record["shaw"], record["pos"])
+    return novelty == value
+
+
+def filter_records(records, filters, established):
+    return [r for r in records if matches(r, filters, established)]
 
 
 # The list's natural key — the deterministic tiebreak under every sort, and the
@@ -221,7 +245,7 @@ def handle_entries(state, request):
     offset = int(request.get("offset", 0))
     limit = min(int(request.get("limit", DEFAULT_LIMIT)), MAX_LIMIT)
 
-    matched = filter_records(state.view.records, filters)
+    matched = filter_records(state.view.records, filters, state.view.established)
     matched = sort_records(matched, request.get("sort") or DEFAULT_SORT)
     page = matched[offset:offset + limit]
     return {

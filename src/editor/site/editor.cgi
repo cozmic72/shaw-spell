@@ -125,6 +125,15 @@ PAGE = """<!DOCTYPE html>
             </select>
         </label>
         <label class="field">
+            <span>Novelty</span>
+            <select name="novelty">
+                <option value="">any</option>
+                <option value="new-word">new word</option>
+                <option value="new-spelling">new spelling</option>
+                <option value="new-pos">new POS</option>
+            </select>
+        </label>
+        <label class="field">
             <span>Reviewed</span>
             <select name="reviewed">
                 <option value="">any</option>

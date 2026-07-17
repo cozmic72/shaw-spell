@@ -17,10 +17,17 @@ A patch's identity for upsert is its full anchor (word, pos, shaw, var) — the
 immutable identity of the reviewed record. Writing a patch whose anchor already
 has one REPLACES it, so a re-decision never duplicates. Authorship patches
 (anchor null) have no anchor and are keyed by id.
+
+Redirecting the store (tests): every read/write resolves its path at CALL time
+from _store_path(), so the live store is never touched by an isolated test.
+Reassign the module attribute PATCHES_PATH, or set the SHAW_SPELL_PATCH_STORE
+env var, to redirect all reads and writes; passing path= to any function still
+overrides per call.
 """
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from basis import PROJECT_ROOT, anchor_key
@@ -28,7 +35,18 @@ from basis import PROJECT_ROOT, anchor_key
 PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 
 
-def load_patches(path=PATCHES_PATH):
+def _store_path():
+    """The store path resolved at call time — the SHAW_SPELL_PATCH_STORE env var
+    if set, else the current PATCHES_PATH module attribute. Read at call time (not
+    bound as a def default) so reassigning PATCHES_PATH or the env var actually
+    redirects every read and write. Callers pass path= to override a single call."""
+    env = os.environ.get("SHAW_SPELL_PATCH_STORE")
+    return Path(env) if env else PATCHES_PATH
+
+
+def load_patches(path=None):
+    if path is None:
+        path = _store_path()
     patches = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -50,8 +68,10 @@ def make_patch(anchor, record, meta):
     return {"id": patch_id(anchor, record), "anchor": anchor, "record": record, "meta": meta}
 
 
-def write_patches(patches, path=PATCHES_PATH):
+def write_patches(patches, path=None):
     """Persist the store atomically: write a sibling temp file, then rename."""
+    if path is None:
+        path = _store_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
@@ -60,13 +80,15 @@ def write_patches(patches, path=PATCHES_PATH):
     tmp.replace(path)
 
 
-def upsert_patch(patch, path=PATCHES_PATH):
+def upsert_patch(patch, path=None):
     """Append the patch, or replace the existing patch on the same anchor.
 
     An anchored patch (anchor present) replaces any patch with the same natural
     key (word, pos, shaw, var). An authorship patch (anchor null) replaces one
     with the same id. Returns ("replaced", old_patch) or ("appended", None).
     """
+    if path is None:
+        path = _store_path()
     patches = load_patches(path)
     anchor = patch["anchor"]
 
@@ -86,7 +108,7 @@ def upsert_patch(patch, path=PATCHES_PATH):
     return ("replaced", previous)
 
 
-def replace_authored_patch(patch, prior_id, path=PATCHES_PATH):
+def replace_authored_patch(patch, prior_id, path=None):
     """Re-author an existing authorship entry: drop the patch with `prior_id` and
     write `patch` (anchor null) in its place, at the same position so the entry
     keeps its order. A re-authorship changes the record (new status / flag / edited
@@ -98,6 +120,8 @@ def replace_authored_patch(patch, prior_id, path=PATCHES_PATH):
     authored re-decision must stay authorship). Returns the replaced patch."""
     if patch["anchor"] is not None:
         raise ValueError(f"authored re-decision must have anchor null: {patch['anchor']}")
+    if path is None:
+        path = _store_path()
     patches = load_patches(path)
     at = _index_of_id(patches, prior_id)
     if at is None:
@@ -110,10 +134,12 @@ def replace_authored_patch(patch, prior_id, path=PATCHES_PATH):
     return previous
 
 
-def delete_patch(anchor, path=PATCHES_PATH):
+def delete_patch(anchor, path=None):
     """Remove the patch on the given anchor, reverting the record to its untouched
     source (undo / unflag). Fails loud if no patch holds that anchor — the caller
     asked to delete something that is not there. Returns the removed patch."""
+    if path is None:
+        path = _store_path()
     patches = load_patches(path)
     at = _index_of_anchor(patches, anchor_key(anchor))
     if at is None:
@@ -121,10 +147,12 @@ def delete_patch(anchor, path=PATCHES_PATH):
     return _pop_and_write(patches, at, path)
 
 
-def delete_patch_by_id(patch_id, path=PATCHES_PATH):
+def delete_patch_by_id(patch_id, path=None):
     """Remove the patch with the given id — the deletion path for authorship
     patches, whose stored anchor is null and so cannot be found by anchor. Fails
     loud if no patch carries that id. Returns the removed patch."""
+    if path is None:
+        path = _store_path()
     patches = load_patches(path)
     at = _index_of_id(patches, patch_id)
     if at is None:

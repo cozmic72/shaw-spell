@@ -1263,6 +1263,7 @@ function relatedRow(record, focusedAnchor) {
         posCell("related-pos", record.pos),
         relatedDialect(record),
         cell("related-shaw", record.shaw),
+        relatedSource(record),
     );
     // A sibling row opens in a modal for in-place review; the "you are here" row is
     // already the detail card above, so it is inert (no modal, no cursor move).
@@ -1315,6 +1316,18 @@ function relatedDialect(record) {
     return wrap;
 }
 
+// The source column of a related row: the collapsed provenance combo as one tag,
+// formatted exactly like the source facet (sorted, "+"-joined — e.g.
+// "wordnet+wiktionary"), so a multi-source agreement reads the same here as in the
+// filter. Upstream (readlex) rows carry no tag — the badge already says "upstream".
+function relatedSource(record) {
+    const key = sourceKey(record);
+    if (!key || key === "readlex") {
+        return cell("related-source", "");
+    }
+    return cell("related-source", key);
+}
+
 // Provenance + review state of a related record, from the fields the view already
 // carries. patch_state decides first (a patch's verdict overrides origin); an
 // untouched row falls back to its origin. `state` is a --state-* class so the
@@ -1327,6 +1340,8 @@ function relatedProvenance(record) {
             return { state: "dropped", glyph: "✕", label: "dropped" };
         case "flagged":
             return { state: "flagged", glyph: "⚑", label: "flagged" };
+        case "accepted":
+            return { state: "accepted", glyph: "✓", label: "sanctioned" };
         case "edited":
             return {
                 state: "edited",
@@ -1336,7 +1351,7 @@ function relatedProvenance(record) {
         default:
             return record.source.includes("readlex")
                 ? { state: "unreviewed", glyph: "✓", label: "upstream" }
-                : { state: "unreviewed", glyph: "○", label: `candidate · ${record.source.join(" + ")}` };
+                : { state: "unreviewed", glyph: "○", label: "candidate" };
     }
 }
 

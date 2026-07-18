@@ -1115,7 +1115,7 @@ body {
 .related-list { list-style: none; }
 .related-row {
     display: grid;
-    grid-template-columns: 22px minmax(96px, max-content) 1fr auto auto auto;
+    grid-template-columns: 22px minmax(96px, max-content) 1fr auto auto auto auto;
     gap: 8px 12px;
     align-items: baseline;
     padding: 8px 10px;
@@ -1138,7 +1138,16 @@ body {
     font-size: 13px;
     line-height: 1;
 }
+.related-source {
+    justify-self: end;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    white-space: nowrap;
+}
 .related-badge.unreviewed { color: var(--state-unreviewed); }
+.related-badge.accepted { color: var(--state-edited); }
 .related-badge.edited { color: var(--state-edited); }
 .related-badge.dropped { color: var(--state-dropped); }
 .related-badge.flagged { color: var(--state-flagged); }
@@ -1456,10 +1465,10 @@ kbd {
     .pacing { gap: 20px; padding: 8px 18px; }
 
     /* Related rows: drop the POS column and let the word take the slack so the
-       badge, label, word, var and Shavian all fit a phone width without overflow.
-       Five rendered children (POS hidden), five tracks. */
+       badge, label, word, var, Shavian and source all fit a phone width without
+       overflow. Six rendered children (POS hidden), six tracks. */
     .related-row {
-        grid-template-columns: 20px minmax(76px, max-content) 1fr auto auto;
+        grid-template-columns: 20px minmax(76px, max-content) 1fr auto auto auto;
         gap: 6px 10px;
     }
     .related-pos { display: none; }

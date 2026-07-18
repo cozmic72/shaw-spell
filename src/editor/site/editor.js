@@ -445,6 +445,21 @@ function anchorOf(record) {
     return record.anchor;
 }
 
+// The intrinsic fields the owner overrode when they accepted this record — the
+// keys of the accept patch's minimal `changes` diff (any of word/shaw/pos/ipa/
+// var/mergers/variant). Only an accept against a real basis has a diff to mark:
+// an accept carries op "accept" and a non-null anchor. Authored rows (anchor
+// null) ARE their content with no basis to diff, and drop/flag/unreviewed have
+// no accept changes — all yield the empty set. A field's PRESENCE in changes is
+// the override, whatever its value, so an emptied field (e.g. mergers: []) marks.
+function overriddenFields(record) {
+    const patch = record.patch;
+    if (!patch || patch.op !== "accept" || !patch.anchor || !patch.changes) {
+        return new Set();
+    }
+    return new Set(Object.keys(patch.changes));
+}
+
 function renderLedger() {
     LEDGER.replaceChildren();
     state.records.forEach((record, index) => {
@@ -868,15 +883,23 @@ function syncSelectBar() {
 }
 
 function renderDetail(record) {
+    const overridden = overriddenFields(record);
+
+    const word = cell("latin", record.word);
+    markOverridden(word, word, overridden.has("word"));
+    const pos = posCell("pos", record.pos);
+    markOverridden(pos, pos, overridden.has("pos"));
+
     const heading = document.createElement("div");
     heading.className = "detail-word";
     heading.append(
         stateBadge(record.patch_state),
-        cell("latin", record.word),
-        posCell("pos", record.pos),
+        word,
+        pos,
         mergerBadges(record.mergers),
         variantBadge(record.variant),
         detailFacts(record),
+        editedSummary(overridden),
         confidenceBadge(record.confidence),
     );
 
@@ -884,12 +907,43 @@ function renderDetail(record) {
     DETAIL.replaceChildren(
         heading,
         referenceLinks(record.word),
-        fieldGrid(record),
+        fieldGrid(record, overridden),
         actionBar(record),
         related,
     );
     setDetailMode();
     loadRelated(record, related);
+}
+
+// The provenance mark for a field the owner overrode on accept: an `overridden`
+// class hook on the field wrap and an "edited" tag pinned to its label. A field
+// NOT overridden (the live basis value flowing through) is left untouched.
+// Read-only — it never changes the field's value or edit behaviour. `wrap` and
+// `label` are the same element for the inline word/pos cells.
+const EDITED_TAG_TEXT = "edited";
+
+function markOverridden(wrap, label, overridden) {
+    if (!overridden) {
+        return wrap;
+    }
+    wrap.classList.add("overridden");
+    label.append(cell("edited-tag", EDITED_TAG_TEXT));
+    return wrap;
+}
+
+// A one-line "edited: shaw, mergers" recap beside the state badge, naming every
+// overridden field at a glance. Absent (renders nothing) when nothing was
+// overridden — an accept-as-is or an unreviewed row stays quiet.
+function editedSummary(overridden) {
+    const wrap = document.createElement("span");
+    wrap.className = "edited-summary";
+    if (overridden.size) {
+        wrap.append(
+            cell("edited-summary-label", EDITED_TAG_TEXT),
+            cell("edited-summary-fields", [...overridden].join(", ")),
+        );
+    }
+    return wrap;
 }
 
 // ---- bulk detail ----
@@ -1180,26 +1234,26 @@ function referenceLinks(word) {
 // visually) so the whole card fits without pushing related entries off-screen.
 // status is absent: it is read-only (shown in the top matter) and moves only via
 // the verdict actions. word/pos are the anchor's Latin identity, shown read-only.
-function fieldGrid(record) {
+function fieldGrid(record, overridden) {
     const stack = document.createElement("div");
     stack.className = "field-stack";
     stack.append(
-        editField("shaw", "Shavian", record.shaw, "shaw-field"),
-        editField("ipa", "IPA", record.ipa, "ipa-field"),
-        variantRow(record),
+        editField("shaw", "Shavian", record.shaw, "shaw-field", overridden.has("shaw")),
+        editField("ipa", "IPA", record.ipa, "ipa-field", overridden.has("ipa")),
+        variantRow(record, overridden),
     );
     return stack;
 }
 
 // Dialect (var) + mergers + variant, laid on one flex row (wrapping only on very
 // narrow widths). Three separate controls, grouped for glanceability.
-function variantRow(record) {
+function variantRow(record, overridden) {
     const row = document.createElement("div");
     row.className = "field-row";
     row.append(
-        editField("var", "Dialect (var)", record.var, ""),
-        mergersField(record.mergers),
-        variantField(record.variant),
+        editField("var", "Dialect (var)", record.var, "", overridden.has("var")),
+        mergersField(record.mergers, overridden.has("mergers")),
+        variantField(record.variant, overridden.has("variant")),
     );
     return row;
 }
@@ -1208,7 +1262,7 @@ function variantRow(record) {
 // chips rather than a text field. Each chip is a checkbox named "merger" carrying
 // its merger value; editedRecord harvests the checked ones. Toggling one enters
 // edit mode, like focusing any other field.
-function mergersField(current) {
+function mergersField(current, overridden) {
     const active = new Set(current || []);
     const wrap = document.createElement("div");
     wrap.className = "edit-field mergers-field";
@@ -1224,6 +1278,7 @@ function mergersField(current) {
     }
 
     wrap.append(caption, toggles);
+    markOverridden(wrap, caption, overridden);
     return wrap;
 }
 
@@ -1249,7 +1304,7 @@ function mergerToggle(value, label, checked) {
 // variant is an additive boolean, not a scalar, so it edits as a single toggle
 // chip mirroring a merger toggle. The checkbox is class "variant-check";
 // editedRecord reads whether it is checked. Toggling enters edit mode.
-function variantField(current) {
+function variantField(current, overridden) {
     const wrap = document.createElement("div");
     wrap.className = "edit-field variant-field";
 
@@ -1262,6 +1317,7 @@ function variantField(current) {
     toggles.append(variantToggle(VARIANT_LABEL, Boolean(current)));
 
     wrap.append(caption, toggles);
+    markOverridden(wrap, caption, overridden);
     return wrap;
 }
 
@@ -1283,7 +1339,7 @@ function variantToggle(label, checked) {
     return chip;
 }
 
-function editField(name, label, value, extraClass) {
+function editField(name, label, value, extraClass, overridden) {
     const wrap = document.createElement("label");
     wrap.className = "edit-field";
     wrap.setAttribute("for", `field-${name}`);
@@ -1307,6 +1363,7 @@ function editField(name, label, value, extraClass) {
     input.addEventListener("keydown", onFieldKey);
 
     wrap.append(caption, input);
+    markOverridden(wrap, caption, overridden);
     return wrap;
 }
 

@@ -802,6 +802,28 @@ body {
 }
 .fact-value { font-size: 13px; color: var(--ink); }
 
+/* A one-line recap beside the state badge naming every field the owner overrode
+   on accept ("edited: shaw, mergers"). Rides the edited-state tone; empty (an
+   accept-as-is or unreviewed row) renders nothing. */
+.edited-summary {
+    align-self: center;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    color: var(--state-edited);
+}
+.edited-summary:empty { display: none; }
+.edited-summary-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+.edited-summary-label::after { content: ":"; }
+.edited-summary-fields {
+    font-size: 12px;
+    font-family: var(--mono);
+}
+
 .conf-badge {
     align-self: center;
     margin-left: auto;
@@ -860,6 +882,32 @@ body {
     text-transform: uppercase;
     color: var(--ink-soft);
 }
+
+/* Provenance mark on a field the owner overrode when accepting the record: a
+   small "edited" pill pinned to the field's label, in the edited-state tone.
+   Fields left as the live basis carry no tag. The label rows itself so the pill
+   sits inline beside the caption text; on the word/pos cells the pill flows as
+   inline content after the text without changing the cell's layout. */
+.edit-field.overridden > .edit-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.edited-tag {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    color: var(--state-edited);
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.edit-label .edited-tag { margin-left: 0; }
 .edit-input {
     font-family: var(--mono);
     font-size: 18px;

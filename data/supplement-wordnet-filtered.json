@@ -30752,18 +30752,6 @@
             "review": "shave_agrees"
         }
     ],
-    "bromine_NN1_𐑚𐑮𐑴𐑥𐑰𐑯,-𐑥𐑦𐑯,-𐑥𐑲𐑯": [
-        {
-            "Latn": "bromine",
-            "Shaw": "𐑚𐑮𐑴𐑥𐑰𐑯,-𐑥𐑦𐑯,-𐑥𐑲𐑯",
-            "pos": "NN1",
-            "ipa": "ˈbrəʊmiːn,-mɪn,-maɪn",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:,; shave_says:𐑚𐑮𐑴𐑥𐑰𐑯"
-        }
-    ],
     "bromine_NN1_𐑚𐑮𐑴𐑥𐑦𐑯": [
         {
             "Latn": "bromine",
@@ -35462,18 +35450,6 @@
             "review": "shave_agrees"
         }
     ],
-    "candela_NN1_𐑒𐑨𐑯𐑛ē𐑤𐑩": [
-        {
-            "Latn": "candela",
-            "Shaw": "𐑒𐑨𐑯𐑛ē𐑤𐑩",
-            "pos": "NN1",
-            "ipa": "kænˈdēlə",
-            "freq": 0,
-            "var": "GenAm",
-            "confidence": 1,
-            "review": "unknown_chars:ē; shave_says:𐑒𐑨𐑯𐑛𐑧𐑤𐑩"
-        }
-    ],
     "candelabrum_NN1_𐑒𐑨𐑯𐑛𐑦𐑤𐑭𐑚𐑮𐑩𐑥": [
         {
             "Latn": "candelabrum",
@@ -36012,18 +35988,6 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑒𐑭𐑐𐑵𐑗𐑰𐑯𐑴"
-        }
-    ],
-    "capriccio_NN1_𐑒𐑩𐑐𐑮𐑰c𐑣𐑴": [
-        {
-            "Latn": "capriccio",
-            "Shaw": "𐑒𐑩𐑐𐑮𐑰c𐑣𐑴",
-            "pos": "NN1",
-            "ipa": "kəpriːchoʊ",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:c; shave_says:𐑒𐑭𐑐𐑮𐑦𐑗𐑦𐑴"
         }
     ],
     "caprice_NN1_𐑒𐑩𐑐𐑮𐑦𐑕": [
@@ -39387,18 +39351,6 @@
             "var": "GenAm",
             "confidence": 1,
             "review": "r_gap:spelling=1,ipa=0; missing_r:spelling_has_r_but_shaw_has_none; shave_says:𐑗𐑷𐑒𐑚𐑹𐑛"
-        }
-    ],
-    "challah_NN1_χ𐑭𐑤𐑩": [
-        {
-            "Latn": "challah",
-            "Shaw": "χ𐑭𐑤𐑩",
-            "pos": "NN1",
-            "ipa": "ˈχɑːlə",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:χ; shave_says:𐑗𐑭𐑤𐑩"
         }
     ],
     "challis_NN1_𐑖𐑨𐑤𐑦": [
@@ -57093,42 +57045,6 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑛𐑰𐑦𐑓𐑲"
-        }
-    ],
-    "deism_NN1_𐑛𐑱ĭ𐑟𐑩𐑥": [
-        {
-            "Latn": "deism",
-            "Shaw": "𐑛𐑱ĭ𐑟𐑩𐑥",
-            "pos": "NN1",
-            "ipa": "deɪˈĭzˈəm",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:ĭ; shave_says:𐑛𐑰𐑦𐑟𐑩𐑥"
-        }
-    ],
-    "deist_AJ0_𐑛𐑱ĭ𐑕𐑑": [
-        {
-            "Latn": "deist",
-            "Shaw": "𐑛𐑱ĭ𐑕𐑑",
-            "pos": "AJ0",
-            "ipa": "deɪˈĭst",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:ĭ; shave_says:𐑛𐑰𐑦𐑕𐑑"
-        }
-    ],
-    "deist_NN1_𐑛𐑱ĭ𐑕𐑑": [
-        {
-            "Latn": "deist",
-            "Shaw": "𐑛𐑱ĭ𐑕𐑑",
-            "pos": "NN1",
-            "ipa": "deɪˈĭst",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:ĭ; shave_says:𐑛𐑰𐑦𐑕𐑑"
         }
     ],
     "deistic_AJ0_𐑛𐑱𐑦𐑕𐑑𐑦𐑒": [
@@ -79961,18 +79877,6 @@
             "review": "shave_says:𐑓𐑤𐑨𐑗𐑩𐑤𐑩𐑯𐑑"
         }
     ],
-    "flavin_NN1_𐑓𐑤ā-𐑝𐑩𐑯": [
-        {
-            "Latn": "flavin",
-            "Shaw": "𐑓𐑤ā-𐑝𐑩𐑯",
-            "pos": "NN1",
-            "ipa": "flā-vən",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:ā; shave_says:𐑓𐑤𐑱𐑝𐑦𐑯"
-        }
-    ],
     "flavone_NN1_𐑓𐑤𐑱𐑝𐑴𐑯": [
         {
             "Latn": "flavone",
@@ -89666,18 +89570,6 @@
             "review": "shave_agrees"
         }
     ],
-    "grunter_NN1_𐑜ɽ𐑳𐑯𐑑𐑼": [
-        {
-            "Latn": "grunter",
-            "Shaw": "𐑜ɽ𐑳𐑯𐑑𐑼",
-            "pos": "NN1",
-            "ipa": "ɡɽʌntəR",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "r_gap:spelling=2,ipa=1; unknown_chars:ɽ; shave_says:𐑜𐑮𐑳𐑯𐑑𐑼"
-        }
-    ],
     "guacamole_NN1_𐑜𐑢𐑪𐑒𐑩𐑥𐑴𐑤𐑦": [
         {
             "Latn": "guacamole",
@@ -90516,18 +90408,6 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑣𐑭𐑒𐑩"
-        }
-    ],
-    "halacha_NN1_𐑣𐑩𐑤𐑳χ𐑩": [
-        {
-            "Latn": "halacha",
-            "Shaw": "𐑣𐑩𐑤𐑳χ𐑩",
-            "pos": "NN1",
-            "ipa": "həˈlʌχə",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:χ; shave_says:𐑣𐑩𐑤𐑭𐑒𐑩"
         }
     ],
     "halcyon_NN1_𐑣𐑨𐑤𐑕𐑰𐑩𐑯": [
@@ -93300,30 +93180,6 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑣𐑰𐑛𐑩𐑯𐑦𐑕𐑑𐑦𐑒"
-        }
-    ],
-    "hee-haw_NN1_𐑣𐑰𐑣𐑷̰": [
-        {
-            "Latn": "hee-haw",
-            "Shaw": "𐑣𐑰𐑣𐑷̰",
-            "pos": "NN1",
-            "ipa": "ˈhiːhɔ̰ː",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:̰; shave_says:𐑣𐑰-𐑣𐑷"
-        }
-    ],
-    "hee-haw_VVI_𐑣𐑰𐑣𐑷̰": [
-        {
-            "Latn": "hee-haw",
-            "Shaw": "𐑣𐑰𐑣𐑷̰",
-            "pos": "VVI",
-            "ipa": "ˈhiːhɔ̰ː",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:̰; shave_says:𐑣𐑰-𐑣𐑷"
         }
     ],
     "heebie-jeebies_NN1_𐑣𐑰𐑚𐑰𐑡𐑰𐑚𐑰𐑟": [
@@ -104787,18 +104643,6 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑦𐑯𐑝𐑪𐑤𐑩𐑯𐑑𐑼𐑦"
-        }
-    ],
-    "iodine_NN1_𐑲𐑩𐑛𐑲𐑯,-𐑛𐑦𐑯,-𐑛𐑰𐑯": [
-        {
-            "Latn": "iodine",
-            "Shaw": "𐑲𐑩𐑛𐑲𐑯,-𐑛𐑦𐑯,-𐑛𐑰𐑯",
-            "pos": "NN1",
-            "ipa": "ˈaɪəˌdaɪn,-dɪn,-diːn",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:,; shave_says:𐑲𐑩𐑛𐑰𐑯"
         }
     ],
     "ionization_NN1_𐑲𐑩𐑯𐑦𐑟𐑱𐑖𐑩𐑯": [
@@ -140207,18 +140051,6 @@
             "review": "shave_says:𐑐𐑺𐑰𐑕𐑦𐑕"
         }
     ],
-    "paresthesia_NN1_𐑐𐑨𐑮𐑦𐑕𐑔𐑰𐑟𐑾,-𐑠𐑩": [
-        {
-            "Latn": "paresthesia",
-            "Shaw": "𐑐𐑨𐑮𐑦𐑕𐑔𐑰𐑟𐑾,-𐑠𐑩",
-            "pos": "NN1",
-            "ipa": "pærɪsθiːziə,-ʒə",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:,; shave_says:𐑐𐑨𐑮𐑦𐑕𐑔𐑰𐑠𐑩"
-        }
-    ],
     "paretic_NN1_𐑐𐑼𐑧𐑑𐑦𐑒": [
         {
             "Latn": "paretic",
@@ -155525,18 +155357,6 @@
             "review": "shave_says:𐑒𐑳𐑑𐑸𐑦"
         }
     ],
-    "qibla_NN1_q𐑦𐑚𐑤𐑨": [
-        {
-            "Latn": "qibla",
-            "Shaw": "q𐑦𐑚𐑤𐑨",
-            "pos": "NN1",
-            "ipa": "ˈqibla",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:q; shave_says:𐑒𐑦𐑚𐑤𐑩"
-        }
-    ],
     "quaalude_NN1_𐑒𐑢𐑱𐑤𐑵𐑛": [
         {
             "Latn": "quaalude",
@@ -161894,18 +161714,6 @@
             "review": "shave_says:𐑮𐑦𐑕𐑐𐑪𐑯𐑛𐑼"
         }
     ],
-    "responsibility_NN1_𐑮𐑦𐑕𐑐𐑭𐑯𐑕𐑩𐑚𐑦𐑤𐑦ɾ𐑦": [
-        {
-            "Latn": "responsibility",
-            "Shaw": "𐑮𐑦𐑕𐑐𐑭𐑯𐑕𐑩𐑚𐑦𐑤𐑦ɾ𐑦",
-            "pos": "NN1",
-            "ipa": "rɪspɑːnsəbɪlɪɾi",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:ɾ; shave_says:𐑮𐑦𐑕𐑐𐑪𐑯𐑕𐑩𐑚𐑦𐑤𐑦𐑑𐑦"
-        }
-    ],
     "restart_VVI_𐑮𐑦𐑕𐑑𐑸𐑑": [
         {
             "Latn": "restart",
@@ -164856,18 +164664,6 @@
             "var": "RSSB",
             "confidence": 97,
             "review": "shave_agrees"
-        }
-    ],
-    "sauternes_NN1_𐑕𐑴𐑑𐑼ʁ𐑯": [
-        {
-            "Latn": "sauternes",
-            "Shaw": "𐑕𐑴𐑑𐑼ʁ𐑯",
-            "pos": "NN1",
-            "ipa": "soʊtəRʁn",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:ʁ; shave_says:𐑕𐑴𐑑𐑧𐑮𐑯𐑟"
         }
     ],
     "saxony_NN1_𐑕𐑨𐑒𐑕𐑩𐑯𐑦": [
@@ -185429,18 +185225,6 @@
             "review": "shave_says:𐑑𐑰𐑥𐑕𐑑𐑼"
         }
     ],
-    "teardrop_NN1_𐑑𐑽𐑛ɽ𐑪𐑐": [
-        {
-            "Latn": "teardrop",
-            "Shaw": "𐑑𐑽𐑛ɽ𐑪𐑐",
-            "pos": "NN1",
-            "ipa": "tɪəRdɽɒp",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "ml_disagrees:𐑑𐑺𐑛ɽ𐑪𐑐; r_gap:spelling=2,ipa=1; unknown_chars:ɽ; shave_says:𐑑𐑽𐑛𐑮𐑪𐑐"
-        }
-    ],
     "tearful_AJ0_𐑑𐑽𐑓𐑫𐑤": [
         {
             "Latn": "tearful",
@@ -185679,18 +185463,6 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑼"
-        }
-    ],
-    "teetotaller_NN1_𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑩,𐑑𐑰𐑑𐑴𐑑𐑼𐑤𐑼": [
-        {
-            "Latn": "teetotaller",
-            "Shaw": "𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑩,𐑑𐑰𐑑𐑴𐑑𐑼𐑤𐑼",
-            "pos": "NN1",
-            "ipa": "tiːtəʊtələ,tiːtəʊtəRləR",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 1,
-            "review": "unknown_chars:,; shave_says:𐑑𐑰𐑑𐑴𐑑𐑩𐑤𐑼"
         }
     ],
     "teetotaller_NN1_𐑑𐑦𐑑𐑴𐑑𐑩𐑤𐑼": [

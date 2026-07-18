@@ -19,17 +19,17 @@ patch already anchors to has left the review surface and is exempt — dropping 
 would orphan the patch's anchor (apply_patches.py fails loud on that).
 
 This is the last pass of supplement candidate pruning, chained after the
-duplicate filter, the merger classifier and the identical-dialect collapse:
-reliable -> deduped -> classified -> collapsed -> here (filtered) -> basis.
-Records pass through verbatim (only `matches` phrases are dropped), so each
-candidate's `mergers` annotation survives to the basis. The classification logic
-is reused wholesale from detect_phrase_divergence; this module only decides
-drop/keep and rewrites files.
+duplicate filter, the merger classifier, the identical-dialect collapse and the
+contamination filter: reliable -> deduped -> classified -> collapsed ->
+decontaminated -> here (filtered) -> basis. Records pass through verbatim (only
+`matches` phrases are dropped), so each candidate's `mergers` annotation survives
+to the basis. The classification logic is reused wholesale from
+detect_phrase_divergence; this module only decides drop/keep and rewrites files.
 
-Inputs:  data/supplement-{wordnet,wiktionary}-collapsed.json  (the identical-
-         dialect collapse's output).
+Inputs:  data/supplement-{wordnet,wiktionary}-decontaminated.json  (the
+         contamination filter's output).
 Outputs: data/supplement-{wordnet,wiktionary}-filtered.json  — the basis reads
-         these (see src/tools/basis.py). The -collapsed.json files are left
+         these (see src/tools/basis.py). The -decontaminated.json files are left
          untouched.
 
 Usage:
@@ -46,11 +46,11 @@ from detect_phrase_divergence import (
 )
 from filter_supplement_duplicates import anchored_keys, load_patches
 
-# (collapsed input, filtered output) per supplement source.
+# (decontaminated input, filtered output) per supplement source.
 SUPPLEMENTS = [
-    (PROJECT_ROOT / "data" / "supplement-wordnet-collapsed.json",
+    (PROJECT_ROOT / "data" / "supplement-wordnet-decontaminated.json",
      PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json"),
-    (PROJECT_ROOT / "data" / "supplement-wiktionary-collapsed.json",
+    (PROJECT_ROOT / "data" / "supplement-wiktionary-decontaminated.json",
      PROJECT_ROOT / "data" / "supplement-wiktionary-filtered.json"),
 ]
 

@@ -673,11 +673,37 @@ def _convert_stripped(ipa: str) -> str:
             if char == 'ː':
                 pos += 1
                 continue
-            # Unknown character — pass through
+            # Unmapped IPA symbol (foreign/dialectal phoneme outside PHONEME_MAP).
+            # Passed through verbatim so the string stays inspectable, but this
+            # leaves a non-Shavian char in the output — genuine contamination.
+            # Detect it with contains_non_shavian(); a downstream consumer (the
+            # supplement pruning chain, and the generator for future runs) drops
+            # the record rather than shipping garbage Shavian.
             result.append(char)
             pos += 1
 
     return "".join(result)
+
+
+# The characters a Shavian spelling may legitimately contain besides the Shavian
+# alphabet itself: word-internal separators and the naming dot ReadLex prefixes
+# to proper names. Anything else in a converter output is an unmapped IPA symbol
+# passed through by _convert_stripped — contamination.
+SHAVIAN_BLOCK = range(0x10450, 0x10480)  # Unicode Shavian block
+NON_SHAVIAN_ALLOWED = frozenset(" -'’·")
+
+
+def contains_non_shavian(shaw: str) -> bool:
+    """Whether a converted Shavian string carries any contaminating character.
+
+    A char is contaminating unless it is a Shavian letter (U+10450–U+1047F), a
+    space, a hyphen, an apostrophe, or the naming dot. Latin letters, IPA
+    symbols, diacritics, digits and the like are IPA phonemes _convert_stripped
+    could not map and passed through verbatim (see its final branch). Lets a
+    caller drop a record whose Shavian came out contaminated rather than letting
+    the unmapped passthrough ship silently."""
+    return any(ord(ch) not in SHAVIAN_BLOCK and ch not in NON_SHAVIAN_ALLOWED
+               for ch in shaw)
 
 
 # All Shavian letters that contain an 'r' sound

@@ -44,12 +44,13 @@ UPSTREAM_STATUS = "sanctioned"
 SUPPLEMENT_STATUS = "supplement"
 AUTHORED_STATUS = "manual"
 
-# A candidate's novelty against the ESTABLISHED data (upstream ReadLex + sanctioned
-# patches) for its word — see EstablishedIndex. Empty = not classified (any).
-NOVELTY_NEW_WORD = "new-word"        # the word is absent from established
-NOVELTY_NEW_SPELLING = "new-spelling"  # word present, this shaw is new
-NOVELTY_NEW_POS = "new-pos"          # word+shaw present, this pos is new
-NOVELTY_KNOWN = "known"              # word+shaw+pos all established (see classify)
+# A candidate's novelty against the upstream ReadLex corpus ONLY for its word —
+# see EstablishedIndex. This is an immutable fact ("does this word/spelling/pos
+# appear upstream?"); sanctioning a record never changes it. Empty = not classified.
+NOVELTY_NEW_WORD = "new-word"        # the word is absent from upstream ReadLex
+NOVELTY_NEW_SPELLING = "new-spelling"  # word present upstream, this shaw is new
+NOVELTY_NEW_POS = "new-pos"          # word+shaw present upstream, this pos is new
+NOVELTY_KNOWN = "known"              # word+shaw+pos all present upstream (see classify)
 
 
 def _ui_record(record, anchor, source, default_status, reviewed, patch_state, patch):
@@ -145,7 +146,7 @@ class AnnotatedView:
         self.by_anchor_index = _build_records(
             basis_index, basis_source, self.anchored, self.authored)
         self.by_word_index = _build_word_index(self.by_anchor_index)
-        self.established = EstablishedIndex(basis_index, basis_source, patches)
+        self.established = EstablishedIndex(basis_index, basis_source)
         self._lock = threading.Lock()
 
     @property
@@ -321,40 +322,32 @@ def _build_word_index(by_anchor_index):
 
 
 class EstablishedIndex:
-    """The established dictionary — upstream ReadLex plus sanctioned patches — for
-    the novelty classification, mirroring the same established-set definition the
-    duplicate filter uses (filter_supplement_duplicates.build_established_index).
+    """The upstream ReadLex corpus — and ONLY the upstream corpus — for the novelty
+    classification. Novelty is an immutable fact about a candidate ("does this
+    word/spelling/pos appear in upstream ReadLex?"); sanctioning a record must never
+    reclassify it, so the index deliberately excludes patches. (The duplicate
+    filter's established set additionally includes sanctioned patches; that is
+    correct for dedup but wrong here — see filter_supplement_duplicates.)
 
-    Maps each lowercased Latin word to the set of (shaw, pos) pairs established for
-    it, which answers all three novelty questions: is the word established at all
-    (key present), is this shaw established for the word (any pair with that shaw),
-    is this word+shaw+pos established (exact pair present).
+    Maps each lowercased Latin word to the set of (shaw, pos) pairs upstream holds
+    for it, which answers all three novelty questions: is the word upstream at all
+    (key present), is this shaw upstream for the word (any pair with that shaw),
+    is this word+shaw+pos upstream (exact pair present)."""
 
-    Built once from the initial basis + patch set — the established baseline a
-    candidate is judged against. In-session review verdicts do not move a candidate
-    into "established"; that is the reviewed/state filter's concern, not novelty's."""
-
-    def __init__(self, basis_index, basis_source, patches):
+    def __init__(self, basis_index, basis_source):
         self._pairs_by_word = {}
         for key, entry in basis_index.items():
             if basis_source[key] == UPSTREAM_SOURCE:
                 self._register(key[0], entry["Shaw"], entry["pos"])
-        # A patch establishes an entry only if sanctioned; other patch states are
-        # still under review and establish nothing (mirrors the duplicate filter).
-        for patch in patches:
-            record = patch.get("record")
-            if record is None or record.get("status") != UPSTREAM_STATUS:
-                continue
-            self._register(record["word"].lower(), record["shaw"], record["pos"])
 
     def _register(self, word_lower, shaw, pos):
         self._pairs_by_word.setdefault(word_lower, set()).add((shaw, pos))
 
     def classify(self, word, shaw, pos):
-        """The highest-precedence novelty of a candidate against established data:
-        new-word > new-spelling > new-pos, else known (word+shaw+pos all
-        established — a same word+shaw+pos entry the duplicate filter keeps
-        because it differs only by dialect var)."""
+        """The highest-precedence novelty of a candidate against upstream ReadLex:
+        new-word > new-spelling > new-pos, else known (word+shaw+pos all present
+        upstream). A sanctioned supplement absent from upstream keeps its true
+        novelty (new-*) forever — sanctioning does not make it known."""
         pairs = self._pairs_by_word.get(word.lower())
         if pairs is None:
             return NOVELTY_NEW_WORD

@@ -253,12 +253,13 @@ def _matches_word_kind(record, value):
 
 
 # Novelty classifies an UNREVIEWED supplement candidate by its relationship to
-# the established data (upstream ReadLex + sanctioned patches) for its word — a
-# genuinely new word, a new spelling of a known word, or a new POS of a known
-# word+shaw. Upstream and reviewed rows are not candidates, so they never match a
-# novelty value (they are excluded whenever the filter is set). A "known"
-# candidate — word+shaw+pos all established — would be a duplicate the B1 filter
-# removes; it never matches new-* here, so it too is excluded.
+# the upstream ReadLex corpus for its word — a genuinely new word, a new spelling
+# of a known word, or a new POS of a known word+shaw. It is measured against
+# upstream ONLY (never sanctioned patches), so sanctioning a candidate never
+# changes its novelty. Upstream and reviewed rows are not candidates, so they
+# never match a novelty value (they are excluded whenever the filter is set). A
+# "known" candidate — word+shaw+pos all present upstream — would be a duplicate
+# the B1 filter removes; it never matches new-* here, so it too is excluded.
 NOVELTY_VALUES = (NOVELTY_NEW_WORD, NOVELTY_NEW_SPELLING, NOVELTY_NEW_POS)
 
 

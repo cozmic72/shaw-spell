@@ -96,6 +96,8 @@ PAGE = """<!DOCTYPE html>
         <button type="button" class="drawer-toggle chevron-toggle" id="drawerToggle"
                 aria-controls="ledger" aria-expanded="false"
                 title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
+        <button type="button" class="new-entry" id="newEntry"
+                title="Author a brand-new dictionary entry">+ New entry</button>
         <button type="button" class="help-toggle" id="helpToggle"
                 aria-controls="cheatsheet" title="Keyboard shortcuts (?)">? keys</button>
         <div class="tally" id="tally" aria-live="polite"></div>

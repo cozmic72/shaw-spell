@@ -142,6 +142,27 @@ body {
 .help-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
 .help-toggle + .tally { margin-left: 0; }
 
+/* Author a new entry: tinted the authored purple its outcome carries, so the
+   action reads as "make a new authored record" at a glance. Pinned to the right
+   cluster (margin-left:auto absorbs the slack before it), ahead of the help
+   toggle. */
+.new-entry {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--state-authored);
+    background: none;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    min-height: 34px;
+    padding: 5px 14px;
+    cursor: pointer;
+}
+.new-entry:hover { background: var(--state-authored); color: var(--paper); }
+.new-entry + .help-toggle { margin-left: 0; }
+
 /* ---- filter bar ----
    Only ACTIVE filters show, as composable chips in the strip, followed by the +Add
    button and the refresh control. The strip wraps on a crowded row rather than
@@ -662,6 +683,25 @@ body {
     pointer-events: none;
 }
 .detail-empty { color: var(--ink-soft); font-style: italic; }
+
+/* The new-entry form heading: names the action in the authored tone so the card
+   reads unmistakably as "creating", not "reviewing an existing record". */
+.detail-create-title {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--state-authored);
+    margin-bottom: 6px;
+}
+.detail-create-hint {
+    color: var(--ink-soft);
+    font-size: 12px;
+    margin-bottom: 18px;
+}
+.act.create { color: var(--state-authored); }
+.act.create:hover { background: var(--state-authored); color: var(--paper); }
 
 .detail-word {
     display: flex;

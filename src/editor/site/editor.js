@@ -162,6 +162,7 @@ const TOAST = document.getElementById("toast");
 const WORKBENCH = document.getElementById("workbench");
 const DRAWER_TOGGLE = document.getElementById("drawerToggle");
 const HELP_TOGGLE = document.getElementById("helpToggle");
+const NEW_ENTRY = document.getElementById("newEntry");
 const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
 const CHEATSHEET = document.getElementById("cheatsheet");
 const PACING = document.getElementById("pacing");
@@ -185,6 +186,11 @@ const state = {
     columnSort: null,
     selected: -1,
     editing: false,
+    // The new-entry form is open in the detail panel (authoring a brand-new record
+    // from scratch). While set, the panel shows the create form instead of a record,
+    // and review-mode single-key verdicts are suppressed (there is no focused record
+    // to act on). Cleared on create or cancel.
+    creating: false,
     // Bulk selection: the anchor keys of the checked rows (an anchor is a stable
     // identity, so a row survives in-place updates and re-renders keyed by it). The
     // single focused row (state.selected) is independent — it stays the review
@@ -743,6 +749,10 @@ function pageButton(label, targetOffset) {
 function select(index) {
     state.selected = index;
     state.editing = false;
+    // Focusing a record ends any open create form — the panel is a review surface
+    // again. Every route into select (row click, step, cancel, a fresh authorship)
+    // funnels through here, so this is the single place creation is torn down.
+    state.creating = false;
     for (const row of LEDGER.children) {
         row.classList.toggle("active", Number(row.dataset.index) === index);
     }
@@ -855,6 +865,11 @@ function enterTouchMulti() {
 // the focused record below that).
 function onSelectionChanged() {
     syncSelectionUI();
+    // While the create form owns the panel, selection changes update the row
+    // highlights but must not render a record/bulk card over the form.
+    if (state.creating) {
+        return;
+    }
     if (inBulkMode()) {
         renderBulkDetail();
     } else if (state.selected >= 0) {
@@ -1532,6 +1547,168 @@ function isAuthored(record) {
     return record.patch_state === "authored";
 }
 
+// ---- new entry (authorship from scratch) ----
+// Create a brand-new manual record with no basis behind it. The daemon's authorship
+// path is a patch with anchor null and a self-contained record (see editord.py
+// handle_patch): {op:"patch", anchor:null, record:{…}, author}. This is the ONLY
+// flow that mints such a record; every other write edits or re-decides an existing
+// one. The result is an authored entry (patch_state "authored"), which the review
+// flow then treats like any other authored row.
+
+// The identity fields a new record must carry — the natural key the daemon anchors
+// it on (RECORD_REQUIRED_FIELDS). ipa/mergers/variant are optional spelling detail.
+const NEW_ENTRY_REQUIRED = [
+    ["word", "Word"],
+    ["shaw", "Shavian"],
+    ["pos", "POS"],
+    ["var", "Dialect (var)"],
+];
+
+// Open the create form in the detail panel, reusing the record field editors on a
+// blank slate. Bulk selection and the review cursor are stood down — the panel is a
+// creation surface now, not a review one.
+function openCreateForm() {
+    setDrawer(false);
+    state.creating = true;
+    state.selected = -1;
+    state.editing = false;
+    clearSelection();
+    renderCreateForm();
+}
+
+// Leave the create form without writing anything, returning to the ordinary review
+// flow on whatever entry the working set leads with.
+function cancelCreateForm() {
+    select(state.records.length ? 0 : -1);
+}
+
+// The create form: blank field editors for the record's own fields (the same
+// editField / mergersField / variantField the record editor uses), plus Create and
+// Cancel. word/pos/var/ipa reuse editField as plain text inputs; pos is the bare
+// CLAWS tag (there is no pos selector elsewhere — the ledger/detail only show it).
+function renderCreateForm() {
+    const title = document.createElement("div");
+    title.className = "detail-create-title";
+    title.textContent = "New entry";
+    const hint = document.createElement("p");
+    hint.className = "detail-create-hint";
+    hint.textContent = "Author a brand-new record. Word, Shavian, POS and Dialect are required.";
+
+    const stack = document.createElement("div");
+    stack.className = "field-stack";
+    stack.append(
+        editField("word", "Word (latin)", "", "", false),
+        editField("shaw", "Shavian", "", "shaw-field", false),
+        editField("ipa", "IPA", "", "ipa-field", false),
+        createVariantRow(),
+    );
+
+    DETAIL.replaceChildren(title, hint, stack, createActionBar());
+    DETAIL.classList.remove("mode-edit", "mode-review");
+    const word = document.getElementById("field-word");
+    if (word) {
+        word.focus();
+    }
+}
+
+// Dialect (var) + POS + mergers + variant on one row, mirroring the record editor's
+// variantRow. POS lives here (not the read-only heading) because on a new entry it
+// is an editable identity field, not a fixed anchor.
+function createVariantRow() {
+    const row = document.createElement("div");
+    row.className = "field-row";
+    row.append(
+        editField("var", "Dialect (var)", "", "", false),
+        editField("pos", "POS", "", "", false),
+        mergersField([], false),
+        variantField(false, false),
+    );
+    return row;
+}
+
+function createActionBar() {
+    const bar = document.createElement("div");
+    bar.className = "actions";
+    bar.append(
+        actionButton("create", "Create", createEntry),
+        actionButton("undo", "Cancel", cancelCreateForm),
+    );
+    return bar;
+}
+
+// The record the create form currently describes, harvested from its inputs. Only
+// non-empty fields are carried; mergers/variant follow editedRecord's additive
+// convention (absent == canonical).
+function newEntryRecord() {
+    const record = {};
+    for (const name of ["word", "shaw", "pos", "var", "ipa"]) {
+        const value = document.getElementById(`field-${name}`).value.trim();
+        if (value) {
+            record[name] = value;
+        }
+    }
+    const mergers = [...DETAIL.querySelectorAll(".merger-check:checked")].map((box) => box.value);
+    if (mergers.length) {
+        record.mergers = mergers;
+    }
+    const variantBox = DETAIL.querySelector(".variant-check");
+    if (variantBox && variantBox.checked) {
+        record.variant = true;
+    }
+    return record;
+}
+
+// The required fields left blank, by human label, for a fail-loud validation toast.
+function missingRequiredFields(record) {
+    return NEW_ENTRY_REQUIRED
+        .filter(([field]) => !record[field])
+        .map(([, label]) => label);
+}
+
+// Write a new authored entry. Validates the identity fields client-side first (the
+// daemon validates too, but this gives a precise, immediate message), then sends the
+// authorship patch — the same op the re-author path sends, minus `replaces`. On
+// success the returned record is inserted at the top of the working set and focused,
+// so the owner lands on it to review or refine immediately. A daemon rejection
+// (duplicate anchor, missing field) surfaces as a toast; the form stays open.
+async function createEntry() {
+    const record = newEntryRecord();
+    const missing = missingRequiredFields(record);
+    if (missing.length) {
+        showToast(`Required: ${missing.join(", ")}.`, true);
+        return;
+    }
+    try {
+        const result = await callDaemon({
+            op: "patch",
+            anchor: null,
+            record,
+            author: AUTHOR,
+        });
+        insertAuthoredRecord(result.records[0]);
+        showToast(`authored · ${result.result}`);
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+
+// Place a freshly-authored record into the working set and land on it. Unlike a
+// verdict (which re-annotates an existing row in place), a new record has no row
+// yet — it is prepended so the owner sees it at once, the ledger is rebuilt, and it
+// becomes the review focus. The daemon always returns the annotated record for an
+// authorship write, so an empty response is a contract violation and fails loud.
+function insertAuthoredRecord(record) {
+    if (!record) {
+        throw new Error("daemon returned no record for the new entry.");
+    }
+    state.records.unshift(record);
+    countDecision();
+    renderLedger();
+    select(0);
+    syncSelectionUI();
+    saveSession();
+}
+
 // Run a single-record verdict, surfacing any failure as an error toast. The bulk
 // path handles its own errors (per-record, in runBulk), so this guards only the
 // single-record branch.
@@ -2002,6 +2179,17 @@ function onGlobalKey(event) {
         }
         return;
     }
+    if (state.creating) {
+        // The create form owns the panel: verdicts and select-all have no focused
+        // record to act on, so only Escape (cancel) acts. A keystroke inside a form
+        // field never reaches here (the input guard below runs first via targets),
+        // so this covers focus sitting outside the fields.
+        if (event.key === "Escape") {
+            event.preventDefault();
+            cancelCreateForm();
+        }
+        return;
+    }
     if (event.target instanceof Element && event.target.matches("input, select, textarea")) {
         return;
     }
@@ -2339,6 +2527,7 @@ DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
+NEW_ENTRY.addEventListener("click", openCreateForm);
 ADD_FILTER.addEventListener("click", () => toggleAddMenu());
 
 // Column-header sort: one delegated listener over the head row, so a header added

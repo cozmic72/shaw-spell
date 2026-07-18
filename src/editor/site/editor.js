@@ -45,6 +45,95 @@ const REFERENCES = [
     ["OED", "https://www.oed.com/search/dictionary/?scope=Entries&q={word}"],
 ];
 
+// CLAWS C5 part-of-speech tags → their plain-English descriptions (the standard
+// BNC tagset the ReadLex data carries). Shown as a tooltip wherever a bare tag
+// appears, for the reviewer still learning the codes. Portmanteau tags (a
+// contraction spanning two words, e.g. "PNP+VHD" for "I've") are not listed
+// individually — posTitle composes them from their parts joined with " + ".
+const C5_TAGS = {
+    AJ0: "adjective (general or positive)",
+    AJC: "comparative adjective",
+    AJS: "superlative adjective",
+    AT0: "article",
+    AV0: "adverb (general)",
+    AVP: "adverb particle",
+    AVQ: "wh-adverb",
+    CJC: "coordinating conjunction",
+    CJS: "subordinating conjunction",
+    CJT: "the conjunction “that”",
+    CRD: "cardinal number",
+    DPS: "possessive determiner",
+    DT0: "general determiner",
+    DTQ: "wh-determiner",
+    EX0: "existential “there”",
+    ITJ: "interjection",
+    NN0: "common noun (neutral for number)",
+    NN1: "singular common noun",
+    NN2: "plural common noun",
+    NP0: "proper noun",
+    ORD: "ordinal numeral",
+    PNI: "indefinite pronoun",
+    PNP: "personal pronoun",
+    PNQ: "wh-pronoun",
+    PNX: "reflexive pronoun",
+    POS: "possessive ’s",
+    PRF: "the preposition “of”",
+    PRP: "preposition",
+    PUL: "left bracket punctuation",
+    PUN: "general separating punctuation",
+    PUQ: "quotation mark",
+    PUR: "right bracket punctuation",
+    TO0: "infinitive marker “to”",
+    UNC: "unclassified",
+    VBB: "present-tense “be” (am/are)",
+    VBD: "past-tense “be” (was/were)",
+    VBG: "“being”",
+    VBI: "infinitive “be”",
+    VBN: "“been”",
+    VBZ: "“is”/“’s”",
+    VDB: "base-form “do”",
+    VDD: "past-tense “did”",
+    VDG: "“doing”",
+    VDI: "infinitive “do”",
+    VDN: "“done”",
+    VDZ: "“does”",
+    VHB: "base-form “have”",
+    VHD: "past-tense “had”",
+    VHG: "“having”",
+    VHI: "infinitive “have”",
+    VHN: "“had” (past participle)",
+    VHZ: "“has”",
+    VM0: "modal auxiliary verb",
+    VVB: "base form of a lexical verb",
+    VVD: "past-tense lexical verb",
+    VVG: "-ing form of a lexical verb",
+    VVI: "infinitive lexical verb",
+    VVN: "past-participle lexical verb",
+    VVZ: "-s form of a lexical verb",
+    XX0: "the negative “not”/“n’t”",
+    ZZ0: "alphabetical symbol",
+};
+
+// A tooltip string for a POS tag. A portmanteau tag (a contraction spanning two
+// words, joined by "+") composes from its parts; an unknown tag falls back to
+// its own code so the tooltip never lies about coverage it does not have.
+function posTitle(pos) {
+    if (!pos) {
+        return "";
+    }
+    return pos
+        .split("+")
+        .map((part) => `${part} — ${C5_TAGS[part] ?? part}`)
+        .join(" + ");
+}
+
+// A POS cell (ledger or detail) carrying its C5 description as a hover tooltip.
+function posCell(className, pos) {
+    const span = cell(className, pos);
+    span.title = posTitle(pos);
+    return span;
+}
+
 const FILTER_FORM = document.getElementById("filters");
 const FILTERS_TOGGLE = document.getElementById("filtersToggle");
 const REFRESH_RESULTS = document.getElementById("refreshResults");
@@ -346,7 +435,7 @@ function ledgerRow(record, index) {
         varCell(record.var),
         confidenceCell(record.confidence),
         freqCell(record.freq),
-        cell("col-pos", record.pos),
+        posCell("col-pos", record.pos),
     );
     bindLongPress(row, record);
     row.addEventListener("click", (event) => onRowClick(record, index, event));
@@ -662,7 +751,7 @@ function renderDetail(record) {
     heading.append(
         stateBadge(record.patch_state),
         cell("latin", record.word),
-        cell("pos", record.pos),
+        posCell("pos", record.pos),
         mergerBadges(record.mergers),
         confidenceBadge(record.confidence),
     );
@@ -809,10 +898,36 @@ async function loadRelated(record, section) {
 function renderRelated(section, records, focusedAnchor) {
     const list = document.createElement("ul");
     list.className = "related-list";
-    for (const record of records) {
+    for (const record of sortedRelated(records, focusedAnchor)) {
         list.append(relatedRow(record, focusedAnchor));
     }
     section.replaceChildren(relatedHeading(records.length), list);
+}
+
+// Order the related rows deterministically so the list is stable across landings
+// (the daemon returns them in an unspecified index order). The focused entry ("you
+// are here") always leads, anchoring the eye to the card above; the rest sort by a
+// total key — word (case-SENSITIVE, so a capitalised homograph like "March" sits
+// apart from "march"), then pos, var, shaw. Every field participates, so no two
+// distinct records ever tie.
+function sortedRelated(records, focusedAnchor) {
+    return [...records].sort((left, right) => {
+        const leftHere = sameAnchor(left.anchor, focusedAnchor);
+        const rightHere = sameAnchor(right.anchor, focusedAnchor);
+        if (leftHere !== rightHere) {
+            return leftHere ? -1 : 1;
+        }
+        return compareRelated(left, right);
+    });
+}
+
+function compareRelated(left, right) {
+    const fields = ["word", "pos", "var", "shaw"];
+    for (const field of fields) {
+        if (left[field] < right[field]) return -1;
+        if (left[field] > right[field]) return 1;
+    }
+    return 0;
 }
 
 function renderRelatedError(section, message) {
@@ -837,7 +952,7 @@ function relatedRow(record, focusedAnchor) {
         badge,
         cell("related-label", here ? "you are here" : provenance.label),
         cell("related-word", record.word),
-        cell("related-pos", record.pos),
+        posCell("related-pos", record.pos),
         varCell(record.var),
         cell("related-shaw", record.shaw),
     );
@@ -903,8 +1018,12 @@ function confidenceBadge(confidence) {
     return badge;
 }
 
-// A row of external dictionary look-ups for the focused word, each opening in a
-// new tab. The word is URL-encoded so phrases and apostrophes stay valid.
+// A row of external dictionary look-ups for the focused word. All the reference
+// links across the app share ONE named tab (REFERENCE_TARGET), so looking up a
+// new word reuses that tab rather than piling up a fresh one each time. The word
+// is URL-encoded so phrases and apostrophes stay valid.
+const REFERENCE_TARGET = "shaw-ref";
+
 function referenceLinks(word) {
     const row = document.createElement("nav");
     row.className = "references";
@@ -913,7 +1032,7 @@ function referenceLinks(word) {
         const link = document.createElement("a");
         link.className = "reference";
         link.href = template.replace("{word}", encodeURIComponent(word));
-        link.target = "_blank";
+        link.target = REFERENCE_TARGET;
         link.rel = "noopener noreferrer";
         link.textContent = label;
         row.append(link);

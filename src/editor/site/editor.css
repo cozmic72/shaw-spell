@@ -26,6 +26,12 @@
 
     --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
     --shaw: 'Bernie Sans Beta', sans-serif;
+
+    /* The horizontal inset of the Shavian glyphs inside the .shaw-field input
+       (its 1px left border + 18px left padding). The detail heading's Latin word
+       is indented by the same amount so the roman spelling lines up directly above
+       the Shavian glyphs. Kept here as one value so the two never drift apart. */
+    --shaw-glyph-inset: 19px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -471,7 +477,7 @@ body {
 /* The RRP default is the common case; dimming it lets the non-default dialects
    (GenAm, TrapBath, RSSB, …) pop when scanning the list. */
 .col-var.var-default { color: var(--ink-soft); opacity: 0.55; }
-.col-pos { color: var(--ink-soft); font-size: 11px; }
+.col-pos { color: var(--ink-soft); font-size: 11px; cursor: help; }
 /* Corpus frequency: a right-aligned integer so the digits line up down the column.
    The head button reuses the ledger-head typography but right-justifies its content
    to sit over the numbers. */
@@ -584,9 +590,20 @@ body {
     flex-wrap: wrap;
     gap: 10px 14px;
     margin-bottom: 12px;
+    /* Indent the whole heading to the Shavian glyph inset so the Latin word (its
+       own line, below) sits directly above the Shavian spelling in the field. */
+    padding-left: var(--shaw-glyph-inset);
 }
-.detail-word .latin { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
-.detail-word .pos { color: var(--ink-soft); font-size: 14px; }
+/* The Latin word takes its own full-width line at the heading's (indented) left
+   edge — the state badge, POS, mergers and confidence form the metadata strip
+   around it — so the roman spelling aligns with the Shavian glyphs below. */
+.detail-word .latin {
+    flex-basis: 100%;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.detail-word .pos { color: var(--ink-soft); font-size: 14px; cursor: help; }
 
 /* ---- bulk detail — the group summary the card shows at 2+ selected ---- */
 /* The count is the headline: a big tabular number, the class the reviewer is about
@@ -763,7 +780,9 @@ body {
     font-family: var(--shaw);
     font-size: 56px;
     line-height: 1.25;
-    padding: 14px 18px;
+    /* Left padding derives from the shared inset (minus the 1px border) so the
+       glyphs stay aligned with the Latin word in the heading above. */
+    padding: 14px 18px 14px calc(var(--shaw-glyph-inset) - 1px);
     border-bottom-color: var(--accent);
 }
 .ipa-field { font-size: 26px; font-style: italic; }
@@ -873,7 +892,7 @@ body {
 }
 .related-row.here .related-label { color: var(--accent); font-weight: 700; }
 .related-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.related-pos { color: var(--ink-soft); font-size: 11px; }
+.related-pos { color: var(--ink-soft); font-size: 11px; cursor: help; }
 .related-shaw {
     font-family: var(--shaw);
     font-size: 20px;

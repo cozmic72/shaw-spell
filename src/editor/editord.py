@@ -205,6 +205,8 @@ def _field_matches(record, key, value, established):
         return record.get(key) in value
     if key == "mergers":
         return any(_matches_merger(record, v) for v in value)
+    if key == "variant":
+        return any(_matches_variant(record, v) for v in value)
     if key == "reviewed":
         return any(_matches_review_state(record, v) for v in value)
     if key == "word_kind":
@@ -288,6 +290,25 @@ def _matches_merger(record, value):
     if value == MERGER_NONE:
         return not mergers
     return value in mergers
+
+
+# The variant facet partitions on the boolean `variant` marker: a free-variation
+# alternate spelling within the same accent ("variant") versus the canonical
+# spelling ("canonical"). A chip outside this closed pair fails loud.
+VARIANT_HAS = "variant"
+VARIANT_NONE = "canonical"
+VARIANT_FILTER_VALUES = frozenset({VARIANT_HAS, VARIANT_NONE})
+
+
+def _matches_variant(record, value):
+    if value not in VARIANT_FILTER_VALUES:
+        raise ValueError(
+            f"variant filter wants {'/'.join(sorted(VARIANT_FILTER_VALUES))}, "
+            f"got {value!r}")
+    is_variant = bool(record.get("variant"))
+    if value == VARIANT_HAS:
+        return is_variant
+    return not is_variant
 
 
 def filter_records(records, query, established):
@@ -412,7 +433,8 @@ def handle_related(state, request):
 ANCHOR_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_REQUIRED_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_ALLOWED_FIELDS = {"word", "pos", "shaw", "var", "ipa", "freq",
-                         "source", "status", "confidence", "note", "mergers"}
+                         "source", "status", "confidence", "note", "mergers",
+                         "variant"}
 
 
 def _validate_patch(anchor, record):
@@ -434,6 +456,9 @@ def _validate_patch(anchor, record):
         merger_error = _validate_mergers(record.get("mergers"))
         if merger_error:
             return merger_error
+        variant_error = _validate_variant(record.get("variant"))
+        if variant_error:
+            return variant_error
     return None
 
 
@@ -448,6 +473,17 @@ def _validate_mergers(mergers):
     unknown = [m for m in mergers if m not in MERGER_SWAPS]
     if unknown:
         return f"patch record has unknown mergers: {', '.join(map(str, unknown))}"
+    return None
+
+
+# variant is an additive boolean: absent means canonical spelling. When present
+# it must be exactly True (a free-variation alternate) — any other value is
+# rejected at the write, not deferred to a build.
+def _validate_variant(variant):
+    if variant is None:
+        return None
+    if variant is not True:
+        return f"patch record variant must be true, got {variant!r}"
     return None
 
 
@@ -597,6 +633,8 @@ def _source_record(annotated):
             record[field] = value
     if annotated.get("mergers"):
         record["mergers"] = annotated["mergers"]
+    if annotated.get("variant"):
+        record["variant"] = annotated["variant"]
     return record
 
 

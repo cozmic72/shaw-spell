@@ -181,6 +181,13 @@ PAGE = """<!DOCTYPE html>
                 <label class="chip"><input type="checkbox" name="mergers" value="(none)"><span>(none / canonical)</span></label>
             </template>
         </fieldset>
+        <fieldset class="field chips" data-facet="variant">
+            <legend>Variant</legend>
+            <template>
+                <label class="chip"><input type="checkbox" name="variant" value="variant"><span>variant</span></label>
+                <label class="chip"><input type="checkbox" name="variant" value="canonical"><span>canonical</span></label>
+            </template>
+        </fieldset>
         <label class="field narrow">
             <span>Conf ≥</span>
             <input type="number" name="confidence_min" min="0" max="100">

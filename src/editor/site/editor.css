@@ -722,6 +722,27 @@ body {
     white-space: nowrap;
 }
 
+/* The within-accent variant marker, read-at-a-glance beside the word. A
+   spelling attribute like the mergers, so it mirrors their badge but in a
+   distinct tint to keep the two axes separable at a glance. Absent renders
+   nothing. */
+.variant-badges {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.variant-badge {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    color: var(--state-authored);
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+
 .conf-badge {
     align-self: center;
     margin-left: auto;
@@ -812,6 +833,36 @@ body {
 .merger-toggle .merger-check { position: absolute; opacity: 0; pointer-events: none; }
 .merger-toggle:focus-within {
     outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* variant edits as a single toggle chip, mirroring a merger toggle but tinted to
+   its own axis so "on" reads as the variant marker, not a merger. */
+.variant-toggles { display: flex; flex-wrap: wrap; gap: 10px; }
+.variant-toggle {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+}
+.variant-toggle:hover { border-color: var(--ink-soft); }
+.variant-toggle.on {
+    color: var(--paper);
+    background: var(--state-authored);
+    border-color: var(--state-authored);
+}
+.variant-toggle .variant-check { position: absolute; opacity: 0; pointer-events: none; }
+.variant-toggle:focus-within {
+    outline: 2px solid var(--state-authored);
     outline-offset: 1px;
 }
 /* The Shavian spelling is the dictionary's payload — the biggest thing on the card. */

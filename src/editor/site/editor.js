@@ -37,6 +37,11 @@ const MERGERS = [
     ["cot-caught", "COT–CAUGHT"],
 ];
 
+// The within-accent free-variation marker: an alternate spelling of the same
+// accent, not the canonical one (additive boolean, absent == canonical). The
+// reviewer toggles it on the detail card and it round-trips in the patch.
+const VARIANT_LABEL = "variant";
+
 // Dictionaries to look the word up in while deciding. {word} is URL-encoded so
 // phrases and apostrophes ("A for effort", "don't") stay valid.
 const REFERENCES = [
@@ -210,7 +215,7 @@ async function callDaemon(request) {
 // empty array is omitted, so an untouched facet does not constrain.
 const CATEGORICAL_FACETS = new Set([
     "source", "status", "pos", "var", "patch_state",
-    "reviewed", "word_kind", "novelty", "mergers",
+    "reviewed", "word_kind", "novelty", "mergers", "variant",
 ]);
 
 // The two free-text boxes (word/shaw) each carry a regex and a case-insensitive
@@ -780,6 +785,7 @@ function renderDetail(record) {
         cell("latin", record.word),
         posCell("pos", record.pos),
         mergerBadges(record.mergers),
+        variantBadge(record.variant),
         confidenceBadge(record.confidence),
     );
 
@@ -1035,6 +1041,17 @@ function mergerBadges(mergers) {
     return wrap;
 }
 
+// A record's within-accent variant marker, as a small badge beside the word.
+// Canonical (the flag absent) shows nothing — the absence is the signal.
+function variantBadge(variant) {
+    const wrap = document.createElement("span");
+    wrap.className = "variant-badges";
+    if (variant) {
+        wrap.append(cell("variant-badge", VARIANT_LABEL));
+    }
+    return wrap;
+}
+
 function confidenceBadge(confidence) {
     const badge = document.createElement("span");
     badge.className = "conf-badge";
@@ -1079,6 +1096,7 @@ function fieldGrid(record) {
         editField("ipa", "IPA", record.ipa, "ipa-field"),
         editField("var", "Dialect (var)", record.var, ""),
         mergersField(record.mergers),
+        variantField(record.variant),
         statusField(record.status),
     );
     return stack;
@@ -1114,6 +1132,43 @@ function mergerToggle(value, label, checked) {
     input.type = "checkbox";
     input.className = "merger-check";
     input.value = value;
+    input.checked = checked;
+    input.addEventListener("change", () => {
+        chip.classList.toggle("on", input.checked);
+        enterEdit();
+    });
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    chip.classList.toggle("on", checked);
+    chip.append(input, caption);
+    return chip;
+}
+
+// variant is an additive boolean, not a scalar, so it edits as a single toggle
+// chip mirroring a merger toggle. The checkbox is class "variant-check";
+// editedRecord reads whether it is checked. Toggling enters edit mode.
+function variantField(current) {
+    const wrap = document.createElement("div");
+    wrap.className = "edit-field variant-field";
+
+    const caption = document.createElement("span");
+    caption.className = "edit-label";
+    caption.textContent = "Variant";
+
+    const toggles = document.createElement("div");
+    toggles.className = "variant-toggles";
+    toggles.append(variantToggle(VARIANT_LABEL, Boolean(current)));
+
+    wrap.append(caption, toggles);
+    return wrap;
+}
+
+function variantToggle(label, checked) {
+    const chip = document.createElement("label");
+    chip.className = "variant-toggle";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "variant-check";
     input.checked = checked;
     input.addEventListener("change", () => {
         chip.classList.toggle("on", input.checked);
@@ -1279,6 +1334,9 @@ function recordFields(record) {
     if (record.mergers && record.mergers.length) {
         result.mergers = record.mergers;
     }
+    if (record.variant) {
+        result.variant = true;
+    }
     return result;
 }
 
@@ -1297,6 +1355,12 @@ function editedRecord(record) {
         result.mergers = mergers;
     } else {
         delete result.mergers;
+    }
+    const variantBox = DETAIL.querySelector(".variant-check");
+    if (variantBox && variantBox.checked) {
+        result.variant = true;
+    } else {
+        delete result.variant;
     }
     return result;
 }
@@ -2190,10 +2254,10 @@ document.addEventListener("keydown", onGlobalKey);
 // Every categorical facet renders as the same compact dropdown, so the filter bar
 // stays one tidy row of triggers no matter a facet's cardinality (POS alone is 113
 // genuine CLAWS tags — 53 of them contraction portmanteaux like PNP+VHD — that a chip
-// each would explode the bar with). One control for all eight keeps the chrome
+// each would explode the bar with). One control for every facet keeps the chrome
 // uniform. The data-derived facets (pos/var/status/source) take their values from the
 // daemon's distinct-value op; the closed vocabularies (word_kind/novelty/reviewed/
-// patch_state) carry their value→label pairs in the page markup as .chip templates,
+// patch_state/mergers/variant) carry their value→label pairs in the page markup as .chip templates,
 // harvested here. Either way each value becomes a name=facet/value=value checkbox, so
 // readFilters/restoreChips/querySignature/bindLiveFilters treat them identically.
 async function buildFacetDropdowns() {

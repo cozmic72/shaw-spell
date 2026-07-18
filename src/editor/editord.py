@@ -233,14 +233,13 @@ def _field_matches(record, key, value, established):
         return record.get(key) in value
     if key == "source":
         # source is a LIST (the origins that attested the anchor). The facet
-        # matches by intersection: a record passes if ANY of its origins is
-        # selected, so selecting "wiktionary" catches both single- and multi-
-        # source wiktionary anchors.
+        # matches by EQUALITY on the exact source-set: a record passes only if
+        # its canonical source key (origins sorted-and-joined) is among the
+        # selected combos, so selecting "wiktionary" catches wiktionary-alone
+        # anchors but NOT "wordnet+wiktionary" ones.
         if not isinstance(value, list):
             raise ValueError(f"source filter wants a list, got {value!r}")
-        return any(origin in value for origin in record.get("source", ()))
-    if key == "source_count":
-        return any(_matches_source_count(record, v) for v in value)
+        return _source_key(record) in value
     if key == "mergers":
         return any(_matches_merger(record, v) for v in value)
     if key == "variant":
@@ -290,24 +289,11 @@ def _matches_word_kind(record, value):
     raise ValueError(f"word_kind filter wants multi/single, got {value!r}")
 
 
-# The source_count facet partitions on how many origins attested the anchor:
-# "single" (exactly one source) versus "multi" (two or more agreed). It reads the
-# same list the source facet filters, so no new field is stored. A chip outside
-# this closed pair fails loud.
-SOURCE_COUNT_SINGLE = "single"
-SOURCE_COUNT_MULTI = "multi"
-SOURCE_COUNT_FILTER_VALUES = frozenset({SOURCE_COUNT_SINGLE, SOURCE_COUNT_MULTI})
-
-
-def _matches_source_count(record, value):
-    if value not in SOURCE_COUNT_FILTER_VALUES:
-        raise ValueError(
-            f"source_count filter wants "
-            f"{'/'.join(sorted(SOURCE_COUNT_FILTER_VALUES))}, got {value!r}")
-    multi = len(record.get("source", ())) > 1
-    if value == SOURCE_COUNT_MULTI:
-        return multi
-    return not multi
+# The canonical source key of a record: its origins sorted and "+"-joined into a
+# single combo string (e.g. "wordnet+wiktionary"). Sorting makes it order-
+# independent, so the source facet's values and its equality filter agree.
+def _source_key(record):
+    return "+".join(sorted(record.get("source", ())))
 
 
 # Novelty classifies a supplement record by its relationship to the upstream
@@ -510,18 +496,19 @@ def _distinct_values(view, field):
     concurrent write may mutate it.
 
     `source` is list-valued (the origins that attested each anchor), so its facet
-    values are the individual origin labels FLATTENED across records — the chips
-    are readlex/wordnet/wiktionary, never the combos — matching the intersection
-    semantics of the source filter (_field_matches)."""
+    values are the exact source-set COMBOS present in the data — the canonical
+    "+"-joined keys (wordnet, wiktionary, wordnet+wiktionary, ...) — matching the
+    equality semantics of the source filter (_field_matches)."""
     with view._lock:
         values = set()
         for group in view.by_anchor_index.values():
             for record in group:
-                cell = record[field]
                 if field == "source":
-                    values.update(cell)
-                elif cell:
-                    values.add(cell)
+                    key = _source_key(record)
+                    if key:
+                        values.add(key)
+                elif record[field]:
+                    values.add(record[field])
     return sorted(values)
 
 

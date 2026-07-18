@@ -978,7 +978,13 @@ function bulkTraits(records) {
 function tallyField(records, field) {
     const counts = new Map();
     for (const record of records) {
-        const value = record[field] ?? "—";
+        // source is list-valued (the origins that agreed); collapse the ordered
+        // list to one "wordnet + wiktionary" key so the tally counts each origin
+        // combination, not an unhashable array.
+        const raw = record[field];
+        const value = field === "source" && Array.isArray(raw)
+            ? raw.join(" + ")
+            : raw ?? "—";
         counts.set(value, (counts.get(value) ?? 0) + 1);
     }
     return counts;
@@ -1145,9 +1151,9 @@ function relatedProvenance(record) {
                 label: record.status === ACCEPTED_STATUS ? "sanctioned" : "edited",
             };
         default:
-            return record.source === "readlex"
+            return record.source.includes("readlex")
                 ? { state: "unreviewed", glyph: "✓", label: "upstream" }
-                : { state: "unreviewed", glyph: "○", label: `candidate · ${record.source}` };
+                : { state: "unreviewed", glyph: "○", label: `candidate · ${record.source.join(" + ")}` };
     }
 }
 
@@ -1367,8 +1373,8 @@ function detailFacts(record) {
     if (record.status) {
         wrap.append(fact("status", record.status));
     }
-    if (record.source) {
-        wrap.append(fact("source", record.source));
+    if (record.source && record.source.length) {
+        wrap.append(fact("source", record.source.join(" + ")));
     }
     if (record.freq !== null && record.freq !== undefined) {
         wrap.append(fact("freq", String(record.freq)));

@@ -207,10 +207,20 @@ def matches(record, query, established):
 # The equality facets test membership; the custom matchers are asked per value.
 # word/shaw are handled by QueryFilters' pre-compiled predicates, not here.
 def _field_matches(record, key, value, established):
-    if key in ("source", "status", "pos", "var", "patch_state"):
+    if key in ("status", "pos", "var", "patch_state"):
         if not isinstance(value, list):
             raise ValueError(f"{key} filter wants a list, got {value!r}")
         return record.get(key) in value
+    if key == "source":
+        # source is a LIST (the origins that attested the anchor). The facet
+        # matches by intersection: a record passes if ANY of its origins is
+        # selected, so selecting "wiktionary" catches both single- and multi-
+        # source wiktionary anchors.
+        if not isinstance(value, list):
+            raise ValueError(f"source filter wants a list, got {value!r}")
+        return any(origin in value for origin in record.get("source", ()))
+    if key == "source_count":
+        return any(_matches_source_count(record, v) for v in value)
     if key == "mergers":
         return any(_matches_merger(record, v) for v in value)
     if key == "variant":
@@ -260,6 +270,26 @@ def _matches_word_kind(record, value):
     raise ValueError(f"word_kind filter wants multi/single, got {value!r}")
 
 
+# The source_count facet partitions on how many origins attested the anchor:
+# "single" (exactly one source) versus "multi" (two or more agreed). It reads the
+# same list the source facet filters, so no new field is stored. A chip outside
+# this closed pair fails loud.
+SOURCE_COUNT_SINGLE = "single"
+SOURCE_COUNT_MULTI = "multi"
+SOURCE_COUNT_FILTER_VALUES = frozenset({SOURCE_COUNT_SINGLE, SOURCE_COUNT_MULTI})
+
+
+def _matches_source_count(record, value):
+    if value not in SOURCE_COUNT_FILTER_VALUES:
+        raise ValueError(
+            f"source_count filter wants "
+            f"{'/'.join(sorted(SOURCE_COUNT_FILTER_VALUES))}, got {value!r}")
+    multi = len(record.get("source", ())) > 1
+    if value == SOURCE_COUNT_MULTI:
+        return multi
+    return not multi
+
+
 # Novelty classifies a supplement record by its relationship to the upstream
 # ReadLex corpus for its word — a genuinely new word, a new spelling of a known
 # word, or a new POS of a known word+shaw. It is measured against upstream ONLY
@@ -279,7 +309,7 @@ def _matches_novelty(record, value, established):
     if value not in NOVELTY_VALUES:
         raise ValueError(
             f"novelty filter wants {'/'.join(NOVELTY_VALUES)}, got {value!r}")
-    if record.get("source") == UPSTREAM_SOURCE:
+    if UPSTREAM_SOURCE in record.get("source", ()):
         return False
     novelty = established.classify(record["word"], record["shaw"], record["pos"])
     return novelty == value
@@ -457,12 +487,21 @@ def handle_facets(state, _request):
 def _distinct_values(view, field):
     """The sorted distinct non-empty values of `field` across the view. Read-only;
     takes the view lock (like by_word) since it iterates the shared index while a
-    concurrent write may mutate it."""
+    concurrent write may mutate it.
+
+    `source` is list-valued (the origins that attested each anchor), so its facet
+    values are the individual origin labels FLATTENED across records — the chips
+    are readlex/wordnet/wiktionary, never the combos — matching the intersection
+    semantics of the source filter (_field_matches)."""
     with view._lock:
-        values = {record[field]
-                  for group in view.by_anchor_index.values()
-                  for record in group
-                  if record[field]}
+        values = set()
+        for group in view.by_anchor_index.values():
+            for record in group:
+                cell = record[field]
+                if field == "source":
+                    values.update(cell)
+                elif cell:
+                    values.add(cell)
     return sorted(values)
 
 

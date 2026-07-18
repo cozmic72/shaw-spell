@@ -324,13 +324,17 @@ def enrich_basis_frequency(index):
 
 
 def build_basis(enrich_freq=False):
-    """Traverse the basis once, returning both the record index and the origin
+    """Traverse the basis once, returning both the record index and the origins
     of each anchor.
 
       index   (word_lower, pos, shaw, var) -> the basis candidate. Upstream
               ReadLex is seen first and wins over a supplement that attests the
               same natural key.
-      source  same key -> origin label.
+      source  same key -> ordered list of the origin labels that attested it, in
+              canonical load order (readlex, wordnet, wiktionary), deduped. A
+              record content-deduped by a later source keeps its FIRST record but
+              records that a later source ALSO attested it — the multi-source
+              agreement signal, preserved for filtering rather than discarded.
 
     With enrich_freq, every record is put on the corpus frequency scale so the
     editor's freq-desc sort triages the review pool by real frequency, uniformly
@@ -348,7 +352,9 @@ def build_basis(enrich_freq=False):
             for entry in entries:
                 key = anchor_of(entry)
                 index.setdefault(key, entry)
-                source.setdefault(key, label)
+                sources = source.setdefault(key, [])
+                if label not in sources:
+                    sources.append(label)
     if enrich_freq:
         enrich_basis_frequency(index)
     return index, source

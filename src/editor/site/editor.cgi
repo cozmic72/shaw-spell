@@ -131,6 +131,10 @@ PAGE = """<!DOCTYPE html>
         <div data-field="shaw" data-kind="text" data-label="Shaw"
              data-placeholder="𐑖𐑷 substring" data-shavian="true"></div>
         <div data-field="source" data-kind="categorical" data-label="Source"></div>
+        <div data-field="source_count" data-kind="categorical" data-label="Sources">
+            <label class="chip"><input value="single"><span>single-source</span></label>
+            <label class="chip"><input value="multi"><span>multi-source</span></label>
+        </div>
         <div data-field="status" data-kind="categorical" data-label="Status"></div>
         <div data-field="pos" data-kind="categorical" data-label="POS"></div>
         <div data-field="var" data-kind="categorical" data-label="Var"></div>

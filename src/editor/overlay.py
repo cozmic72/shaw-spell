@@ -101,7 +101,8 @@ def annotate_basis_record(candidate, source, patch):
     source record, reviewed-but-undecided."""
     anchor = {"word": candidate["Latn"], "pos": candidate["pos"],
               "shaw": candidate["Shaw"], "var": candidate.get("var", "")}
-    default_status = UPSTREAM_STATUS if source == "readlex" else SUPPLEMENT_STATUS
+    default_status = (UPSTREAM_STATUS if UPSTREAM_SOURCE in source
+                      else SUPPLEMENT_STATUS)
 
     if patch is None:
         shown, reviewed, state = output_to_record(candidate), False, PATCH_STATE_UNREVIEWED
@@ -122,12 +123,19 @@ def annotate_authored_record(patch):
     """One annotated row from an authorship patch (anchor is null): the record a
     human invented, which has no basis anchor. Its displayed content IS the record
     (the patch's `changes`, self-contained — no basis to diff against); its stable
-    anchor is that record's own natural key."""
+    anchor is that record's own natural key.
+
+    An authored record's source is a single origin (the author), a scalar in the
+    patch. It is normalised to a one-element LIST here so the whole UI/daemon sees
+    a uniform list-valued `source` — the same shape a basis record carries."""
     record = patch["changes"]
     anchor = {"word": record["word"], "pos": record["pos"],
               "shaw": record["shaw"], "var": record.get("var", "")}
-    return _ui_record(record, anchor, record.get("source", AUTHORED_STATUS),
-                      AUTHORED_STATUS, True, PATCH_STATE_AUTHORED, patch)
+    ui = _ui_record(record, anchor, [AUTHORED_STATUS], AUTHORED_STATUS, True,
+                    PATCH_STATE_AUTHORED, patch)
+    if not isinstance(ui["source"], list):
+        ui["source"] = [ui["source"]]
+    return ui
 
 
 class AnnotatedView:
@@ -389,7 +397,7 @@ class EstablishedIndex:
     def __init__(self, basis_index, basis_source):
         self._pairs_by_word = {}
         for key, entry in basis_index.items():
-            if basis_source[key] == UPSTREAM_SOURCE:
+            if UPSTREAM_SOURCE in basis_source[key]:
                 self._register(key[0], entry["Shaw"], entry["pos"])
 
     def _register(self, word_lower, shaw, pos):

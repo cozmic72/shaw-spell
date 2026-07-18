@@ -1196,9 +1196,9 @@ function renderRelated(section, records, focusedAnchor) {
 // Order the related rows deterministically so the list is stable across landings
 // (the daemon returns them in an unspecified index order). The focused entry ("you
 // are here") always leads, anchoring the eye to the card above; the rest sort by a
-// total key — word (case-SENSITIVE, so a capitalised homograph like "March" sits
-// apart from "march"), then pos, var, shaw. Every field participates, so no two
-// distinct records ever tie.
+// total key — pos, then dialect (var), then source, and within each such bunch the
+// canonical (unflagged) entry rises above its merger/variant-flagged alternates.
+// shaw is the final tiebreak, so no two distinct records ever tie.
 function sortedRelated(records, focusedAnchor) {
     return [...records].sort((left, right) => {
         const leftHere = sameAnchor(left.anchor, focusedAnchor);
@@ -1210,12 +1210,31 @@ function sortedRelated(records, focusedAnchor) {
     });
 }
 
+// A record with no dialect merger and no variant flag is the canonical spelling;
+// its flagged siblings are alternates that sort beneath it within their bunch.
+function isCanonical(record) {
+    return (!record.mergers || record.mergers.length === 0) && !record.variant;
+}
+
+// source is list-valued (the origins that agreed); collapse it to one deterministic
+// key so multi-source records group consistently regardless of origin order.
+function sourceKey(record) {
+    return Array.isArray(record.source) ? [...record.source].sort().join("+") : "";
+}
+
 function compareRelated(left, right) {
-    const fields = ["word", "pos", "var", "shaw"];
-    for (const field of fields) {
-        if (left[field] < right[field]) return -1;
-        if (left[field] > right[field]) return 1;
-    }
+    if (left.pos < right.pos) return -1;
+    if (left.pos > right.pos) return 1;
+    if (left.var < right.var) return -1;
+    if (left.var > right.var) return 1;
+    const leftSource = sourceKey(left);
+    const rightSource = sourceKey(right);
+    if (leftSource < rightSource) return -1;
+    if (leftSource > rightSource) return 1;
+    const canonicalGap = (isCanonical(left) ? 0 : 1) - (isCanonical(right) ? 0 : 1);
+    if (canonicalGap !== 0) return canonicalGap;
+    if (left.shaw < right.shaw) return -1;
+    if (left.shaw > right.shaw) return 1;
     return 0;
 }
 

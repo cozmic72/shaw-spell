@@ -166,6 +166,7 @@ const WORKBENCH = document.getElementById("workbench");
 const DRAWER_TOGGLE = document.getElementById("drawerToggle");
 const HELP_TOGGLE = document.getElementById("helpToggle");
 const NEW_ENTRY = document.getElementById("newEntry");
+const COMMIT_DECISIONS = document.getElementById("commitDecisions");
 const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
 const CHEATSHEET = document.getElementById("cheatsheet");
 const CREATE_MODAL = document.getElementById("createModal");
@@ -1875,6 +1876,7 @@ function insertAuthoredRecord(record) {
     select(0);
     syncSelectionUI();
     saveSession();
+    refreshCommitStatus();
 }
 
 // Run a single-record verdict, surfacing any failure as an error toast. The bulk
@@ -1886,6 +1888,9 @@ async function single(action) {
     } catch (error) {
         showToast(error.message, true);
     }
+    // Every single-record action here mutates the patch store, so the uncommitted
+    // count may have changed — keep the Commit button honest.
+    await refreshCommitStatus();
 }
 
 // Save is inherently single-record — it writes the edited fields, which only make
@@ -2093,6 +2098,8 @@ async function runBulk(verb, applyOne) {
     state.touchMulti = false;
     refreshAfterBulk(focusedAnchor);
     reportBulk(verb, done, skipped, failures);
+    // One refresh for the whole run, not per record — the store changed.
+    await refreshCommitStatus();
 }
 
 // Rebuild the ledger once after a bulk run (rows may have been re-annotated or
@@ -2636,6 +2643,50 @@ function showToast(message, isError = false) {
     toastTimer = setTimeout(() => TOAST.classList.remove("show"), 2400);
 }
 
+// ---- commit ----
+// The owner banks their accumulated decisions (data/patches/patches.jsonl) as a git
+// commit, without depending on anyone else. The button's label carries the live
+// uncommitted count; it disables at zero. The daemon is the single source of truth
+// for the count (patches.jsonl lines not yet in HEAD), refreshed on boot and after
+// every write so the label stays honest.
+
+function paintCommitButton(uncommitted) {
+    const count = Number.isFinite(uncommitted) ? uncommitted : 0;
+    COMMIT_DECISIONS.textContent = count > 0
+        ? `Commit ${count.toLocaleString()} decision${count === 1 ? "" : "s"}`
+        : "Commit";
+    COMMIT_DECISIONS.disabled = count === 0;
+}
+
+// Query the daemon for the uncommitted count and repaint the button. A failure here
+// is non-fatal to the review flow (the count is advisory), so it dims the button
+// and reports once rather than aborting whatever write just completed.
+async function refreshCommitStatus() {
+    try {
+        const status = await callDaemon({ op: "commit_status" });
+        paintCommitButton(status.uncommitted);
+    } catch (error) {
+        paintCommitButton(0);
+        showToast(error.message, true);
+    }
+}
+
+async function commitDecisions() {
+    COMMIT_DECISIONS.disabled = true;
+    try {
+        const result = await callDaemon({ op: "commit" });
+        if (result.result === "nothing-to-commit") {
+            showToast("Nothing to commit.");
+            paintCommitButton(0);
+            return;
+        }
+        showToast(`Committed ${result.message} · ${result.sha}`);
+    } catch (error) {
+        showToast(error.message, true);
+    }
+    await refreshCommitStatus();
+}
+
 // Live filtering: the filter form re-runs the query the moment the criteria
 // change, so there is no separate "apply" step. A checkbox (a facet chip) commits
 // on `change`; a free-text or numeric input debounces, re-running once the user
@@ -2703,6 +2754,7 @@ DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 NEW_ENTRY.addEventListener("click", openCreateForm);
+COMMIT_DECISIONS.addEventListener("click", () => commitDecisions());
 // Backdrop click dismisses the create modal, like the cheatsheet — only a click on
 // the backdrop itself (not the card) counts.
 CREATE_MODAL.addEventListener("click", (event) => {
@@ -3125,6 +3177,7 @@ async function boot() {
             : null;
     }
     syncSortIndicators();
+    refreshCommitStatus();
     return runQuery(0, stored ? stored.anchor : null);
 }
 

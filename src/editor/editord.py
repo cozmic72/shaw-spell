@@ -70,6 +70,18 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 clear), keyed by anchor; an authorship record (anchor null) is
                 cleared by patch_id and its row removed (records empty)
 
+    Request:   {"op": "commit_status"}
+    Response:  {"uncommitted": N, "head": "<short-sha>"|null,
+                "subject": "<last commit subject>"|null}   # N = patch lines in the
+                store not yet in HEAD, so the UI labels/enables the Commit button
+
+    Request:   {"op": "commit"}
+    Response:  {"result": "committed", "message": "…", "sha": "<short>",
+                "uncommitted": 0}
+             | {"result": "nothing-to-commit"}   # store unchanged vs HEAD
+                Commits ONLY data/patches/patches.jsonl (the owner's own commit) —
+                never sweeps the rest of the working tree.
+
     Errors:    {"error": "<message>"}
 
 An anchor is the reviewed record's IMMUTABLE natural key (word, pos, shaw, var):
@@ -91,6 +103,7 @@ import os
 import re
 import signal
 import socketserver
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -103,13 +116,13 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
-                   UPSTREAM_SOURCE, anchor_key)
+                   PROJECT_ROOT, UPSTREAM_SOURCE, anchor_key)
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
                      NOVELTY_NEW_WORD, PATCH_STATE_FLAGGED, load_view)
 from patchstore import (                                        # noqa: E402
-    delete_patch, delete_patch_by_id, make_patch, replace_authored_patch,
-    upsert_patch)
+    PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
+    replace_authored_patch, upsert_patch)
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
@@ -781,6 +794,96 @@ def _now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+# The one file a commit is ever allowed to touch, as a repo-relative pathspec.
+# Every git command below names it explicitly — the working tree carries lots of
+# other uncommitted work that must never be swept into the owner's decision commit.
+PATCH_PATHSPEC = "data/patches/patches.jsonl"
+
+
+def _commit_repo_root():
+    """The repo root to run git in, or None when committing is not supported.
+
+    Committing is only meaningful for the real store under the repo. A test that
+    redirects SHAW_SPELL_PATCH_STORE to a temp file has no repo to commit to, so we
+    refuse loudly rather than commit against whatever cwd git happens to find."""
+    if _store_path().resolve() != PATCHES_PATH.resolve():
+        return None
+    return PROJECT_ROOT
+
+
+def _run_git(root, *args):
+    """Run git in `root`, returning the CompletedProcess. Never raises on non-zero
+    exit — the caller inspects returncode and surfaces stderr to the client."""
+    return subprocess.run(
+        ["git", *args], cwd=str(root),
+        capture_output=True, text=True, check=False,
+    )
+
+
+def _uncommitted_patch_count(root):
+    """Patch lines in the store not yet in HEAD: the added-line count of the store's
+    diff against the HEAD blob. `git diff HEAD` omits a store absent from HEAD (never
+    committed, or no commits yet), so that case is counted as every line added — the
+    diff against an empty tree — rather than silently reported as zero."""
+    in_head = _run_git(root, "cat-file", "-e", f"HEAD:{PATCH_PATHSPEC}")
+    if in_head.returncode != 0:
+        return _store_line_count(root)
+    result = _run_git(root, "diff", "--numstat", "HEAD", "--", PATCH_PATHSPEC)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "git diff failed")
+    line = result.stdout.strip()
+    if not line:
+        return 0
+    added = line.split("\t", 1)[0]
+    return int(added) if added.isdigit() else 0
+
+
+def _store_line_count(root):
+    store = root / PATCH_PATHSPEC
+    with open(store, "r", encoding="utf-8") as handle:
+        return sum(1 for stored in handle if stored.strip())
+
+
+def handle_commit_status(_state, _request):
+    root = _commit_repo_root()
+    if root is None:
+        return {"error": "commit is only supported for the default patch store"}
+    try:
+        uncommitted = _uncommitted_patch_count(root)
+    except RuntimeError as exc:
+        return {"error": str(exc)}
+    head = _run_git(root, "log", "-1", "--format=%h\t%s")
+    if head.returncode != 0 or not head.stdout.strip():
+        return {"uncommitted": uncommitted, "head": None, "subject": None}
+    short_sha, _, subject = head.stdout.strip().partition("\t")
+    return {"uncommitted": uncommitted, "head": short_sha, "subject": subject}
+
+
+def handle_commit(_state, _request):
+    root = _commit_repo_root()
+    if root is None:
+        return {"error": "commit is only supported for the default patch store"}
+    try:
+        uncommitted = _uncommitted_patch_count(root)
+    except RuntimeError as exc:
+        return {"error": str(exc)}
+    if uncommitted == 0:
+        return {"result": "nothing-to-commit"}
+
+    staged = _run_git(root, "add", "--", PATCH_PATHSPEC)
+    if staged.returncode != 0:
+        return {"error": staged.stderr.strip() or "git add failed"}
+
+    message = f"Editorial decisions from review session ({uncommitted} patches)"
+    committed = _run_git(root, "commit", "-m", message, "--", PATCH_PATHSPEC)
+    if committed.returncode != 0:
+        return {"error": committed.stderr.strip() or "git commit failed"}
+
+    head = _run_git(root, "rev-parse", "--short", "HEAD")
+    sha = head.stdout.strip() if head.returncode == 0 else None
+    return {"result": "committed", "message": message, "sha": sha, "uncommitted": 0}
+
+
 HANDLERS = {
     "entries": handle_entries,
     "facets": handle_facets,
@@ -789,6 +892,8 @@ HANDLERS = {
     "patch": handle_patch,
     "flag": handle_flag,
     "unpatch": handle_unpatch,
+    "commit_status": handle_commit_status,
+    "commit": handle_commit,
 }
 
 

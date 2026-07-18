@@ -142,12 +142,32 @@ body {
 .help-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
 .help-toggle + .tally { margin-left: 0; }
 
-/* Author a new entry: tinted the authored purple its outcome carries, so the
-   action reads as "make a new authored record" at a glance. Pinned to the right
-   cluster (margin-left:auto absorbs the slack before it), ahead of the help
-   toggle. */
-.new-entry {
+/* Commit the accumulated editorial decisions to git — the owner's own commit of
+   data/patches/patches.jsonl. Tinted the edited green (an accepted decision's
+   colour) so it reads as "bank these decisions". Leads the right cluster;
+   margin-left:auto absorbs the slack before it. Disabled (dimmed) when there is
+   nothing to commit. */
+.commit-decisions {
     margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--state-edited);
+    background: none;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    min-height: 34px;
+    padding: 5px 14px;
+    cursor: pointer;
+}
+.commit-decisions:hover:not(:disabled) { background: var(--state-edited); color: var(--paper); }
+.commit-decisions:disabled { opacity: 0.4; cursor: default; }
+
+/* Author a new entry: tinted the authored purple its outcome carries, so the
+   action reads as "make a new authored record" at a glance. Sits in the right
+   cluster after Commit, ahead of the help toggle. */
+.new-entry {
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.08em;

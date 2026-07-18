@@ -1074,7 +1074,7 @@ function relatedHeading(count) {
 async function loadRelated(record, section) {
     const focused = record.anchor;
     try {
-        const result = await callDaemon({ op: "related", word: record.word });
+        const result = await callDaemon({ op: "related", word: record.word, shaw: record.shaw });
         const current = state.records[state.selected];
         if (!current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
             return;
@@ -2138,6 +2138,14 @@ function onFieldKey(event) {
         return;
     }
     event.preventDefault();
+    if (state.creating) {
+        // In create mode the panel has no selected record, so the verdict handlers
+        // below would no-op. A plain Enter submits the new-entry form (validation
+        // still gates a bad submit); the create fields are all plain inputs, so no
+        // newline is being suppressed.
+        createEntry();
+        return;
+    }
     if (event.shiftKey) {
         dropSelected();
     } else if (event.metaKey || event.ctrlKey) {

@@ -39,9 +39,11 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
     Request:   {"op": "entry", "anchor": {"word","pos","shaw","var"}}
     Response:  {"records": [...]}   # the record on that natural key
 
-    Request:   {"op": "related", "word": "polish"}
-    Response:  {"records": [...]}   # every record whose word matches, case-
-                # insensitively — the related-entries context for a landing
+    Request:   {"op": "related", "word": "polish", "shaw"?: "..."}
+    Response:  {"records": [...]}   # every record sharing the Latin word (case-
+                # insensitively) OR the Shavian spelling — the related-entries
+                # context for a landing. The shaw union brings in variant siblings
+                # (same shaw, different word — estrogen/oestrogen). Deduped.
 
     Request:   {"op": "patch", "anchor": {"word","pos","shaw","var"} | null,
                 "record": {...} | null, "author": "…", "replaces"?: "p_…"}
@@ -426,14 +428,27 @@ def handle_entry(state, request):
 
 
 def handle_related(state, request):
-    """Every annotated record sharing the given Latin word, matched
-    case-insensitively — the focused entry's related-entries context. Read-only;
-    the UI labels each row by its already-carried provenance/patch-state."""
+    """Every annotated record sharing the focused entry's Latin word (matched
+    case-insensitively) OR its Shavian spelling — the related-entries context.
+    The shaw union pulls in variant siblings whose Latin word differs but whose
+    spelling is identical (estrogen/oestrogen). Read-only; the UI labels each row
+    by its already-carried provenance/patch-state. A record matching on both word
+    and shaw appears once (deduped by its anchor)."""
     word = request.get("word")
     if not word:
         return {"error": "related requires a word"}
+    shaw = request.get("shaw")
     records = state.view.by_word(word)
-    return {"records": [serialisable(r) for r in records]}
+    if shaw:
+        records += state.view.by_shaw(shaw)
+    seen = set()
+    deduped = []
+    for record in records:
+        key = anchor_key(record["anchor"])
+        if key not in seen:
+            seen.add(key)
+            deduped.append(record)
+    return {"records": [serialisable(r) for r in deduped]}
 
 
 ANCHOR_FIELDS = ("word", "pos", "shaw", "var")

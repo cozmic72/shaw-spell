@@ -141,7 +141,9 @@ class AnnotatedView:
     per-anchor read and the in-place update are O(1). `by_word_index` maps a
     lowercased Latin word to the anchor keys carrying it, so the related-entries
     read is O(hits) rather than a full-view scan; it is kept in step with
-    by_anchor_index as authored rows are added and removed.
+    by_anchor_index as authored rows are added and removed. `by_shaw_index` mirrors
+    it on the Shavian spelling, so variant siblings (same shaw, different Latin
+    word — estrogen/oestrogen) join the same related read.
 
     The daemon is multithreaded (ThreadingMixIn): an in-place write mutates the
     shared index while readers iterate it, so a lock guards every mutating op and
@@ -155,6 +157,7 @@ class AnnotatedView:
         self.by_anchor_index = _build_records(
             basis_index, basis_source, self.anchored, self.authored)
         self.by_word_index = _build_word_index(self.by_anchor_index)
+        self.by_shaw_index = _build_shaw_index(self.by_anchor_index)
         self.established = EstablishedIndex(basis_index, basis_source)
         self._lock = threading.Lock()
 
@@ -190,6 +193,16 @@ class AnnotatedView:
         with self._lock:
             return [record
                     for key in self.by_word_index.get(word.lower(), ())
+                    for record in self.by_anchor_index.get(key, ())]
+
+    def by_shaw(self, shaw):
+        """A snapshot of every annotated record whose Shavian spelling matches
+        `shaw` exactly — the variant-sibling half of the related-entries read.
+        Resolved through the shaw index (O(hits), not a full-view scan) under the
+        lock, mirroring by_word."""
+        with self._lock:
+            return [record
+                    for key in self.by_shaw_index.get(shaw, ())
                     for record in self.by_anchor_index.get(key, ())]
 
     def authored_patch(self, patch_id):
@@ -269,7 +282,7 @@ class AnnotatedView:
         """Swap the record on `key` matching `predicate` for `annotated`,
         keeping its position; append if none matched (a new row). A new anchor
         key (an authored word absent from the basis) is registered on the word
-        index so the related read finds it."""
+        and shaw indexes so the related read finds it."""
         records = self.by_anchor_index.setdefault(key, [])
         for i, record in enumerate(records):
             if predicate(record):
@@ -277,11 +290,12 @@ class AnnotatedView:
                 return
         if not records:
             self.by_word_index.setdefault(key[0], set()).add(key)
+            self.by_shaw_index.setdefault(key[2], set()).add(key)
         records.append(annotated)
 
     def _forget_record(self, key, predicate):
         """Drop the record on `key` matching `predicate` from the index. When the
-        anchor empties, deregister it from the word index too."""
+        anchor empties, deregister it from the word and shaw indexes too."""
         records = self.by_anchor_index.get(key, [])
         for i, record in enumerate(records):
             if predicate(record):
@@ -289,6 +303,7 @@ class AnnotatedView:
                 if not records:
                     self.by_anchor_index.pop(key, None)
                     self._deregister_word(key)
+                    self._deregister_shaw(key)
                 return
         raise KeyError(f"no record to forget on anchor: {key}")
 
@@ -298,6 +313,13 @@ class AnnotatedView:
             keys.discard(key)
             if not keys:
                 self.by_word_index.pop(key[0], None)
+
+    def _deregister_shaw(self, key):
+        keys = self.by_shaw_index.get(key[2])
+        if keys is not None:
+            keys.discard(key)
+            if not keys:
+                self.by_shaw_index.pop(key[2], None)
 
 
 def _index_patches_by_anchor(patches):
@@ -338,6 +360,17 @@ def _build_word_index(by_anchor_index):
     for key in by_anchor_index:
         word_index.setdefault(key[0], set()).add(key)
     return word_index
+
+
+def _build_shaw_index(by_anchor_index):
+    """Map each Shavian spelling to the set of anchor keys carrying it — the
+    variant-sibling half of the related-entries lookup. The anchor key's third
+    element IS the shaw (see anchor_key), so this is a regrouping of the existing
+    keys."""
+    shaw_index = {}
+    for key in by_anchor_index:
+        shaw_index.setdefault(key[2], set()).add(key)
+    return shaw_index
 
 
 class EstablishedIndex:

@@ -191,15 +191,14 @@ const state = {
     selected: -1,
     // The detail panel's record editor context (see makeEditorContext), created on
     // first render and reused. Carries the edit flag and the harvest root, so the
-    // review flow scopes to it rather than reaching through globals. This is the ONLY
-    // context today; later commits add modal contexts that activeContext() can return.
+    // review flow scopes to it rather than reaching through globals.
     mainContext: null,
-    // The shared create modal's open-state, or null when closed. When set it is
-    // {clone, seedSignature}: `clone` arms the "must differ" guard, and the seed's
-    // canonical signature lets that guard reject an unedited exact-copy clone. While
-    // open, the modal owns the keyboard and review verdicts are suppressed (the
-    // workbench sits inert behind the backdrop). Both New Entry (blank) and Clone open it.
-    createModal: null,
+    // The open create/clone modal's record editor context (create mode, scope "modal"),
+    // or null when the modal is closed. Its presence is the modal-open flag: while set,
+    // the modal owns the keyboard (Escape dismisses, Enter submits) and review verdicts
+    // are suppressed — the workbench sits inert behind the backdrop. Both New Entry
+    // (blank seed) and Clone (prepopulated seed) host a create-mode recordEditor here.
+    modalEditor: null,
     // Bulk selection: the anchor keys of the checked rows (an anchor is a stable
     // identity, so a row survives in-place updates and re-renders keyed by it). The
     // single focused row (state.selected) is independent — it stays the review
@@ -854,39 +853,61 @@ function syncSelectBar() {
 
 // A record editor's context: the surface a single record is being edited on. It owns
 // its harvest `root` (the container the field inputs live under, queried scoped by
-// data-field), an id `prefix` for those inputs (the detail keeps "field-" for
-// back-compat), a per-context `editing` flag, and the `record` and `mode` it renders.
-// One context serves the detail panel today (state.mainContext); later commits mint
-// more (a create/clone modal, a related-word editor) that activeContext() routes to.
+// data-field), an id `prefix` for those inputs (the detail keeps "field-", the modal
+// uses "create-" so the two never collide), a per-context `editing` flag, and the
+// `record` and `mode` it renders. The detail panel holds one (state.mainContext,
+// mode "edit"); the open create/clone modal holds another (state.modalEditor, mode
+// "create"). activeContext() routes the review flow to whichever owns the screen.
 function makeEditorContext({ scope, root, prefix, record, mode }) {
     return { scope, root, prefix, editing: false, record, mode };
 }
 
-// The context whose edit inputs the verdict/harvest flow acts on. Today only the
-// detail context exists, so this is always mainContext; later commits return the
-// open modal's context instead when one owns the screen.
+// The context whose edit inputs the verdict/harvest flow acts on: the open modal's
+// create-mode context when the modal owns the screen, otherwise the detail context.
+// Returning the modal context while it is open keeps a stray keypress from harvesting
+// or acting on the record behind the backdrop — though in create mode only Enter/Escape
+// act (handled before any verdict), so no verdict ever reaches it.
 function activeContext() {
-    return state.mainContext;
+    return state.modalEditor ?? state.mainContext;
 }
 
-// Build the reusable record editor for `record`: the top matter, reference links,
-// field editors, verdict bar and clone bar — everything the detail panel shows
-// EXCEPT the related section. Returns a `.record-editor` container that owns the
-// field inputs (the context's harvest root), plus the context itself. The detail is
-// its only caller today (scope "detail", mode "edit"); it stores the context as
-// state.mainContext so the review flow can resolve and harvest it.
+// Build the reusable record editor for `record` — the SINGLE editor renderer for
+// both the detail panel (mode "edit") and the create/clone modal (mode "create").
+// Returns a `.record-editor` container that owns the field inputs (the context's
+// harvest root), context-scoped so its ids and harvest never collide with another
+// instance's. The related section is never part of it (renderDetail appends that
+// separately). Edit mode (scope "detail") stores the context as state.mainContext so
+// the review flow can resolve and harvest it; create mode (scope "modal") tracks its
+// context as state.modalEditor. It never shows the related section.
+//
+// Edit mode renders the review top matter (badges/facts/overridden marks), read-only
+// word/pos identity, the field editors, the verdict bar and the clone bar. Create
+// mode renders a minimal title + hint, EDITABLE word/pos (the author types the
+// anchor), the same field editors, and a [submitLabel, Cancel] bar — no review
+// affordances, since a not-yet-created record has no patch state.
+const CREATE_MODE = "create";
+
 function recordEditor(record, opts) {
     const container = document.createElement("div");
     container.className = "record-editor";
     const ctx = makeEditorContext({
         scope: opts.scope,
         root: container,
-        prefix: DETAIL_FIELD_PREFIX,
+        prefix: opts.mode === CREATE_MODE ? CREATE_FIELD_PREFIX : DETAIL_FIELD_PREFIX,
         record,
         mode: opts.mode,
     });
     if (opts.scope === "detail") {
         state.mainContext = ctx;
+    }
+    if (opts.mode === CREATE_MODE) {
+        state.modalEditor = ctx;
+        container.append(
+            createTopMatter(record, opts.submitLabel),
+            createFieldStack(ctx, record),
+            createActionBar(ctx, opts.submitLabel),
+        );
+        return container;
     }
 
     const overridden = overriddenFields(record);
@@ -1313,17 +1334,17 @@ function variantRow(ctx, record, overridden) {
     row.className = "field-row";
     row.append(
         editField(ctx, "var", "Dialect (var)", record.var, "", overridden.has("var")),
-        mergersField(record.mergers, overridden.has("mergers")),
-        variantField(record.variant, overridden.has("variant")),
+        mergersField(ctx, record.mergers, overridden.has("mergers")),
+        variantField(ctx, record.variant, overridden.has("variant")),
     );
     return row;
 }
 
 // The mergers are an additive set, not a scalar, so they edit as a row of toggle
 // chips rather than a text field. Each chip is a checkbox named "merger" carrying
-// its merger value; editedRecord harvests the checked ones. Toggling one enters
-// edit mode, like focusing any other field.
-function mergersField(current, overridden) {
+// its merger value; the harvest reads the checked ones. Toggling one enters edit
+// mode on the owning context, like focusing any other field.
+function mergersField(ctx, current, overridden) {
     const active = new Set(current || []);
     const wrap = document.createElement("div");
     wrap.className = "edit-field mergers-field";
@@ -1335,7 +1356,7 @@ function mergersField(current, overridden) {
     const toggles = document.createElement("div");
     toggles.className = "merger-toggles";
     for (const [value, label] of MERGERS) {
-        toggles.append(mergerToggle(value, label, active.has(value)));
+        toggles.append(mergerToggle(ctx, value, label, active.has(value)));
     }
 
     wrap.append(caption, toggles);
@@ -1343,7 +1364,7 @@ function mergersField(current, overridden) {
     return wrap;
 }
 
-function mergerToggle(value, label, checked) {
+function mergerToggle(ctx, value, label, checked) {
     const chip = document.createElement("label");
     chip.className = "merger-toggle";
     const input = document.createElement("input");
@@ -1353,7 +1374,7 @@ function mergerToggle(value, label, checked) {
     input.checked = checked;
     input.addEventListener("change", () => {
         chip.classList.toggle("on", input.checked);
-        enterEdit(state.mainContext);
+        enterEdit(ctx);
     });
     const caption = document.createElement("span");
     caption.textContent = label;
@@ -1363,9 +1384,9 @@ function mergerToggle(value, label, checked) {
 }
 
 // variant is an additive boolean, not a scalar, so it edits as a single toggle
-// chip mirroring a merger toggle. The checkbox is class "variant-check";
-// editedRecord reads whether it is checked. Toggling enters edit mode.
-function variantField(current, overridden) {
+// chip mirroring a merger toggle. The checkbox is class "variant-check"; the
+// harvest reads whether it is checked. Toggling enters edit mode on the context.
+function variantField(ctx, current, overridden) {
     const wrap = document.createElement("div");
     wrap.className = "edit-field variant-field";
 
@@ -1375,14 +1396,14 @@ function variantField(current, overridden) {
 
     const toggles = document.createElement("div");
     toggles.className = "variant-toggles";
-    toggles.append(variantToggle(VARIANT_LABEL, Boolean(current)));
+    toggles.append(variantToggle(ctx, VARIANT_LABEL, Boolean(current)));
 
     wrap.append(caption, toggles);
     markOverridden(wrap, caption, overridden);
     return wrap;
 }
 
-function variantToggle(label, checked) {
+function variantToggle(ctx, label, checked) {
     const chip = document.createElement("label");
     chip.className = "variant-toggle";
     const input = document.createElement("input");
@@ -1391,7 +1412,7 @@ function variantToggle(label, checked) {
     input.checked = checked;
     input.addEventListener("change", () => {
         chip.classList.toggle("on", input.checked);
-        enterEdit(state.mainContext);
+        enterEdit(ctx);
     });
     const caption = document.createElement("span");
     caption.textContent = label;
@@ -1526,7 +1547,7 @@ function bulkActionBar() {
 
 // A patch body built from the record's OWN fields, no edit surface involved — the
 // shape a bulk verdict writes (bulk mode renders no editable fields). Single-record
-// verdicts overlay the live inputs on top of this (editedRecord).
+// verdicts overlay the live inputs on top of this (editedRecord, via harvestRecord).
 function recordFields(record) {
     const result = {
         word: record.word,
@@ -1552,29 +1573,62 @@ function recordFields(record) {
     return result;
 }
 
-// The complete record an editor context currently shows: the record's fields with
-// the edit surface overlaid from the inputs. Harvested scoped to the context's root
-// (by data-field), so it reads THAT editor's inputs and no other's.
+// The record an editor context currently describes, harvested scoped to the context's
+// root (by data-field), so it reads THAT editor's inputs and no other's. The SINGLE
+// harvest for both modes: create authors a self-contained record from scratch (no base
+// to overlay onto); edit overlays the live edit surface onto the record's own fields.
+function harvestRecord(ctx) {
+    return ctx.mode === CREATE_MODE
+        ? authoredRecord(ctx)
+        : editedRecord(ctx);
+}
+
+// A create-mode harvest: a self-contained authored record built only from the modal's
+// inputs — word/shaw/pos/var/ipa (non-empty) plus the additive mergers/variant. No
+// base record is carried (an authored row has no basis), so no status/source/freq
+// leaks in; the daemon anchors it on the identity fields alone.
+function authoredRecord(ctx) {
+    const record = {};
+    for (const name of ["word", "shaw", "pos", "var", "ipa"]) {
+        const value = ctx.root.querySelector(`[data-field="${name}"]`).value.trim();
+        if (value) {
+            record[name] = value;
+        }
+    }
+    applyAdditiveFields(ctx, record);
+    return record;
+}
+
+// An edit-mode harvest: the record's own fields with the edit surface overlaid from
+// the inputs (EDITABLE_FIELDS are always present; the read-only word/pos identity
+// carries through from recordFields).
 function editedRecord(ctx) {
     const result = recordFields(ctx.record);
     for (const name of EDITABLE_FIELDS) {
         const input = ctx.root.querySelector(`[data-field="${name}"]`);
         result[name] = input.value.trim();
     }
+    applyAdditiveFields(ctx, result);
+    return result;
+}
+
+// Overlay the additive mergers/variant flags from the context's toggles onto a
+// harvested record: present only when set, absent (deleted) otherwise — the canonical
+// "absence is the signal" convention both harvests share.
+function applyAdditiveFields(ctx, record) {
     const mergers = [...ctx.root.querySelectorAll(".merger-check:checked")]
         .map((box) => box.value);
     if (mergers.length) {
-        result.mergers = mergers;
+        record.mergers = mergers;
     } else {
-        delete result.mergers;
+        delete record.mergers;
     }
     const variantBox = ctx.root.querySelector(".variant-check");
     if (variantBox && variantBox.checked) {
-        result.variant = true;
+        record.variant = true;
     } else {
-        delete result.variant;
+        delete record.variant;
     }
-    return result;
 }
 
 function requireShaw(record) {
@@ -1602,10 +1656,12 @@ function isAuthored(record) {
 // flow then treats like any other authored row.
 //
 // ONE dismissable modal serves both entry points: New Entry opens it BLANK, and Clone
-// opens the SAME modal PREPOPULATED with an exact copy of a source record. Both routes
-// share this modal shell, its field editors, its harvest, its validation and its
-// authorship submit — the only difference is the seed and the clone-only "must differ
-// from the source" guard below.
+// opens the SAME modal PREPOPULATED with an exact copy of a source record. Its CONTENT
+// is a recordEditor in create mode (scope "modal") — the single editor renderer shared
+// with the detail panel — so create and edit never diverge. The only difference between
+// New Entry and Clone is the seed and the submit label. An unchanged clone is not
+// blocked client-side: it simply submits, and the daemon rejects the duplicate anchor,
+// surfacing the same error toast as any other rejection while the modal stays open.
 
 // The identity fields a new record must carry — the natural key the daemon anchors
 // it on (RECORD_REQUIRED_FIELDS). ipa/mergers/variant are optional spelling detail.
@@ -1616,22 +1672,28 @@ const NEW_ENTRY_REQUIRED = [
     ["var", "Dialect (var)"],
 ];
 
-// The create form's inputs carry their OWN id prefix (distinct from the review
-// editor's), so the modal's fields never collide with a shown record's fields in
-// the DOM behind the backdrop. Harvest scopes to the modal element by data-field.
+// The create editor's inputs carry their OWN id prefix (distinct from the review
+// editor's), so the modal's fields never collide with the shown record's fields in
+// the DOM behind the backdrop. Harvest scopes to the context's root by data-field.
 const CREATE_FIELD_PREFIX = "create-";
 
-// Open the shared create modal BLANK — the New Entry route. No seed, so the clone
-// guard does not apply. Bulk selection and the review cursor are left as they are:
-// the modal sits OVER the workbench and dismisses back to it untouched.
-function openCreateForm() {
-    openCreateModal(null);
+// A blank seed for the New Entry route: every create field empty. Gives the create
+// field builders a uniform record shape to read, whether seeded (clone) or blank.
+function blankSeed() {
+    return { word: "", pos: "", var: "", ipa: "", shaw: "", mergers: [], variant: false };
 }
 
-// Open the shared create modal PREPOPULATED with an exact copy of a source record —
-// the Clone route. EVERY field is seeded verbatim (word/pos/var/ipa/shaw/mergers/
-// variant); the owner then edits whatever makes it a distinct sibling before saving.
-// The seed is remembered so the change guard can reject an unedited exact duplicate.
+// Open the create modal BLANK — the New Entry route. Bulk selection and the review
+// cursor are left as they are: the modal sits OVER the workbench and dismisses back
+// to it untouched.
+function openCreateForm() {
+    openCreateModal(blankSeed(), "Create");
+}
+
+// Open the create modal PREPOPULATED with an exact copy of a source record — the
+// Clone route. EVERY field is seeded verbatim (word/pos/var/ipa/shaw/mergers/variant);
+// the owner then edits whatever makes it a distinct sibling before submitting. An
+// unedited copy is not blocked here — the daemon rejects the duplicate anchor.
 function openCloneModal(sourceRecord) {
     openCreateModal({
         word: sourceRecord.word ?? "",
@@ -1641,82 +1703,14 @@ function openCloneModal(sourceRecord) {
         shaw: sourceRecord.shaw ?? "",
         mergers: sourceRecord.mergers ?? [],
         variant: Boolean(sourceRecord.variant),
-    });
+    }, "Clone");
 }
 
-// The single open path: render the modal from an optional seed and stand up the
-// keyboard/selection guards. A seed marks this as a clone (state.createModal.clone),
-// which arms the "must differ" guard; the seed is canonicalised the same way the
-// harvest is (seedSignature) so the guard compares like with like. A null seed is a
-// blank New Entry, which needs no seed and no guard.
-function openCreateModal(seed) {
+// The single open path: host a create-mode recordEditor in the modal card and stand
+// up the keyboard/selection guards. The card chrome (backdrop, dismiss ×) is the
+// modal shell; its content is the recordEditor, which owns the fields and harvest.
+function openCreateModal(seed, submitLabel) {
     setDrawer(false);
-    state.createModal = {
-        clone: seed !== null,
-        seedSignature: seed ? recordSignature(cloneSeedRecord(seed)) : null,
-    };
-    renderCreateModal(seed);
-    CREATE_MODAL.classList.add("open");
-    CREATE_MODAL.setAttribute("aria-hidden", "false");
-    const first = document.getElementById(`${CREATE_FIELD_PREFIX}word`);
-    if (first) {
-        first.focus();
-    }
-}
-
-// The seed reshaped into the SAME canonical record shape newEntryRecord produces
-// (empty text fields dropped, mergers only when non-empty, variant only when true),
-// so recordSignature can compare a clone's harvested record against its seed field
-// for field. Without this the seed's empty strings / bare arrays would never match
-// the harvest's omissions and the guard would pass every unedited clone.
-function cloneSeedRecord(seed) {
-    const record = {};
-    for (const name of ["word", "shaw", "pos", "var", "ipa"]) {
-        if (seed[name]) {
-            record[name] = seed[name];
-        }
-    }
-    if (seed.mergers && seed.mergers.length) {
-        record.mergers = seed.mergers;
-    }
-    if (seed.variant) {
-        record.variant = true;
-    }
-    return record;
-}
-
-// A stable, order-independent signature of a create record, for the clone change
-// guard's equality test. mergers are sorted so a reordered (but equal) set matches.
-function recordSignature(record) {
-    const parts = ["word", "shaw", "pos", "var", "ipa"]
-        .map((name) => `${name}=${record[name] ?? ""}`);
-    parts.push(`mergers=${[...(record.mergers ?? [])].sort().join(",")}`);
-    parts.push(`variant=${record.variant ? "1" : "0"}`);
-    return parts.join("|");
-}
-
-function isCreateModalOpen() {
-    return state.createModal !== null;
-}
-
-// Dismiss the modal without writing anything, returning to the workbench exactly as
-// it was — the detail card behind the backdrop is untouched, so there is nothing to
-// re-render. Every dismiss route (Escape / backdrop / X / Cancel) lands here.
-function closeCreateModal() {
-    if (!isCreateModalOpen()) {
-        return;
-    }
-    state.createModal = null;
-    CREATE_MODAL.classList.remove("open");
-    CREATE_MODAL.setAttribute("aria-hidden", "true");
-    CREATE_MODAL.replaceChildren();
-}
-
-// Build the modal card: title/hint, the create form (word/pos/var/ipa/shaw + mergers/
-// variant), and a Create + Cancel bar, with an X in the corner. A seed prefills the
-// inputs; blank leaves them empty. The card reuses the cheatsheet backdrop shell and
-// the record editor's own field builders (fieldInput / mergersField / variantField).
-function renderCreateModal(seed) {
     const card = document.createElement("div");
     card.className = "create-card";
     card.setAttribute("role", "document");
@@ -1728,83 +1722,106 @@ function renderCreateModal(seed) {
     dismiss.textContent = "×";
     dismiss.addEventListener("click", closeCreateModal);
 
+    card.append(
+        dismiss,
+        recordEditor(seed, { scope: "modal", mode: CREATE_MODE, submitLabel }),
+    );
+    CREATE_MODAL.setAttribute("aria-labelledby", "create-title");
+    CREATE_MODAL.replaceChildren(card);
+    CREATE_MODAL.classList.add("open");
+    CREATE_MODAL.setAttribute("aria-hidden", "false");
+    const first = document.getElementById(`${CREATE_FIELD_PREFIX}word`);
+    if (first) {
+        first.focus();
+    }
+}
+
+function isCreateModalOpen() {
+    return state.modalEditor !== null;
+}
+
+// Dismiss the modal without writing anything, returning to the workbench exactly as
+// it was — the detail card behind the backdrop is untouched, so there is nothing to
+// re-render. Every dismiss route (Escape / backdrop / X / Cancel) lands here.
+function closeCreateModal() {
+    if (!isCreateModalOpen()) {
+        return;
+    }
+    state.modalEditor = null;
+    CREATE_MODAL.classList.remove("open");
+    CREATE_MODAL.setAttribute("aria-hidden", "true");
+    CREATE_MODAL.replaceChildren();
+}
+
+// The create editor's top matter: title + hint (NOT the edit-mode badges/facts —
+// a not-yet-created record has no patch state). Clone and New Entry differ only in
+// wording.
+function createTopMatter(record, submitLabel) {
+    const cloning = submitLabel === "Clone";
+    const wrap = document.createElement("div");
+
     const title = document.createElement("div");
     title.className = "detail-create-title";
     title.id = "create-title";
-    title.textContent = seed ? "Clone entry" : "New entry";
+    title.textContent = cloning ? "Clone entry" : "New entry";
+
     const hint = document.createElement("p");
     hint.className = "detail-create-hint";
-    hint.textContent = seed
-        ? "An exact copy of the source. Edit at least one field to make it a distinct sibling."
+    hint.textContent = cloning
+        ? "An exact copy of the source. Edit whatever makes it a distinct sibling."
         : "Author a brand-new record. Word, Shavian, POS and Dialect are required.";
 
+    wrap.append(title, hint);
+    return wrap;
+}
+
+// The create editor's field stack: word/shaw/ipa each on their own row, then Dialect
+// (var) + POS + mergers + variant grouped on one row. word AND pos are EDITABLE here
+// (the author types the anchor's Latin identity), unlike the detail editor where they
+// are the fixed read-only anchor shown in the heading.
+function createFieldStack(ctx, record) {
     const stack = document.createElement("div");
     stack.className = "field-stack";
     stack.append(
-        createField("word", "Word (latin)", seed ? seed.word : ""),
-        createField("shaw", "Shavian", seed ? seed.shaw : "", "shaw-field"),
-        createField("ipa", "IPA", seed ? seed.ipa : "", "ipa-field"),
-        createVariantRow(seed),
+        createField(ctx, "word", "Word (latin)", record.word),
+        createField(ctx, "shaw", "Shavian", record.shaw, "shaw-field"),
+        createField(ctx, "ipa", "IPA", record.ipa, "ipa-field"),
+        createVariantRow(ctx, record),
     );
-
-    card.append(dismiss, title, hint, stack, createActionBar());
-    CREATE_MODAL.setAttribute("aria-labelledby", "create-title");
-    CREATE_MODAL.replaceChildren(card);
+    return stack;
 }
 
-// A create-form text field: the shared input markup under the modal's id prefix,
+// A create-editor text field: the shared input markup under the context's id prefix,
 // with none of the review-flow listeners (the modal owns Enter/Escape itself).
-function createField(name, label, value, extraClass = "") {
-    return fieldInput(name, label, value, extraClass, CREATE_FIELD_PREFIX).wrap;
+function createField(ctx, name, label, value, extraClass = "") {
+    return fieldInput(name, label, value, extraClass, ctx.prefix).wrap;
 }
 
-// Dialect (var) + POS + mergers + variant on one row, mirroring the record editor's
-// variantRow. POS lives here (not the read-only heading) because on a new entry it
-// is an editable identity field, not a fixed anchor.
-function createVariantRow(seed) {
+// Dialect (var) + POS + mergers + variant on one row, mirroring the detail editor's
+// variantRow. POS lives here (not a read-only heading) because on a new entry it is
+// an editable identity field, not a fixed anchor.
+function createVariantRow(ctx, record) {
     const row = document.createElement("div");
     row.className = "field-row";
     row.append(
-        createField("var", "Dialect (var)", seed ? seed.var : ""),
-        createField("pos", "POS", seed ? seed.pos : ""),
-        mergersField(seed ? seed.mergers : [], false),
-        variantField(seed ? seed.variant : false, false),
+        createField(ctx, "var", "Dialect (var)", record.var),
+        createField(ctx, "pos", "POS", record.pos),
+        mergersField(ctx, record.mergers, false),
+        variantField(ctx, record.variant, false),
     );
     return row;
 }
 
-function createActionBar() {
+// The create editor's action bar: [submitLabel → submit, Cancel → dismiss]. No review
+// verdicts — a not-yet-created record has nothing to accept/drop/flag.
+function createActionBar(ctx, submitLabel) {
     const bar = document.createElement("div");
     bar.className = "actions";
     bar.append(
-        actionButton("create", "Create", createEntry),
+        actionButton("create", submitLabel, () => submitCreate(ctx)),
         actionButton("undo", "Cancel", closeCreateModal),
     );
     return bar;
-}
-
-// The record the create form currently describes, harvested from the MODAL's inputs
-// (scoped by data-field, so a record shown behind the backdrop is never read). Only
-// non-empty fields are carried; mergers/variant follow editedRecord's additive
-// convention (absent == canonical).
-function newEntryRecord() {
-    const record = {};
-    for (const name of ["word", "shaw", "pos", "var", "ipa"]) {
-        const value = CREATE_MODAL.querySelector(`[data-field="${name}"]`).value.trim();
-        if (value) {
-            record[name] = value;
-        }
-    }
-    const mergers = [...CREATE_MODAL.querySelectorAll(".merger-check:checked")]
-        .map((box) => box.value);
-    if (mergers.length) {
-        record.mergers = mergers;
-    }
-    const variantBox = CREATE_MODAL.querySelector(".variant-check");
-    if (variantBox && variantBox.checked) {
-        record.variant = true;
-    }
-    return record;
 }
 
 // The required fields left blank, by human label, for a fail-loud validation toast.
@@ -1814,30 +1831,18 @@ function missingRequiredFields(record) {
         .map(([, label]) => label);
 }
 
-// True when a clone is an unedited exact copy of its source — a pointless duplicate,
-// not a distinct sibling. The whole record must differ in AT LEAST ONE field
-// (word/pos/var/ipa/shaw/mergers/variant), so the guard compares the harvested record's
-// signature against the seed's; equal signatures mean nothing was changed.
-function cloneUnchanged(record) {
-    return recordSignature(record) === state.createModal.seedSignature;
-}
-
 // Write a new authored entry (blank New Entry or cloned sibling). Validates the
 // identity fields client-side first (the daemon validates too, but this gives a
-// precise, immediate message); a clone additionally must differ from its source in
-// at least one field. Then sends the authorship patch — the same op the re-author
-// path sends, minus `replaces`. On success the returned record is inserted at the top
-// of the working set, the modal closes, and the owner lands on the new row. A daemon
-// rejection (duplicate anchor, missing field) surfaces as a toast; the modal stays open.
-async function createEntry() {
-    const record = newEntryRecord();
+// precise, immediate message), then sends the authorship patch — the same op the
+// re-author path sends, minus `replaces`. On success the returned record is inserted
+// at the top of the working set, the modal closes, and the owner lands on the new row.
+// A daemon rejection (duplicate anchor — including an unedited clone — or a missing
+// field) surfaces as a toast; the modal stays open.
+async function submitCreate(ctx) {
+    const record = harvestRecord(ctx);
     const missing = missingRequiredFields(record);
     if (missing.length) {
         showToast(`Required: ${missing.join(", ")}.`, true);
-        return;
-    }
-    if (state.createModal.clone && cloneUnchanged(record)) {
-        showToast("Change at least one field to clone.", true);
         return;
     }
     try {
@@ -1890,7 +1895,7 @@ async function saveSelected() {
     if (!selected) {
         return;
     }
-    const record = editedRecord(activeContext());
+    const record = harvestRecord(activeContext());
     if (!requireShaw(record)) {
         return;
     }
@@ -1915,7 +1920,7 @@ async function acceptSelected() {
 // global selection state, so a selection that shrinks mid-run can't flip the path.
 // Returns the daemon result; throws so the caller can fail loud.
 async function acceptOne(selected, options = {}) {
-    const record = options.bulk ? recordFields(selected) : editedRecord(activeContext());
+    const record = options.bulk ? recordFields(selected) : harvestRecord(activeContext());
     record.status = ACCEPTED_STATUS;
     if (!record.shaw) {
         throw new Error(`${selected.word}: Shavian cannot be empty.`);
@@ -2356,7 +2361,7 @@ function onGlobalKey(event) {
             closeCreateModal();
         } else if (event.key === "Enter") {
             event.preventDefault();
-            createEntry();
+            submitCreate(state.modalEditor);
         }
         return;
     }

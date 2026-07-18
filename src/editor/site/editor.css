@@ -656,6 +656,7 @@ body {
     white-space: nowrap;
 }
 .stamp.unreviewed { color: var(--state-unreviewed); }
+.stamp.accepted { color: var(--state-edited); }
 .stamp.edited { color: var(--state-edited); }
 .stamp.dropped { color: var(--state-dropped); }
 .stamp.flagged { color: var(--state-flagged); }

@@ -1082,6 +1082,26 @@ body {
 .related-row.here .related-label { color: var(--accent); font-weight: 700; }
 .related-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .related-pos { color: var(--ink-soft); font-size: 11px; cursor: help; }
+/* The dialect track: the var, followed by variant/merger markers when present.
+   One grid cell (the row template is fixed), so the markers group beside the var
+   rather than claiming their own columns. */
+.related-dialect {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+}
+/* Compact echoes of the detail variant/merger badges, sized to the dense row:
+   they borrow the badge tints (variant = authored, merger = accent) but drop the
+   border and shrink to sit level with the 11px var text. */
+.related-variant, .related-merger {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.related-variant { color: var(--state-authored); }
+.related-merger { color: var(--accent); }
 .related-shaw {
     font-family: var(--shaw);
     font-size: 20px;

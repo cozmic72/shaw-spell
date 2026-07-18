@@ -1130,10 +1130,29 @@ function relatedRow(record, focusedAnchor) {
         cell("related-label", here ? "you are here" : provenance.label),
         cell("related-word", record.word),
         posCell("related-pos", record.pos),
-        varCell(record.var),
+        relatedDialect(record),
         cell("related-shaw", record.shaw),
     );
     return row;
+}
+
+// The dialect column of a related row: the var, plus compact variant/merger
+// markers when the record carries them, so a variant or merger alternate is
+// distinguishable from a canonical sibling at a glance. Grouped into one grid
+// track (the row's column template is fixed) and kept quiet — a canonical row
+// shows only its var. Markers mirror the detail badges but sized to the dense
+// row (see .related-variant / .related-merger).
+function relatedDialect(record) {
+    const wrap = document.createElement("span");
+    wrap.className = "related-dialect";
+    wrap.append(varCell(record.var));
+    if (record.variant) {
+        wrap.append(cell("related-variant", VARIANT_LABEL));
+    }
+    for (const value of record.mergers || []) {
+        wrap.append(cell("related-merger", MERGER_LABELS.get(value) ?? value));
+    }
+    return wrap;
 }
 
 // Provenance + review state of a related record, from the fields the view already

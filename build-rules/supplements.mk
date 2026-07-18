@@ -97,11 +97,11 @@ SUPPLEMENT_DEPS := data/supplement-wordnet-filtered.json data/supplement-wiktion
 READLEX_MERGED := data/readlex-merged.json
 FREQUENCY_CORPUS := external/frequency-words/content/2018/en/en_full.txt
 
-$(READLEX_MERGED): $(SRC_TOOLS)/apply_patches.py external/readlex/readlex.json $(SUPPLEMENT_DEPS) data/patches/patches.jsonl
+$(READLEX_MERGED): $(SRC_TOOLS)/apply_patches.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py external/readlex/readlex.json $(SUPPLEMENT_DEPS) data/patches/patches.jsonl
 	@echo "Applying editorial patches to produce merged readlex..."
 	$(RUN) python3 $(SRC_TOOLS)/apply_patches.py --out $(READLEX_MERGED)
 
-$(READLEX_PATH): $(READLEX_MERGED) $(SRC_TOOLS)/apply_frequency_data.py $(SRC_TOOLS)/spelling_variants.py $(FREQUENCY_CORPUS)
+$(READLEX_PATH): $(READLEX_MERGED) $(SRC_TOOLS)/apply_frequency_data.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py $(SRC_TOOLS)/spelling_variants.py $(FREQUENCY_CORPUS)
 	@echo "Filling missing frequency data from subtitle corpus..."
 	$(RUN) python3 $(SRC_TOOLS)/apply_frequency_data.py --in $(READLEX_MERGED) --out $(READLEX_PATH)
 

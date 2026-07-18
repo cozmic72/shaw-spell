@@ -13,13 +13,31 @@ READLEX_JSON := external/readlex/readlex.json
 # Supplement generation (from source data)
 ###########################################
 
-data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json: $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WORDNET_CACHE)
+# The -reliable.json files are COMMITTED artifacts and the anchor identity for
+# every editorial patch. Their generators consult the external `shave` tool,
+# which is NON-DETERMINISTIC (low-confidence Shavian drifts between runs), so
+# regeneration is a DELIBERATE act — never an automatic mtime-triggered one.
+# A `git checkout` shuffles mtimes, which could otherwise make a generator or
+# source dump look "newer" and silently rebuild -reliable.json, drifting the
+# Shavian and ORPHANING the owner's patches. Hence ALL prerequisites are
+# order-only (after `|`): make rebuilds -reliable.json only when it is MISSING
+# (e.g. a fresh clone), not when a prereq is merely newer. To re-baseline on
+# purpose, use the `regenerate-supplements` target below.
+data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json: | $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WORDNET_CACHE)
 	@echo "Generating WordNet supplement..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_wordnet_supplement.py
 
-data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json: $(SRC_TOOLS)/generate_wiktionary_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WIKTIONARY_JSONL)
+data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json: | $(SRC_TOOLS)/generate_wiktionary_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WIKTIONARY_JSONL)
 	@echo "Generating Wiktionary supplement (this takes a few minutes)..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_wiktionary_supplement.py
+
+# Deliberately regenerate the reliable supplements (re-runs the non-deterministic
+# shave tool — expect Shavian drift; only run when you intend to re-baseline).
+.PHONY: regenerate-supplements
+regenerate-supplements:
+	rm -f data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json \
+	      data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json
+	@$(MAKE) data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 
 ###########################################
 # Confidence re-scoring (fast, uses shave)

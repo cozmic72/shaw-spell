@@ -17,7 +17,10 @@
 // mode. A single-key verdict never fires while a field holds focus.
 
 const AUTHOR = "editor";
-const PAGE_LIMIT = 200;
+// The page size, capped at the daemon's MAX_LIMIT (500). A larger page means
+// select-all (which is scoped to the loaded page) covers more of a filtered set
+// in one go, without a corpus-wide bulk op.
+const PAGE_LIMIT = 500;
 const ACCEPTED_STATUS = "sanctioned";
 const SESSION_KEY = "shaw-spell.editor.session";
 // The default query sort — today's landing order, the highest-confidence review

@@ -1122,6 +1122,10 @@ body {
     border-left: 3px solid transparent;
 }
 .related-row:last-child { border-bottom: none; }
+/* A sibling row opens in a modal for in-place review — hint it is a target. The
+   "you are here" row is the detail card above, so it carries no affordance. */
+.related-row.clickable { cursor: pointer; }
+.related-row.clickable:hover { background: var(--paper-raised); }
 /* "You are here" — the focused entry, edged with the same accent the detail card
    wears, so the eye ties the row to the card above it. */
 .related-row.here {

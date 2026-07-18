@@ -211,6 +211,12 @@ const state = {
     // Touch multi-select mode (iOS Mail/Photos style): entered by long-press, in
     // which a plain tap toggles rather than reviews. Off = plain tap reviews.
     touchMulti: false,
+    // Monotonic token for the related-entries fetch. Each loadRelated bumps it and
+    // captures the new value; only the LATEST request may render its result. A fetch
+    // issued for an earlier landing (or an earlier state of the same record — a
+    // reload after a write) is superseded and drops its result, so a slow in-flight
+    // response can never paint stale rows over the current, freshest one.
+    relatedGeneration: 0,
 };
 
 // Long-press threshold to enter touch multi-select, and the movement slop beyond
@@ -713,9 +719,7 @@ function select(index) {
     if (state.mainContext) {
         state.mainContext.editing = false;
     }
-    for (const row of LEDGER.children) {
-        row.classList.toggle("active", Number(row.dataset.index) === index);
-    }
+    highlightActiveRow(index);
     // In bulk mode the card shows the group summary, not a record; moving the review
     // cursor still scrolls the row into view but leaves the summary in place.
     if (inBulkMode()) {
@@ -727,6 +731,15 @@ function select(index) {
         renderDetail(state.records[index]);
     }
     saveSession();
+}
+
+// Mark the row at `index` as the review cursor, clearing the mark on every other row.
+// Split out so a ledger rebuild that must NOT re-render the detail card (a modal write
+// removing a row) can still restore the highlight the rebuild dropped.
+function highlightActiveRow(index) {
+    for (const row of LEDGER.children) {
+        row.classList.toggle("active", Number(row.dataset.index) === index);
+    }
 }
 
 function scrollRowIntoView(index) {
@@ -751,9 +764,13 @@ function renderEmptyDetail() {
 // the verdict actions and their keyboard shortcuts operate on the whole group,
 // and the detail card shows a summary instead of the single-record editor. 0–1
 // selected leaves the single-record review flow exactly as it was.
-
+//
+// Bulk is a MAIN-context concept — it acts on the workbench selection. While an edit
+// modal owns the screen its verdicts act on the single modal record (via
+// activeContext()), so bulk is dormant: a verdict never fans out to the selection
+// sitting behind the backdrop.
 function inBulkMode() {
-    return state.multi.size >= 2;
+    return !isModalEditorOpen() && state.multi.size >= 2;
 }
 
 function toggleSelection(anchor) {
@@ -855,37 +872,39 @@ function syncSelectBar() {
 // A record editor's context: the surface a single record is being edited on. It owns
 // its harvest `root` (the container the field inputs live under, queried scoped by
 // data-field), an id `prefix` for those inputs (the detail keeps "field-", the modal
-// uses "create-" so the two never collide), a per-context `editing` flag, and the
-// `record` and `mode` it renders. The detail panel holds one (state.mainContext,
-// mode "edit"); the open create/clone modal holds another (state.modalEditor, mode
-// "create"). activeContext() routes the review flow to whichever owns the screen.
+// uses "modal-" so the two never collide), a per-context `editing` flag, and the
+// `record` and `mode` it renders. The detail panel holds one (state.mainContext, mode
+// "edit"); the open modal holds another (state.modalEditor) — create mode for a New
+// Entry/Clone, edit mode for a related entry opened for in-place review.
+// activeContext() routes the review flow to whichever owns the screen.
 function makeEditorContext({ scope, root, prefix, record, mode }) {
     return { scope, root, prefix, editing: false, record, mode };
 }
 
 // The context whose edit inputs the verdict/harvest flow acts on: the open modal's
-// create-mode context when the modal owns the screen, otherwise the detail context.
-// Returning the modal context while it is open keeps a stray keypress from harvesting
-// or acting on the record behind the backdrop — though in create mode only Enter/Escape
-// act (handled before any verdict), so no verdict ever reaches it.
+// context when a modal owns the screen, otherwise the detail context. Returning the
+// modal context while it is open keeps a stray keypress from harvesting or acting on
+// the record behind the backdrop — in create mode only Enter/Escape act, so no verdict
+// ever reaches it; in edit mode (a related entry opened for review) the verdicts DO
+// act, but on the modal record, never the detail behind.
 function activeContext() {
     return state.modalEditor ?? state.mainContext;
 }
 
-// Build the reusable record editor for `record` — the SINGLE editor renderer for
-// both the detail panel (mode "edit") and the create/clone modal (mode "create").
-// Returns a `.record-editor` container that owns the field inputs (the context's
-// harvest root), context-scoped so its ids and harvest never collide with another
-// instance's. The related section is never part of it (renderDetail appends that
-// separately). Edit mode (scope "detail") stores the context as state.mainContext so
-// the review flow can resolve and harvest it; create mode (scope "modal") tracks its
-// context as state.modalEditor. It never shows the related section.
+// Build the reusable record editor for `record` — the SINGLE editor renderer for the
+// detail panel and the modal, in both modes. Returns a `.record-editor` container that
+// owns the field inputs (the context's harvest root), context-scoped so its ids and
+// harvest never collide with another instance's. The related section is never part of
+// it (renderDetail appends that separately). Scope "detail" stores the context as
+// state.mainContext; scope "modal" stores it as state.modalEditor. It never shows the
+// related section.
 //
 // Edit mode renders the review top matter (badges/facts/overridden marks), read-only
-// word/pos identity, the field editors, the verdict bar and the clone bar. Create
-// mode renders a minimal title + hint, EDITABLE word/pos (the author types the
-// anchor), the same field editors, and a [submitLabel, Cancel] bar — no review
-// affordances, since a not-yet-created record has no patch state.
+// word/pos identity, the field editors, the verdict bar and the clone bar — the same
+// whether it hosts the detail panel or a modal opened on a related entry. Create mode
+// renders a minimal title + hint, EDITABLE word/pos (the author types the anchor), the
+// same field editors, and a [submitLabel, Cancel] bar — no review affordances, since a
+// not-yet-created record has no patch state.
 const CREATE_MODE = "create";
 
 function recordEditor(record, opts) {
@@ -894,15 +913,16 @@ function recordEditor(record, opts) {
     const ctx = makeEditorContext({
         scope: opts.scope,
         root: container,
-        prefix: opts.mode === CREATE_MODE ? CREATE_FIELD_PREFIX : DETAIL_FIELD_PREFIX,
+        prefix: opts.scope === "modal" ? MODAL_FIELD_PREFIX : DETAIL_FIELD_PREFIX,
         record,
         mode: opts.mode,
     });
     if (opts.scope === "detail") {
         state.mainContext = ctx;
+    } else {
+        state.modalEditor = ctx;
     }
     if (opts.mode === CREATE_MODE) {
-        state.modalEditor = ctx;
         container.append(
             createTopMatter(record, opts.submitLabel),
             createFieldStack(ctx, record),
@@ -935,7 +955,7 @@ function recordEditor(record, opts) {
         heading,
         referenceLinks(record.word),
         fieldGrid(ctx, record, overridden),
-        actionBar(record),
+        actionBar(ctx, record),
         cloneBar(record),
     );
     return container;
@@ -1099,10 +1119,7 @@ function relatedSection() {
     const section = document.createElement("section");
     section.className = "related";
     section.setAttribute("aria-label", RELATED_TITLE);
-    const loading = document.createElement("p");
-    loading.className = "related-loading";
-    loading.textContent = "Finding related entries…";
-    section.append(relatedHeading(null), loading);
+    section.append(relatedHeading(null), relatedLoading());
     return section;
 }
 
@@ -1115,24 +1132,56 @@ function relatedHeading(count) {
     return heading;
 }
 
-// Fetch related for the focused record and fill `section` when it returns. The
-// selection may have moved on by then (fast stepping); render only if the record
-// still occupies the focused slot, matched by anchor — a stale response for a
-// prior word must never overwrite the current card.
+// Fetch related for the focused record and fill `section` when it returns. Two things
+// can supersede an in-flight fetch before it resolves: the selection may have stepped
+// on (fast review), or a write may have re-decided a related entry and triggered a
+// fresh reload of THIS record's list. Both are caught by the generation token — only
+// the latest loadRelated may render — backstopped by the anchor/connected checks. So
+// the list always reflects the newest daemon state (e.g. the sibling you just accepted
+// shows accepted), never a slower earlier response.
 async function loadRelated(record, section) {
+    const generation = ++state.relatedGeneration;
     const focused = record.anchor;
     try {
         const result = await callDaemon({ op: "related", word: record.word, shaw: record.shaw });
         const current = state.records[state.selected];
-        if (!current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
+        if (generation !== state.relatedGeneration
+            || !current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
             return;
         }
         renderRelated(section, result.records, focused);
     } catch (error) {
-        if (section.isConnected) {
+        if (generation === state.relatedGeneration && section.isConnected) {
             renderRelatedError(section, error.message);
         }
     }
+}
+
+// Re-fetch the related list for the record currently in the detail panel, in place —
+// after a write that re-decided one of its siblings WITHOUT re-rendering the detail
+// (a modal edit of a related entry, whose main card sits untouched behind the modal).
+// The stepping/re-selecting flow already reloads via renderDetail, so this is only for
+// the in-place case. A no-op when nothing is focused (empty/bulk detail has no list).
+function reloadRelatedForDetail() {
+    const record = state.records[state.selected];
+    if (!record) {
+        return;
+    }
+    const section = DETAIL.querySelector(".related");
+    if (!section) {
+        return;
+    }
+    section.replaceChildren(relatedHeading(null), relatedLoading());
+    loadRelated(record, section);
+}
+
+// The "Finding related entries…" placeholder, shared by the initial section and an
+// in-place reload so the list shows work-in-progress the same way in both.
+function relatedLoading() {
+    const loading = document.createElement("p");
+    loading.className = "related-loading";
+    loading.textContent = "Finding related entries…";
+    return loading;
 }
 
 function renderRelated(section, records, focusedAnchor) {
@@ -1196,7 +1245,36 @@ function relatedRow(record, focusedAnchor) {
         relatedDialect(record),
         cell("related-shaw", record.shaw),
     );
+    // A sibling row opens in a modal for in-place review; the "you are here" row is
+    // already the detail card above, so it is inert (no modal, no cursor move).
+    if (!here) {
+        row.classList.add("clickable");
+        row.addEventListener("click", () => openRelatedModal(record));
+    }
     return row;
+}
+
+// Open a related entry in an edit-mode modal for in-place review: the FULL editor
+// (top matter, fields, verdict/clone bar) hosting THIS record, over the workbench. The
+// related op already returned a full serialisable record, so no extra fetch is needed.
+// Verdicts and edits act on this record (activeContext() = the modal), writing patches
+// immediately and refreshing the affected main ledger row by anchor without moving the
+// main cursor; dismiss returns to the exact spot the owner left.
+function openRelatedModal(record) {
+    openModal(recordEditor(record, { scope: "modal", mode: "edit" }));
+}
+
+// Re-render the open edit-modal from a freshly-written record, so it shows the new
+// patch state and edited fields while the owner keeps acting or dismisses — mirroring
+// how the detail card re-renders in place after a verdict. Rebuilds the recordEditor
+// (which re-points state.modalEditor at the fresh record) inside the existing shell.
+function refreshModalEditor(record) {
+    if (!isModalEditorOpen()) {
+        return;
+    }
+    const card = CREATE_MODAL.querySelector(".create-card");
+    const editor = card.querySelector(".record-editor");
+    editor.replaceWith(recordEditor(record, { scope: "modal", mode: "edit" }));
 }
 
 // The dialect column of a related row: the var, plus compact variant/merger
@@ -1376,6 +1454,9 @@ function mergerToggle(ctx, value, label, checked) {
     input.addEventListener("change", () => {
         chip.classList.toggle("on", input.checked);
         enterEdit(ctx);
+        // Release the checkbox so the single-key verdicts fire again — a focused form
+        // control makes onGlobalKey treat A/X/F as typing and swallow them.
+        input.blur();
     });
     const caption = document.createElement("span");
     caption.textContent = label;
@@ -1414,6 +1495,9 @@ function variantToggle(ctx, label, checked) {
     input.addEventListener("change", () => {
         chip.classList.toggle("on", input.checked);
         enterEdit(ctx);
+        // Release the checkbox so the single-key verdicts fire again — a focused form
+        // control makes onGlobalKey treat A/X/F as typing and swallow them.
+        input.blur();
     });
     const caption = document.createElement("span");
     caption.textContent = label;
@@ -1423,8 +1507,9 @@ function variantToggle(ctx, label, checked) {
 }
 
 // The detail editor's field id prefix (its harvest is scoped by data-field, not id;
-// the id just keeps its label/for association stable). The modal create form uses its
-// OWN prefix so the two never collide in the DOM while the modal sits over a record.
+// the id just keeps its label/for association stable). A modal editor uses its OWN
+// prefix (MODAL_FIELD_PREFIX) so the two never collide in the DOM while a modal sits
+// over the detail record.
 const DETAIL_FIELD_PREFIX = "field-";
 
 // The bare labelled text input: the shared markup both the review editor and the
@@ -1497,8 +1582,10 @@ function fact(label, value) {
 
 // The verdict controls. Unflag/undo appear only when they apply, so the bar shows
 // exactly the moves available on this record. The keyboard is the fast path; the
-// buttons mirror it and give mobile real touch targets.
-function actionBar(record) {
+// buttons mirror it and give mobile real touch targets. Undo is a MAIN-flow move
+// (it walks the global undo stack and steps the review cursor), so an edit-modal
+// omits it — Clear is the modal's in-place "reset this entry's patch".
+function actionBar(ctx, record) {
     const bar = document.createElement("div");
     bar.className = "actions";
 
@@ -1514,7 +1601,7 @@ function actionBar(record) {
     if (record.patch_state === "flagged") {
         bar.append(actionButton("unflag", "Unflag", unflagSelected));
     }
-    if (session.undoStack.length) {
+    if (ctx.scope !== "modal" && session.undoStack.length) {
         bar.append(actionButton("undo", "Undo", undoLast));
     }
 
@@ -1673,10 +1760,12 @@ const NEW_ENTRY_REQUIRED = [
     ["var", "Dialect (var)"],
 ];
 
-// The create editor's inputs carry their OWN id prefix (distinct from the review
-// editor's), so the modal's fields never collide with the shown record's fields in
-// the DOM behind the backdrop. Harvest scopes to the context's root by data-field.
-const CREATE_FIELD_PREFIX = "create-";
+// A modal editor's inputs carry their OWN id prefix (distinct from the detail
+// editor's "field-"), so the modal's fields never collide with the detail record's
+// fields in the DOM behind the backdrop. Both modal modes — create (New Entry/Clone)
+// and edit (a related entry opened for review) — share it, since only one modal is
+// ever open. Harvest scopes to the context's root by data-field, never by id.
+const MODAL_FIELD_PREFIX = "modal-";
 
 // A blank seed for the New Entry route: every create field empty. Gives the create
 // field builders a uniform record shape to read, whether seeded (clone) or blank.
@@ -1707,10 +1796,24 @@ function openCloneModal(sourceRecord) {
     }, "Clone");
 }
 
-// The single open path: host a create-mode recordEditor in the modal card and stand
-// up the keyboard/selection guards. The card chrome (backdrop, dismiss ×) is the
-// modal shell; its content is the recordEditor, which owns the fields and harvest.
+// Open the create modal: host a create-mode recordEditor in the modal shell. Its
+// content owns the fields, harvest and Create/Cancel bar; the shell supplies the
+// backdrop, dismiss × and keyboard guards.
 function openCreateModal(seed, submitLabel) {
+    openModal(recordEditor(seed, { scope: "modal", mode: CREATE_MODE, submitLabel }));
+    const first = document.getElementById(`${MODAL_FIELD_PREFIX}word`);
+    if (first) {
+        first.focus();
+    }
+}
+
+// The generic modal shell: stand up the card chrome (backdrop, dismiss ×) around a
+// pre-built recordEditor and raise the keyboard/selection guards. recordEditor has
+// already stored the context as state.modalEditor, so isModalEditorOpen() is true and
+// activeContext() routes to it. Both entry points — create (New Entry/Clone) and edit
+// (a related entry opened for review) — funnel through here so the shell lifecycle is
+// defined once.
+function openModal(editor) {
     setDrawer(false);
     const card = document.createElement("div");
     card.className = "create-card";
@@ -1721,31 +1824,33 @@ function openCreateModal(seed, submitLabel) {
     dismiss.className = "create-dismiss";
     dismiss.setAttribute("aria-label", "Cancel");
     dismiss.textContent = "×";
-    dismiss.addEventListener("click", closeCreateModal);
+    dismiss.addEventListener("click", closeModal);
 
-    card.append(
-        dismiss,
-        recordEditor(seed, { scope: "modal", mode: CREATE_MODE, submitLabel }),
-    );
+    card.append(dismiss, editor);
     CREATE_MODAL.setAttribute("aria-labelledby", "create-title");
     CREATE_MODAL.replaceChildren(card);
     CREATE_MODAL.classList.add("open");
     CREATE_MODAL.setAttribute("aria-hidden", "false");
-    const first = document.getElementById(`${CREATE_FIELD_PREFIX}word`);
-    if (first) {
-        first.focus();
-    }
 }
 
-function isCreateModalOpen() {
+function isModalEditorOpen() {
     return state.modalEditor !== null;
 }
 
+// Whether the given (or the active) context is a create-mode editor — the New
+// Entry/Clone form, which authors from scratch and shows no review affordances. An
+// edit-mode modal (a related entry opened for review) is NOT this.
+function isCreateMode(ctx = activeContext()) {
+    return Boolean(ctx) && ctx.mode === CREATE_MODE;
+}
+
 // Dismiss the modal without writing anything, returning to the workbench exactly as
-// it was — the detail card behind the backdrop is untouched, so there is nothing to
-// re-render. Every dismiss route (Escape / backdrop / X / Cancel) lands here.
-function closeCreateModal() {
-    if (!isCreateModalOpen()) {
+// it was. A create modal never touched the workbench; an edit modal already refreshed
+// the affected ledger row by anchor on each write (main cursor/scroll untouched), so
+// there is nothing to re-render on dismiss. Every route (Escape / backdrop / X /
+// Cancel) lands here.
+function closeModal() {
+    if (!isModalEditorOpen()) {
         return;
     }
     state.modalEditor = null;
@@ -1820,7 +1925,7 @@ function createActionBar(ctx, submitLabel) {
     bar.className = "actions";
     bar.append(
         actionButton("create", submitLabel, () => submitCreate(ctx)),
-        actionButton("undo", "Cancel", closeCreateModal),
+        actionButton("undo", "Cancel", closeModal),
     );
     return bar;
 }
@@ -1853,7 +1958,7 @@ async function submitCreate(ctx) {
             record,
             author: AUTHOR,
         });
-        closeCreateModal();
+        closeModal();
         insertAuthoredRecord(result.records[0]);
         showToast(`authored · ${result.result}`);
     } catch (error) {
@@ -2187,7 +2292,16 @@ function findAnchorByPatchId(patchId) {
 // Drop that row (matched by anchor) from the working set, then, if it was the
 // focused row, land on its neighbour so the selection stays in view. `refocus:false`
 // (a bulk run) mutates the set but defers the ledger re-render to the loop's end.
+//
+// A removal from an edit-modal (dropping/clearing an authored related entry) targets
+// the modal record's anchor — NEVER state.selected, whose row must stay put — and
+// closes the modal, since the record it hosted no longer exists. The row is removed
+// only if that anchor is loaded in the working set; the main cursor stays put.
 function removeRow(anchor, { refocus = true } = {}) {
+    if (isModalEditorOpen()) {
+        removeModalRow(state.modalEditor.record.anchor);
+        return;
+    }
     const removed = anchor
         ? state.records.findIndex((r) => sameAnchor(r.anchor, anchor))
         : state.selected;
@@ -2209,6 +2323,28 @@ function removeRow(anchor, { refocus = true } = {}) {
     }
 }
 
+// Remove the (now-cleared) modal record's row from the working set if it is loaded,
+// keeping the main cursor on its own entry, and close the modal. The ledger is rebuilt
+// so indices stay contiguous; the row that held the cursor keeps the focus, shifted
+// down by one only if the removed row sat above it. The detail's related list is then
+// refreshed in place so the cleared sibling no longer lingers in it.
+function removeModalRow(anchor) {
+    const removed = state.records.findIndex((r) => sameAnchor(r.anchor, anchor));
+    if (removed >= 0) {
+        state.multi.delete(anchorKey(anchor));
+        state.records.splice(removed, 1);
+        if (removed <= state.selected) {
+            state.selected = Math.max(0, state.selected - 1);
+        }
+        refreshPacing();
+        renderLedger();
+        highlightActiveRow(state.selected);
+        syncSelectionUI();
+    }
+    closeModal();
+    reloadRelatedForDetail();
+}
+
 function pushUndo(anchor, priorReviewed) {
     session.undoStack.push({ anchor, priorReviewed });
 }
@@ -2224,6 +2360,11 @@ function countDecision() {
 // matches the active filter. By default step to the next entry; a re-render in
 // place (unflag/undo) stays put. `refocus:false` (a bulk run) updates the row but
 // leaves the review cursor where it was — the loop restores focus once at the end.
+//
+// A write from an edit-modal is always a re-annotate-in-place against the modal
+// record: the affected main row (if that anchor is loaded) is refreshed by anchor,
+// but the MAIN cursor/scroll never moves and the modal re-renders from the fresh
+// record — so stepping/re-selecting is skipped whatever the caller passed.
 function applyWriteResult(records, { step: doStep = true, refocus = true } = {}) {
     const replacement = records[0];
     // Place the re-annotated record on its OWN row (matched by anchor), not
@@ -2237,6 +2378,16 @@ function applyWriteResult(records, { step: doStep = true, refocus = true } = {})
         refreshRow(index, replacement);
     }
     refreshPacing();
+    if (isModalEditorOpen()) {
+        if (replacement) {
+            refreshModalEditor(replacement);
+        }
+        // The detail behind the modal is not re-rendered, so its related list would
+        // otherwise still show this sibling's pre-write state — refresh it in place so
+        // the owner returns to a current list on dismiss.
+        reloadRelatedForDetail();
+        return;
+    }
     if (!refocus) {
         return;
     }
@@ -2277,16 +2428,24 @@ function step(delta) {
     select(next);
 }
 
-// Enter edit mode: focus the Shavian field and mark the card. Saving or Escape
-// returns to review mode. Called by E and by focusing any field directly. While the
-// create modal owns the screen its OWN field editors also fire this (they reuse the
-// record editor's toggles), so it must not reach behind the backdrop into the detail.
-function enterEdit(ctx) {
-    if (state.selected < 0 || isCreateModalOpen()) {
+// Enter edit mode: mark the card editing so Save works. Acts on the context that owns
+// the screen (detail or an edit-mode modal); the detail-card mode class is toggled only
+// for the main context, never reaching behind a modal backdrop. `focusShaw` moves the
+// caret into the Shavian field — wanted ONLY from the "E" shortcut ("start editing the
+// shaw"). It must stay false for the paths where the user is acting elsewhere: a field's
+// own focus listener (the field already has focus) and a merger/variant toggle (flipping
+// a flag must not yank the caret into shaw, which would swallow the next review key).
+function enterEdit(ctx, { focusShaw = false } = {}) {
+    if (isCreateMode(ctx) || (ctx === state.mainContext && state.selected < 0)) {
         return;
     }
     ctx.editing = true;
-    setDetailMode();
+    if (ctx === state.mainContext) {
+        setDetailMode();
+    }
+    if (!focusShaw) {
+        return;
+    }
     const shaw = ctx.root.querySelector('[data-field="shaw"]');
     if (shaw && document.activeElement !== shaw
         && !ctx.root.contains(document.activeElement)) {
@@ -2296,13 +2455,16 @@ function enterEdit(ctx) {
 }
 
 // Leave edit mode without saving: blur the field and return to review mode, so
-// single-key verdicts work again.
+// single-key verdicts work again. The detail-card mode class is the main context's;
+// an edit-modal just drops its edit flag and blurs.
 function exitEdit(ctx) {
     ctx.editing = false;
     if (ctx.root.contains(document.activeElement)) {
         document.activeElement.blur();
     }
-    setDetailMode();
+    if (ctx === state.mainContext) {
+        setDetailMode();
+    }
 }
 
 function onFieldKey(event) {
@@ -2330,7 +2492,7 @@ function onFieldKey(event) {
 const REVIEW_KEYS = {
     a: acceptSelected,
     x: dropSelected,
-    e: () => enterEdit(activeContext()),
+    e: () => enterEdit(activeContext(), { focusShaw: true }),
     s: saveSelected,
     f: flagSelected,
     c: clearSelected,
@@ -2346,6 +2508,54 @@ const REVIEW_KEYS = {
 // Keys that mutate must not double-fire on auto-repeat when a key is held.
 const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "c", "u", "v"]);
 
+// The review keys an edit-mode modal honours: the verdicts and edit toggle, routed
+// through activeContext() to the MODAL record. Navigation (j/k/arrows) and bulk
+// selection (v) are omitted — a modal reviews a single related entry, it does not
+// step the main cursor or touch the selection. Undo (u) is also omitted: it walks the
+// global undo stack and moves the main cursor, so it belongs to the main flow only —
+// Clear (c) is the modal's in-place "reset this entry's patch".
+const MODAL_REVIEW_KEYS = new Set(["a", "x", "e", "s", "f", "c"]);
+
+// The keyboard while a modal owns the screen. A create modal takes only Escape
+// (dismiss) and Enter (submit) — its fields carry no listeners, so those keys reach
+// here regardless of focus. An edit modal (a related entry opened for review) behaves
+// like the main review flow but scoped to the modal record: with a field focused the
+// field's own onFieldKey runs (Enter=accept/save, Escape=exit edit), so this leaves it
+// alone — mirroring the main flow, where field-focused keys are never global verdicts;
+// with no field focused, the verdict keys act via activeContext() and Escape dismisses.
+function handleModalKey(event) {
+    if (isCreateMode()) {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeModal();
+        } else if (event.key === "Enter") {
+            event.preventDefault();
+            submitCreate(state.modalEditor);
+        }
+        return;
+    }
+    if (event.target instanceof Element && event.target.matches("input, select, textarea")) {
+        return;
+    }
+    if (event.key === "Escape") {
+        event.preventDefault();
+        closeModal();
+        return;
+    }
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+    }
+    const key = event.key.toLowerCase();
+    if (!MODAL_REVIEW_KEYS.has(key)) {
+        return;
+    }
+    if (event.repeat && NON_REPEAT_KEYS.has(key)) {
+        return;
+    }
+    event.preventDefault();
+    REVIEW_KEYS[key]();
+}
+
 function onGlobalKey(event) {
     if (isCheatsheetOpen()) {
         // While the dialog is open only its own keys act — Escape or ? close it;
@@ -2356,20 +2566,8 @@ function onGlobalKey(event) {
         }
         return;
     }
-    if (isCreateModalOpen()) {
-        // Like the cheatsheet, the modal contains the keyboard while it is open: only
-        // its own keys act. Escape dismisses; Enter submits (the fields are single-line
-        // text inputs, so no newline is suppressed). Review verdicts and select-all
-        // must not leak through to the workbench behind the backdrop, so nothing else
-        // is let past. A key typed into a modal field still reaches here (the field
-        // carries no listeners of its own), which is why Enter/Escape are handled here.
-        if (event.key === "Escape") {
-            event.preventDefault();
-            closeCreateModal();
-        } else if (event.key === "Enter") {
-            event.preventDefault();
-            submitCreate(state.modalEditor);
-        }
+    if (isModalEditorOpen()) {
+        handleModalKey(event);
         return;
     }
     if (event.target instanceof Element && event.target.matches("input, select, textarea")) {
@@ -2755,11 +2953,11 @@ FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 NEW_ENTRY.addEventListener("click", openCreateForm);
 COMMIT_DECISIONS.addEventListener("click", () => commitDecisions());
-// Backdrop click dismisses the create modal, like the cheatsheet — only a click on
-// the backdrop itself (not the card) counts.
+// Backdrop click dismisses the modal, like the cheatsheet — only a click on the
+// backdrop itself (not the card) counts.
 CREATE_MODAL.addEventListener("click", (event) => {
     if (event.target === CREATE_MODAL) {
-        closeCreateModal();
+        closeModal();
     }
 });
 ADD_FILTER.addEventListener("click", () => toggleAddMenu());

@@ -259,14 +259,18 @@ def _matches_word_kind(record, value):
     raise ValueError(f"word_kind filter wants multi/single, got {value!r}")
 
 
-# Novelty classifies an UNREVIEWED supplement candidate by its relationship to
-# the upstream ReadLex corpus for its word — a genuinely new word, a new spelling
-# of a known word, or a new POS of a known word+shaw. It is measured against
-# upstream ONLY (never sanctioned patches), so sanctioning a candidate never
-# changes its novelty. Upstream and reviewed rows are not candidates, so they
-# never match a novelty value (they are excluded whenever the filter is set). A
-# "known" candidate — word+shaw+pos all present upstream — would be a duplicate
-# the B1 filter removes; it never matches new-* here, so it too is excluded.
+# Novelty classifies a supplement record by its relationship to the upstream
+# ReadLex corpus for its word — a genuinely new word, a new spelling of a known
+# word, or a new POS of a known word+shaw. It is measured against upstream ONLY
+# (never sanctioned patches), so sanctioning a record never changes its novelty,
+# and a reviewed row keeps the novelty it always had. Novelty is orthogonal to
+# review state: whether the owner has decided on a record is the separate
+# `reviewed` filter (_matches_review_state), which ANDs with this one. Upstream
+# rows are the baseline against which novelty is measured; they classify as
+# `known` (not in NOVELTY_VALUES), so they never match new-* — the fast-path
+# below just spares ~111K upstream rows a classify() call. A "known" candidate —
+# word+shaw+pos all present upstream — would be a duplicate the B1 filter removes;
+# it classifies as `known` and never matches new-* here either.
 NOVELTY_VALUES = (NOVELTY_NEW_WORD, NOVELTY_NEW_SPELLING, NOVELTY_NEW_POS)
 
 
@@ -274,7 +278,7 @@ def _matches_novelty(record, value, established):
     if value not in NOVELTY_VALUES:
         raise ValueError(
             f"novelty filter wants {'/'.join(NOVELTY_VALUES)}, got {value!r}")
-    if record["reviewed"] or record.get("source") == UPSTREAM_SOURCE:
+    if record.get("source") == UPSTREAM_SOURCE:
         return False
     novelty = established.classify(record["word"], record["shaw"], record["pos"])
     return novelty == value

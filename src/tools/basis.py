@@ -65,7 +65,7 @@ SUPPLEMENT_SOURCES = {
 # Provenance fields a record may carry beyond the canonical core, in output
 # order. `note` is patch metadata and is deliberately NOT emitted to the
 # dictionary. `status` lives in the record because downstream consumers read it.
-PROVENANCE_FIELDS = ["confidence", "source", "status"]
+PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source"]
 
 
 def load_json(path):

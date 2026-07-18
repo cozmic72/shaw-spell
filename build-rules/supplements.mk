@@ -7,6 +7,7 @@
 
 WIKTIONARY_JSONL := external/wiktionary/kaikki.org-dictionary-English.jsonl
 WORDNET_YAML := external/english-wordnet/src/yaml
+READLEX_JSON := external/readlex/readlex.json
 
 ###########################################
 # Supplement generation (from source data)
@@ -34,13 +35,22 @@ rescore-full: data/supplement-wordnet-reliable.json data/supplement-wiktionary-r
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
 
 ###########################################
-# Supplement candidate pruning (two passes, chained)
+# Supplement candidate pruning (chained passes)
 ###########################################
+
+# Pass 0 — proper-noun homograph rescue (wiktionary only). Many kaikki `name`
+# entries have no IPA and were dropped by the generator; each is rescued by
+# copying a same-spelling ReadLex homograph's IPA and tagged `copied-homograph`
+# for review. Additive: the reliable set plus the rescued NP0 records. Pass 1
+# reads this for wiktionary. See src/tools/rescue_proper_nouns.py.
+data/supplement-wiktionary-rescued.json: $(SRC_TOOLS)/rescue_proper_nouns.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wiktionary-reliable.json $(WIKTIONARY_JSONL) $(READLEX_JSON)
+	@echo "Rescuing IPA-less proper nouns via ReadLex homographs..."
+	$(RUN) python3 $(SRC_TOOLS)/rescue_proper_nouns.py
 
 # Pass 1 — duplicate filtering. A candidate whose (word, shaw) an established
 # entry (upstream ReadLex + sanctioned patches) already covers on both the var
 # and pos axes is dropped. See src/tools/filter_supplement_duplicates.py.
-data/supplement-wordnet-deduped.json data/supplement-wiktionary-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json data/patches/patches.jsonl
+data/supplement-wordnet-deduped.json data/supplement-wiktionary-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-rescued.json external/readlex/readlex.json data/patches/patches.jsonl
 	@echo "Filtering duplicate supplement candidates..."
 	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_duplicates.py
 

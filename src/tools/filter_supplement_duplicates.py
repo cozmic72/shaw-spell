@@ -28,8 +28,10 @@ This is the first pass of supplement candidate pruning; the phrase-pruning pass
 (filter_supplement_phrases.py) reads the -deduped.json output next and produces
 the -filtered.json the basis consumes.
 
-Inputs:  data/supplement-{wordnet,wiktionary}-reliable.json  (the generators'
-         output), external/readlex/readlex.json, data/patches/patches.jsonl.
+Inputs:  data/supplement-wordnet-reliable.json (the generator's output) and
+         data/supplement-wiktionary-rescued.json (generator output augmented with
+         rescued proper nouns), external/readlex/readlex.json,
+         data/patches/patches.jsonl.
 Outputs: data/supplement-{wordnet,wiktionary}-deduped.json  — the phrase filter
          reads these. The -reliable.json files are left untouched; the removed
          candidates are regenerable machine output.
@@ -51,7 +53,7 @@ PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 SUPPLEMENTS = [
     (PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json",
      PROJECT_ROOT / "data" / "supplement-wordnet-deduped.json"),
-    (PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json",
+    (PROJECT_ROOT / "data" / "supplement-wiktionary-rescued.json",
      PROJECT_ROOT / "data" / "supplement-wiktionary-deduped.json"),
 ]
 

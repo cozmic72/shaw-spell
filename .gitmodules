@@ -11,3 +11,7 @@
 	# `make setup` checks this out lean (sparse-checkout). See
 	# src/tools/setup-submodules.sh.
 	shallow = true
+[submodule "external/cmudict"]
+	path = external/cmudict
+	url = https://github.com/cmusphinx/cmudict.git
+	shallow = true

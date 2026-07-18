@@ -189,7 +189,11 @@ const state = {
     // {key, dir} where key is a sortable column and dir is "asc" or "desc".
     columnSort: null,
     selected: -1,
-    editing: false,
+    // The detail panel's record editor context (see makeEditorContext), created on
+    // first render and reused. Carries the edit flag and the harvest root, so the
+    // review flow scopes to it rather than reaching through globals. This is the ONLY
+    // context today; later commits add modal contexts that activeContext() can return.
+    mainContext: null,
     // The shared create modal's open-state, or null when closed. When set it is
     // {clone, seedSignature}: `clone` arms the "must differ" guard, and the seed's
     // canonical signature lets that guard reject an unedited exact-copy clone. While
@@ -706,7 +710,9 @@ function pageButton(label, targetOffset) {
 // entered explicitly (enterEdit), never as a side effect of stepping.
 function select(index) {
     state.selected = index;
-    state.editing = false;
+    if (state.mainContext) {
+        state.mainContext.editing = false;
+    }
     for (const row of LEDGER.children) {
         row.classList.toggle("active", Number(row.dataset.index) === index);
     }
@@ -846,7 +852,43 @@ function syncSelectBar() {
     SELECT_BAR_COUNT.textContent = count === 1 ? "1 selected" : `${count} selected`;
 }
 
-function renderDetail(record) {
+// A record editor's context: the surface a single record is being edited on. It owns
+// its harvest `root` (the container the field inputs live under, queried scoped by
+// data-field), an id `prefix` for those inputs (the detail keeps "field-" for
+// back-compat), a per-context `editing` flag, and the `record` and `mode` it renders.
+// One context serves the detail panel today (state.mainContext); later commits mint
+// more (a create/clone modal, a related-word editor) that activeContext() routes to.
+function makeEditorContext({ scope, root, prefix, record, mode }) {
+    return { scope, root, prefix, editing: false, record, mode };
+}
+
+// The context whose edit inputs the verdict/harvest flow acts on. Today only the
+// detail context exists, so this is always mainContext; later commits return the
+// open modal's context instead when one owns the screen.
+function activeContext() {
+    return state.mainContext;
+}
+
+// Build the reusable record editor for `record`: the top matter, reference links,
+// field editors, verdict bar and clone bar — everything the detail panel shows
+// EXCEPT the related section. Returns a `.record-editor` container that owns the
+// field inputs (the context's harvest root), plus the context itself. The detail is
+// its only caller today (scope "detail", mode "edit"); it stores the context as
+// state.mainContext so the review flow can resolve and harvest it.
+function recordEditor(record, opts) {
+    const container = document.createElement("div");
+    container.className = "record-editor";
+    const ctx = makeEditorContext({
+        scope: opts.scope,
+        root: container,
+        prefix: DETAIL_FIELD_PREFIX,
+        record,
+        mode: opts.mode,
+    });
+    if (opts.scope === "detail") {
+        state.mainContext = ctx;
+    }
+
     const overridden = overriddenFields(record);
 
     const word = cell("latin", record.word);
@@ -867,15 +909,27 @@ function renderDetail(record) {
         confidenceBadge(record.confidence),
     );
 
-    const related = relatedSection();
-    DETAIL.replaceChildren(
+    container.append(
         heading,
         referenceLinks(record.word),
-        fieldGrid(record, overridden),
+        fieldGrid(ctx, record, overridden),
         actionBar(record),
         cloneBar(record),
-        related,
     );
+    return container;
+}
+
+function renderDetail(record) {
+    // A fresh context starts in review mode; but a re-render of the SAME focused record
+    // (an undo, a selection re-sync) must not silently drop an active edit — carry the
+    // flag over, exactly as the flag survived a renderDetail not preceded by select().
+    const wasEditing = Boolean(
+        state.mainContext && state.mainContext.record === record && state.mainContext.editing,
+    );
+    const editor = recordEditor(record, { scope: "detail", mode: "edit" });
+    state.mainContext.editing = wasEditing;
+    const related = relatedSection();
+    DETAIL.replaceChildren(editor, related);
     setDetailMode();
     loadRelated(record, related);
 }
@@ -1170,8 +1224,9 @@ function relatedProvenance(record) {
 // The detail card reads its mode off the card element: review mode shows the
 // "REVIEW" affordance and keeps every field non-focused; edit mode lifts it.
 function setDetailMode() {
-    DETAIL.classList.toggle("mode-edit", state.editing);
-    DETAIL.classList.toggle("mode-review", !state.editing && state.selected >= 0);
+    const editing = Boolean(state.mainContext && state.mainContext.editing);
+    DETAIL.classList.toggle("mode-edit", editing);
+    DETAIL.classList.toggle("mode-review", !editing && state.selected >= 0);
 }
 
 function stateBadge(patchState) {
@@ -1240,24 +1295,24 @@ function referenceLinks(word) {
 // visually) so the whole card fits without pushing related entries off-screen.
 // status is absent: it is read-only (shown in the top matter) and moves only via
 // the verdict actions. word/pos are the anchor's Latin identity, shown read-only.
-function fieldGrid(record, overridden) {
+function fieldGrid(ctx, record, overridden) {
     const stack = document.createElement("div");
     stack.className = "field-stack";
     stack.append(
-        editField("shaw", "Shavian", record.shaw, "shaw-field", overridden.has("shaw")),
-        editField("ipa", "IPA", record.ipa, "ipa-field", overridden.has("ipa")),
-        variantRow(record, overridden),
+        editField(ctx, "shaw", "Shavian", record.shaw, "shaw-field", overridden.has("shaw")),
+        editField(ctx, "ipa", "IPA", record.ipa, "ipa-field", overridden.has("ipa")),
+        variantRow(ctx, record, overridden),
     );
     return stack;
 }
 
 // Dialect (var) + mergers + variant, laid on one flex row (wrapping only on very
 // narrow widths). Three separate controls, grouped for glanceability.
-function variantRow(record, overridden) {
+function variantRow(ctx, record, overridden) {
     const row = document.createElement("div");
     row.className = "field-row";
     row.append(
-        editField("var", "Dialect (var)", record.var, "", overridden.has("var")),
+        editField(ctx, "var", "Dialect (var)", record.var, "", overridden.has("var")),
         mergersField(record.mergers, overridden.has("mergers")),
         variantField(record.variant, overridden.has("variant")),
     );
@@ -1298,7 +1353,7 @@ function mergerToggle(value, label, checked) {
     input.checked = checked;
     input.addEventListener("change", () => {
         chip.classList.toggle("on", input.checked);
-        enterEdit();
+        enterEdit(state.mainContext);
     });
     const caption = document.createElement("span");
     caption.textContent = label;
@@ -1336,7 +1391,7 @@ function variantToggle(label, checked) {
     input.checked = checked;
     input.addEventListener("change", () => {
         chip.classList.toggle("on", input.checked);
-        enterEdit();
+        enterEdit(state.mainContext);
     });
     const caption = document.createElement("span");
     caption.textContent = label;
@@ -1345,9 +1400,9 @@ function variantToggle(label, checked) {
     return chip;
 }
 
-// The DETAIL field prefix. Its inputs carry stable ids the review flow focuses
-// by name (enterEdit, editedRecord); the modal create form uses its OWN prefix so
-// the two never collide in the DOM while the modal sits over a shown record.
+// The detail editor's field id prefix (its harvest is scoped by data-field, not id;
+// the id just keeps its label/for association stable). The modal create form uses its
+// OWN prefix so the two never collide in the DOM while the modal sits over a record.
 const DETAIL_FIELD_PREFIX = "field-";
 
 // The bare labelled text input: the shared markup both the review editor and the
@@ -1381,11 +1436,12 @@ function fieldInput(name, label, value, extraClass, idPrefix) {
 
 // The review-editor field: the shared input plus the review-flow listeners
 // (focus enters edit mode, keys run the in-field verdicts) and the overridden mark.
-function editField(name, label, value, extraClass, overridden) {
+// Bound to its editor context, so focus enters edit mode on THAT context.
+function editField(ctx, name, label, value, extraClass, overridden) {
     const { wrap, caption, input } = fieldInput(
-        name, label, value, extraClass, DETAIL_FIELD_PREFIX,
+        name, label, value, extraClass, ctx.prefix,
     );
-    input.addEventListener("focus", () => enterEdit());
+    input.addEventListener("focus", () => enterEdit(ctx));
     input.addEventListener("keydown", onFieldKey);
     markOverridden(wrap, caption, overridden);
     return wrap;
@@ -1496,23 +1552,23 @@ function recordFields(record) {
     return result;
 }
 
-// The complete record the detail editor currently shows: the record's fields with
-// the edit surface overlaid from the inputs. Single-record only — the edit inputs
-// exist just for the focused record.
-function editedRecord(record) {
-    const result = recordFields(record);
+// The complete record an editor context currently shows: the record's fields with
+// the edit surface overlaid from the inputs. Harvested scoped to the context's root
+// (by data-field), so it reads THAT editor's inputs and no other's.
+function editedRecord(ctx) {
+    const result = recordFields(ctx.record);
     for (const name of EDITABLE_FIELDS) {
-        const input = document.getElementById(`${DETAIL_FIELD_PREFIX}${name}`);
+        const input = ctx.root.querySelector(`[data-field="${name}"]`);
         result[name] = input.value.trim();
     }
-    const mergers = [...DETAIL.querySelectorAll(".merger-check:checked")]
+    const mergers = [...ctx.root.querySelectorAll(".merger-check:checked")]
         .map((box) => box.value);
     if (mergers.length) {
         result.mergers = mergers;
     } else {
         delete result.mergers;
     }
-    const variantBox = DETAIL.querySelector(".variant-check");
+    const variantBox = ctx.root.querySelector(".variant-check");
     if (variantBox && variantBox.checked) {
         result.variant = true;
     } else {
@@ -1830,11 +1886,11 @@ async function single(action) {
 // Save is inherently single-record — it writes the edited fields, which only make
 // sense for the focused record — so it has no bulk form (the group bar omits it).
 async function saveSelected() {
-    const selected = state.records[state.selected];
+    const selected = activeContext()?.record;
     if (!selected) {
         return;
     }
-    const record = editedRecord(selected);
+    const record = editedRecord(activeContext());
     if (!requireShaw(record)) {
         return;
     }
@@ -1846,7 +1902,7 @@ async function acceptSelected() {
         await runBulk("accept", acceptOne);
         return;
     }
-    const selected = state.records[state.selected];
+    const selected = activeContext()?.record;
     if (!selected) {
         return;
     }
@@ -1859,7 +1915,7 @@ async function acceptSelected() {
 // global selection state, so a selection that shrinks mid-run can't flip the path.
 // Returns the daemon result; throws so the caller can fail loud.
 async function acceptOne(selected, options = {}) {
-    const record = options.bulk ? recordFields(selected) : editedRecord(selected);
+    const record = options.bulk ? recordFields(selected) : editedRecord(activeContext());
     record.status = ACCEPTED_STATUS;
     if (!record.shaw) {
         throw new Error(`${selected.word}: Shavian cannot be empty.`);
@@ -1872,7 +1928,7 @@ async function dropSelected() {
         await runBulk("dropped", dropOne);
         return;
     }
-    const selected = state.records[state.selected];
+    const selected = activeContext()?.record;
     if (!selected) {
         return;
     }
@@ -1919,7 +1975,7 @@ async function flagSelected() {
         await runBulk("flagged", flagOne);
         return;
     }
-    const selected = state.records[state.selected];
+    const selected = activeContext()?.record;
     if (!selected) {
         return;
     }
@@ -1943,7 +1999,7 @@ async function flagOne(selected, { step = true, toast = true, refocus = true } =
 // Unflag: remove the flag patch, reverting to unreviewed. Distinct from undo — an
 // explicit "actually, back to the pool" on a flagged row.
 async function unflagSelected() {
-    const selected = state.records[state.selected];
+    const selected = activeContext()?.record;
     if (!selected || selected.patch_state !== "flagged") {
         return;
     }
@@ -1960,7 +2016,7 @@ async function clearSelected() {
         await runBulk("cleared", clearOne);
         return;
     }
-    const selected = state.records[state.selected];
+    const selected = activeContext()?.record;
     if (!selected || !selected.reviewed) {
         return;
     }
@@ -2213,15 +2269,15 @@ function step(delta) {
 // returns to review mode. Called by E and by focusing any field directly. While the
 // create modal owns the screen its OWN field editors also fire this (they reuse the
 // record editor's toggles), so it must not reach behind the backdrop into the detail.
-function enterEdit() {
+function enterEdit(ctx) {
     if (state.selected < 0 || isCreateModalOpen()) {
         return;
     }
-    state.editing = true;
+    ctx.editing = true;
     setDetailMode();
-    const shaw = document.getElementById(`${DETAIL_FIELD_PREFIX}shaw`);
+    const shaw = ctx.root.querySelector('[data-field="shaw"]');
     if (shaw && document.activeElement !== shaw
-        && !DETAIL.contains(document.activeElement)) {
+        && !ctx.root.contains(document.activeElement)) {
         shaw.focus();
         shaw.setSelectionRange(shaw.value.length, shaw.value.length);
     }
@@ -2229,9 +2285,9 @@ function enterEdit() {
 
 // Leave edit mode without saving: blur the field and return to review mode, so
 // single-key verdicts work again.
-function exitEdit() {
-    state.editing = false;
-    if (DETAIL.contains(document.activeElement)) {
+function exitEdit(ctx) {
+    ctx.editing = false;
+    if (ctx.root.contains(document.activeElement)) {
         document.activeElement.blur();
     }
     setDetailMode();
@@ -2240,7 +2296,7 @@ function exitEdit() {
 function onFieldKey(event) {
     if (event.key === "Escape") {
         event.preventDefault();
-        exitEdit();
+        exitEdit(activeContext());
         return;
     }
     if (event.key !== "Enter") {
@@ -2262,7 +2318,7 @@ function onFieldKey(event) {
 const REVIEW_KEYS = {
     a: acceptSelected,
     x: dropSelected,
-    e: enterEdit,
+    e: () => enterEdit(activeContext()),
     s: saveSelected,
     f: flagSelected,
     c: clearSelected,

@@ -119,13 +119,20 @@ from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
                    PROJECT_ROOT, UPSTREAM_SOURCE, anchor_key)
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
-                     NOVELTY_NEW_WORD, PATCH_STATE_FLAGGED, load_view)
+                     NOVELTY_NEW_WORD, PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
+                     PATCH_STATE_EDITED, PATCH_STATE_FLAGGED, load_view)
 from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
     replace_authored_patch, upsert_patch)
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
+
+# The patch-states a live, sanctioned record carries — an accept whose changes
+# are empty (ACCEPTED) or non-empty (EDITED), or an AUTHORED entry (a human minted
+# a production record). All reach the shipped dictionary, so a canonical conflict
+# is drawn from any of them.
+ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED, PATCH_STATE_AUTHORED)
 
 
 class State:
@@ -648,6 +655,16 @@ def handle_patch(state, request):
             patch = make_patch(anchor, OP_ACCEPT, changes, meta)
         key = anchor_key(anchor)
 
+    # Enforce the one-canonical-per-(word,pos,var) invariant on any canonical
+    # accept (authorship or anchored). A drop, or an accept carrying a
+    # merger/variant flag, is exempt (see _canonical_conflict). Nothing is
+    # written if a different-shaw canonical already exists.
+    conflict = _canonical_conflict(state, record)
+    if conflict is not None:
+        return {"error": f"a canonical {record.get('var', '')} entry already exists "
+                f"for {record['word']}/{record['pos']} ({conflict}) — "
+                "flag one as a variant/merger first"}
+
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)
     return _write_result(state, key, result, patch["id"])
@@ -677,6 +694,41 @@ def _intrinsic_value(record, field):
     if field == "variant":
         return bool(record.get("variant"))
     return record.get(field, "")
+
+
+# A record is CANONICAL when it carries no additive flag: empty mergers AND
+# variant not true. A record with any merger or variant:true is a sanctioned
+# ALTERNATE, exempt from the one-canonical-per-(word,pos,var) invariant.
+def _is_canonical(record):
+    return not _intrinsic_value(record, "mergers") \
+        and not _intrinsic_value(record, "variant")
+
+
+# The one-canonical-per-(word,pos,var) invariant: for a given (word, pos, var)
+# there may be only ONE accepted canonical entry (different shaws are fine as
+# candidates, but only one may be sanctioned). The anchor key includes shaw, so
+# the anchor check does not catch this; enforce it here before the write.
+#
+# `wanted` is the client's wanted record. If it is not itself a canonical accept
+# (it carries a merger/variant flag, or it is a drop — record is None) it is
+# exempt: return None. Otherwise scan the other records on the same (word, pos,
+# var) with a DIFFERENT shaw and return the first that is itself a live accepted
+# canonical (an existing sanctioned entry the wanted one would duplicate), or
+# None. A read against the current view, taking the view's own lock via by_word;
+# it never mutates.
+def _canonical_conflict(state, wanted):
+    if wanted is None or not _is_canonical(wanted):
+        return None
+    word, pos, var = wanted["word"], wanted["pos"], wanted.get("var", "")
+    shaw = wanted["shaw"]
+    for other in state.view.by_word(word):
+        if other["pos"] != pos or other.get("var", "") != var:
+            continue
+        if other["shaw"] == shaw:
+            continue
+        if other["patch_state"] in ACCEPTED_STATES and _is_canonical(other):
+            return other["shaw"]
+    return None
 
 
 def _reauthor(state, record, meta, prior_id):

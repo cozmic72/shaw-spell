@@ -87905,18 +87905,6 @@
             "review": "shave_says:𐑜𐑪𐑯𐑛𐑩𐑤𐑽"
         }
     ],
-    "gone_AJ0_𐑜𐑪𐑯": [
-        {
-            "Latn": "gone",
-            "Shaw": "𐑜𐑪𐑯",
-            "pos": "AJ0",
-            "ipa": "ɡɒn",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 97,
-            "review": "shave_agrees"
-        }
-    ],
     "gonococcus_NN1_𐑜𐑪𐑯𐑩𐑒𐑪𐑒𐑩𐑕": [
         {
             "Latn": "gonococcus",
@@ -98432,18 +98420,6 @@
             "Shaw": "𐑣𐑦𐑕𐑑𐑧𐑮𐑦𐑒",
             "pos": "NN1",
             "ipa": "hɪsˈterɪk",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 97,
-            "review": "shave_agrees"
-        }
-    ],
-    "i_NN1_𐑲": [
-        {
-            "Latn": "i",
-            "Shaw": "𐑲",
-            "pos": "NN1",
-            "ipa": "aɪ",
             "freq": 0,
             "var": "RSSB",
             "confidence": 97,
@@ -112256,18 +112232,6 @@
             "Shaw": "𐑤𐑰𐑖",
             "pos": "VVI",
             "ipa": "liːʃ",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 97,
-            "review": "shave_agrees"
-        }
-    ],
-    "least_AJ0_𐑤𐑰𐑕𐑑": [
-        {
-            "Latn": "least",
-            "Shaw": "𐑤𐑰𐑕𐑑",
-            "pos": "AJ0",
-            "ipa": "liːst",
             "freq": 0,
             "var": "RSSB",
             "confidence": 97,

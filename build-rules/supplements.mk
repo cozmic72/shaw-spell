@@ -53,12 +53,21 @@ data/supplement-wordnet-classified.json data/supplement-wiktionary-classified.js
 	@echo "Classifying dialect vowel mergers..."
 	$(RUN) python3 $(SRC_TOOLS)/classify_dialect_mergers.py
 
-# Pass 3 — phrase pruning. A multi-word candidate whose pronunciation is just
+# Pass 3 — identical-spelling dialect collapse. When 2+ specific dialects spell a
+# (word, pos) the SAME way, that spelling is universal, so the identical-spelling
+# variants collapse to a single RRP (all-dialects) record — the reviewer sees it
+# once, not per dialect. Records disagreeing on the `mergers` flag stay separate
+# (a real within-accent difference). See src/tools/collapse_identical_dialects.py.
+data/supplement-wordnet-collapsed.json data/supplement-wiktionary-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-wordnet-classified.json data/supplement-wiktionary-classified.json data/patches/patches.jsonl
+	@echo "Collapsing identical-spelling dialect variants..."
+	$(RUN) python3 $(SRC_TOOLS)/collapse_identical_dialects.py
+
+# Pass 4 — phrase pruning. A multi-word candidate whose pronunciation is just
 # its component words glued together (classified `matches`) is dropped, so the
 # review surface never sees sum-of-parts noise. The -filtered.json output is
 # what the editorial basis reads (records pass through verbatim, so the merger
 # annotation survives). See src/tools/filter_supplement_phrases.py.
-data/supplement-wordnet-filtered.json data/supplement-wiktionary-filtered.json: $(SRC_TOOLS)/filter_supplement_phrases.py $(SRC_TOOLS)/detect_phrase_divergence.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wordnet-classified.json data/supplement-wiktionary-classified.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json data/patches/patches.jsonl
+data/supplement-wordnet-filtered.json data/supplement-wiktionary-filtered.json: $(SRC_TOOLS)/filter_supplement_phrases.py $(SRC_TOOLS)/detect_phrase_divergence.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wordnet-collapsed.json data/supplement-wiktionary-collapsed.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json data/patches/patches.jsonl
 	@echo "Pruning sum-of-parts phrase candidates..."
 	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_phrases.py
 

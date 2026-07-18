@@ -19,10 +19,11 @@ A record's `mergers` is emitted only when non-empty, keeping the field additive:
 absent means the empty list. See dialect_mergers.py for the swap detection and
 docs/dialect-mergers.md for the model.
 
-This is a pruning-chain stage between the duplicate filter and the phrase filter:
-reliable -> deduped -> HERE (classified) -> filtered -> basis. The phrase filter
-passes records through verbatim, so the `mergers` annotation survives to the
-basis. Only the annotation is added; no candidate is dropped or reshaped.
+This is a pruning-chain stage between the duplicate filter and the identical-
+dialect collapse: reliable -> deduped -> HERE (classified) -> collapsed ->
+filtered -> basis. Downstream stages pass records through verbatim, so the
+`mergers` annotation survives to the basis. Only the annotation is added; no
+candidate is dropped or reshaped.
 
 Inputs:  data/supplement-{wordnet,wiktionary}-deduped.json
 Outputs: data/supplement-{wordnet,wiktionary}-classified.json

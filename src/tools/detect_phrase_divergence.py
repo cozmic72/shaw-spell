@@ -62,10 +62,12 @@ TAGGED_PATH = PROJECT_ROOT / "data" / "phrase-divergence.json"
 # the citation baseline for every component word regardless of the phrase's var.
 UNIVERSAL_VAR = "RRP"
 
-# The phrases carry supplement var labels (RSSB/GenAm); ReadLex labels its
-# British-standard citations RRP. RSSB is that same universal British standard,
-# so an RSSB phrase's var-specific citation IS the RRP one — no separate lookup.
-PHRASE_VAR_TO_READLEX = {"RSSB": UNIVERSAL_VAR, "GenAm": "GenAm"}
+# The phrases carry supplement var labels (RSSB/GenAm), plus RRP once the
+# identical-dialect collapse folds an agreed spelling into the universal wildcard.
+# ReadLex labels its British-standard citations RRP; RSSB is that same universal
+# British standard, so an RSSB (or already-RRP) phrase cites its components at RRP.
+PHRASE_VAR_TO_READLEX = {"RSSB": UNIVERSAL_VAR, "GenAm": "GenAm",
+                         UNIVERSAL_VAR: UNIVERSAL_VAR}
 
 # Classification labels (also the divergence values written to the tagged file).
 DIVERGENT = "divergent"

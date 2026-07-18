@@ -22,7 +22,9 @@ of the non-merged form. It is detected per-record from the Shavian at the
 differing position — no invented data, only spellings that already exist.
 
 - **Supplements** (`src/tools/classify_dialect_mergers.py`) — a new pipeline stage
-  in the pruning chain: `reliable → deduped → **classified** → filtered → basis`.
+  in the pruning chain: `reliable → deduped → **classified** → collapsed →
+  filtered → basis` (the collapse stage folds identical-spelling dialect variants
+  into one RRP record; see `src/tools/collapse_identical_dialects.py`).
   Every multi-spelling supplement group is exactly an `{RSSB, GenAm}` pair; RSSB
   is the non-merged British standard, GenAm the merged American accent. A GenAm
   spelling that is an exact merger swap of an RSSB sibling in the same

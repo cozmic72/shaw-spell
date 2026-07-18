@@ -65738,6 +65738,18 @@
             "review": "shave_says:𐑰𐑑𐑰𐑱"
         }
     ],
+    "eta_NN1_𐑰𐑑𐑩": [
+        {
+            "Latn": "eta",
+            "Shaw": "𐑰𐑑𐑩",
+            "pos": "NN1",
+            "ipa": "ˈiːtə",
+            "freq": 0,
+            "var": "RSSB",
+            "confidence": 89,
+            "review": "shave_says:𐑰𐑑𐑰𐑱"
+        }
+    ],
     "eu_NN1_𐑰𐑿": [
         {
             "Latn": "eu",
@@ -72816,18 +72828,6 @@
             "var": "GenAm",
             "confidence": 89,
             "review": "shave_says:𐑰𐑕𐑵𐑮𐑾𐑯𐑑"
-        }
-    ],
-    "eta_NN1_𐑰𐑑𐑩": [
-        {
-            "Latn": "eta",
-            "Shaw": "𐑰𐑑𐑩",
-            "pos": "NN1",
-            "ipa": "ˈiːtə",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 89,
-            "review": "shave_says:𐑰𐑑𐑰𐑱"
         }
     ],
     "etanercept_NN1_𐑦𐑑𐑨𐑯𐑼𐑕𐑧𐑐𐑑": [
@@ -87905,18 +87905,6 @@
             "review": "shave_says:𐑜𐑪𐑯𐑛𐑩𐑤𐑽"
         }
     ],
-    "gone_AJ0_𐑜𐑪𐑯": [
-        {
-            "Latn": "gone",
-            "Shaw": "𐑜𐑪𐑯",
-            "pos": "AJ0",
-            "ipa": "ɡɒn",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 97,
-            "review": "shave_agrees"
-        }
-    ],
     "gonococcus_NN1_𐑜𐑪𐑯𐑩𐑒𐑪𐑒𐑩𐑕": [
         {
             "Latn": "gonococcus",
@@ -98432,18 +98420,6 @@
             "Shaw": "𐑣𐑦𐑕𐑑𐑧𐑮𐑦𐑒",
             "pos": "NN1",
             "ipa": "hɪsˈterɪk",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 97,
-            "review": "shave_agrees"
-        }
-    ],
-    "i_NN1_𐑲": [
-        {
-            "Latn": "i",
-            "Shaw": "𐑲",
-            "pos": "NN1",
-            "ipa": "aɪ",
             "freq": 0,
             "var": "RSSB",
             "confidence": 97,
@@ -112256,18 +112232,6 @@
             "Shaw": "𐑤𐑰𐑖",
             "pos": "VVI",
             "ipa": "liːʃ",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 97,
-            "review": "shave_agrees"
-        }
-    ],
-    "least_AJ0_𐑤𐑰𐑕𐑑": [
-        {
-            "Latn": "least",
-            "Shaw": "𐑤𐑰𐑕𐑑",
-            "pos": "AJ0",
-            "ipa": "liːst",
             "freq": 0,
             "var": "RSSB",
             "confidence": 97,
@@ -132413,6 +132377,18 @@
             "review": "shave_says:𐑴𐑕"
         }
     ],
+    "os_NN1_𐑪𐑕": [
+        {
+            "Latn": "os",
+            "Shaw": "𐑪𐑕",
+            "pos": "NN1",
+            "ipa": "ɒs",
+            "freq": 0,
+            "var": "RSSB",
+            "confidence": 89,
+            "review": "shave_says:𐑴𐑕"
+        }
+    ],
     "oaxaca_NN1_𐑢𐑩𐑣𐑨𐑒𐑩": [
         {
             "Latn": "oaxaca",
@@ -135903,18 +135879,6 @@
             "var": "GenAm",
             "confidence": 97,
             "review": "shave_agrees"
-        }
-    ],
-    "os_NN1_𐑪𐑕": [
-        {
-            "Latn": "os",
-            "Shaw": "𐑪𐑕",
-            "pos": "NN1",
-            "ipa": "ɒs",
-            "freq": 0,
-            "var": "RSSB",
-            "confidence": 89,
-            "review": "shave_says:𐑴𐑕"
         }
     ],
     "oscilloscope_NN1_𐑩𐑕𐑦𐑤𐑦𐑕𐑒𐑴𐑐": [

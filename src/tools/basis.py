@@ -36,9 +36,10 @@ UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 
 # Supplement candidate sources that make up the basis alongside upstream ReadLex.
 # These are the PHRASE-FILTERED views of the merger-classified candidates
-# (reliable -> deduped -> classified -> filtered; see the supplement pruning
-# chain): candidates an established entry already resolves to, or sum-of-parts
-# phrase noise, are dropped upstream, so the basis — and thus the editor's review
+# (reliable -> deduped -> classified -> collapsed -> filtered; see the supplement
+# pruning chain): candidates an established entry already resolves to, identical-
+# spelling dialect variants (collapsed to one RRP record), or sum-of-parts phrase
+# noise, are dropped upstream, so the basis — and thus the editor's review
 # surface — never sees them. Each record carries its `mergers` annotation.
 SUPPLEMENT_PATHS = [
     PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json",

@@ -84,6 +84,7 @@ Run under systemd (see shaw-spell-editord.service).
 """
 
 import argparse
+import functools
 import json
 import logging
 import os
@@ -333,41 +334,83 @@ def _natural_key(record):
     return (record["word"].lower(), record["pos"], record["shaw"], record["var"])
 
 
-# Confidence is only carried by supplemental review candidates; upstream ReadLex
-# records have none. A confidence sort ranks the CANDIDATES; records with no
-# confidence are not review targets, so the leading 0/1 pushes them to the END
-# under either direction (0 = has confidence, sorts first).
-def _confidence_desc_key(record):
-    conf = record.get("confidence")
-    has = conf is not None
-    return (0 if has else 1, -conf if has else 0, _natural_key(record))
+# Numeric columns (confidence, freq) are only carried by supplemental review
+# candidates; upstream ReadLex records have none. Such a sort ranks the CANDIDATES,
+# so records missing the value are not review targets: the leading 0/1 pushes them
+# to the END under either direction (0 = has value, sorts first). The _natural_key
+# tail makes every key a TOTAL ORDER, so offset paging over the sorted corpus never
+# shuffles tied records between page requests (no duplicates, no gaps).
+def _numeric_key(record, field, descending):
+    value = record.get(field)
+    has = value is not None
+    ranked = (-value if descending else value) if has else 0
+    return (0 if has else 1, ranked, _natural_key(record))
 
 
-def _confidence_asc_key(record):
-    conf = record.get("confidence")
-    has = conf is not None
-    return (0 if has else 1, conf if has else 0, _natural_key(record))
+# Text columns sort by one field, then _natural_key as tiebreak. A tuple key can't
+# mix directions, and the tiebreak must stay ASCENDING even when the primary is
+# descending (else paging is unstable), so a comparator is the only stable option:
+# primary in the requested direction, _natural_key always ascending.
+def _field_sort(field, descending):
+    def compare(left, right):
+        left_primary, right_primary = _text_primary(left, field), _text_primary(right, field)
+        if left_primary != right_primary:
+            ordered = left_primary < right_primary
+            return -1 if ordered != descending else 1
+        left_tie, right_tie = _natural_key(left), _natural_key(right)
+        if left_tie == right_tie:
+            return 0
+        return -1 if left_tie < right_tie else 1
+    return functools.cmp_to_key(compare)
 
 
-SORTS = {
-    "confidence_desc": _confidence_desc_key,
-    "confidence_asc": _confidence_asc_key,
-    "freq_desc": lambda r: (-_record_freq(r), _natural_key(r)),
-    "word": _natural_key,
-}
+def _text_primary(record, field):
+    # The word column collates case-insensitively (its natural-key tail is already
+    # lowercased); the rest compare on their raw field, mirroring the client.
+    value = record[field]
+    return value.lower() if field == "word" else value
+
+
+# The client composes `${column}_${dir}`; STATE_FIELD maps the state column to its
+# backing field. Every sortable column has both directions so paging inherits the
+# active header sort. DEFAULT_SORT is the malformed-request fallback.
+STATE_FIELD = "patch_state"
+TEXT_SORT_COLUMNS = ("state", "word", "shaw", "var", "pos")
+NUMERIC_SORT_COLUMNS = ("confidence", "freq")
 DEFAULT_SORT = "word"
 
 
-def _record_freq(record):
-    freq = record.get("freq")
-    return freq if isinstance(freq, (int, float)) else 0
+def _build_sorts():
+    sorts = {}
+    for column in TEXT_SORT_COLUMNS:
+        field = STATE_FIELD if column == "state" else column
+        sorts[f"{column}_asc"] = _text_sorter(field, descending=False)
+        sorts[f"{column}_desc"] = _text_sorter(field, descending=True)
+    for column in NUMERIC_SORT_COLUMNS:
+        sorts[f"{column}_asc"] = _numeric_sorter(column, descending=False)
+        sorts[f"{column}_desc"] = _numeric_sorter(column, descending=True)
+    # "word" (no direction) is the natural-key order and the default landing sort.
+    sorts["word"] = lambda records: sorted(records, key=_natural_key)
+    return sorts
+
+
+def _text_sorter(field, descending):
+    return lambda records: sorted(records, key=_field_sort(field, descending))
+
+
+def _numeric_sorter(field, descending):
+    return lambda records: sorted(
+        records, key=lambda record: _numeric_key(record, field, descending))
+
+
+SORTS = _build_sorts()
 
 
 def sort_records(records, sort):
-    key = SORTS.get(sort)
-    if key is None:
+    sorter = SORTS.get(sort)
+    if sorter is None:
         raise ValueError(f"unknown sort: {sort}")
-    return sorted(records, key=key)
+    return sorter(records)
 
 
 def serialisable(record):

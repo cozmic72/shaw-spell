@@ -20,11 +20,11 @@ const AUTHOR = "editor";
 const PAGE_LIMIT = 200;
 const ACCEPTED_STATUS = "sanctioned";
 const SESSION_KEY = "shaw-spell.editor.session";
-// The daemon query sort is fixed: it decides which records land in the page (the
-// highest-confidence candidates, the review targets) and their base order. The
-// user reorders the loaded page client-side via the ledger column headers
-// (state.columnSort), which never re-pulls.
-const QUERY_SORT = "confidence_desc";
+// The default query sort — today's landing order, the highest-confidence review
+// candidates first. A column header click sets state.columnSort, which daemonSort()
+// composes into a `${column}_${dir}` sort the daemon applies to the whole filtered
+// corpus; paging then walks that order. With no column sort active this default holds.
+const DEFAULT_QUERY_SORT = "confidence_desc";
 const RRP_VAR = "RRP";
 
 // The edit surface: the fields the reviewer types or toggles. status is NOT here —
@@ -180,9 +180,9 @@ const state = {
     // is its materialised projection via filtersFromState. An unset entry (empty
     // categorical, blank text, null numeric) contributes nothing to the query.
     activeFilters: [],
-    // Client-side ledger ordering, applied to the loaded page after each query and
-    // toggled by the column headers. null == daemon order (the QUERY_SORT the page
-    // arrived in). {key, dir} where dir is "asc" or "desc".
+    // The active column-header sort, sent to the daemon so it orders the whole
+    // filtered corpus (not just the loaded page). null == DEFAULT_QUERY_SORT.
+    // {key, dir} where key is a sortable column and dir is "asc" or "desc".
     columnSort: null,
     selected: -1,
     editing: false,
@@ -366,14 +366,14 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     const result = await callDaemon({
         op: "entries",
         filters: state.filters,
-        sort: QUERY_SORT,
+        sort: daemonSort(),
         offset,
         limit: state.limit,
     });
-    // The daemon returns the page in QUERY_SORT order; the active column sort (if
-    // any) reorders it for display before the ledger is built, so index-keyed
-    // selection and in-place row refresh stay aligned with what is on screen.
-    state.records = sortedForDisplay(result.records);
+    // The daemon owns order: it sorts the whole filtered corpus (per daemonSort) and
+    // returns this page already in that order, so index-keyed selection and in-place
+    // row refresh stay aligned with what is on screen, and paging walks a stable order.
+    state.records = result.records;
     state.total = result.total;
     markInvalidRegex(result.invalid_regex || []);
     // The selection is over the working set that was on screen; a re-materialise
@@ -473,83 +473,35 @@ function renderLedger() {
     });
 }
 
-// Client-side ledger ordering. Each sortable column extracts a comparable key from
-// a record; strings compare case-insensitively by locale, numbers numerically.
-// Missing numeric values (a record with no freq/confidence) sort last in both
-// directions, matching the daemon's "not a review target" convention.
-const SORT_KEYS = {
-    state: (record) => ({ text: record.patch_state }),
-    word: (record) => ({ text: record.word.toLowerCase() }),
-    shaw: (record) => ({ text: record.shaw }),
-    var: (record) => ({ text: record.var }),
-    pos: (record) => ({ text: record.pos }),
-    confidence: (record) => ({ number: record.confidence }),
-    freq: (record) => ({ number: record.freq }),
-};
+// The columns the daemon can sort on; the header's data-sort-key is one of these,
+// and daemonSort composes it with a direction into the daemon's `${column}_${dir}`
+// sort enum. Guards session restore against a retired column key.
+const SORTABLE_COLUMNS = new Set(["state", "word", "shaw", "var", "confidence", "freq", "pos"]);
 
-// Order a page for display under the active column sort. Returns a new array so the
-// daemon's page is not mutated; a null columnSort leaves the daemon order intact.
-// Array.sort is stable (ES2019+), and the comparator returns 0 for equal keys, so
-// records with the same key keep their incoming (daemon) order.
-function sortedForDisplay(records) {
-    if (!state.columnSort) {
-        return records;
-    }
-    const extract = SORT_KEYS[state.columnSort.key];
-    if (!extract) {
-        throw new Error(`unknown column sort: ${state.columnSort.key}`);
-    }
-    const direction = state.columnSort.dir === "desc" ? -1 : 1;
-    return [...records].sort((left, right) => compareKeys(extract(left), extract(right), direction));
-}
-
-// Compare two extracted keys under `direction` (1 asc, -1 desc). The missing-value
-// partition is direction-INDEPENDENT — an absent numeric value (null/undefined)
-// always sorts last, in both asc and desc — so `direction` is applied only to the
-// both-present (and text) comparison, never to the missing-vs-present verdict. Text
-// keys compare by locale case-insensitively (numeric collation).
-function compareKeys(left, right, direction) {
-    if ("number" in left) {
-        const a = left.number;
-        const b = right.number;
-        const aMissing = a === null || a === undefined;
-        const bMissing = b === null || b === undefined;
-        if (aMissing || bMissing) {
-            return aMissing === bMissing ? 0 : (aMissing ? 1 : -1);
-        }
-        return direction * (a - b);
-    }
-    return direction * left.text.localeCompare(right.text, undefined, { numeric: true });
+// The sort string to send with a query: the active column sort composed as the
+// daemon's `${column}_${dir}` enum, or the default landing order when none is set.
+function daemonSort() {
+    return state.columnSort
+        ? `${state.columnSort.key}_${state.columnSort.dir}`
+        : DEFAULT_QUERY_SORT;
 }
 
 // A column header was clicked: sort ascending, or flip to descending if that column
-// is already the ascending sort. Re-orders the loaded page in place (preserving the
-// focused row by anchor) without re-pulling from the daemon.
+// is already the ascending sort. Re-pulls the WHOLE filtered corpus in the new order
+// (daemon-side) reset to page 0, keeping the cursor on the focused record by anchor.
 function onSortHeaderClick(key) {
     if (state.columnSort && state.columnSort.key === key && state.columnSort.dir === "asc") {
         state.columnSort = { key, dir: "desc" };
     } else {
         state.columnSort = { key, dir: "asc" };
     }
-    reorderLedger();
-}
-
-// Re-apply the active column sort to the loaded records, keeping the focused entry
-// selected by anchor (its index moves under the new order) and the ledger and
-// select-bar in sync. Absent-value tie handling matches sortedForDisplay.
-function reorderLedger() {
+    syncSortIndicators();
     const focusedAnchor = state.records[state.selected]
         ? state.records[state.selected].anchor
         : null;
-    state.records = sortedForDisplay(state.records);
-    syncSortIndicators();
-    renderLedger();
-    select(landingIndex(focusedAnchor));
-    // syncSelectionUI re-applies the .picked highlight from state.multi to the
-    // freshly re-rendered rows (and calls syncSelectBar internally), so a bulk
-    // selection survives a column re-sort visually, not just in state.
-    syncSelectionUI();
-    saveSession();
+    // Direct runQuery, not requestFilterQuery: the sort is not in the query signature,
+    // so the signature guard would wrongly skip a sort-only re-pull.
+    runQuery(0, focusedAnchor).catch((error) => showToast(error.message, true));
 }
 
 // Reflect the active column sort on the header row: the sorted column carries the
@@ -740,7 +692,8 @@ function pageButton(label, targetOffset) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
-    button.addEventListener("click", () => runQuery(Math.max(0, targetOffset)));
+    button.addEventListener("click", () =>
+        runQuery(Math.max(0, targetOffset)).catch((error) => showToast(error.message, true)));
     return button;
 }
 
@@ -2944,7 +2897,11 @@ async function boot() {
         renderChipStrip();
     }
     if (stored) {
-        state.columnSort = stored.columnSort || null;
+        // Drop a restored sort whose column is no longer sortable, else daemonSort
+        // would compose an enum the daemon rejects on the first (boot) query.
+        state.columnSort = stored.columnSort && SORTABLE_COLUMNS.has(stored.columnSort.key)
+            ? stored.columnSort
+            : null;
     }
     syncSortIndicators();
     return runQuery(0, stored ? stored.anchor : null);

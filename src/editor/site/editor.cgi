@@ -101,105 +101,70 @@ PAGE = """<!DOCTYPE html>
         <div class="tally" id="tally" aria-live="polite"></div>
     </header>
 
+    <!-- The filter bar shows only ACTIVE filters, as composable chips. "+ Add filter"
+         opens a menu of the not-yet-active fields; picking one adds its chip and opens
+         its value picker. The registry (editor.js FIELD_REGISTRY) is the single source
+         of truth for the fields, their kinds and order; it harvests its metadata from
+         the hidden .filter-meta block below at boot. -->
     <form class="filters" id="filters" autocomplete="off">
-        <!-- The two free-text boxes match a substring by default; the .rx toggle
-             switches to regex (re.search) and .aA to case-insensitive. Both are
-             checkboxes so they ride the same FormData / live-filter wiring as every
-             other control; the daemon reads them as word_regex/word_ci companions. -->
-        <div class="field">
-            <span>Word</span>
-            <div class="text-filter">
-                <input type="text" name="word" placeholder="latin substring">
-                <label class="toggle" title="Regex (re.search)"><input type="checkbox" name="word_regex"><span>.*</span></label>
-                <label class="toggle" title="Case-insensitive"><input type="checkbox" name="word_ci"><span>aA</span></label>
-            </div>
+        <div class="chip-strip" id="chipStrip"></div>
+        <div class="add-filter-wrap" id="addFilterWrap">
+            <button type="button" class="add-filter" id="addFilter"
+                    aria-haspopup="true" aria-expanded="false">+ Add filter</button>
         </div>
-        <div class="field">
-            <span>Shaw</span>
-            <div class="text-filter">
-                <input type="text" name="shaw" placeholder="𐑖𐑷 substring" class="shavian-input">
-                <label class="toggle" title="Regex (re.search)"><input type="checkbox" name="shaw_regex"><span>.*</span></label>
-                <label class="toggle" title="Case-insensitive"><input type="checkbox" name="shaw_ci"><span>aA</span></label>
-            </div>
-        </div>
-        <!-- Every categorical facet becomes a multi-select dropdown at boot (editor.js
-             buildFacetDropdowns). The data-derived facets (source/status/pos/var) take
-             their values from the daemon's distinct-value facets op, so they track the
-             data rather than drift from a hardcoded enum. The closed vocabularies carry
-             their value→label pairs in a <template> here (never rendered, harvested by
-             the JS), so those labels stay authored in one place. -->
-        <fieldset class="field chips" data-facet="source">
-            <legend>Source</legend>
-        </fieldset>
-        <fieldset class="field chips" data-facet="status">
-            <legend>Status</legend>
-        </fieldset>
-        <fieldset class="field chips" data-facet="word_kind">
-            <legend>Words</legend>
-            <template>
-                <label class="chip"><input type="checkbox" name="word_kind" value="multi"><span>multi-word</span></label>
-                <label class="chip"><input type="checkbox" name="word_kind" value="single"><span>single-word</span></label>
-            </template>
-        </fieldset>
-        <fieldset class="field chips" data-facet="novelty">
-            <legend>Novelty</legend>
-            <template>
-                <label class="chip"><input type="checkbox" name="novelty" value="new-word"><span>new word</span></label>
-                <label class="chip"><input type="checkbox" name="novelty" value="new-spelling"><span>new spelling</span></label>
-                <label class="chip"><input type="checkbox" name="novelty" value="new-pos"><span>new POS</span></label>
-            </template>
-        </fieldset>
-        <fieldset class="field chips" data-facet="reviewed">
-            <legend>Reviewed</legend>
-            <template>
-                <label class="chip"><input type="checkbox" name="reviewed" value="unreviewed"><span>unreviewed</span></label>
-                <label class="chip"><input type="checkbox" name="reviewed" value="flagged"><span>flagged</span></label>
-                <label class="chip"><input type="checkbox" name="reviewed" value="decided"><span>decided</span></label>
-            </template>
-        </fieldset>
-        <fieldset class="field chips" data-facet="patch_state">
-            <legend>State</legend>
-            <template>
-                <label class="chip"><input type="checkbox" name="patch_state" value="unreviewed"><span>unreviewed</span></label>
-                <label class="chip"><input type="checkbox" name="patch_state" value="edited"><span>edited</span></label>
-                <label class="chip"><input type="checkbox" name="patch_state" value="dropped"><span>dropped</span></label>
-                <label class="chip"><input type="checkbox" name="patch_state" value="flagged"><span>flagged</span></label>
-                <label class="chip"><input type="checkbox" name="patch_state" value="authored"><span>authored</span></label>
-            </template>
-        </fieldset>
-        <fieldset class="field chips" data-facet="pos">
-            <legend>POS</legend>
-        </fieldset>
-        <fieldset class="field chips" data-facet="var">
-            <legend>Var</legend>
-        </fieldset>
-        <fieldset class="field chips" data-facet="mergers">
-            <legend>Mergers</legend>
-            <template>
-                <label class="chip"><input type="checkbox" name="mergers" value="trap-bath"><span>TRAP–BATH</span></label>
-                <label class="chip"><input type="checkbox" name="mergers" value="cot-caught"><span>COT–CAUGHT</span></label>
-                <label class="chip"><input type="checkbox" name="mergers" value="(none)"><span>(none / canonical)</span></label>
-            </template>
-        </fieldset>
-        <fieldset class="field chips" data-facet="variant">
-            <legend>Variant</legend>
-            <template>
-                <label class="chip"><input type="checkbox" name="variant" value="variant"><span>variant</span></label>
-                <label class="chip"><input type="checkbox" name="variant" value="canonical"><span>canonical</span></label>
-            </template>
-        </fieldset>
-        <label class="field narrow">
-            <span>Conf ≥</span>
-            <input type="number" name="confidence_min" min="0" max="100">
-        </label>
-        <label class="field narrow">
-            <span>Conf ≤</span>
-            <input type="number" name="confidence_max" min="0" max="100">
-        </label>
         <button type="button" class="refresh-results" id="refreshResults"
                 title="Refresh results — re-run the current filter and drop reviewed rows"
                 aria-label="Refresh results">⟳</button>
     </form>
+
+    <!-- Filter metadata: one <div data-field> per registry field, carrying its human
+         label (data-label) and its kind (data-kind). A closed-vocabulary categorical
+         field also lists its value→label pairs as .chip templates, so those labels stay
+         authored here rather than duplicated in JS; a data-derived categorical field
+         (pos/var/status/source) omits them and takes its values from the daemon facets
+         op. The block is never rendered — editor.js harvests it into the registry. -->
+    <div class="filter-meta" id="filterMeta" hidden>
+        <div data-field="word" data-kind="text" data-label="Word"
+             data-placeholder="latin substring"></div>
+        <div data-field="shaw" data-kind="text" data-label="Shaw"
+             data-placeholder="𐑖𐑷 substring" data-shavian="true"></div>
+        <div data-field="source" data-kind="categorical" data-label="Source"></div>
+        <div data-field="status" data-kind="categorical" data-label="Status"></div>
+        <div data-field="pos" data-kind="categorical" data-label="POS"></div>
+        <div data-field="var" data-kind="categorical" data-label="Var"></div>
+        <div data-field="word_kind" data-kind="categorical" data-label="Words">
+            <label class="chip"><input value="multi"><span>multi-word</span></label>
+            <label class="chip"><input value="single"><span>single-word</span></label>
+        </div>
+        <div data-field="novelty" data-kind="categorical" data-label="Novelty">
+            <label class="chip"><input value="new-word"><span>new word</span></label>
+            <label class="chip"><input value="new-spelling"><span>new spelling</span></label>
+            <label class="chip"><input value="new-pos"><span>new POS</span></label>
+        </div>
+        <div data-field="reviewed" data-kind="categorical" data-label="Reviewed">
+            <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
+            <label class="chip"><input value="flagged"><span>flagged</span></label>
+            <label class="chip"><input value="decided"><span>decided</span></label>
+        </div>
+        <div data-field="patch_state" data-kind="categorical" data-label="State">
+            <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
+            <label class="chip"><input value="edited"><span>edited</span></label>
+            <label class="chip"><input value="dropped"><span>dropped</span></label>
+            <label class="chip"><input value="flagged"><span>flagged</span></label>
+            <label class="chip"><input value="authored"><span>authored</span></label>
+        </div>
+        <div data-field="mergers" data-kind="categorical" data-label="Mergers">
+            <label class="chip"><input value="trap-bath"><span>TRAP–BATH</span></label>
+            <label class="chip"><input value="cot-caught"><span>COT–CAUGHT</span></label>
+            <label class="chip"><input value="(none)"><span>(none / canonical)</span></label>
+        </div>
+        <div data-field="variant" data-kind="categorical" data-label="Variant">
+            <label class="chip"><input value="variant"><span>variant</span></label>
+            <label class="chip"><input value="canonical"><span>canonical</span></label>
+        </div>
+        <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>
+        <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"></div>
+    </div>
 
     <main class="workbench" id="workbench">
         <div class="drawer-backdrop" id="drawerBackdrop"></div>

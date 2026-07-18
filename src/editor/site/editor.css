@@ -143,35 +143,126 @@ body {
 .help-toggle + .tally { margin-left: 0; }
 
 /* ---- filter bar ----
-   One tidy row: the controls sit on a single line and share a uniform height, so
-   the bar reads as a strip of equal-weight facets rather than a ragged stack. It
-   does not wrap (flex-shrink lets crowded controls narrow instead); the facet
-   popovers overlay, so the row height is fixed regardless of a facet's cardinality. */
+   Only ACTIVE filters show, as composable chips in the strip, followed by the +Add
+   button and the refresh control. The strip wraps on a crowded row rather than
+   clipping; the chip pickers and +Add menu are absolutely-positioned popovers that
+   must overlay the ledger, so the bar never clips its overflow. */
 .filters {
     display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    gap: 10px;
-    padding: 8px 22px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
     background: var(--paper-raised);
     border-bottom: 1px solid var(--rule);
-    /* No clip: the facet popovers are absolutely positioned below their triggers and
-       must overlay the ledger, so an overflow clip here would swallow them. The single
-       line is held by flex-wrap:nowrap plus min-width:0 on the flex children (they
-       shrink to fit rather than wrap or bleed), not by clipping. */
+    /* No clip: the popovers overlay below their anchors and must not be swallowed. */
     overflow: visible;
 }
-.field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.field > span {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
+/* The chip strip flexes to take the row's slack so +Add and refresh sit at the
+   trailing edge; it wraps its chips when they outrun the width. */
+.chip-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
-/* Every bar control shares this height so the row's inputs and facet triggers line
-   up rather than stepping unevenly. */
-.field input, .facet-trigger { height: 34px; }
-.field input {
+
+/* A filter chip: its label trigger and a remove ×, sharing one pill. position:relative
+   anchors the chip's picker popover to it. */
+.filter-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+}
+.chip-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    background: none;
+    border: none;
+    padding: 6px 8px 6px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    max-width: 40ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.chip-label::after {
+    content: " ▾";
+    color: var(--ink-soft);
+    font-size: 10px;
+}
+.filter-chip:hover { border-color: var(--ink-soft); }
+.filter-chip:has(.chip-label[aria-expanded="true"]) {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+    border-color: var(--accent);
+}
+.chip-remove {
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    border-left: 1px solid var(--rule);
+    padding: 0 8px;
+    cursor: pointer;
+}
+.chip-remove:hover { color: var(--state-dropped); }
+
+/* +Add filter: the empty-state and always-present affordance that opens the field
+   menu. Its wrapper anchors the menu popover. Disabled when every field is active. */
+.add-filter-wrap { position: relative; flex: 0 0 auto; }
+.add-filter {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px dashed var(--rule);
+    border-radius: 2px;
+    padding: 6px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.add-filter:hover:not(:disabled) { border-color: var(--ink-soft); color: var(--accent); }
+.add-filter[aria-expanded="true"] {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+    border-color: var(--accent);
+}
+.add-filter:disabled { opacity: 0.5; cursor: default; }
+
+/* The +Add menu: a flat list of the not-yet-active fields, styled as full-width rows
+   in the shared popover. */
+.add-menu { padding: 4px; }
+.add-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: none;
+    border: none;
+    border-radius: 2px;
+    min-height: 40px;
+    padding: 0 10px;
+    cursor: pointer;
+}
+.add-menu-item:hover { background: var(--paper); }
+
+/* A text picker: the substring/regex box and its two mode toggles on one line. */
+.text-picker { display: flex; align-items: stretch; gap: 3px; }
+.text-filter {
+    flex: 1 1 auto;
+    min-width: 160px;
+    height: 34px;
     font-family: var(--mono);
     font-size: 13px;
     color: var(--ink);
@@ -179,24 +270,21 @@ body {
     border: 1px solid var(--rule);
     border-radius: 2px;
     padding: 4px 7px;
-    min-width: 118px;
 }
-.field.narrow input { min-width: 60px; }
-.field .shavian-input { font-family: var(--shaw); font-size: 16px; }
-.field input:focus {
+.text-filter.shavian-input { font-family: var(--shaw); font-size: 16px; }
+.text-filter:focus {
     outline: 2px solid var(--accent);
     outline-offset: 0;
     border-color: var(--accent);
 }
+/* An invalid regex: the daemon named this box in invalid_regex, so flag it red
+   without breaking the query (it simply matched nothing). */
+.text-filter.invalid { border-color: var(--state-dropped); }
+.text-filter.invalid:focus { outline-color: var(--state-dropped); }
 
-/* A free-text filter box with its two mode toggles (regex / case-insensitive) on
-   the same 34px line. The input flexes; the toggles are fixed square affordances so
-   the bar stays one tidy row. */
-.text-filter { display: flex; align-items: stretch; gap: 3px; }
-.text-filter input[type="text"] { flex: 1 1 auto; min-width: 90px; }
-/* A mode toggle: a small square button backed by a hidden checkbox, so it rides the
-   FormData / live-filter wiring. Checked = active (accent fill). */
-.text-filter .toggle {
+/* A mode toggle: a small square button backed by a hidden checkbox. Checked = active
+   (accent fill). */
+.toggle {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
@@ -212,29 +300,37 @@ body {
     cursor: pointer;
     user-select: none;
 }
-.text-filter .toggle input { position: absolute; opacity: 0; pointer-events: none; }
-.text-filter .toggle:hover { border-color: var(--ink-soft); }
-.text-filter .toggle:has(input:checked) {
+.toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle:hover { border-color: var(--ink-soft); }
+.toggle:has(input:checked) {
     color: var(--paper);
     background: var(--accent);
     border-color: var(--accent);
 }
-/* An invalid regex: the daemon named this box in invalid_regex, so flag it red
-   without breaking the query (it simply matched nothing). */
-.text-filter.invalid input[type="text"] {
-    border-color: var(--state-dropped);
+
+/* A numeric picker: a single number input. */
+.numeric-picker input {
+    width: 100%;
+    height: 34px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 4px 7px;
 }
-.text-filter.invalid input[type="text"]:focus {
-    outline-color: var(--state-dropped);
+.numeric-picker input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+    border-color: var(--accent);
 }
 
 /* Refresh affordance: a compact square icon button that re-pulls the working set
    under the current filter (dropping reviewed rows and refilling from the pool). It
-   sits at the bar's trailing edge, sharing the 34px control height so it lines up
-   with the inputs and triggers rather than adding a big "Filter" button back. */
+   sits at the bar's trailing edge. */
 .refresh-results {
     flex: 0 0 auto;
-    align-self: flex-end;
     width: 34px;
     height: 34px;
     font-size: 16px;
@@ -248,70 +344,10 @@ body {
 .refresh-results:hover { border-color: var(--ink-soft); color: var(--accent); }
 .refresh-results:active { background: var(--paper-raised); }
 
-/* ---- multi-select facet dropdowns ----
-   Every categorical filter (source/status/pos/var and the closed vocabularies) is
-   the same compact control: a legend, a single-line trigger summarising the
-   selection, and a popover checklist. One uniform control keeps the whole bar to one
-   tidy row of triggers however many values a facet has — POS alone is 113 CLAWS tags.
-   Each fieldset is a narrow column: legend on top, trigger below. */
-.field.chips {
-    border: none;
-    display: flex;
-    flex-flow: column;
-    align-items: stretch;
-    gap: 3px;
-    min-width: 0;
-}
-.field.chips legend {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    padding: 0;
-    margin-bottom: 1px;
-}
-.facet-select { position: relative; }
-/* The trigger is a single line whatever the cardinality: "All" when unconstrained,
-   "N selected" when the facet filters. Sized to match the .field inputs so it sits
-   flush in the bar. */
-.facet-trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-width: 92px;
-    padding: 5px 10px;
-    font-family: var(--mono);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--ink);
-    background: var(--paper);
-    border: 1px solid var(--rule);
-    border-radius: 2px;
-    cursor: pointer;
-    white-space: nowrap;
-}
-.facet-trigger::after {
-    content: "▾";
-    color: var(--ink-soft);
-    font-size: 10px;
-}
-.facet-trigger:hover { border-color: var(--ink-soft); }
-.facet-trigger.has-selection {
-    color: var(--paper);
-    background: var(--accent);
-    border-color: var(--accent);
-    font-weight: 700;
-}
-.facet-trigger.has-selection::after { color: var(--paper); }
-.facet-trigger[aria-expanded="true"] {
-    outline: 2px solid var(--accent);
-    outline-offset: 0;
-    border-color: var(--accent);
-}
-
-/* The popover overlays the layout (absolute) so it never grows the filter bar. Its
+/* ---- value-picker popovers ----
+   A chip's picker and the +Add menu share the .facet-panel overlay: absolutely
+   positioned below its anchor so it overlays the layout rather than growing the bar.
+   The popover overlays the layout (absolute) so it never grows the filter bar. Its
    checklist scrolls internally at a capped height; the whole thing is width-capped
    so a long tag can't stretch it across the screen. */
 .facet-panel {
@@ -1170,21 +1206,12 @@ kbd {
 
     .detail { max-width: none; padding: 22px 18px; }
 
-    /* When expanded, the filters become a two-column grid whose tracks can shrink to
-       zero, so nothing demands a min width that would overflow the viewport. */
-    .filters {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: end;
-        gap: 12px;
-        padding: 12px 18px;
-        overflow: visible;
-    }
-    .field input { min-width: 0; width: 100%; }
-    .field.narrow input { min-width: 0; }
-    /* Facet triggers are compact, so they sit two-per-row like the other fields; the
-       trigger fills its track and its popover overlays from there. */
-    .facet-trigger { min-width: 0; width: 100%; }
+    /* The chip strip already wraps; on a phone give it a touch more breathing room and
+       let the +Add / refresh controls wrap onto their own line when the chips fill the
+       first. A chip's picker still overlays from wherever the chip lands. */
+    .filters { padding: 12px 18px; gap: 10px; }
+    .add-filter-wrap { flex: 1 1 auto; }
+    .add-filter { width: 100%; }
 
     /* Compact masthead so the drawer toggle always fits: drop the strap, shrink the
        mark, let the title take the middle and truncate, toggle pinned right. The

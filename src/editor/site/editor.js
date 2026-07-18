@@ -140,6 +140,10 @@ function posCell(className, pos) {
 }
 
 const FILTER_FORM = document.getElementById("filters");
+const CHIP_STRIP = document.getElementById("chipStrip");
+const ADD_FILTER = document.getElementById("addFilter");
+const ADD_FILTER_WRAP = document.getElementById("addFilterWrap");
+const FILTER_META = document.getElementById("filterMeta");
 const FILTERS_TOGGLE = document.getElementById("filtersToggle");
 const REFRESH_RESULTS = document.getElementById("refreshResults");
 const TALLY = document.getElementById("tally");
@@ -163,7 +167,14 @@ const state = {
     total: 0,
     offset: 0,
     limit: PAGE_LIMIT,
+    // The filters materialised by the last runQuery — the daemon dict. Read by
+    // countUnreviewedRemaining and saveSession; written by runQuery from the chips.
     filters: {},
+    // The active filter chips, in strip order: an ordered array of entries shaped by
+    // their field's kind (see blankEntry). This is the editable model; state.filters
+    // is its materialised projection via filtersFromState. An unset entry (empty
+    // categorical, blank text, null numeric) contributes nothing to the query.
+    activeFilters: [],
     // Client-side ledger ordering, applied to the loaded page after each query and
     // toggled by the column headers. null == daemon order (the QUERY_SORT the page
     // arrived in). {key, dir} where dir is "asc" or "desc".
@@ -209,54 +220,129 @@ async function callDaemon(request) {
     return payload;
 }
 
-// The categorical facets are multi-select: each checked chip contributes its
-// value to that facet's array (OR within the facet; the daemon ANDs across
-// facets). word/shaw stay substring scalars, confidence_* numeric scalars. An
-// empty array is omitted, so an untouched facet does not constrain.
-const CATEGORICAL_FACETS = new Set([
-    "source", "status", "pos", "var", "patch_state",
-    "reviewed", "word_kind", "novelty", "mergers", "variant",
-]);
+// ---- filter field registry ----
+// The single source of truth for the filter fields: their kind, human label, order,
+// and (for categorical) their value vocabulary. The order here drives the +Add menu
+// and the chip strip. Populated at boot from the CGI's .filter-meta block (labels +
+// closed-vocabulary values) and the daemon facets op (data-derived values). Each
+// entry is {field, kind, label, ...}:
+//   categorical — kind "categorical", entries [{value,label}], value is a string[]
+//   text        — kind "text", value is a scalar string, flags {regex,ci}
+//   numeric     — kind "numeric", value is a Number|null
+// The registry REPLACES the former CATEGORICAL_FACETS + SUBSTRING_FLAGS sets: every
+// downstream reader (filtersFromState, chips, session) consults it by field.
+const FIELD_REGISTRY = new Map();
 
-// The two free-text boxes (word/shaw) each carry a regex and a case-insensitive
-// mode toggle. They are checkboxes so they ride the same FormData / live-filter
-// wiring, but read as booleans (present-and-checked => true) rather than the
-// checkbox's "on" string, matching the daemon's word_regex/word_ci companions.
-const SUBSTRING_FLAGS = new Set([
-    "word_regex", "word_ci", "shaw_regex", "shaw_ci",
-]);
+function registerField(spec) {
+    FIELD_REGISTRY.set(spec.field, spec);
+}
 
-function readFilters() {
+function fieldSpec(field) {
+    const spec = FIELD_REGISTRY.get(field);
+    if (!spec) {
+        throw new Error(`unknown filter field: ${field}`);
+    }
+    return spec;
+}
+
+// The daemon defaults word to case-insensitive, shaw to case-sensitive (Shavian has
+// no case). The toggles start UNPRESSED (both flags false) so filtersFromState omits
+// them and the daemon applies its own default — matching the former form's unchecked
+// checkboxes exactly, which the critical round-trip invariant depends on.
+function newTextFlags() {
+    return { regex: false, ci: false };
+}
+
+// Build one active-filter entry (unset) for a field, its value shaped for its kind.
+function blankEntry(field) {
+    const spec = fieldSpec(field);
+    if (spec.kind === "categorical") {
+        return { field, value: [] };
+    }
+    if (spec.kind === "text") {
+        return { field, value: "", flags: newTextFlags() };
+    }
+    return { field, value: null };
+}
+
+// ---- the critical invariant: state.activeFilters → the daemon filters dict ----
+// This MUST produce the exact dict the former readFilters() produced for the
+// equivalent form state, since the daemon is untouched:
+//   categorical → value array, OMITTED when empty
+//   text        → trimmed scalar (omitted when empty) + <field>_regex / <field>_ci
+//                 booleans, present ONLY when true
+//   numeric     → Number, omitted when empty/NaN
+// Chip order does not appear in the dict, so reordering never changes the query.
+function filtersFromState() {
     const filters = {};
-    for (const [name, rawValue] of new FormData(FILTER_FORM).entries()) {
-        if (CATEGORICAL_FACETS.has(name)) {
-            (filters[name] ??= []).push(rawValue);
-            continue;
+    for (const entry of state.activeFilters) {
+        const spec = fieldSpec(entry.field);
+        if (spec.kind === "categorical") {
+            if (entry.value.length) {
+                filters[entry.field] = [...entry.value];
+            }
+        } else if (spec.kind === "text") {
+            const trimmed = entry.value.trim();
+            if (!trimmed) {
+                continue;
+            }
+            filters[entry.field] = trimmed;
+            if (entry.flags.regex) {
+                filters[`${entry.field}_regex`] = true;
+            }
+            if (entry.flags.ci) {
+                filters[`${entry.field}_ci`] = true;
+            }
+        } else {
+            if (entry.value === null || Number.isNaN(entry.value)) {
+                continue;
+            }
+            filters[entry.field] = entry.value;
         }
-        if (SUBSTRING_FLAGS.has(name)) {
-            filters[name] = true;  // only checked boxes appear in FormData
-            continue;
-        }
-        const trimmed = rawValue.trim();
-        if (!trimmed) {
-            continue;
-        }
-        filters[name] = name.startsWith("confidence_") ? Number(trimmed) : trimmed;
     }
     return filters;
 }
 
-// Flag the substring boxes whose regex the daemon could not compile (its response
-// names them in invalid_regex). The box's wrapper gets .invalid — a red border —
-// while the query still returns (it simply matched nothing). Fields not named are
-// cleared, so fixing the pattern removes the flag on the next live re-query.
-const SUBSTRING_FIELDS = ["word", "shaw"];
+// The inverse map: a saved filters dict → an ordered activeFilters array, so an old
+// session (which persisted only `filters`) migrates to chips, and any dict can seed
+// the chip strip. Registry order is imposed so chips appear in the canonical order.
+// Text flags (<field>_regex / <field>_ci) fold back onto their field's entry; a bare
+// flag with no substring value is dropped (it constrained nothing).
+function activeFiltersFromDict(filters) {
+    const active = [];
+    for (const spec of FIELD_REGISTRY.values()) {
+        const raw = filters[spec.field];
+        if (spec.kind === "categorical") {
+            if (Array.isArray(raw) && raw.length) {
+                active.push({ field: spec.field, value: [...raw] });
+            }
+        } else if (spec.kind === "text") {
+            if (typeof raw === "string" && raw.trim()) {
+                active.push({
+                    field: spec.field,
+                    value: raw,
+                    flags: {
+                        regex: Boolean(filters[`${spec.field}_regex`]),
+                        ci: Boolean(filters[`${spec.field}_ci`]),
+                    },
+                });
+            }
+        } else if (typeof raw === "number" && !Number.isNaN(raw)) {
+            active.push({ field: spec.field, value: raw });
+        }
+    }
+    return active;
+}
 
+// Flag the text-filter chips whose regex the daemon could not compile (its response
+// names them in invalid_regex). The chip's text input gets .invalid — a red border —
+// while the query still returns (it simply matched nothing). Chips not named are
+// cleared, so fixing the pattern removes the flag on the next live re-query. Only the
+// currently-active text chips can be flagged; a removed field has no input to mark.
 function markInvalidRegex(invalidFields) {
     const invalid = new Set(invalidFields);
-    for (const field of SUBSTRING_FIELDS) {
-        const box = FILTER_FORM.elements[field];
-        box.closest(".text-filter").classList.toggle("invalid", invalid.has(field));
+    for (const input of CHIP_STRIP.querySelectorAll(".text-filter")) {
+        input.classList.toggle("invalid", invalid.has(input.dataset.field));
     }
 }
 
@@ -265,7 +351,7 @@ function markInvalidRegex(invalidFields) {
 // and stay put until the next re-run. preferredAnchor lands the selection on that
 // entry (session restore); if it fell out of the set, on the nearest neighbour.
 async function runQuery(offset = 0, preferredAnchor = null) {
-    state.filters = readFilters();
+    state.filters = filtersFromState();
     state.offset = offset;
     const result = await callDaemon({
         op: "entries",
@@ -2055,7 +2141,7 @@ function pacingStat(value, label) {
 function saveSession() {
     const selected = state.records[state.selected];
     const stored = {
-        filters: state.filters,
+        activeFilters: state.activeFilters,
         columnSort: state.columnSort,
         anchor: selected ? selected.anchor : null,
     };
@@ -2070,44 +2156,12 @@ function loadSession() {
     return JSON.parse(raw);
 }
 
-// Populate the filter form from a saved session so the restored query matches what
-// the user last ran. A categorical facet's persisted array re-checks exactly its
-// chips; a scalar sets its input value. Values with no matching chip (e.g. a POS
-// chip not yet populated, or a value dropped from the enum) are simply left
-// unchecked — the restore reflects only what the form can currently express.
-function restoreFilters(filters) {
-    for (const [name, value] of Object.entries(filters)) {
-        if (CATEGORICAL_FACETS.has(name)) {
-            restoreChips(name, value);
-        } else if (SUBSTRING_FLAGS.has(name)) {
-            const box = FILTER_FORM.elements[name];
-            if (box) {
-                box.checked = Boolean(value);
-            }
-        } else {
-            const field = FILTER_FORM.elements[name];
-            if (field) {
-                field.value = value;
-            }
-        }
-    }
-}
-
-function restoreChips(facet, values) {
-    const wanted = new Set(values);
-    for (const box of FILTER_FORM.querySelectorAll(`input[name="${facet}"]`)) {
-        box.checked = wanted.has(box.value);
-    }
-    // Programmatic .checked does not fire `change`, so a dropdown's trigger label
-    // (built off the checked count) must be nudged to reflect the restored selection.
-    refreshFacetTrigger(facet);
-}
-
-// Re-sync a facet dropdown's trigger label to its current checked count, for the
-// paths that set .checked directly (session restore) rather than via a user toggle.
-function refreshFacetTrigger(facet) {
-    const list = FILTER_FORM.querySelector(`.chips[data-facet="${facet}"] .facet-list`);
-    list.dispatchEvent(new Event("change"));
+// Adopt a saved session's active filters as the chip strip, dropping any entry whose
+// field the registry no longer knows (a field renamed or retired). Entries keep their
+// stored order; the strip is rebuilt from them. Called on load before the first query.
+function restoreActiveFilters(activeFilters) {
+    state.activeFilters = activeFilters.filter((entry) => FIELD_REGISTRY.has(entry.field));
+    renderChipStrip();
 }
 
 // Off-canvas ledger drawer for narrow screens. On wide screens the list is always
@@ -2185,8 +2239,7 @@ function querySignature(filters) {
 // no-op event. Always resets to the first page: a criteria change invalidates
 // the old offset.
 function requestFilterQuery() {
-    const filters = readFilters();
-    if (querySignature(filters) === materialisedSignature) {
+    if (querySignature(filtersFromState()) === materialisedSignature) {
         return;
     }
     runFilterQuery();
@@ -2202,24 +2255,9 @@ function requestFilterQueryDebounced() {
     filterDebounceTimer = setTimeout(requestFilterQuery, FILTER_DEBOUNCE_MS);
 }
 
-// Facet chips commit immediately on change; free-text and numeric inputs debounce.
-// Binding by control type keeps the wiring declarative — a new filter field needs
-// no change here, only the right control in the CGI form. The facet-search inputs
-// carry no name, so their debounced re-query resolves to a no-op (their signature
-// is unchanged); they filter the checklist display only.
-function bindLiveFilters() {
-    for (const field of FILTER_FORM.elements) {
-        if (field.type === "checkbox") {
-            field.addEventListener("change", requestFilterQuery);
-        } else if (field.tagName === "INPUT") {
-            field.addEventListener("input", requestFilterQueryDebounced);
-        }
-    }
-}
-
 // Enter in a filter field would submit the form (and reload the page in a CGI
-// context); there is no Filter button any more, so swallow the submit — the live
-// listeners already keep the query current.
+// context); there is no Filter button any more, so swallow the submit — each chip's
+// own listeners keep the query current.
 FILTER_FORM.addEventListener("submit", (event) => event.preventDefault());
 
 // The refresh affordance re-pulls the working set under the CURRENT criteria,
@@ -2236,6 +2274,7 @@ DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
+ADD_FILTER.addEventListener("click", () => toggleAddMenu());
 
 // Column-header sort: one delegated listener over the head row, so a header added
 // in the markup needs only its data-sort-key to become sortable.
@@ -2251,165 +2290,402 @@ SELECT_BAR_DONE.addEventListener("click", clearSelection);
 
 document.addEventListener("keydown", onGlobalKey);
 
-// Every categorical facet renders as the same compact dropdown, so the filter bar
-// stays one tidy row of triggers no matter a facet's cardinality (POS alone is 113
-// genuine CLAWS tags — 53 of them contraction portmanteaux like PNP+VHD — that a chip
-// each would explode the bar with). One control for every facet keeps the chrome
-// uniform. The data-derived facets (pos/var/status/source) take their values from the
-// daemon's distinct-value op; the closed vocabularies (word_kind/novelty/reviewed/
-// patch_state/mergers/variant) carry their value→label pairs in the page markup as .chip templates,
-// harvested here. Either way each value becomes a name=facet/value=value checkbox, so
-// readFilters/restoreChips/querySignature/bindLiveFilters treat them identically.
-async function buildFacetDropdowns() {
+// ---- field registry harvest ----
+// Populate FIELD_REGISTRY from the page's .filter-meta block (one div per field,
+// carrying its kind and human label, plus closed-vocabulary value→label pairs) and
+// the daemon facets op (data-derived vocabularies for pos/var/status/source). Runs
+// once at boot; the registry order follows the meta block's document order.
+async function buildFieldRegistry() {
     const derived = await callDaemon({ op: "facets" });
-    for (const fieldset of FILTER_FORM.querySelectorAll(".chips[data-facet]")) {
-        const facet = fieldset.dataset.facet;
-        const entries = facet in derived
-            ? derived[facet].map((value) => ({ value, label: value }))
-            : harvestChipTemplates(fieldset);
-        fieldset.replaceChildren(fieldset.querySelector("legend"), facetDropdown(facet, entries));
+    for (const meta of FILTER_META.querySelectorAll("[data-field]")) {
+        registerField(fieldSpecFromMeta(meta, derived));
     }
 }
 
-// A closed-vocabulary facet ships its value→label pairs in an unrendered <template>
-// in the page (e.g. value "new-pos" shown as "new POS"); read them off so the human
-// labels stay authored in one place rather than duplicated in JS.
-function harvestChipTemplates(fieldset) {
-    const template = fieldset.querySelector("template");
-    return [...template.content.querySelectorAll(".chip")].map((chip) => ({
-        value: chip.querySelector("input").value,
-        label: chip.querySelector("span").textContent,
+// One registry spec from a .filter-meta div. A categorical field takes its values
+// from the daemon (data-derived facets) when present, else from its own .chip rows
+// (closed vocabulary); text carries its placeholder + Shavian flag; numeric is bare.
+function fieldSpecFromMeta(meta, derived) {
+    const { field, kind, label } = meta.dataset;
+    if (kind === "categorical") {
+        const entries = field in derived
+            ? derived[field].map((value) => ({ value, label: value }))
+            : harvestVocab(meta);
+        return { field, kind, label, entries };
+    }
+    if (kind === "text") {
+        return {
+            field, kind, label,
+            placeholder: meta.dataset.placeholder || "",
+            shavian: meta.dataset.shavian === "true",
+        };
+    }
+    return { field, kind, label };
+}
+
+// The value→label pairs a closed-vocabulary categorical field ships in its meta div,
+// so those labels stay authored in one place (the CGI) rather than duplicated in JS.
+function harvestVocab(meta) {
+    return [...meta.querySelectorAll(".chip")].map((row) => ({
+        value: row.querySelector("input").value,
+        label: row.querySelector("span").textContent,
     }));
 }
 
-function chip(facet, value, label) {
+// ---- chip strip ----
+// The strip shows one chip per active filter, in state.activeFilters order. Rebuilt
+// wholesale on any structural change (add/remove/restore); a value edit updates its
+// own chip label in place without a rebuild.
+function renderChipStrip() {
+    CHIP_STRIP.replaceChildren(...state.activeFilters.map(filterChip));
+    syncAddFilterEnabled();
+}
+
+// Disable +Add when every registry field is already active — there is nothing left
+// to add.
+function syncAddFilterEnabled() {
+    ADD_FILTER.disabled = state.activeFilters.length >= FIELD_REGISTRY.size;
+}
+
+// A chip for one active filter: a labelled trigger that opens the field's value
+// picker, and an × to remove the filter. The chip wraps its picker popover so the
+// popover overlays anchored to the chip (position:absolute inside position:relative).
+function filterChip(entry) {
+    const spec = fieldSpec(entry.field);
+    const wrap = document.createElement("div");
+    wrap.className = "filter-chip";
+    wrap.dataset.field = entry.field;
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "chip-label";
+    trigger.setAttribute("aria-haspopup", "true");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.textContent = renderChipLabel(entry);
+
+    const panel = buildPicker(spec, entry);
+    trigger.addEventListener("click", () => togglePicker(panel, trigger));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "chip-remove";
+    remove.setAttribute("aria-label", `Remove ${spec.label} filter`);
+    remove.textContent = "×";
+    remove.addEventListener("click", () => removeFilter(entry));
+
+    wrap.append(trigger, panel, remove);
+    return wrap;
+}
+
+// The chip's one-line summary: "POS: NN1, AJ0" for a set categorical, "POS: any" when
+// none picked; "Word: cat" for text, "Word: …" when blank; "Conf ≥ 60" for a set
+// numeric, "Conf ≥ any" when blank. The label prefix is the field's human name.
+function renderChipLabel(entry) {
+    const spec = fieldSpec(entry.field);
+    if (spec.kind === "categorical") {
+        const labels = entry.value.map((value) => vocabLabel(spec, value));
+        return `${spec.label}: ${labels.length ? labels.join(", ") : "any"}`;
+    }
+    if (spec.kind === "text") {
+        return `${spec.label}: ${entry.value.trim() || "…"}`;
+    }
+    return `${spec.label} ${entry.value === null ? "any" : entry.value}`;
+}
+
+// The human label for a categorical value (its vocab label; falls back to the raw
+// value for a data-derived value that is its own label).
+function vocabLabel(spec, value) {
+    const match = spec.entries.find((option) => option.value === value);
+    return match ? match.label : value;
+}
+
+// Refresh one chip's label after its value changed, without rebuilding the strip.
+function refreshChipLabel(entry) {
+    const wrap = CHIP_STRIP.querySelector(`.filter-chip[data-field="${entry.field}"]`);
+    if (wrap) {
+        wrap.querySelector(".chip-label").textContent = renderChipLabel(entry);
+    }
+}
+
+// Remove a filter: drop its entry, rebuild the strip (re-enabling its field in the
+// +Add menu), and re-query. Removal is the only way a chip leaves the strip — an
+// emptied categorical chip stays (its × is the explicit exit).
+function removeFilter(entry) {
+    state.activeFilters = state.activeFilters.filter((other) => other !== entry);
+    renderChipStrip();
+    requestFilterQuery();
+}
+
+// ---- value pickers ----
+// Each chip's picker is a .facet-panel popover (reused from the former facet
+// dropdowns) whose contents depend on the field kind. Categorical is the searchable
+// checklist; text is an input plus regex/CI toggles; numeric is a number input. Only
+// one picker (or the +Add menu) is open at a time — closePopovers closes them all.
+function buildPicker(spec, entry) {
+    const panel = document.createElement("div");
+    panel.className = "facet-panel";
+    panel.hidden = true;
+    if (spec.kind === "categorical") {
+        panel.append(categoricalPicker(spec, entry));
+    } else if (spec.kind === "text") {
+        panel.append(textPicker(spec, entry));
+    } else {
+        panel.append(numericPicker(spec, entry));
+    }
+    return panel;
+}
+
+// A categorical picker: the searchable checklist. Each value is a checkbox reflecting
+// entry.value; toggling one rewrites entry.value (the ordered set of checked values),
+// refreshes the chip label, and re-queries immediately. Searching hides non-matching
+// rows without unchecking them.
+function categoricalPicker(spec, entry) {
+    const fragment = document.createDocumentFragment();
+
+    const search = document.createElement("input");
+    search.type = "text";
+    search.className = "facet-search";
+    search.placeholder = "filter…";
+    search.setAttribute("aria-label", `Filter ${spec.label} values`);
+
+    const list = document.createElement("div");
+    list.className = "facet-list";
+    const picked = new Set(entry.value);
+    for (const { value, label } of spec.entries) {
+        list.append(valueRow(spec.field, value, label, picked.has(value)));
+    }
+
+    list.addEventListener("change", () => {
+        entry.value = [...list.querySelectorAll("input:checked")].map((box) => box.value);
+        refreshChipLabel(entry);
+        requestFilterQuery();
+    });
+    search.addEventListener("input", () => {
+        const needle = search.value.trim().toLowerCase();
+        for (const row of list.querySelectorAll(".chip")) {
+            row.hidden = !row.textContent.toLowerCase().includes(needle);
+        }
+    });
+
+    fragment.append(search, list);
+    return fragment;
+}
+
+function valueRow(field, value, label, checked) {
     const wrap = document.createElement("label");
     wrap.className = "chip";
     const input = document.createElement("input");
     input.type = "checkbox";
-    input.name = facet;
     input.value = value;
+    input.checked = checked;
     const caption = document.createElement("span");
     caption.textContent = label;
     wrap.append(input, caption);
     return wrap;
 }
 
-// A single facet's dropdown: a compact trigger button whose label stays one line
-// however many values there are, and a popover holding a search box and a scrollable
-// checklist. The checkboxes are the same name=facet/value=value ones the chips use,
-// so every downstream reader (readFilters, restoreChips, querySignature, the
-// bindLiveFilters change-listener) treats them identically. The popover is
-// position:absolute so opening it overlays the layout rather than growing the bar.
-function facetDropdown(facet, entries) {
+// A text picker: a substring/regex input plus the regex and case-insensitive toggles.
+// The input carries data-field so markInvalidRegex can flag THIS chip's box red. Typing
+// re-queries debounced; toggling a flag re-queries immediately. The chip label tracks
+// the input value live.
+function textPicker(spec, entry) {
     const wrap = document.createElement("div");
-    wrap.className = "facet-select";
+    wrap.className = "text-picker";
 
-    const trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "facet-trigger";
-    trigger.setAttribute("aria-haspopup", "true");
-    trigger.setAttribute("aria-expanded", "false");
-
-    const panel = document.createElement("div");
-    panel.className = "facet-panel";
-    panel.hidden = true;
-
-    const search = document.createElement("input");
-    search.type = "text";
-    search.className = "facet-search";
-    search.placeholder = "filter…";
-    search.setAttribute("aria-label", `Filter ${facet} values`);
-
-    const list = document.createElement("div");
-    list.className = "facet-list";
-    for (const { value, label } of entries) {
-        list.append(chip(facet, value, label));
+    const box = document.createElement("input");
+    box.type = "text";
+    box.className = "text-filter";
+    box.dataset.field = spec.field;
+    box.placeholder = spec.placeholder;
+    box.value = entry.value;
+    box.spellcheck = false;
+    if (spec.shavian) {
+        box.classList.add("shavian-input");
     }
-    panel.append(search, list);
-    wrap.append(trigger, panel);
-
-    // The fieldset's legend already names the facet, so the trigger only summarises
-    // the selection: "All" when unconstrained, "N selected" when it filters.
-    const refreshLabel = () => {
-        const count = list.querySelectorAll("input:checked").length;
-        trigger.textContent = count ? `${count} selected` : "All";
-        trigger.classList.toggle("has-selection", count > 0);
-    };
-    refreshLabel();
-
-    // The trigger label reflects the checked count; the checkbox change also runs
-    // the live query via bindLiveFilters, so the two stay in step with no re-query
-    // wiring of our own.
-    list.addEventListener("change", refreshLabel);
-    // Filter the checklist to matching values — a plain substring match so 113 tags
-    // are reachable without scrolling. Hiding a checked box does not uncheck it, so
-    // the selection (and thus the query) is unaffected by searching.
-    search.addEventListener("input", () => {
-        const needle = search.value.trim().toLowerCase();
-        for (const label of list.querySelectorAll(".chip")) {
-            label.hidden = !label.textContent.toLowerCase().includes(needle);
-        }
+    box.addEventListener("input", () => {
+        entry.value = box.value;
+        refreshChipLabel(entry);
+        requestFilterQueryDebounced();
     });
 
-    trigger.addEventListener("click", () => toggleFacetPanel(panel, trigger, search));
+    wrap.append(
+        box,
+        flagToggle("regex", "Regex (re.search)", ".*", entry),
+        flagToggle("ci", "Case-insensitive", "aA", entry),
+    );
     return wrap;
 }
 
-// Only one facet panel is open at a time. Opening focuses the search box so the
-// keyboard user can type straight into it; the outside-click / Esc handlers
-// (installed once, below) close whatever is open.
-function toggleFacetPanel(panel, trigger, search) {
+// One mode toggle for a text picker (regex or case-insensitive): a checkbox reflecting
+// entry.flags[flag]. Toggling rewrites the flag and re-queries immediately.
+function flagToggle(flag, title, glyph, entry) {
+    const label = document.createElement("label");
+    label.className = "toggle";
+    label.title = title;
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = entry.flags[flag];
+    input.addEventListener("change", () => {
+        entry.flags[flag] = input.checked;
+        requestFilterQuery();
+    });
+    const caption = document.createElement("span");
+    caption.textContent = glyph;
+    label.append(input, caption);
+    return label;
+}
+
+// A numeric picker: a single number input. An empty box is null (no constraint);
+// otherwise its Number. Editing re-queries debounced and tracks the chip label.
+function numericPicker(spec, entry) {
+    const wrap = document.createElement("div");
+    wrap.className = "numeric-picker";
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.max = "100";
+    input.value = entry.value === null ? "" : String(entry.value);
+    input.addEventListener("input", () => {
+        entry.value = input.value.trim() === "" ? null : Number(input.value);
+        refreshChipLabel(entry);
+        requestFilterQueryDebounced();
+    });
+    wrap.append(input);
+    return wrap;
+}
+
+// ---- +Add menu ----
+// A popover listing the registry fields not yet active, in registry order. Picking one
+// appends its blank chip and immediately opens that chip's picker. Reuses the
+// .facet-panel overlay, anchored to the +Add button's wrapper.
+function toggleAddMenu() {
+    const existing = ADD_FILTER_WRAP.querySelector(".facet-panel");
+    const opening = !existing || existing.hidden;
+    closePopovers();
+    if (!opening) {
+        return;
+    }
+    const panel = buildAddMenu();
+    ADD_FILTER_WRAP.append(panel);
+    panel.hidden = false;
+    ADD_FILTER.setAttribute("aria-expanded", "true");
+}
+
+function buildAddMenu() {
+    const panel = document.createElement("div");
+    panel.className = "facet-panel add-menu";
+    const active = new Set(state.activeFilters.map((entry) => entry.field));
+    for (const spec of FIELD_REGISTRY.values()) {
+        if (active.has(spec.field)) {
+            continue;
+        }
+        panel.append(addMenuItem(spec));
+    }
+    return panel;
+}
+
+function addMenuItem(spec) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "add-menu-item";
+    item.textContent = spec.label;
+    item.addEventListener("click", () => addFilter(spec.field));
+    return item;
+}
+
+// Add a field to the strip: append its blank entry, rebuild the strip, then open the
+// new chip's picker so the user picks a value straightaway. No query yet — a blank
+// entry constrains nothing, so the signature guard would skip it regardless.
+function addFilter(field) {
+    const entry = blankEntry(field);
+    state.activeFilters.push(entry);
+    renderChipStrip();
+    closePopovers();
+    const wrap = CHIP_STRIP.querySelector(`.filter-chip[data-field="${field}"]`);
+    const trigger = wrap.querySelector(".chip-label");
+    togglePicker(wrap.querySelector(".facet-panel"), trigger);
+}
+
+// ---- popover management ----
+// Only one popover (a chip picker or the +Add menu) is open at a time. Opening a chip
+// picker focuses its first input so the keyboard user types straight in.
+function togglePicker(panel, trigger) {
     const opening = panel.hidden;
-    closeFacetPanels();
+    closePopovers();
     if (!opening) {
         return;
     }
     panel.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
-    search.focus();
-}
-
-function closeFacetPanels() {
-    for (const panel of FILTER_FORM.querySelectorAll(".facet-panel:not([hidden])")) {
-        panel.hidden = true;
-        panel.previousElementSibling.setAttribute("aria-expanded", "false");
+    const focusable = panel.querySelector("input, .facet-search");
+    if (focusable) {
+        focusable.focus();
     }
 }
 
-// Tap/click outside an open panel closes it (touch-friendly: no hover involved);
-// Esc closes it too. Scoped to the filter form so a click on a trigger toggles via
-// its own handler rather than being pre-closed here.
+// Close every open popover: the chip pickers (kept in the DOM) and the +Add menu
+// (removed, since it is rebuilt each open to reflect the current inactive set). Their
+// triggers' aria-expanded is reset.
+function closePopovers() {
+    for (const panel of CHIP_STRIP.querySelectorAll(".facet-panel:not([hidden])")) {
+        panel.hidden = true;
+        panel.previousElementSibling.setAttribute("aria-expanded", "false");
+    }
+    const addMenu = ADD_FILTER_WRAP.querySelector(".facet-panel");
+    if (addMenu) {
+        addMenu.remove();
+        ADD_FILTER.setAttribute("aria-expanded", "false");
+    }
+}
+
+// Tap/click outside any open popover closes it (touch-friendly: no hover involved);
+// Esc closes it too. A click on a chip trigger or the +Add button toggles via its own
+// handler, so those are excluded here.
 document.addEventListener("pointerdown", (event) => {
-    if (!event.target.closest(".facet-select")) {
-        closeFacetPanels();
+    if (!event.target.closest(".filter-chip") && !event.target.closest(".add-filter-wrap")) {
+        closePopovers();
     }
 });
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-        closeFacetPanels();
+        closePopovers();
     }
 });
 
-// Boot: build the facet dropdowns (data-derived values from the daemon, closed
-// vocabularies from the page markup), then resume the saved session (filter +
-// column sort + anchor) if one exists, else a plain first query in the review
-// order (highest confidence first). Filters are bound AFTER the dropdowns exist so
-// every checkbox, dynamic ones included, re-runs the query on toggle.
+// Restore a saved session's active filters, migrating an old session that persisted
+// only the daemon `filters` dict (pre-chips) via the inverse map. Returns true if it
+// seeded any chips (so boot skips the empty-strip render).
+function restoreSession(stored) {
+    if (Array.isArray(stored.activeFilters)) {
+        restoreActiveFilters(stored.activeFilters);
+        return true;
+    }
+    if (stored.filters) {
+        restoreActiveFilters(activeFiltersFromDict(stored.filters));
+        return true;
+    }
+    return false;
+}
+
+// Boot: build the field registry (labels + closed vocabularies from the page's
+// .filter-meta block, data-derived values from the daemon facets op), then resume the
+// saved session (active filters + column sort + anchor) if one exists — migrating an
+// old pre-chips session — else start with no chips and a plain first query in the
+// review order (highest confidence first).
 async function boot() {
     buildCheatsheet();
     collapseFiltersOnNarrow();
-    await buildFacetDropdowns();
-    bindLiveFilters();
+    await buildFieldRegistry();
     const stored = loadSession();
-    if (stored && stored.filters) {
-        restoreFilters(stored.filters);
+    const restored = stored ? restoreSession(stored) : false;
+    if (!restored) {
+        renderChipStrip();
+    }
+    if (stored) {
         state.columnSort = stored.columnSort || null;
-        syncSortIndicators();
-        return runQuery(0, stored.anchor);
     }
     syncSortIndicators();
-    return runQuery(0);
+    return runQuery(0, stored ? stored.anchor : null);
 }
 
 boot().catch((error) => showToast(error.message, true));

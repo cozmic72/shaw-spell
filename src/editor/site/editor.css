@@ -327,11 +327,34 @@ body {
 }
 .ledger-head, .ledger-row {
     display: grid;
-    grid-template-columns: 84px 1fr 1.3fr 64px 40px 48px;
+    grid-template-columns: 26px 84px 1fr 1.3fr 64px 40px 48px;
     gap: 10px;
     align-items: center;
     padding: 0 16px;
 }
+
+/* The bulk-selection checkbox column: align-self overrides the row's
+   align-items:center so the cell fills the full row height, and the row's click
+   listener sits on the cell — so the tap target is the full-height column, not
+   just the 18px box. The header box selects/clears the whole set. */
+.col-pick {
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.row-check {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+.row-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* A picked row wears a quiet accent wash so a scanned selection reads at a glance,
+   distinct from the focused (active) row's edge. */
+.ledger-row.picked { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.ledger-row.picked:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .ledger-head {
     height: 30px;
     font-size: 10px;
@@ -489,6 +512,46 @@ body {
 }
 .detail-word .latin { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
 .detail-word .pos { color: var(--ink-soft); font-size: 14px; }
+
+/* ---- bulk detail — the group summary the card shows at 2+ selected ---- */
+/* The count is the headline: a big tabular number, the class the reviewer is about
+   to act on, over a quiet per-field readout of what the group shares. No editable
+   fields — bulk verdicts act on the records as they stand. */
+.bulk-word {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+}
+.bulk-count {
+    font-size: 46px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+.bulk-count-label {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.bulk-traits {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 12px 20px;
+    align-items: baseline;
+    margin-bottom: 30px;
+}
+.bulk-traits dt {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.bulk-traits dd { font-size: 15px; color: var(--ink); word-break: break-word; }
 
 /* The verdict state, stamped in the heading so the card reads its own status at
    a glance — the same non-colour stamp shape the ledger uses. */
@@ -954,9 +1017,14 @@ kbd {
     .ipa-field { font-size: 22px; }
 
     /* Drop the confidence pips from the crowded ledger row on narrow screens;
-       the detail card still shows confidence. */
-    .ledger-head, .ledger-row { grid-template-columns: 78px 1fr 1.2fr 56px 44px; }
+       the detail card still shows confidence. The pick column stays — bulk triage is
+       an iPad-primary flow. */
+    .ledger-head, .ledger-row { grid-template-columns: 26px 74px 1fr 1.2fr 56px 44px; }
     .col-conf { display: none; }
+
+    /* Raise the touch row to the 44px target the rest of the UI uses, so the
+       full-height .col-pick cell is a 44px tap target for bulk triage by thumb. */
+    .ledger-row { height: 44px; }
 
     /* Full-width, thumb-sized decision buttons — accept/drop/flag all reachable
        by thumb; the cheatsheet trigger takes its own full-width row. */

@@ -189,6 +189,10 @@ PAGE = """<!DOCTYPE html>
         <div class="drawer-backdrop" id="drawerBackdrop"></div>
         <section class="ledger" id="ledger" aria-label="Matching entries">
             <div class="ledger-head">
+                <span class="col-pick">
+                    <input type="checkbox" id="selectAll" class="row-check"
+                           aria-label="Select all listed entries">
+                </span>
                 <span class="col-state">state</span>
                 <span class="col-word">word</span>
                 <span class="col-shaw">shaw</span>

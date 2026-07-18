@@ -46,6 +46,7 @@ const SORT_SELECT = document.getElementById("sort");
 const TALLY = document.getElementById("tally");
 const LEDGER = document.getElementById("ledgerList");
 const LEDGER_FOOT = document.getElementById("ledgerFoot");
+const SELECT_ALL = document.getElementById("selectAll");
 const DETAIL = document.getElementById("detail");
 const TOAST = document.getElementById("toast");
 const WORKBENCH = document.getElementById("workbench");
@@ -64,6 +65,13 @@ const state = {
     sort: DEFAULT_SORT,
     selected: -1,
     editing: false,
+    // Bulk selection: the anchor keys of the checked rows (an anchor is a stable
+    // identity, so a row survives in-place updates and re-renders keyed by it). The
+    // single focused row (state.selected) is independent — it stays the review
+    // cursor even while a bulk selection is active. 2+ selected == bulk mode.
+    multi: new Set(),
+    // The last row toggled by pointer, so a shift-click can range-extend from it.
+    lastToggledKey: null,
 };
 
 // Session pacing: decisions this session and when it began, to show rate and
@@ -129,11 +137,17 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     });
     state.records = result.records;
     state.total = result.total;
+    // The selection is over the working set that was on screen; a re-materialise
+    // replaces that set, so the old selection no longer refers to these rows. Clear
+    // it — select-all means "all currently-loaded rows", scoped to this page.
+    state.multi.clear();
+    state.lastToggledKey = null;
     materialisedSignature = querySignature(state.filters, state.sort);
     TALLY.textContent = `${result.total.toLocaleString()} matching`;
     renderLedger();
     renderFoot();
     select(landingIndex(preferredAnchor));
+    syncSelectAll();
     refreshPacing();
 }
 
@@ -182,6 +196,14 @@ function sameAnchor(a, b) {
         && a.shaw === b.shaw && a.var === b.var;
 }
 
+// A stable string identity for an anchor, so the bulk selection can be a Set the
+// row's checkbox and its in-place refresh both key off. Mirrors sameAnchor's
+// fields; the NUL separator can't occur in a value (a word may contain spaces, so a
+// space would not be collision-proof), so distinct anchors never collide.
+function anchorKey(anchor) {
+    return [anchor.word, anchor.pos, anchor.shaw, anchor.var].join("\0");
+}
+
 // A record's immutable anchor {word, pos, shaw, var} — its identity, unchanged
 // by any edit. A patch is always written against the anchor, never the (possibly
 // edited) displayed content, so the entry never moves out from under the writer.
@@ -202,6 +224,7 @@ function ledgerRow(record, index) {
     row.dataset.index = String(index);
 
     row.append(
+        selectCell(record, index),
         cell("stamp col-state " + record.patch_state, record.patch_state),
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
@@ -209,11 +232,40 @@ function ledgerRow(record, index) {
         confidenceCell(record.confidence),
         cell("col-pos", record.pos),
     );
+    // A click anywhere but the checkbox focuses the row for review; the checkbox
+    // owns bulk selection and stops the click so focusing and selecting stay
+    // independent gestures.
     row.addEventListener("click", () => {
         select(index);
         setDrawer(false);
     });
     return row;
+}
+
+// The bulk-selection checkbox for a ledger row. Toggling adds/removes the row's
+// anchor from state.multi; a shift-click extends the range from the last toggled
+// row. It never changes the review focus, so selecting a class and reviewing an
+// entry stay separate.
+function selectCell(record, index) {
+    const wrap = document.createElement("span");
+    wrap.className = "col-pick";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.className = "row-check";
+    box.setAttribute("aria-label", `Select ${record.word}`);
+    box.checked = state.multi.has(anchorKey(record.anchor));
+    // The listener sits on the full-height cell, not the 18px box, so the whole
+    // column is one tap target; a keyboard Space on the box bubbles here too.
+    wrap.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (event.shiftKey && state.lastToggledKey !== null) {
+            extendSelection(index);
+        } else {
+            toggleSelection(record.anchor);
+        }
+    });
+    wrap.append(box);
+    return wrap;
 }
 
 function cell(className, value) {
@@ -293,16 +345,24 @@ function select(index) {
     for (const row of LEDGER.children) {
         row.classList.toggle("active", Number(row.dataset.index) === index);
     }
-    if (index < 0) {
+    // In bulk mode the card shows the group summary, not a record; moving the review
+    // cursor still scrolls the row into view but leaves the summary in place.
+    if (inBulkMode()) {
+        scrollRowIntoView(index);
+    } else if (index < 0) {
         renderEmptyDetail();
     } else {
-        const active = LEDGER.children[index];
-        if (active) {
-            active.scrollIntoView({ block: "nearest" });
-        }
+        scrollRowIntoView(index);
         renderDetail(state.records[index]);
     }
     saveSession();
+}
+
+function scrollRowIntoView(index) {
+    const active = LEDGER.children[index];
+    if (active) {
+        active.scrollIntoView({ block: "nearest" });
+    }
 }
 
 function renderEmptyDetail() {
@@ -313,6 +373,109 @@ function renderEmptyDetail() {
         : "No entries match these filters.";
     DETAIL.replaceChildren(message);
     setDetailMode();
+}
+
+// ---- bulk selection ----
+// A set of anchor keys over the current working set. 2+ selected is BULK MODE:
+// the verdict actions and their keyboard shortcuts operate on the whole group,
+// and the detail card shows a summary instead of the single-record editor. 0–1
+// selected leaves the single-record review flow exactly as it was.
+
+function inBulkMode() {
+    return state.multi.size >= 2;
+}
+
+function toggleSelection(anchor) {
+    const key = anchorKey(anchor);
+    if (state.multi.has(key)) {
+        state.multi.delete(key);
+    } else {
+        state.multi.add(key);
+    }
+    state.lastToggledKey = key;
+    onSelectionChanged();
+}
+
+// Shift-click range: add every row between the last toggled row and this one
+// (inclusive) to the selection — the familiar file-list convention. Range always
+// selects (never deselects), which is the triage move: pick a contiguous class in
+// one gesture. If the anchor row has since gone (a re-run replaced the set), fall
+// back to toggling just the clicked row.
+function extendSelection(toIndex) {
+    const fromIndex = state.records.findIndex(
+        (record) => anchorKey(record.anchor) === state.lastToggledKey,
+    );
+    if (fromIndex < 0) {
+        toggleSelection(state.records[toIndex].anchor);
+        return;
+    }
+    const [low, high] = fromIndex <= toIndex
+        ? [fromIndex, toIndex]
+        : [toIndex, fromIndex];
+    for (let i = low; i <= high; i += 1) {
+        state.multi.add(anchorKey(state.records[i].anchor));
+    }
+    state.lastToggledKey = anchorKey(state.records[toIndex].anchor);
+    onSelectionChanged();
+}
+
+// Toggle the focused row into/out of the selection (the V key) — the keyboard
+// twin of the row checkbox, for the reviewer who never leaves the home row.
+function toggleFocusedSelection() {
+    const focused = state.records[state.selected];
+    if (!focused) {
+        return;
+    }
+    toggleSelection(focused.anchor);
+}
+
+function selectAll() {
+    for (const record of state.records) {
+        state.multi.add(anchorKey(record.anchor));
+    }
+    onSelectionChanged();
+}
+
+function clearSelection() {
+    state.multi.clear();
+    state.lastToggledKey = null;
+    onSelectionChanged();
+}
+
+// Re-sync everything the selection drives: the row checkboxes, the select-all
+// header box, and the detail card (which flips to the bulk summary at 2+, back to
+// the focused record below that).
+function onSelectionChanged() {
+    syncSelectionUI();
+    if (inBulkMode()) {
+        renderBulkDetail();
+    } else if (state.selected >= 0) {
+        renderDetail(state.records[state.selected]);
+    } else {
+        renderEmptyDetail();
+    }
+}
+
+function syncSelectionUI() {
+    for (const row of LEDGER.children) {
+        const record = state.records[Number(row.dataset.index)];
+        const box = row.querySelector(".row-check");
+        if (record && box) {
+            const picked = state.multi.has(anchorKey(record.anchor));
+            box.checked = picked;
+            row.classList.toggle("picked", picked);
+        }
+    }
+    syncSelectAll();
+}
+
+function syncSelectAll() {
+    if (!SELECT_ALL) {
+        return;
+    }
+    const count = state.multi.size;
+    SELECT_ALL.checked = count > 0 && count === state.records.length;
+    SELECT_ALL.indeterminate = count > 0 && count < state.records.length;
 }
 
 function renderDetail(record) {
@@ -337,6 +500,84 @@ function renderDetail(record) {
     );
     setDetailMode();
     loadRelated(record, related);
+}
+
+// ---- bulk detail ----
+// When 2+ rows are selected the card drops the single-record editor (you can't
+// type one Shavian for forty rows) and shows what the group IS — a count and a
+// compact per-field readout — above the group verdict bar. Field editing is
+// simply absent here, so only flag/drop/clear/accept are offered.
+
+// The traits summarised, in the order they help a triage decision: the dialect
+// and POS the class shares, its origin, and its current review state.
+const BULK_TRAITS = [
+    ["var", "Dialect"],
+    ["pos", "POS"],
+    ["source", "Source"],
+    ["patch_state", "State"],
+];
+
+function renderBulkDetail() {
+    const selected = selectedRecords();
+
+    const heading = document.createElement("div");
+    heading.className = "bulk-word";
+    heading.append(
+        cell("bulk-count", String(selected.length)),
+        cell("bulk-count-label", "records selected"),
+    );
+
+    DETAIL.replaceChildren(
+        heading,
+        bulkTraits(selected),
+        bulkActionBar(),
+    );
+    setDetailMode();
+}
+
+// The records currently in the bulk selection, in working-set order (a selected
+// anchor that fell out of the set on a re-run is simply skipped).
+function selectedRecords() {
+    return state.records.filter(
+        (record) => state.multi.has(anchorKey(record.anchor)),
+    );
+}
+
+// A per-field readout: for each trait, "all X" when the group is homogeneous, or
+// a breakdown "X ·12, Y ·3" (commonest first) when it is mixed — so the user sees
+// exactly what they are about to act on.
+function bulkTraits(records) {
+    const grid = document.createElement("dl");
+    grid.className = "bulk-traits";
+    for (const [field, label] of BULK_TRAITS) {
+        const counts = tallyField(records, field);
+        const dt = document.createElement("dt");
+        dt.textContent = label;
+        const dd = document.createElement("dd");
+        dd.textContent = summariseCounts(counts);
+        grid.append(dt, dd);
+    }
+    return grid;
+}
+
+function tallyField(records, field) {
+    const counts = new Map();
+    for (const record of records) {
+        const value = record[field] ?? "—";
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+    return counts;
+}
+
+function summariseCounts(counts) {
+    if (counts.size === 1) {
+        const [only] = counts.keys();
+        return `all ${only}`;
+    }
+    return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([value, count]) => `${value} ·${count}`)
+        .join(", ");
 }
 
 // ---- related-entries context ----
@@ -677,10 +918,26 @@ function actionButton(kind, label, handler) {
     return button;
 }
 
-// The complete record the detail editor currently shows: the selected record's
-// fields with the edit surface overlaid from the inputs. word/pos/freq/source/
-// confidence come from the record; shaw/var/ipa/status from the fields.
-function editedRecord(record) {
+// The group verdict bar. Same buttons and colours as the single-record bar, but
+// every action runs over the whole selection; Save/Edit are absent (editing is
+// single-record). "Deselect" drops the whole selection without touching data.
+function bulkActionBar() {
+    const bar = document.createElement("div");
+    bar.className = "actions";
+    bar.append(
+        actionButton("accept", "Accept all", acceptSelected),
+        actionButton("drop", "Drop all", dropSelected),
+        actionButton("flag", "Flag all", flagSelected),
+        actionButton("clear", "Clear all", clearSelected),
+        actionButton("undo", "Deselect", clearSelection),
+    );
+    return bar;
+}
+
+// A patch body built from the record's OWN fields, no edit surface involved — the
+// shape a bulk verdict writes (bulk mode renders no editable fields). Single-record
+// verdicts overlay the live inputs on top of this (editedRecord).
+function recordFields(record) {
     const result = {
         word: record.word,
         pos: record.pos,
@@ -693,6 +950,20 @@ function editedRecord(record) {
         result.confidence = record.confidence;
     }
     for (const name of EDITABLE_FIELDS) {
+        result[name] = record[name] ?? "";
+    }
+    if (record.mergers && record.mergers.length) {
+        result.mergers = record.mergers;
+    }
+    return result;
+}
+
+// The complete record the detail editor currently shows: the record's fields with
+// the edit surface overlaid from the inputs. Single-record only — the edit inputs
+// exist just for the focused record.
+function editedRecord(record) {
+    const result = recordFields(record);
+    for (const name of EDITABLE_FIELDS) {
         const input = document.getElementById(`field-${name}`);
         result[name] = input.value.trim();
     }
@@ -700,6 +971,8 @@ function editedRecord(record) {
         .map((box) => box.value);
     if (mergers.length) {
         result.mergers = mergers;
+    } else {
+        delete result.mergers;
     }
     return result;
 }
@@ -720,6 +993,19 @@ function isAuthored(record) {
     return record.patch_state === "authored";
 }
 
+// Run a single-record verdict, surfacing any failure as an error toast. The bulk
+// path handles its own errors (per-record, in runBulk), so this guards only the
+// single-record branch.
+async function single(action) {
+    try {
+        await action();
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+
+// Save is inherently single-record — it writes the edited fields, which only make
+// sense for the focused record — so it has no bulk form (the group bar omits it).
 async function saveSelected() {
     const selected = state.records[state.selected];
     if (!selected) {
@@ -729,80 +1015,106 @@ async function saveSelected() {
     if (!requireShaw(record)) {
         return;
     }
-    await writePatch(anchorOf(selected), record, "saved", selected);
+    await single(() => writePatch(anchorOf(selected), record, "saved", selected));
 }
 
 async function acceptSelected() {
+    if (inBulkMode()) {
+        await runBulk("accept", acceptOne);
+        return;
+    }
     const selected = state.records[state.selected];
     if (!selected) {
         return;
     }
-    const record = editedRecord(selected);
+    await single(() => acceptOne(selected, { step: true, toast: true }));
+}
+
+// Accept one record: promote its fields with a sanctioned status. A bulk verdict
+// takes the record as it stands (no editable fields are rendered); a single verdict
+// overlays the live edit inputs. The `bulk` intent is passed in, never re-read from
+// global selection state, so a selection that shrinks mid-run can't flip the path.
+// Returns the daemon result; throws so the caller can fail loud.
+async function acceptOne(selected, options = {}) {
+    const record = options.bulk ? recordFields(selected) : editedRecord(selected);
     record.status = ACCEPTED_STATUS;
-    if (!requireShaw(record)) {
-        return;
+    if (!record.shaw) {
+        throw new Error(`${selected.word}: Shavian cannot be empty.`);
     }
-    await writePatch(anchorOf(selected), record, "accepted", selected);
+    return writePatch(anchorOf(selected), record, "accepted", selected, options);
 }
 
 async function dropSelected() {
+    if (inBulkMode()) {
+        await runBulk("dropped", dropOne);
+        return;
+    }
     const selected = state.records[state.selected];
     if (!selected) {
         return;
     }
-    // Dropping an authored entry means removing the word entirely — it exists only
-    // via its patch, so the drop IS deleting that patch (same as Clear).
-    if (isAuthored(selected)) {
-        if (!selected.patch_id) {
-            showToast("Can't drop: authored entry has no patch id.", true);
-            return;
-        }
-        await unpatch(null, "dropped", { step: true, patchId: selected.patch_id });
-        return;
-    }
-    await writePatch(anchorOf(selected), null, "dropped", selected);
+    await single(() => dropOne(selected, { step: true, toast: true }));
 }
 
-// A verdict (accept/drop/edit) produces a patch and steps on. It also records an
-// undo frame: whether the anchor already had a patch before, so undo restores the
-// right prior state. Re-deciding an authored entry edits its authorship patch in
-// place (anchor null + replaces), never writing an anchored patch.
-async function writePatch(anchor, record, verb, selected) {
+// Drop one record. An authored entry has no basis to revert to, so dropping it IS
+// deleting its authorship patch (same as Clear); a basis record gets a drop patch.
+async function dropOne(selected, options = {}) {
+    if (isAuthored(selected)) {
+        if (!selected.patch_id) {
+            throw new Error(`${selected.word}: authored entry has no patch id.`);
+        }
+        return unpatch(null, "dropped", { ...options, patchId: selected.patch_id });
+    }
+    return writePatch(anchorOf(selected), null, "dropped", selected, options);
+}
+
+// A verdict (accept/drop/edit) produces a patch. It records an undo frame (whether
+// the anchor already had a patch, so undo restores the right prior state) and
+// re-annotates the row in place. `step`/`toast` are on for a single verdict and off
+// per record in a bulk run (the run does one summary toast, no stepping). Returns
+// the daemon result; throws on failure so the bulk loop can fail loud per record.
+async function writePatch(anchor, record, verb, selected, { step = true, toast = true, refocus = true } = {}) {
     const priorReviewed = selected ? selected.reviewed : false;
     const request = isAuthored(selected)
         ? { op: "patch", anchor: null, record, author: AUTHOR, replaces: selected.patch_id }
         : { op: "patch", anchor, record, author: AUTHOR };
-    try {
-        const result = await callDaemon(request);
-        pushUndo(anchor, priorReviewed);
-        countDecision();
-        applyWriteResult(result.records);
+    const result = await callDaemon(request);
+    pushUndo(anchor, priorReviewed);
+    countDecision();
+    applyWriteResult(result.records, { step, refocus });
+    if (toast) {
         showToast(`${verb} · ${result.result}`);
-    } catch (error) {
-        showToast(error.message, true);
     }
+    return result;
 }
 
 // Flag: "looked at, no verdict yet". The daemon writes a flag patch carrying the
 // source record unchanged; it counts as reviewed but not decided, and is a no-op
 // for production output.
 async function flagSelected() {
+    if (inBulkMode()) {
+        await runBulk("flagged", flagOne);
+        return;
+    }
     const selected = state.records[state.selected];
     if (!selected) {
         return;
     }
+    await single(() => flagOne(selected, { step: true, toast: true }));
+}
+
+async function flagOne(selected, { step = true, toast = true, refocus = true } = {}) {
     const priorReviewed = selected.reviewed;
     const request = isAuthored(selected)
         ? { op: "flag", anchor: null, author: AUTHOR, replaces: selected.patch_id }
         : { op: "flag", anchor: anchorOf(selected), author: AUTHOR };
-    try {
-        const result = await callDaemon(request);
-        pushUndo(anchorOf(selected), priorReviewed);
-        applyWriteResult(result.records);
+    const result = await callDaemon(request);
+    pushUndo(anchorOf(selected), priorReviewed);
+    applyWriteResult(result.records, { step, refocus });
+    if (toast) {
         showToast(`flagged · ${result.result}`);
-    } catch (error) {
-        showToast(error.message, true);
     }
+    return result;
 }
 
 // Unflag: remove the flag patch, reverting to unreviewed. Distinct from undo — an
@@ -812,7 +1124,7 @@ async function unflagSelected() {
     if (!selected || selected.patch_state !== "flagged") {
         return;
     }
-    await unpatch(anchorOf(selected), "unflagged", { step: false });
+    await single(() => unpatch(anchorOf(selected), "unflagged", { step: false }));
 }
 
 // Clear: the general "reset this entry's state" — delete WHATEVER patch it holds
@@ -821,19 +1133,110 @@ async function unflagSelected() {
 // whenever the entry is reviewed. An authored record has no anchor, so it is
 // cleared by its patch id; the daemon then returns no record and the row is dropped.
 async function clearSelected() {
+    if (inBulkMode()) {
+        await runBulk("cleared", clearOne);
+        return;
+    }
     const selected = state.records[state.selected];
     if (!selected || !selected.reviewed) {
         return;
     }
+    await single(() => clearOne(selected, { step: false, toast: true }));
+}
+
+// A record a bulk verdict passed over without writing (not an error, not a write) —
+// e.g. Clear on an unreviewed row, which holds no patch. runBulk tallies these apart
+// from the writes so the summary count is honest.
+const BULK_SKIPPED = Symbol("bulk-skipped");
+
+// Clear one record. An unreviewed record has no patch to clear — a no-op the bulk
+// run counts as skipped, not done. An authored record clears by patch id and its row
+// is dropped; a basis record clears by anchor and reverts in place.
+async function clearOne(selected, options = {}) {
+    if (!selected.reviewed) {
+        return BULK_SKIPPED;
+    }
     if (selected.patch_state === "authored") {
         if (!selected.patch_id) {
-            showToast("Can't clear: authored entry has no patch id.", true);
-            return;
+            throw new Error(`${selected.word}: authored entry has no patch id.`);
         }
-        await unpatch(null, "cleared", { step: false, patchId: selected.patch_id });
-    } else {
-        await unpatch(anchorOf(selected), "cleared", { step: false });
+        return unpatch(null, "cleared", { ...options, patchId: selected.patch_id });
     }
+    return unpatch(anchorOf(selected), "cleared", options);
+}
+
+// ---- bulk verdicts ----
+// Run a verdict over every selected record. Each record goes through the SAME
+// single-write path (writePatch/unpatch → the daemon's validated write), with
+// stepping, per-record toasts, and per-record re-render OFF (refocus:false); the
+// loop does one summary toast and one ledger refresh at the end. A large group asks
+// for confirmation first. A record that fails is collected and reported, never
+// silently skipped — the run continues so one bad row doesn't strand the rest. The
+// review cursor is preserved across the run, and the selection is cleared afterwards
+// (the class has been triaged).
+
+const BULK_CONFIRM_THRESHOLD = 10;
+
+async function runBulk(verb, applyOne) {
+    const targets = selectedRecords();
+    if (!targets.length) {
+        return;
+    }
+    if (targets.length >= BULK_CONFIRM_THRESHOLD
+        && !window.confirm(`${capitalise(verb)} ${targets.length} records?`)) {
+        return;
+    }
+    const focusedAnchor = state.records[state.selected]?.anchor ?? null;
+    let done = 0;
+    let skipped = 0;
+    const failures = [];
+    for (const record of targets) {
+        try {
+            const outcome = await applyOne(record, { bulk: true, step: false, toast: false, refocus: false });
+            if (outcome === BULK_SKIPPED) {
+                skipped += 1;
+            } else {
+                done += 1;
+            }
+        } catch (error) {
+            failures.push(error.message);
+        }
+    }
+    // Clear the set silently — the DOM may be out of step with state.records mid-run
+    // (deferred re-render), so the one authoritative rebuild is refreshAfterBulk.
+    state.multi.clear();
+    state.lastToggledKey = null;
+    refreshAfterBulk(focusedAnchor);
+    reportBulk(verb, done, skipped, failures);
+}
+
+// Rebuild the ledger once after a bulk run (rows may have been re-annotated or
+// removed) and restore the review cursor to the entry it was on — or its nearest
+// surviving neighbour if that entry was itself dropped. With the selection cleared,
+// select() renders the single-record card, back in the ordinary review flow.
+function refreshAfterBulk(focusedAnchor) {
+    renderLedger();
+    let index = focusedAnchor
+        ? state.records.findIndex((r) => sameAnchor(r.anchor, focusedAnchor))
+        : state.selected;
+    if (index < 0) {
+        index = Math.min(state.selected, state.records.length - 1);
+    }
+    select(index);
+    syncSelectAll();
+}
+
+function reportBulk(verb, done, skipped, failures) {
+    const skip = skipped ? `, ${skipped} skipped` : "";
+    if (failures.length) {
+        showToast(`${verb} ${done}${skip}, ${failures.length} failed: ${failures[0]}`, true);
+    } else {
+        showToast(`${verb} ${done}${skip}`);
+    }
+}
+
+function capitalise(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 // Undo the last decision: if it created a patch (the anchor was previously
@@ -856,39 +1259,62 @@ async function undoLast() {
     if (index >= 0) {
         state.selected = index;
     }
-    await unpatch(frame.anchor, "undone", { step: false, uncount: true });
+    await single(() => unpatch(frame.anchor, "undone", { step: false, uncount: true }));
 }
 
-async function unpatch(anchor, verb, { step = true, uncount = false, patchId = null } = {}) {
+// Delete an entry's patch. Returns the daemon result and throws on failure, so a
+// bulk loop can fail loud per record. `toast` is off inside a bulk run; the removed
+// anchor (an authored entry the daemon returns nothing for) is dropped by anchor,
+// not by state.selected, so it works whether or not it is the focused row.
+async function unpatch(anchor, verb, { step = true, uncount = false, patchId = null, toast = true, refocus = true } = {}) {
     const request = patchId ? { op: "unpatch", patch_id: patchId } : { op: "unpatch", anchor };
-    try {
-        const result = await callDaemon(request);
-        if (uncount) {
-            session.decisions = Math.max(0, session.decisions - 1);
-        }
-        if (!result.records.length) {
-            removeSelectedRow();
-        } else {
-            applyWriteResult(result.records, { step });
-        }
-        showToast(`${verb} · ${result.result}`);
-    } catch (error) {
-        showToast(error.message, true);
+    const result = await callDaemon(request);
+    if (uncount) {
+        session.decisions = Math.max(0, session.decisions - 1);
     }
+    if (!result.records.length) {
+        removeRow(anchor ?? findAnchorByPatchId(patchId), { refocus });
+    } else {
+        applyWriteResult(result.records, { step, refocus });
+    }
+    if (toast) {
+        showToast(`${verb} · ${result.result}`);
+    }
+    return result;
+}
+
+// The anchor of the row holding this patch id (an authored entry — anchor null in
+// the store, but its live row carries the resolved word/pos/shaw/var). Used to
+// drop the row after the daemon clears it and returns nothing.
+function findAnchorByPatchId(patchId) {
+    const record = state.records.find((r) => r.patch_id === patchId);
+    return record ? record.anchor : null;
 }
 
 // Clearing an authored entry leaves no record — the daemon returns an empty set.
-// Drop the row from the working set and DOM, then land on its neighbour so the
-// selection stays in view.
-function removeSelectedRow() {
-    const removed = state.selected;
+// Drop that row (matched by anchor) from the working set, then, if it was the
+// focused row, land on its neighbour so the selection stays in view. `refocus:false`
+// (a bulk run) mutates the set but defers the ledger re-render to the loop's end.
+function removeRow(anchor, { refocus = true } = {}) {
+    const removed = anchor
+        ? state.records.findIndex((r) => sameAnchor(r.anchor, anchor))
+        : state.selected;
     if (removed < 0) {
         return;
     }
+    state.multi.delete(anchorKey(state.records[removed].anchor));
     state.records.splice(removed, 1);
-    renderLedger();
+    // A removal before the cursor shifts it down by one; keep the same entry
+    // focused (or its neighbour if the focused row was itself removed).
+    if (removed < state.selected) {
+        state.selected -= 1;
+    }
     refreshPacing();
-    select(Math.min(removed, state.records.length - 1));
+    if (refocus) {
+        renderLedger();
+        select(Math.min(state.selected, state.records.length - 1));
+        syncSelectionUI();
+    }
 }
 
 function pushUndo(anchor, priorReviewed) {
@@ -904,8 +1330,9 @@ function countDecision() {
 // a full natural key). Update the row IN PLACE: it keeps its index, so it stays
 // put in the working set showing its new content and stamp, even if it no longer
 // matches the active filter. By default step to the next entry; a re-render in
-// place (unflag/undo) stays put.
-function applyWriteResult(records, { step: doStep = true } = {}) {
+// place (unflag/undo) stays put. `refocus:false` (a bulk run) updates the row but
+// leaves the review cursor where it was — the loop restores focus once at the end.
+function applyWriteResult(records, { step: doStep = true, refocus = true } = {}) {
     const replacement = records[0];
     // Place the re-annotated record on its OWN row (matched by anchor), not
     // blindly on state.selected — the affected row may not be the selected one
@@ -918,6 +1345,9 @@ function applyWriteResult(records, { step: doStep = true } = {}) {
         refreshRow(index, replacement);
     }
     refreshPacing();
+    if (!refocus) {
+        return;
+    }
     if (doStep) {
         step(1);
     } else if (index >= 0) {
@@ -1011,6 +1441,7 @@ const REVIEW_KEYS = {
     f: flagSelected,
     c: clearSelected,
     u: undoLast,
+    v: toggleFocusedSelection,
     j: () => step(1),
     k: () => step(-1),
     arrowdown: () => step(1),
@@ -1019,7 +1450,7 @@ const REVIEW_KEYS = {
 };
 
 // Keys that mutate must not double-fire on auto-repeat when a key is held.
-const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "c", "u"]);
+const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "c", "u", "v"]);
 
 function onGlobalKey(event) {
     if (isCheatsheetOpen()) {
@@ -1071,6 +1502,13 @@ const SHORTCUT_GROUPS = [
         rows: [
             { keys: ["J", "K"], state: null, action: "Step next / previous" },
             { keys: ["↑", "↓"], state: null, action: "Step next / previous" },
+        ],
+    },
+    {
+        heading: "Bulk selection",
+        rows: [
+            { keys: ["V"], state: null, action: "Add / remove the focused row from the selection" },
+            { keys: ["A", "X", "F", "C"], state: null, action: "With 2+ selected, act on the whole group" },
         ],
     },
     {
@@ -1362,6 +1800,16 @@ FILTER_FORM.addEventListener("submit", (event) => {
 DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
+
+// The header checkbox selects/clears the whole current working set. It is a
+// three-state control: checked selects all, unchecking (from all or some) clears.
+SELECT_ALL.addEventListener("change", () => {
+    if (SELECT_ALL.checked) {
+        selectAll();
+    } else {
+        clearSelection();
+    }
+});
 
 document.addEventListener("keydown", onGlobalKey);
 

@@ -27,7 +27,11 @@ const SESSION_KEY = "shaw-spell.editor.session";
 const QUERY_SORT = "confidence_desc";
 const RRP_VAR = "RRP";
 
-const EDITABLE_FIELDS = ["shaw", "var", "ipa", "status"];
+// The edit surface: the fields the reviewer types or toggles. status is NOT here —
+// it is read-only (shown in the top matter) and set only by the verdict actions
+// (accept/drop/flag), never typed. recordFields carries the record's own status
+// forward so a plain Save preserves it.
+const EDITABLE_FIELDS = ["shaw", "var", "ipa"];
 
 // The within-accent vowel mergers a record's spelling reflects (additive, empty
 // == canonical). A closed vocabulary mirroring src/tools/dialect_mergers.py; the
@@ -872,6 +876,7 @@ function renderDetail(record) {
         posCell("pos", record.pos),
         mergerBadges(record.mergers),
         variantBadge(record.variant),
+        detailFacts(record),
         confidenceBadge(record.confidence),
     );
 
@@ -880,7 +885,6 @@ function renderDetail(record) {
         heading,
         referenceLinks(record.word),
         fieldGrid(record),
-        provenanceGrid(record),
         actionBar(record),
         related,
     );
@@ -1170,22 +1174,34 @@ function referenceLinks(word) {
     return row;
 }
 
-// The record is self-contained, so every field is editable. shaw/var/ipa/status
-// are the edit surface; word/pos are the anchor's Latin identity, shown read-only.
-// Every field is a full-width labelled row (label above a large value) — pivoted,
-// not a cramped grid — so the payload Shavian and the IPA read comfortably.
+// The edit surface. shaw and ipa are the payload, each its own comfortable
+// full-width row. Dialect (var), mergers and variant are three INDEPENDENT
+// spelling properties grouped onto ONE row (they don't merge in the data — just
+// visually) so the whole card fits without pushing related entries off-screen.
+// status is absent: it is read-only (shown in the top matter) and moves only via
+// the verdict actions. word/pos are the anchor's Latin identity, shown read-only.
 function fieldGrid(record) {
     const stack = document.createElement("div");
     stack.className = "field-stack";
     stack.append(
         editField("shaw", "Shavian", record.shaw, "shaw-field"),
         editField("ipa", "IPA", record.ipa, "ipa-field"),
+        variantRow(record),
+    );
+    return stack;
+}
+
+// Dialect (var) + mergers + variant, laid on one flex row (wrapping only on very
+// narrow widths). Three separate controls, grouped for glanceability.
+function variantRow(record) {
+    const row = document.createElement("div");
+    row.className = "field-row";
+    row.append(
         editField("var", "Dialect (var)", record.var, ""),
         mergersField(record.mergers),
         variantField(record.variant),
-        statusField(record.status),
     );
-    return stack;
+    return row;
 }
 
 // The mergers are an additive set, not a scalar, so they edit as a row of toggle
@@ -1294,58 +1310,30 @@ function editField(name, label, value, extraClass) {
     return wrap;
 }
 
-const STATUS_OPTIONS = ["supplement", "new", "sanctioned", "manual"];
-
-function statusField(current) {
-    const wrap = document.createElement("label");
-    wrap.className = "edit-field";
-    wrap.setAttribute("for", "field-status");
-
-    const caption = document.createElement("span");
-    caption.className = "edit-label";
-    caption.textContent = "Status";
-
-    const select = document.createElement("select");
-    select.id = "field-status";
-    select.className = "edit-input";
-    select.dataset.field = "status";
-    const options = STATUS_OPTIONS.includes(current)
-        ? STATUS_OPTIONS
-        : [current, ...STATUS_OPTIONS];
-    for (const value of options) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        option.selected = value === current;
-        select.append(option);
+// The read-only provenance facts, folded into the top matter as compact
+// label·value pairs (no separate table). status is the record's review status,
+// shown read-only here — it is set by the verdict actions, never typed. A missing
+// fact is omitted rather than dashed, so the strip stays quiet.
+function detailFacts(record) {
+    const wrap = document.createElement("span");
+    wrap.className = "detail-facts";
+    if (record.status) {
+        wrap.append(fact("status", record.status));
     }
-    select.addEventListener("focus", () => enterEdit());
-
-    wrap.append(caption, select);
+    if (record.source) {
+        wrap.append(fact("source", record.source));
+    }
+    if (record.freq !== null && record.freq !== undefined) {
+        wrap.append(fact("freq", String(record.freq)));
+    }
     return wrap;
 }
 
-function provenanceGrid(record) {
-    const grid = document.createElement("dl");
-    grid.className = "provenance";
-    const rows = [
-        ["source", record.source],
-        ["confidence", record.confidence ?? "—"],
-        ["freq", record.freq],
-        ["reviewed", record.reviewed ? "yes" : "no"],
-        ["patch-state", record.patch_state],
-    ];
-    for (const [term, value] of rows) {
-        const cell = document.createElement("div");
-        cell.className = "prov";
-        const dt = document.createElement("dt");
-        dt.textContent = term;
-        const dd = document.createElement("dd");
-        dd.textContent = String(value);
-        cell.append(dt, dd);
-        grid.append(cell);
-    }
-    return grid;
+function fact(label, value) {
+    const span = document.createElement("span");
+    span.className = "fact";
+    span.append(cell("fact-label", label), cell("fact-value", value));
+    return span;
 }
 
 // The verdict controls. Unflag/undo appear only when they apply, so the bar shows
@@ -1407,6 +1395,7 @@ function recordFields(record) {
         word: record.word,
         pos: record.pos,
         freq: record.freq,
+        status: record.status,
     };
     if (record.source) {
         result.source = record.source;

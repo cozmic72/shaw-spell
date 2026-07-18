@@ -783,6 +783,25 @@ body {
     white-space: nowrap;
 }
 
+/* The read-only provenance facts (status/source/freq), folded into the heading
+   strip as compact label·value pairs — the table they replaced is gone. Quiet by
+   default; they sit inline with the badges so every fact is glanceable. */
+.detail-facts {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+}
+.fact { display: inline-flex; align-items: baseline; gap: 5px; }
+.fact-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.fact-value { font-size: 13px; color: var(--ink); }
+
 .conf-badge {
     align-self: center;
     margin-left: auto;
@@ -820,6 +839,21 @@ body {
     margin-bottom: 30px;
 }
 .edit-field { display: flex; flex-direction: column; gap: 8px; }
+
+/* Dialect (var) + mergers + variant grouped on ONE row — three independent
+   controls laid side by side for glanceability, not merged in the data. They wrap
+   onto stacked rows only when the card gets too narrow to hold them (phones); at
+   iPad width and up they share the row. The var field takes a comfortable fixed
+   width; the toggle groups size to their chips. Bottom-aligned so the labels sit
+   above controls of differing heights. */
+.field-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 18px 24px;
+}
+.field-row > .edit-field:first-child { flex: 0 1 160px; }
+.field-row > .edit-field { flex: 0 0 auto; }
 .edit-label {
     font-size: 11px;
     letter-spacing: 0.14em;
@@ -916,29 +950,6 @@ body {
     border-bottom-color: var(--accent);
 }
 .ipa-field { font-size: 26px; font-style: italic; }
-
-.provenance {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1px;
-    background: var(--rule);
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 24px;
-}
-.prov {
-    background: var(--paper-raised);
-    padding: 9px 12px;
-}
-.prov dt {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    margin-bottom: 3px;
-}
-.prov dd { font-size: 13px; word-break: break-word; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .act {

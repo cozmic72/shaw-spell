@@ -188,11 +188,11 @@ PAGE = """<!DOCTYPE html>
     <main class="workbench" id="workbench">
         <div class="drawer-backdrop" id="drawerBackdrop"></div>
         <section class="ledger" id="ledger" aria-label="Matching entries">
+            <div class="select-bar" id="selectBar" hidden>
+                <span class="select-bar-count" id="selectBarCount"></span>
+                <button type="button" class="select-bar-done" id="selectBarDone">Done</button>
+            </div>
             <div class="ledger-head">
-                <span class="col-pick">
-                    <input type="checkbox" id="selectAll" class="row-check"
-                           aria-label="Select all listed entries">
-                </span>
                 <span class="col-state">state</span>
                 <span class="col-word">word</span>
                 <span class="col-shaw">shaw</span>

@@ -46,7 +46,9 @@ const SORT_SELECT = document.getElementById("sort");
 const TALLY = document.getElementById("tally");
 const LEDGER = document.getElementById("ledgerList");
 const LEDGER_FOOT = document.getElementById("ledgerFoot");
-const SELECT_ALL = document.getElementById("selectAll");
+const SELECT_BAR = document.getElementById("selectBar");
+const SELECT_BAR_COUNT = document.getElementById("selectBarCount");
+const SELECT_BAR_DONE = document.getElementById("selectBarDone");
 const DETAIL = document.getElementById("detail");
 const TOAST = document.getElementById("toast");
 const WORKBENCH = document.getElementById("workbench");
@@ -70,9 +72,18 @@ const state = {
     // single focused row (state.selected) is independent — it stays the review
     // cursor even while a bulk selection is active. 2+ selected == bulk mode.
     multi: new Set(),
-    // The last row toggled by pointer, so a shift-click can range-extend from it.
+    // The last row toggled/clicked by pointer, so a shift-click can range-extend
+    // from it — the selection anchor in the file-list sense.
     lastToggledKey: null,
+    // Touch multi-select mode (iOS Mail/Photos style): entered by long-press, in
+    // which a plain tap toggles rather than reviews. Off = plain tap reviews.
+    touchMulti: false,
 };
+
+// Long-press threshold to enter touch multi-select, and the movement slop beyond
+// which a press is treated as a scroll and cancelled.
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_SLOP_PX = 10;
 
 // Session pacing: decisions this session and when it began, to show rate and
 // progress. An "undo" pops the stack and does not inflate the count.
@@ -142,12 +153,13 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     // it — select-all means "all currently-loaded rows", scoped to this page.
     state.multi.clear();
     state.lastToggledKey = null;
+    state.touchMulti = false;
     materialisedSignature = querySignature(state.filters, state.sort);
     TALLY.textContent = `${result.total.toLocaleString()} matching`;
     renderLedger();
     renderFoot();
     select(landingIndex(preferredAnchor));
-    syncSelectAll();
+    syncSelectBar();
     refreshPacing();
 }
 
@@ -224,7 +236,6 @@ function ledgerRow(record, index) {
     row.dataset.index = String(index);
 
     row.append(
-        selectCell(record, index),
         cell("stamp col-state " + record.patch_state, record.patch_state),
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
@@ -232,40 +243,88 @@ function ledgerRow(record, index) {
         confidenceCell(record.confidence),
         cell("col-pos", record.pos),
     );
-    // A click anywhere but the checkbox focuses the row for review; the checkbox
-    // owns bulk selection and stops the click so focusing and selecting stay
-    // independent gestures.
-    row.addEventListener("click", () => {
-        select(index);
-        setDrawer(false);
-    });
+    bindLongPress(row, record);
+    row.addEventListener("click", (event) => onRowClick(record, index, event));
     return row;
 }
 
-// The bulk-selection checkbox for a ledger row. Toggling adds/removes the row's
-// anchor from state.multi; a shift-click extends the range from the last toggled
-// row. It never changes the review focus, so selecting a class and reviewing an
-// entry stay separate.
-function selectCell(record, index) {
-    const wrap = document.createElement("span");
-    wrap.className = "col-pick";
-    const box = document.createElement("input");
-    box.type = "checkbox";
-    box.className = "row-check";
-    box.setAttribute("aria-label", `Select ${record.word}`);
-    box.checked = state.multi.has(anchorKey(record.anchor));
-    // The listener sits on the full-height cell, not the 18px box, so the whole
-    // column is one tap target; a keyboard Space on the box bubbles here too.
-    wrap.addEventListener("click", (event) => {
-        event.stopPropagation();
-        if (event.shiftKey && state.lastToggledKey !== null) {
-            extendSelection(index);
-        } else {
+// The native list-selection gesture on a row. Plain click reviews the one row (and
+// collapses any multi-selection to it); ⌘/Ctrl-click toggles the row without
+// disturbing the rest; shift-click extends a contiguous range from the anchor. In
+// touch multi-select mode a plain tap toggles instead of reviewing.
+function onRowClick(record, index, event) {
+    // A long-press already toggled this row; the synthesised click that follows the
+    // finger lift must not toggle it straight back.
+    if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+    }
+    setDrawer(false);
+    if (state.touchMulti) {
+        toggleSelection(record.anchor);
+        return;
+    }
+    if (event.shiftKey && state.lastToggledKey !== null) {
+        extendSelection(index);
+        return;
+    }
+    if (event.metaKey || event.ctrlKey) {
+        toggleSelection(record.anchor);
+        return;
+    }
+    reviewOnly(index);
+}
+
+// A plain click is single-select: any group selection collapses to this one row,
+// which becomes both the review focus and the new range anchor.
+function reviewOnly(index) {
+    state.multi.clear();
+    state.lastToggledKey = anchorKey(state.records[index].anchor);
+    select(index);
+    syncSelectionUI();
+}
+
+// Set when a long-press fires, to swallow the click the browser synthesises when
+// the finger lifts (which would otherwise re-toggle the just-toggled row).
+let suppressNextClick = false;
+
+// Long-press to enter touch multi-select (iOS Mail/Photos). A touch that moves past
+// the slop, or lifts before the threshold, is a scroll or tap and cancels the timer.
+function bindLongPress(row, record) {
+    let timer = null;
+    let startX = 0;
+    let startY = 0;
+    const cancel = () => {
+        if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+    };
+    row.addEventListener("pointerdown", (event) => {
+        // A fresh press: any suppression left dangling by a long-press whose click
+        // never arrived must not swallow this gesture's click.
+        suppressNextClick = false;
+        if (event.pointerType !== "touch") {
+            return;
+        }
+        startX = event.clientX;
+        startY = event.clientY;
+        timer = setTimeout(() => {
+            timer = null;
+            suppressNextClick = true;
+            enterTouchMulti();
             toggleSelection(record.anchor);
+        }, LONG_PRESS_MS);
+    });
+    row.addEventListener("pointermove", (event) => {
+        if (Math.abs(event.clientX - startX) > LONG_PRESS_SLOP_PX
+            || Math.abs(event.clientY - startY) > LONG_PRESS_SLOP_PX) {
+            cancel();
         }
     });
-    wrap.append(box);
-    return wrap;
+    row.addEventListener("pointerup", cancel);
+    row.addEventListener("pointercancel", cancel);
+    row.addEventListener("pointerleave", cancel);
 }
 
 function cell(className, value) {
@@ -419,8 +478,8 @@ function extendSelection(toIndex) {
     onSelectionChanged();
 }
 
-// Toggle the focused row into/out of the selection (the V key) — the keyboard
-// twin of the row checkbox, for the reviewer who never leaves the home row.
+// Toggle the focused row into/out of the selection (the V key) — the keyboard route
+// into a group, for the reviewer who never leaves the home row.
 function toggleFocusedSelection() {
     const focused = state.records[state.selected];
     if (!focused) {
@@ -439,11 +498,18 @@ function selectAll() {
 function clearSelection() {
     state.multi.clear();
     state.lastToggledKey = null;
+    state.touchMulti = false;
     onSelectionChanged();
 }
 
-// Re-sync everything the selection drives: the row checkboxes, the select-all
-// header box, and the detail card (which flips to the bulk summary at 2+, back to
+// Touch multi-select mode: a plain tap toggles instead of reviewing. Entered by a
+// long-press, left via the Done affordance (which also clears the selection).
+function enterTouchMulti() {
+    state.touchMulti = true;
+}
+
+// Re-sync everything the selection drives: the row highlights, the touch-mode
+// select bar, and the detail card (which flips to the bulk summary at 2+, back to
 // the focused record below that).
 function onSelectionChanged() {
     syncSelectionUI();
@@ -459,23 +525,19 @@ function onSelectionChanged() {
 function syncSelectionUI() {
     for (const row of LEDGER.children) {
         const record = state.records[Number(row.dataset.index)];
-        const box = row.querySelector(".row-check");
-        if (record && box) {
-            const picked = state.multi.has(anchorKey(record.anchor));
-            box.checked = picked;
-            row.classList.toggle("picked", picked);
+        if (record) {
+            row.classList.toggle("picked", state.multi.has(anchorKey(record.anchor)));
         }
     }
-    syncSelectAll();
+    syncSelectBar();
 }
 
-function syncSelectAll() {
-    if (!SELECT_ALL) {
-        return;
-    }
+// The touch select bar only shows in touch multi-select mode, giving the count and
+// the Done button that exits the mode.
+function syncSelectBar() {
+    SELECT_BAR.hidden = !state.touchMulti;
     const count = state.multi.size;
-    SELECT_ALL.checked = count > 0 && count === state.records.length;
-    SELECT_ALL.indeterminate = count > 0 && count < state.records.length;
+    SELECT_BAR_COUNT.textContent = count === 1 ? "1 selected" : `${count} selected`;
 }
 
 function renderDetail(record) {
@@ -1206,6 +1268,7 @@ async function runBulk(verb, applyOne) {
     // (deferred re-render), so the one authoritative rebuild is refreshAfterBulk.
     state.multi.clear();
     state.lastToggledKey = null;
+    state.touchMulti = false;
     refreshAfterBulk(focusedAnchor);
     reportBulk(verb, done, skipped, failures);
 }
@@ -1223,7 +1286,7 @@ function refreshAfterBulk(focusedAnchor) {
         index = Math.min(state.selected, state.records.length - 1);
     }
     select(index);
-    syncSelectAll();
+    syncSelectBar();
 }
 
 function reportBulk(verb, done, skipped, failures) {
@@ -1465,6 +1528,13 @@ function onGlobalKey(event) {
     if (event.target instanceof Element && event.target.matches("input, select, textarea")) {
         return;
     }
+    // ⌘/Ctrl-A picks the whole working set — the native select-all, replacing the
+    // former header checkbox.
+    if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        selectAll();
+        return;
+    }
     if (event.metaKey || event.ctrlKey || event.altKey) {
         return;
     }
@@ -1508,6 +1578,9 @@ const SHORTCUT_GROUPS = [
         heading: "Bulk selection",
         rows: [
             { keys: ["V"], state: null, action: "Add / remove the focused row from the selection" },
+            { keys: ["⌘", "A"], state: null, action: "Select every row in the working set" },
+            { keys: ["⇧", "click"], state: null, action: "Extend a range from the last-clicked row" },
+            { keys: ["⌘", "click"], state: null, action: "Add / remove one row (Ctrl-click on Windows)" },
             { keys: ["A", "X", "F", "C"], state: null, action: "With 2+ selected, act on the whole group" },
         ],
     },
@@ -1801,15 +1874,8 @@ DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 
-// The header checkbox selects/clears the whole current working set. It is a
-// three-state control: checked selects all, unchecking (from all or some) clears.
-SELECT_ALL.addEventListener("change", () => {
-    if (SELECT_ALL.checked) {
-        selectAll();
-    } else {
-        clearSelection();
-    }
-});
+// Done leaves touch multi-select and drops the selection with it.
+SELECT_BAR_DONE.addEventListener("click", clearSelection);
 
 document.addEventListener("keydown", onGlobalKey);
 

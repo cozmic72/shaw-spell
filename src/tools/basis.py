@@ -54,6 +54,12 @@ SUPPLEMENT_PATHS = [
 UPSTREAM_MERGER_VAR = "TrapBath"
 UPSTREAM_MERGER_BASE = "RRP"
 
+# An upstream var typo: two dugong records carry "Gen Am" (with a space) for the
+# canonical GenAm accent. Normalised at the same consumption seam so the anchor
+# identity (which includes var) is consistent wherever the pipeline reads ReadLex.
+UPSTREAM_VAR_TYPO = "Gen Am"
+UPSTREAM_VAR_TYPO_FIX = "GenAm"
+
 # The record's origin, derived from which basis file supplied it. Upstream
 # ReadLex is the sanctioned dictionary; the supplements are candidates.
 UPSTREAM_SOURCE = "readlex"
@@ -76,13 +82,16 @@ def load_json(path):
 def reinterpret_upstream(entry):
     """Map a raw upstream ReadLex entry onto the dialect model, in place. A
     `var: "TrapBath"` record is the trap-bath-merged form: its base accent is RRP
-    and the merger moves to the additive `mergers` field. Every other entry is
-    returned untouched. The single reinterpretation shared by the basis loader and
-    the applicator, so the anchor identity (which includes var) is consistent
-    wherever the pipeline consumes ReadLex."""
+    and the merger moves to the additive `mergers` field. A `var: "Gen Am"` record
+    carries an upstream typo for the canonical GenAm accent, corrected here. Every
+    other entry is returned untouched. The single reinterpretation shared by the
+    basis loader and the applicator, so the anchor identity (which includes var) is
+    consistent wherever the pipeline consumes ReadLex."""
     if entry.get("var") == UPSTREAM_MERGER_VAR:
         entry["var"] = UPSTREAM_MERGER_BASE
         entry["mergers"] = [MERGER_TRAP_BATH]
+    elif entry.get("var") == UPSTREAM_VAR_TYPO:
+        entry["var"] = UPSTREAM_VAR_TYPO_FIX
     return entry
 
 

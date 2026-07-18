@@ -53,6 +53,13 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     # Strip IPA slashes/brackets
     ipa = ipa.strip("/[] ")
 
+    # Route the [iɪ].ə syllable break through the affix boundary (+) so
+    # ipa_to_shavian keeps it two syllables (𐑦𐑼) instead of collapsing it to
+    # NEAR (𐑽) — e.g. happier /hæp.i.ə/ → 𐑣𐑨𐑐𐑦𐑼, not 𐑣𐑨𐑐𐑽. Genuine NEAR
+    # (here /hɪə/, no dot) is untouched. Must run before the dot strip below.
+    # NOTE: the GenAm .ɚ/.ɹ sibling has the same latent bug but is out of scope.
+    ipa = re.sub(r'([iɪ])\.(ə)', r'\1+\2', ipa)
+
     # Remove syllable dots
     ipa = ipa.replace(".", "")
 

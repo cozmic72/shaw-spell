@@ -65,10 +65,21 @@ data/supplement-wiktionary-rescued.json: $(SRC_TOOLS)/rescue_proper_nouns.py $(S
 	@echo "Rescuing IPA-less proper nouns via ReadLex homographs..."
 	$(RUN) python3 $(SRC_TOOLS)/rescue_proper_nouns.py
 
+# Pass 0.5 — NEAR syllable-dot correction (wiktionary only). The generator lost
+# Wiktionary's syllable dot, so happier /ˈhæp.i.ə/ collapsed to NEAR (𐑣𐑨𐑐𐑽) not
+# the two-syllable 𐑣𐑨𐑐𐑦𐑼. Each dot-collapsed NEAR record is re-derived from the
+# dotted kaikki sound through the now-fixed converter, capped to needs-review
+# confidence and tagged `near-dot-fixed` for the owner to adjudicate (ReadLex is
+# editorially inconsistent here). Genuine NEAR (here/weird) and patch-anchored
+# records are left untouched. See src/tools/fix_near_syllable_dots.py.
+data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wiktionary-rescued.json $(WIKTIONARY_JSONL) data/patches/patches.jsonl
+	@echo "Correcting NEAR syllable-dot collapses..."
+	$(RUN) python3 $(SRC_TOOLS)/fix_near_syllable_dots.py
+
 # Pass 1 — duplicate filtering. A candidate whose (word, shaw) an established
 # entry (upstream ReadLex + sanctioned patches) already covers on both the var
 # and pos axes is dropped. See src/tools/filter_supplement_duplicates.py.
-data/supplement-wordnet-deduped.json data/supplement-wiktionary-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-rescued.json external/readlex/readlex.json data/patches/patches.jsonl
+data/supplement-wordnet-deduped.json data/supplement-wiktionary-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-neardot.json external/readlex/readlex.json data/patches/patches.jsonl
 	@echo "Filtering duplicate supplement candidates..."
 	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_duplicates.py
 

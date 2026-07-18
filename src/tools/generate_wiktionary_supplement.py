@@ -146,6 +146,10 @@ def clean_ipa(ipa: str) -> str:
     Wiktionary conventions.
     """
     ipa = strip_ipa_delimiters(ipa)
+    # Route the [iɪ].ə syllable break through the affix boundary (+) so it stays
+    # two syllables (𐑦𐑼) not NEAR (𐑽) — see normalize_ipa in ipa_to_shavian.py.
+    # Must run before the dot strip. (The GenAm .ɚ/.ɹ sibling is out of scope.)
+    ipa = re.sub(r'([iɪ])\.(ə)', r'\1+\2', ipa)
     # Remove syllable boundary dots
     ipa = ipa.replace('.', '')
     # Remove tie bars

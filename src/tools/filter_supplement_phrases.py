@@ -56,6 +56,11 @@ SUPPLEMENTS = [
 
 SAMPLE_LIMIT = 8
 
+# Proper nouns (Monty Python, Magna Carta, New Zealand) are named entities, not
+# sum-of-parts glue — a dictionary wants them even when pronounced as their
+# parts, so they are never dropped as `matches`.
+PROPER_NOUN = "NP0"
+
 
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
@@ -76,7 +81,9 @@ def prune_supplement(supplement, label_of, exempt_keys, dropped_samples,
                 kept_entries.append(entry)
                 continue
             label = label_of(entry)
-            if label == MATCHES and anchor_of(entry) not in exempt_keys:
+            is_named_entity = entry.get("pos") == PROPER_NOUN
+            if (label == MATCHES and not is_named_entity
+                    and anchor_of(entry) not in exempt_keys):
                 dropped += 1
                 if len(dropped_samples) < SAMPLE_LIMIT:
                     dropped_samples.append(entry)

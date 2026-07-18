@@ -90,8 +90,12 @@ PAGE = """<!DOCTYPE html>
             <h1>Editorial Workbench</h1>
             <p class="strap">The dictionary as an editable overlay — accept, edit, drop, author.</p>
         </div>
-        <button type="button" class="drawer-toggle" id="drawerToggle"
-                aria-controls="ledger" aria-expanded="false">Entries</button>
+        <button type="button" class="filters-toggle chevron-toggle" id="filtersToggle"
+                aria-controls="filters" aria-expanded="true"
+                title="Filters"><span class="chevron" aria-hidden="true"></span>Filters</button>
+        <button type="button" class="drawer-toggle chevron-toggle" id="drawerToggle"
+                aria-controls="ledger" aria-expanded="false"
+                title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
         <button type="button" class="help-toggle" id="helpToggle"
                 aria-controls="cheatsheet" title="Keyboard shortcuts (?)">? keys</button>
         <div class="tally" id="tally" aria-live="polite"></div>
@@ -173,16 +177,9 @@ PAGE = """<!DOCTYPE html>
             <span>Conf ≤</span>
             <input type="number" name="confidence_max" min="0" max="100">
         </label>
-        <label class="field">
-            <span>Sort</span>
-            <select id="sort">
-                <option value="confidence_desc">confidence ↓</option>
-                <option value="confidence_asc">confidence ↑</option>
-                <option value="freq_desc">frequency ↓</option>
-                <option value="word">word</option>
-            </select>
-        </label>
-        <button type="submit" class="apply">Filter</button>
+        <button type="button" class="refresh-results" id="refreshResults"
+                title="Refresh results — re-run the current filter and drop reviewed rows"
+                aria-label="Refresh results">⟳</button>
     </form>
 
     <main class="workbench" id="workbench">
@@ -192,13 +189,14 @@ PAGE = """<!DOCTYPE html>
                 <span class="select-bar-count" id="selectBarCount"></span>
                 <button type="button" class="select-bar-done" id="selectBarDone">Done</button>
             </div>
-            <div class="ledger-head">
-                <span class="col-state">state</span>
-                <span class="col-word">word</span>
-                <span class="col-shaw">shaw</span>
-                <span class="col-var">var</span>
-                <span class="col-conf">conf</span>
-                <span class="col-pos">pos</span>
+            <div class="ledger-head" id="ledgerHead">
+                <button type="button" class="col-state sort-head" data-sort-key="state">state</button>
+                <button type="button" class="col-word sort-head" data-sort-key="word">word</button>
+                <button type="button" class="col-shaw sort-head" data-sort-key="shaw">shaw</button>
+                <button type="button" class="col-var sort-head" data-sort-key="var">var</button>
+                <button type="button" class="col-conf sort-head" data-sort-key="confidence">conf</button>
+                <button type="button" class="col-freq sort-head" data-sort-key="freq">freq</button>
+                <button type="button" class="col-pos sort-head" data-sort-key="pos">pos</button>
             </div>
             <ul class="ledger-list" id="ledgerList" tabindex="0"></ul>
             <div class="ledger-foot" id="ledgerFoot"></div>

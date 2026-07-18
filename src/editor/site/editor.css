@@ -63,7 +63,7 @@ body {
     display: flex;
     align-items: baseline;
     gap: 20px;
-    padding: 14px 22px;
+    padding: 9px 22px;
     border-bottom: 2px solid var(--ink);
 }
 .mark {
@@ -90,22 +90,32 @@ body {
     font-size: 12px;
     letter-spacing: 0.04em;
 }
-/* Ledger drawer trigger — only shown once the layout collapses (see mobile block). */
-.drawer-toggle {
+/* Chevron toggles (filter panel, ledger drawer): a compact affordance whose rotating
+   caret carries the collapsed/expanded state (▸ collapsed, ▾ expanded), leaving just
+   a short label beside it. Only shown once the layout collapses (see mobile block). */
+.chevron-toggle {
     display: none;
-    margin-left: auto;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ink);
     background: none;
-    border: 1px solid var(--rule);
-    border-radius: 2px;
-    min-height: 40px;
-    padding: 6px 16px;
+    border: none;
+    padding: 4px 6px;
     cursor: pointer;
+    align-items: center;
+    gap: 6px;
 }
+.chevron {
+    display: inline-block;
+    width: 0.7em;
+    color: var(--accent);
+    transition: transform 0.15s ease;
+}
+.chevron::before { content: "\25B8"; }             /* ▸ collapsed */
+.chevron-toggle[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+.filters-toggle { margin-left: auto; }
 .drawer-backdrop { display: none; }
 /* Always-reachable shortcuts trigger, pinned to the masthead's right edge so a
    mouse or touch user can find the keyboard help without an entry selected. */
@@ -126,53 +136,68 @@ body {
 .help-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
 .help-toggle + .tally { margin-left: 0; }
 
-/* ---- filter bar ---- */
+/* ---- filter bar ----
+   One tidy row: the controls sit on a single line and share a uniform height, so
+   the bar reads as a strip of equal-weight facets rather than a ragged stack. It
+   does not wrap (flex-shrink lets crowded controls narrow instead); the facet
+   popovers overlay, so the row height is fixed regardless of a facet's cardinality. */
 .filters {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: flex-end;
-    gap: 12px;
-    padding: 12px 22px;
+    gap: 10px;
+    padding: 8px 22px;
     background: var(--paper-raised);
     border-bottom: 1px solid var(--rule);
+    overflow: hidden;
 }
-.field { display: flex; flex-direction: column; gap: 3px; }
+.field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .field > span {
     font-size: 10px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ink-soft);
 }
-.field input, .field select {
+/* Every bar control shares this height so the row's inputs and facet triggers line
+   up rather than stepping unevenly. */
+.field input, .facet-trigger { height: 34px; }
+.field input {
     font-family: var(--mono);
     font-size: 13px;
     color: var(--ink);
     background: var(--paper);
     border: 1px solid var(--rule);
     border-radius: 2px;
-    padding: 5px 7px;
-    min-width: 128px;
+    padding: 4px 7px;
+    min-width: 118px;
 }
-.field.narrow input { min-width: 68px; }
+.field.narrow input { min-width: 60px; }
 .field .shavian-input { font-family: var(--shaw); font-size: 16px; }
-.field input:focus, .field select:focus {
+.field input:focus {
     outline: 2px solid var(--accent);
     outline-offset: 0;
     border-color: var(--accent);
 }
-.apply {
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--paper);
-    background: var(--ink);
-    border: none;
+
+/* Refresh affordance: a compact square icon button that re-pulls the working set
+   under the current filter (dropping reviewed rows and refilling from the pool). It
+   sits at the bar's trailing edge, sharing the 34px control height so it lines up
+   with the inputs and triggers rather than adding a big "Filter" button back. */
+.refresh-results {
+    flex: 0 0 auto;
+    align-self: flex-end;
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
     border-radius: 2px;
-    padding: 8px 18px;
     cursor: pointer;
 }
-.apply:hover { background: var(--accent); }
+.refresh-results:hover { border-color: var(--ink-soft); color: var(--accent); }
+.refresh-results:active { background: var(--paper-raised); }
 
 /* ---- multi-select facet dropdowns ----
    Every categorical filter (source/status/pos/var and the closed vocabularies) is
@@ -205,8 +230,7 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    min-height: 44px;
-    min-width: 128px;
+    min-width: 92px;
     padding: 5px 10px;
     font-family: var(--mono);
     font-size: 12px;
@@ -327,7 +351,7 @@ body {
 }
 .ledger-head, .ledger-row {
     display: grid;
-    grid-template-columns: 84px 1fr 1.3fr 64px 40px 48px;
+    grid-template-columns: 84px 1fr 1.3fr 64px 40px 56px 48px;
     gap: 10px;
     align-items: center;
     padding: 0 16px;
@@ -369,6 +393,34 @@ body {
     color: var(--ink-soft);
     border-bottom: 1px solid var(--rule);
 }
+/* Clickable column headers: bare buttons that inherit the head-row typography, with
+   a trailing caret marking the active sort's direction (▲ asc, ▼ desc). The caret
+   slot is reserved on every header so the label does not shift when a column becomes
+   active. */
+.sort-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    padding: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+}
+.sort-head:hover { color: var(--ink); }
+.sort-head::after {
+    content: "";
+    font-size: 9px;
+    color: var(--accent);
+}
+.sort-head.sort-asc::after { content: "\25B2"; }   /* ▲ */
+.sort-head.sort-desc::after { content: "\25BC"; }  /* ▼ */
+.sort-head.sort-asc, .sort-head.sort-desc { color: var(--ink); }
 .ledger-list { list-style: none; overflow-y: auto; }
 .ledger-row {
     position: relative;
@@ -420,6 +472,18 @@ body {
    (GenAm, TrapBath, RSSB, …) pop when scanning the list. */
 .col-var.var-default { color: var(--ink-soft); opacity: 0.55; }
 .col-pos { color: var(--ink-soft); font-size: 11px; }
+/* Corpus frequency: a right-aligned integer so the digits line up down the column.
+   The head button reuses the ledger-head typography but right-justifies its content
+   to sit over the numbers. */
+.col-freq {
+    color: var(--ink-soft);
+    font-size: 11px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sort-head.col-freq { justify-content: flex-end; }
 
 /* Confidence pip meter — a non-colour channel (filled vs empty pips). */
 .col-conf { display: flex; align-items: center; }
@@ -957,8 +1021,13 @@ kbd {
        word or wide field can't push the whole layout past the viewport. */
     .workbench { grid-template-columns: minmax(0, 1fr); }
 
-    .drawer-toggle { display: inline-block; }
+    .chevron-toggle { display: inline-flex; }
     .tally { display: none; }
+
+    /* The filter bar collapses to its chevron on narrow screens so the results own
+       the first screen; the row is restored to a wrapping two-column grid when
+       expanded (rule below). */
+    body.filters-collapsed .filters { display: none; }
 
     .ledger {
         position: absolute;
@@ -988,20 +1057,21 @@ kbd {
 
     .detail { max-width: none; padding: 22px 18px; }
 
-    /* Filters become a two-column grid whose tracks can shrink to zero, so nothing
-       demands a min width that would overflow the viewport. */
+    /* When expanded, the filters become a two-column grid whose tracks can shrink to
+       zero, so nothing demands a min width that would overflow the viewport. */
     .filters {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: end;
+        gap: 12px;
         padding: 12px 18px;
+        overflow: visible;
     }
-    .field input, .field select { min-width: 0; width: 100%; }
+    .field input { min-width: 0; width: 100%; }
     .field.narrow input { min-width: 0; }
     /* Facet triggers are compact, so they sit two-per-row like the other fields; the
        trigger fills its track and its popover overlays from there. */
     .facet-trigger { min-width: 0; width: 100%; }
-    .apply { grid-column: 1 / -1; justify-self: start; }
 
     /* Compact masthead so the drawer toggle always fits: drop the strap, shrink the
        mark, let the title take the middle and truncate, toggle pinned right. The
@@ -1018,7 +1088,11 @@ kbd {
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .drawer-toggle { flex: 0 0 auto; }
+    /* The chevron toggles pack together at the row's right; masthead-text's flex
+       basis:0 already claims the slack, so no auto-margin is needed (and two would
+       fight). */
+    .chevron-toggle { flex: 0 0 auto; margin-left: 0; }
+    .filters-toggle { margin-left: auto; }
     /* Keep the shortcuts trigger reachable but compact on the tight mobile row —
        the label collapses to just the "?" glyph. */
     .help-toggle { flex: 0 0 auto; margin-left: 0; padding: 5px 11px; font-size: 0; }
@@ -1028,8 +1102,9 @@ kbd {
     .ipa-field { font-size: 22px; }
 
     /* Drop the confidence pips from the crowded ledger row on narrow screens;
-       the detail card still shows confidence. */
-    .ledger-head, .ledger-row { grid-template-columns: 74px 1fr 1.2fr 56px 44px; }
+       the detail card still shows confidence. State, word, shaw, var, freq, pos —
+       six tracks (conf hidden). */
+    .ledger-head, .ledger-row { grid-template-columns: 74px 1fr 1.2fr 56px 48px 44px; }
     .col-conf { display: none; }
 
     /* Raise the touch row to the 44px target the rest of the UI uses, so a

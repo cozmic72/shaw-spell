@@ -20,7 +20,11 @@ const AUTHOR = "editor";
 const PAGE_LIMIT = 200;
 const ACCEPTED_STATUS = "sanctioned";
 const SESSION_KEY = "shaw-spell.editor.session";
-const DEFAULT_SORT = "confidence_desc";
+// The daemon query sort is fixed: it decides which records land in the page (the
+// highest-confidence candidates, the review targets) and their base order. The
+// user reorders the loaded page client-side via the ledger column headers
+// (state.columnSort), which never re-pulls.
+const QUERY_SORT = "confidence_desc";
 const RRP_VAR = "RRP";
 
 const EDITABLE_FIELDS = ["shaw", "var", "ipa", "status"];
@@ -42,9 +46,11 @@ const REFERENCES = [
 ];
 
 const FILTER_FORM = document.getElementById("filters");
-const SORT_SELECT = document.getElementById("sort");
+const FILTERS_TOGGLE = document.getElementById("filtersToggle");
+const REFRESH_RESULTS = document.getElementById("refreshResults");
 const TALLY = document.getElementById("tally");
 const LEDGER = document.getElementById("ledgerList");
+const LEDGER_HEAD = document.getElementById("ledgerHead");
 const LEDGER_FOOT = document.getElementById("ledgerFoot");
 const SELECT_BAR = document.getElementById("selectBar");
 const SELECT_BAR_COUNT = document.getElementById("selectBarCount");
@@ -64,7 +70,10 @@ const state = {
     offset: 0,
     limit: PAGE_LIMIT,
     filters: {},
-    sort: DEFAULT_SORT,
+    // Client-side ledger ordering, applied to the loaded page after each query and
+    // toggled by the column headers. null == daemon order (the QUERY_SORT the page
+    // arrived in). {key, dir} where dir is "asc" or "desc".
+    columnSort: null,
     selected: -1,
     editing: false,
     // Bulk selection: the anchor keys of the checked rows (an anchor is a stable
@@ -137,16 +146,18 @@ function readFilters() {
 // entry (session restore); if it fell out of the set, on the nearest neighbour.
 async function runQuery(offset = 0, preferredAnchor = null) {
     state.filters = readFilters();
-    state.sort = SORT_SELECT.value || DEFAULT_SORT;
     state.offset = offset;
     const result = await callDaemon({
         op: "entries",
         filters: state.filters,
-        sort: state.sort,
+        sort: QUERY_SORT,
         offset,
         limit: state.limit,
     });
-    state.records = result.records;
+    // The daemon returns the page in QUERY_SORT order; the active column sort (if
+    // any) reorders it for display before the ledger is built, so index-keyed
+    // selection and in-place row refresh stay aligned with what is on screen.
+    state.records = sortedForDisplay(result.records);
     state.total = result.total;
     // The selection is over the working set that was on screen; a re-materialise
     // replaces that set, so the old selection no longer refers to these rows. Clear
@@ -154,7 +165,7 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     state.multi.clear();
     state.lastToggledKey = null;
     state.touchMulti = false;
-    materialisedSignature = querySignature(state.filters, state.sort);
+    materialisedSignature = querySignature(state.filters);
     TALLY.textContent = `${result.total.toLocaleString()} matching`;
     renderLedger();
     renderFoot();
@@ -230,6 +241,99 @@ function renderLedger() {
     });
 }
 
+// Client-side ledger ordering. Each sortable column extracts a comparable key from
+// a record; strings compare case-insensitively by locale, numbers numerically.
+// Missing numeric values (a record with no freq/confidence) sort last in both
+// directions, matching the daemon's "not a review target" convention.
+const SORT_KEYS = {
+    state: (record) => ({ text: record.patch_state }),
+    word: (record) => ({ text: record.word.toLowerCase() }),
+    shaw: (record) => ({ text: record.shaw }),
+    var: (record) => ({ text: record.var }),
+    pos: (record) => ({ text: record.pos }),
+    confidence: (record) => ({ number: record.confidence }),
+    freq: (record) => ({ number: record.freq }),
+};
+
+// Order a page for display under the active column sort. Returns a new array so the
+// daemon's page is not mutated; a null columnSort leaves the daemon order intact.
+// Array.sort is stable (ES2019+), and the comparator returns 0 for equal keys, so
+// records with the same key keep their incoming (daemon) order.
+function sortedForDisplay(records) {
+    if (!state.columnSort) {
+        return records;
+    }
+    const extract = SORT_KEYS[state.columnSort.key];
+    if (!extract) {
+        throw new Error(`unknown column sort: ${state.columnSort.key}`);
+    }
+    const direction = state.columnSort.dir === "desc" ? -1 : 1;
+    return [...records].sort((left, right) => compareKeys(extract(left), extract(right), direction));
+}
+
+// Compare two extracted keys under `direction` (1 asc, -1 desc). The missing-value
+// partition is direction-INDEPENDENT — an absent numeric value (null/undefined)
+// always sorts last, in both asc and desc — so `direction` is applied only to the
+// both-present (and text) comparison, never to the missing-vs-present verdict. Text
+// keys compare by locale case-insensitively (numeric collation).
+function compareKeys(left, right, direction) {
+    if ("number" in left) {
+        const a = left.number;
+        const b = right.number;
+        const aMissing = a === null || a === undefined;
+        const bMissing = b === null || b === undefined;
+        if (aMissing || bMissing) {
+            return aMissing === bMissing ? 0 : (aMissing ? 1 : -1);
+        }
+        return direction * (a - b);
+    }
+    return direction * left.text.localeCompare(right.text, undefined, { numeric: true });
+}
+
+// A column header was clicked: sort ascending, or flip to descending if that column
+// is already the ascending sort. Re-orders the loaded page in place (preserving the
+// focused row by anchor) without re-pulling from the daemon.
+function onSortHeaderClick(key) {
+    if (state.columnSort && state.columnSort.key === key && state.columnSort.dir === "asc") {
+        state.columnSort = { key, dir: "desc" };
+    } else {
+        state.columnSort = { key, dir: "asc" };
+    }
+    reorderLedger();
+}
+
+// Re-apply the active column sort to the loaded records, keeping the focused entry
+// selected by anchor (its index moves under the new order) and the ledger and
+// select-bar in sync. Absent-value tie handling matches sortedForDisplay.
+function reorderLedger() {
+    const focusedAnchor = state.records[state.selected]
+        ? state.records[state.selected].anchor
+        : null;
+    state.records = sortedForDisplay(state.records);
+    syncSortIndicators();
+    renderLedger();
+    select(landingIndex(focusedAnchor));
+    // syncSelectionUI re-applies the .picked highlight from state.multi to the
+    // freshly re-rendered rows (and calls syncSelectBar internally), so a bulk
+    // selection survives a column re-sort visually, not just in state.
+    syncSelectionUI();
+    saveSession();
+}
+
+// Reflect the active column sort on the header row: the sorted column carries the
+// direction class (styled to show ▲/▼ via CSS) and aria-sort; the rest are cleared.
+function syncSortIndicators() {
+    for (const header of LEDGER_HEAD.querySelectorAll(".sort-head")) {
+        const active = state.columnSort && state.columnSort.key === header.dataset.sortKey;
+        header.classList.toggle("sort-asc", active && state.columnSort.dir === "asc");
+        header.classList.toggle("sort-desc", active && state.columnSort.dir === "desc");
+        header.setAttribute(
+            "aria-sort",
+            active ? (state.columnSort.dir === "asc" ? "ascending" : "descending") : "none",
+        );
+    }
+}
+
 function ledgerRow(record, index) {
     const row = document.createElement("li");
     row.className = `ledger-row state-${record.patch_state}`;
@@ -241,6 +345,7 @@ function ledgerRow(record, index) {
         cell("col-shaw", record.shaw),
         varCell(record.var),
         confidenceCell(record.confidence),
+        freqCell(record.freq),
         cell("col-pos", record.pos),
     );
     bindLongPress(row, record);
@@ -355,6 +460,17 @@ function confidenceCell(confidence) {
     meter.append(confidenceMeter(confidence));
     meter.title = `confidence ${confidence}`;
     return meter;
+}
+
+// Corpus frequency as a plain integer; a record without a freq shows nothing (an
+// em dash would read as data). Right-aligned via the col-freq class so the numbers
+// line up for scanning.
+function freqCell(freq) {
+    const span = cell("col-freq", freq === null || freq === undefined ? "" : String(freq));
+    if (freq !== null && freq !== undefined) {
+        span.title = `frequency ${freq}`;
+    }
+    return span;
 }
 
 const CONFIDENCE_PIPS = 3;
@@ -1721,15 +1837,16 @@ function pacingStat(value, label) {
     return stat;
 }
 
-// Session continuity: the active filter, sort, plus the ANCHOR of the focused
-// entry — not a row index, which is meaningless once the list re-materialises. On
-// load the filter/sort are restored, the list pulled, then the anchor re-selected
-// (or its nearest neighbour). Persisted on every query and selection.
+// Session continuity: the active filter, the ledger column sort, plus the ANCHOR
+// of the focused entry — not a row index, which is meaningless once the list
+// re-materialises. On load the filter + column sort are restored, the list pulled,
+// then the anchor re-selected (or its nearest neighbour). Persisted on every query
+// and selection.
 function saveSession() {
     const selected = state.records[state.selected];
     const stored = {
         filters: state.filters,
-        sort: state.sort,
+        columnSort: state.columnSort,
         anchor: selected ? selected.anchor : null,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(stored));
@@ -1743,11 +1860,11 @@ function loadSession() {
     return JSON.parse(raw);
 }
 
-// Populate the filter form + sort from a saved session so the restored query
-// matches what the user last ran. A categorical facet's persisted array re-checks
-// exactly its chips; a scalar sets its input value. Values with no matching chip
-// (e.g. a POS chip not yet populated, or a value dropped from the enum) are simply
-// left unchecked — the restore reflects only what the form can currently express.
+// Populate the filter form from a saved session so the restored query matches what
+// the user last ran. A categorical facet's persisted array re-checks exactly its
+// chips; a scalar sets its input value. Values with no matching chip (e.g. a POS
+// chip not yet populated, or a value dropped from the enum) are simply left
+// unchecked — the restore reflects only what the form can currently express.
 function restoreFilters(filters) {
     for (const [name, value] of Object.entries(filters)) {
         if (CATEGORICAL_FACETS.has(name)) {
@@ -1789,6 +1906,30 @@ function toggleDrawer() {
     setDrawer(!WORKBENCH.classList.contains("drawer-open"));
 }
 
+// The filter bar collapses to a chevron on narrow screens so results dominate; on
+// wide screens it is always shown and the chevron is hidden by CSS. Collapsed state
+// lives as a body class so the CSS can hide #filters; the toggle's aria-expanded
+// mirrors it for assistive tech.
+function setFiltersOpen(open) {
+    document.body.classList.toggle("filters-collapsed", !open);
+    FILTERS_TOGGLE.setAttribute("aria-expanded", String(open));
+}
+
+function toggleFilters() {
+    setFiltersOpen(document.body.classList.contains("filters-collapsed"));
+}
+
+// The mobile breakpoint the CSS uses for the collapsed layout. Kept in step with
+// the @media (max-width: 860px) rule so the boot-time default collapse matches
+// where the chevron actually appears.
+const NARROW_BREAKPOINT_PX = 860;
+
+// Start collapsed on a narrow viewport so the results, not the filters, own the
+// first screen; stay expanded on desktop.
+function collapseFiltersOnNarrow() {
+    setFiltersOpen(window.innerWidth > NARROW_BREAKPOINT_PX);
+}
+
 let toastTimer = null;
 function showToast(message, isError = false) {
     TOAST.textContent = message;
@@ -1799,7 +1940,7 @@ function showToast(message, isError = false) {
 }
 
 // Live filtering: the filter form re-runs the query the moment the criteria
-// change, so there is no separate "apply" step. A <select> (or the sort) commits
+// change, so there is no separate "apply" step. A checkbox (a facet chip) commits
 // on `change`; a free-text or numeric input debounces, re-running once the user
 // pauses. Re-running the filter IS the pull-and-refresh re-sync point (an
 // explicit filter change, so re-syncing membership is the intended behaviour).
@@ -1813,14 +1954,15 @@ let materialisedSignature = null;
 // A canonical string for a query so a no-op change (chip toggled off then on, a
 // re-order, focus churn) does not re-fire. Facet keys are sorted, and each facet's
 // array is sorted, so [a,b] and [b,a] compare equal (selection is a set, not an
-// ordered list). Scalars serialise as-is.
-function querySignature(filters, sort) {
+// ordered list). Scalars serialise as-is. Column sort is display-only (never
+// re-pulls), so it is not part of the signature.
+function querySignature(filters) {
     const canonical = {};
     for (const key of Object.keys(filters).sort()) {
         const value = filters[key];
         canonical[key] = Array.isArray(value) ? [...value].sort() : value;
     }
-    return JSON.stringify([canonical, sort]);
+    return JSON.stringify(canonical);
 }
 
 // Re-run the filter only if the form's current criteria differ from what is
@@ -1829,8 +1971,7 @@ function querySignature(filters, sort) {
 // the old offset.
 function requestFilterQuery() {
     const filters = readFilters();
-    const sort = SORT_SELECT.value || DEFAULT_SORT;
-    if (querySignature(filters, sort) === materialisedSignature) {
+    if (querySignature(filters) === materialisedSignature) {
         return;
     }
     runFilterQuery();
@@ -1846,13 +1987,14 @@ function requestFilterQueryDebounced() {
     filterDebounceTimer = setTimeout(requestFilterQuery, FILTER_DEBOUNCE_MS);
 }
 
-// Chips and the sort <select> commit immediately on change; free-text and numeric
-// inputs debounce. Binding by element/input type keeps the wiring declarative — a
-// new filter field needs no change here, only the right control in the CGI form.
-// The sort <select> lives inside the filter form, so it is covered by this loop.
+// Facet chips commit immediately on change; free-text and numeric inputs debounce.
+// Binding by control type keeps the wiring declarative — a new filter field needs
+// no change here, only the right control in the CGI form. The facet-search inputs
+// carry no name, so their debounced re-query resolves to a no-op (their signature
+// is unchanged); they filter the checklist display only.
 function bindLiveFilters() {
     for (const field of FILTER_FORM.elements) {
-        if (field.tagName === "SELECT" || field.type === "checkbox") {
+        if (field.type === "checkbox") {
             field.addEventListener("change", requestFilterQuery);
         } else if (field.tagName === "INPUT") {
             field.addEventListener("input", requestFilterQueryDebounced);
@@ -1860,19 +2002,34 @@ function bindLiveFilters() {
     }
 }
 
-// Submit (the Filter button / Enter in a field) is the explicit manual re-sync:
-// it re-pulls unconditionally — even when the criteria are unchanged — so the
-// user can deliberately drop just-reviewed rows from the working set. It bypasses
-// the debounce and the redundant-query guard.
-FILTER_FORM.addEventListener("submit", (event) => {
-    event.preventDefault();
+// Enter in a filter field would submit the form (and reload the page in a CGI
+// context); there is no Filter button any more, so swallow the submit — the live
+// listeners already keep the query current.
+FILTER_FORM.addEventListener("submit", (event) => event.preventDefault());
+
+// The refresh affordance re-pulls the working set under the CURRENT criteria,
+// UNCONDITIONALLY — it bypasses requestFilterQuery's signature guard by calling
+// runFilterQuery directly, so an unchanged filter still re-materialises. That is the
+// deliberate "drop the rows I have reviewed and refill from the pool" gesture the
+// live no-op path cannot express. Cancel a pending debounce so the two do not race.
+REFRESH_RESULTS.addEventListener("click", () => {
     clearTimeout(filterDebounceTimer);
     runFilterQuery();
 });
 
 DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
+FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
+
+// Column-header sort: one delegated listener over the head row, so a header added
+// in the markup needs only its data-sort-key to become sortable.
+LEDGER_HEAD.addEventListener("click", (event) => {
+    const header = event.target.closest(".sort-head");
+    if (header) {
+        onSortHeaderClick(header.dataset.sortKey);
+    }
+});
 
 // Done leaves touch multi-select and drops the selection with it.
 SELECT_BAR_DONE.addEventListener("click", clearSelection);
@@ -2020,21 +2177,23 @@ document.addEventListener("keydown", (event) => {
 });
 
 // Boot: build the facet dropdowns (data-derived values from the daemon, closed
-// vocabularies from the page markup), then resume the saved session (filter + sort +
-// anchor) if one exists, else a plain first query at the review default sort (highest
-// confidence first). Filters are bound AFTER the dropdowns exist so every checkbox,
-// dynamic ones included, re-runs the query on toggle.
+// vocabularies from the page markup), then resume the saved session (filter +
+// column sort + anchor) if one exists, else a plain first query in the review
+// order (highest confidence first). Filters are bound AFTER the dropdowns exist so
+// every checkbox, dynamic ones included, re-runs the query on toggle.
 async function boot() {
     buildCheatsheet();
+    collapseFiltersOnNarrow();
     await buildFacetDropdowns();
     bindLiveFilters();
     const stored = loadSession();
     if (stored && stored.filters) {
         restoreFilters(stored.filters);
-        SORT_SELECT.value = stored.sort || DEFAULT_SORT;
+        state.columnSort = stored.columnSort || null;
+        syncSortIndicators();
         return runQuery(0, stored.anchor);
     }
-    SORT_SELECT.value = DEFAULT_SORT;
+    syncSortIndicators();
     return runQuery(0);
 }
 

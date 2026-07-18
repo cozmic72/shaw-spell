@@ -185,6 +185,45 @@ body {
     border-color: var(--accent);
 }
 
+/* A free-text filter box with its two mode toggles (regex / case-insensitive) on
+   the same 34px line. The input flexes; the toggles are fixed square affordances so
+   the bar stays one tidy row. */
+.text-filter { display: flex; align-items: stretch; gap: 3px; }
+.text-filter input[type="text"] { flex: 1 1 auto; min-width: 90px; }
+/* A mode toggle: a small square button backed by a hidden checkbox, so it rides the
+   FormData / live-filter wiring. Checked = active (accent fill). */
+.text-filter .toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 34px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    cursor: pointer;
+    user-select: none;
+}
+.text-filter .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.text-filter .toggle:hover { border-color: var(--ink-soft); }
+.text-filter .toggle:has(input:checked) {
+    color: var(--paper);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+/* An invalid regex: the daemon named this box in invalid_regex, so flag it red
+   without breaking the query (it simply matched nothing). */
+.text-filter.invalid input[type="text"] {
+    border-color: var(--state-dropped);
+}
+.text-filter.invalid input[type="text"]:focus {
+    outline-color: var(--state-dropped);
+}
+
 /* Refresh affordance: a compact square icon button that re-pulls the working set
    under the current filter (dropping reviewed rows and refilling from the pool). It
    sits at the bar's trailing edge, sharing the 34px control height so it lines up

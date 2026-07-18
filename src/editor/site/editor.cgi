@@ -102,14 +102,26 @@ PAGE = """<!DOCTYPE html>
     </header>
 
     <form class="filters" id="filters" autocomplete="off">
-        <label class="field">
+        <!-- The two free-text boxes match a substring by default; the .rx toggle
+             switches to regex (re.search) and .aA to case-insensitive. Both are
+             checkboxes so they ride the same FormData / live-filter wiring as every
+             other control; the daemon reads them as word_regex/word_ci companions. -->
+        <div class="field">
             <span>Word</span>
-            <input type="text" name="word" placeholder="latin substring">
-        </label>
-        <label class="field">
+            <div class="text-filter">
+                <input type="text" name="word" placeholder="latin substring">
+                <label class="toggle" title="Regex (re.search)"><input type="checkbox" name="word_regex"><span>.*</span></label>
+                <label class="toggle" title="Case-insensitive"><input type="checkbox" name="word_ci"><span>aA</span></label>
+            </div>
+        </div>
+        <div class="field">
             <span>Shaw</span>
-            <input type="text" name="shaw" placeholder="𐑖𐑷 substring" class="shavian-input">
-        </label>
+            <div class="text-filter">
+                <input type="text" name="shaw" placeholder="𐑖𐑷 substring" class="shavian-input">
+                <label class="toggle" title="Regex (re.search)"><input type="checkbox" name="shaw_regex"><span>.*</span></label>
+                <label class="toggle" title="Case-insensitive"><input type="checkbox" name="shaw_ci"><span>aA</span></label>
+            </div>
+        </div>
         <!-- Every categorical facet becomes a multi-select dropdown at boot (editor.js
              buildFacetDropdowns). The data-derived facets (source/status/pos/var) take
              their values from the daemon's distinct-value facets op, so they track the

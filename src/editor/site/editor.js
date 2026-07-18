@@ -213,11 +213,23 @@ const CATEGORICAL_FACETS = new Set([
     "reviewed", "word_kind", "novelty", "mergers",
 ]);
 
+// The two free-text boxes (word/shaw) each carry a regex and a case-insensitive
+// mode toggle. They are checkboxes so they ride the same FormData / live-filter
+// wiring, but read as booleans (present-and-checked => true) rather than the
+// checkbox's "on" string, matching the daemon's word_regex/word_ci companions.
+const SUBSTRING_FLAGS = new Set([
+    "word_regex", "word_ci", "shaw_regex", "shaw_ci",
+]);
+
 function readFilters() {
     const filters = {};
     for (const [name, rawValue] of new FormData(FILTER_FORM).entries()) {
         if (CATEGORICAL_FACETS.has(name)) {
             (filters[name] ??= []).push(rawValue);
+            continue;
+        }
+        if (SUBSTRING_FLAGS.has(name)) {
+            filters[name] = true;  // only checked boxes appear in FormData
             continue;
         }
         const trimmed = rawValue.trim();
@@ -227,6 +239,20 @@ function readFilters() {
         filters[name] = name.startsWith("confidence_") ? Number(trimmed) : trimmed;
     }
     return filters;
+}
+
+// Flag the substring boxes whose regex the daemon could not compile (its response
+// names them in invalid_regex). The box's wrapper gets .invalid — a red border —
+// while the query still returns (it simply matched nothing). Fields not named are
+// cleared, so fixing the pattern removes the flag on the next live re-query.
+const SUBSTRING_FIELDS = ["word", "shaw"];
+
+function markInvalidRegex(invalidFields) {
+    const invalid = new Set(invalidFields);
+    for (const field of SUBSTRING_FIELDS) {
+        const box = FILTER_FORM.elements[field];
+        box.closest(".text-filter").classList.toggle("invalid", invalid.has(field));
+    }
 }
 
 // Re-run the filter: materialise a fresh working set. This is the ONLY point at
@@ -248,6 +274,7 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     // selection and in-place row refresh stay aligned with what is on screen.
     state.records = sortedForDisplay(result.records);
     state.total = result.total;
+    markInvalidRegex(result.invalid_regex || []);
     // The selection is over the working set that was on screen; a re-materialise
     // replaces that set, so the old selection no longer refers to these rows. Clear
     // it — select-all means "all currently-loaded rows", scoped to this page.
@@ -1988,6 +2015,11 @@ function restoreFilters(filters) {
     for (const [name, value] of Object.entries(filters)) {
         if (CATEGORICAL_FACETS.has(name)) {
             restoreChips(name, value);
+        } else if (SUBSTRING_FLAGS.has(name)) {
+            const box = FILTER_FORM.elements[name];
+            if (box) {
+                box.checked = Boolean(value);
+            }
         } else {
             const field = FILTER_FORM.elements[name];
             if (field) {

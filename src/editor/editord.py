@@ -21,7 +21,16 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # AND-ed across facets, e.g. {"source": ["wordnet","wiktionary"],
                 # "novelty": ["new-word"]}; an empty/absent list is unconstrained.
                 # word/shaw are substring scalars; confidence_min/max are numeric.
-    Response:  {"total": 1234, "offset": 0, "limit": 50, "records": [...]}
+                # word/shaw each take optional companion booleans in the same
+                # filters dict: "<field>_regex" (match the value as a Python
+                # re.search pattern instead of a plain substring) and "<field>_ci"
+                # (case-insensitive). Absent flags = plain substring, word
+                # case-insensitive / shaw case-sensitive (backward-compatible).
+    Response:  {"total": 1234, "offset": 0, "limit": 50, "records": [...],
+                "invalid_regex": ["word"]}
+                # invalid_regex names the substring field(s) whose regex value
+                # failed to compile (absent/empty when all compiled). A field
+                # with an invalid regex matches nothing rather than 500-ing.
 
     Request:   {"op": "facets"}
     Response:  {"pos": [...]}   # the distinct POS tags present, sorted — the
@@ -72,6 +81,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import signal
 import socketserver
 import sys
@@ -109,18 +119,77 @@ class State:
         self.view = load_view()
 
 
+# The two free-text filters that match a substring (default) or a regex against a
+# single record field. Each carries optional "<field>_regex" / "<field>_ci"
+# companion booleans in the filters dict rather than being its own filter key.
+SUBSTRING_FIELDS = ("word", "shaw")
+
+# word is case-insensitive by default (its historical behaviour); shaw is case-
+# sensitive by default (Shavian has no case). The _ci companion flag forces
+# case-insensitive regardless.
+SUBSTRING_DEFAULT_CI = {"word": True, "shaw": False}
+
+
+def _substring_predicate(field, value, filters):
+    """Resolve one substring field (word/shaw) to a (predicate, valid) pair for
+    the current query. `predicate(record)` tests the field; `valid` is False when
+    a regex value failed to compile — the caller reports that field as invalid and
+    the predicate matches nothing (never raises, never 500s). Companion flags
+    "<field>_regex" / "<field>_ci" live in `filters`."""
+    case_insensitive = bool(filters.get(f"{field}_ci", SUBSTRING_DEFAULT_CI[field]))
+    if filters.get(f"{field}_regex"):
+        try:
+            pattern = re.compile(value, re.IGNORECASE if case_insensitive else 0)
+        except re.error:
+            return (lambda record: False), False
+        return (lambda record: pattern.search(record[field]) is not None), True
+    needle = value.lower() if case_insensitive else value
+    if case_insensitive:
+        return (lambda record: needle in record[field].lower()), True
+    return (lambda record: needle in record[field]), True
+
+
+class QueryFilters:
+    """The supplied filters resolved for one query: the categorical/numeric filters
+    pass through unchanged, while the substring fields (word/shaw) are pre-compiled
+    once into predicates so a regex compiles a single time, not per record. Any
+    field whose regex failed to compile is named in `invalid_regex`; its predicate
+    matches nothing. The "<field>_regex"/"<field>_ci" companion keys are consumed
+    here, so `matches` never sees them as filters."""
+
+    def __init__(self, filters):
+        self._other = {}
+        self._substring_predicates = {}
+        self.invalid_regex = []
+        for key, value in filters.items():
+            if value in (None, "", []):
+                continue
+            if key in SUBSTRING_FIELDS:
+                predicate, valid = _substring_predicate(key, value, filters)
+                self._substring_predicates[key] = predicate
+                if not valid:
+                    self.invalid_regex.append(key)
+            elif key.endswith("_regex") or key.endswith("_ci"):
+                continue  # companion flag, consumed alongside its substring field
+            else:
+                self._other[key] = value
+
+
 # The categorical facets are multi-select: the request carries a LIST of values
 # per facet (source, status, pos, var, patch_state, reviewed, word_kind,
 # novelty), and a record matches the facet if its value is ANY of them (OR).
 # Facets still AND across each other. The substring (word/shaw) and numeric
 # (confidence_min/max) filters stay scalar. An empty list is no constraint.
-def matches(record, filters, established):
+def matches(record, query, established):
     """Whether an annotated record passes every supplied filter. Absent filters
-    do not constrain; a present filter that the record fails excludes it.
-    `established` is the view's EstablishedIndex, needed by the novelty filter."""
-    for key, value in filters.items():
-        if value in (None, "", []):
-            continue
+    do not constrain; a present filter that the record fails excludes it. `query`
+    is a QueryFilters carrying the pre-compiled substring predicates and the
+    remaining categorical/numeric filters. `established` is the view's
+    EstablishedIndex, needed by the novelty filter."""
+    for predicate in query._substring_predicates.values():
+        if not predicate(record):
+            return False
+    for key, value in query._other.items():
         if not _field_matches(record, key, value, established):
             return False
     return True
@@ -128,11 +197,8 @@ def matches(record, filters, established):
 
 # A categorical facet matches if ANY selected value matches (OR within the facet).
 # The equality facets test membership; the custom matchers are asked per value.
+# word/shaw are handled by QueryFilters' pre-compiled predicates, not here.
 def _field_matches(record, key, value, established):
-    if key == "word":
-        return value.lower() in record["word"].lower()
-    if key == "shaw":
-        return value in record["shaw"]
     if key in ("source", "status", "pos", "var", "patch_state"):
         if not isinstance(value, list):
             raise ValueError(f"{key} filter wants a list, got {value!r}")
@@ -224,8 +290,8 @@ def _matches_merger(record, value):
     return value in mergers
 
 
-def filter_records(records, filters, established):
-    return [r for r in records if matches(r, filters, established)]
+def filter_records(records, query, established):
+    return [r for r in records if matches(r, query, established)]
 
 
 # The list's natural key — the deterministic tiebreak under every sort, and the
@@ -281,11 +347,11 @@ def serialisable(record):
 
 
 def handle_entries(state, request):
-    filters = request.get("filters") or {}
+    query = QueryFilters(request.get("filters") or {})
     offset = int(request.get("offset", 0))
     limit = min(int(request.get("limit", DEFAULT_LIMIT)), MAX_LIMIT)
 
-    matched = filter_records(state.view.records, filters, state.view.established)
+    matched = filter_records(state.view.records, query, state.view.established)
     matched = sort_records(matched, request.get("sort") or DEFAULT_SORT)
     page = matched[offset:offset + limit]
     return {
@@ -293,6 +359,7 @@ def handle_entries(state, request):
         "offset": offset,
         "limit": limit,
         "records": [serialisable(r) for r in page],
+        "invalid_regex": query.invalid_regex,
     }
 
 

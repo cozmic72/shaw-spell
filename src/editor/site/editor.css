@@ -155,7 +155,11 @@ body {
     padding: 8px 22px;
     background: var(--paper-raised);
     border-bottom: 1px solid var(--rule);
-    overflow: hidden;
+    /* No clip: the facet popovers are absolutely positioned below their triggers and
+       must overlay the ledger, so an overflow clip here would swallow them. The single
+       line is held by flex-wrap:nowrap plus min-width:0 on the flex children (they
+       shrink to fit rather than wrap or bleed), not by clipping. */
+    overflow: visible;
 }
 .field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .field > span {

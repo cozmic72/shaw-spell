@@ -3,15 +3,16 @@
 The patch store: read and write data/patches/patches.jsonl, the only persisted
 editorial artifact (see docs/editorial-overlay-design.md).
 
-A patch is {anchor, record, meta}; its shape and id derivation match
-src/tools/migrate_csv_to_patches.py exactly — one representation of the patch
-format, not a parallel copy:
+A patch is {anchor, op, changes, meta} — a minimal diff over the live basis:
 
-  id      deterministic, content-derived (p_ + sha256 of {anchor, record})
-  anchor  natural key {word, pos, shaw, var} | null (null = authorship)
-  record  the complete record {word, pos, shaw, var, ipa, freq, status, …}
-          | null (drop)
-  meta    {author, origin, ts, note?}
+  id       deterministic, content-derived (p_ + sha256 of {anchor, op, changes})
+  anchor   natural key {word, pos, shaw, var} | null (null = authorship)
+  op       "accept" (sanction the anchored basis record) / "drop" (remove it) /
+           "flag" (production no-op). Absent for authorship (anchor null).
+  changes  the intrinsic edits {word, shaw, pos, ipa, var, mergers, variant} an
+           accept lays over the basis record (empty = accept as-is); or, for
+           authorship, the whole self-contained record.
+  meta     {author, origin, ts, note?}
 
 A patch's identity for upsert is its full anchor (word, pos, shaw, var) — the
 immutable identity of the reviewed record. Writing a patch whose anchor already
@@ -56,16 +57,18 @@ def load_patches(path=None):
     return patches
 
 
-def patch_id(anchor, record):
-    """Content-derived id — identical derivation to migrate_csv_to_patches so a
-    salvaged patch and a re-decided one collide rather than duplicate."""
-    payload = json.dumps({"anchor": anchor, "record": record},
+def patch_id(anchor, op, changes):
+    """Content-derived id over the patch's identity fields (anchor, op, changes),
+    so a re-decision that resolves to the same diff collides rather than
+    duplicates. meta (author/ts/note) is excluded — it is not part of identity."""
+    payload = json.dumps({"anchor": anchor, "op": op, "changes": changes},
                          ensure_ascii=False, sort_keys=True)
     return "p_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
-def make_patch(anchor, record, meta):
-    return {"id": patch_id(anchor, record), "anchor": anchor, "record": record, "meta": meta}
+def make_patch(anchor, op, changes, meta):
+    return {"id": patch_id(anchor, op, changes), "anchor": anchor,
+            "op": op, "changes": changes, "meta": meta}
 
 
 def write_patches(patches, path=None):

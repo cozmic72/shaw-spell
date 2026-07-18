@@ -47,6 +47,10 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 "record": {...} | null, "author": "…", "replaces"?: "p_…"}
     Response:  {"result": "appended"|"replaced", "id": "p_…",
                 "records": [...]}   # the anchor re-annotated after the write
+                # The client sends the COMPLETE wanted `record`; the daemon
+                # diffs its intrinsic fields against the live basis and persists a
+                # minimal-diff patch {anchor, op, changes} (accept, or drop when
+                # record is null). anchor null (record supplied) = authorship.
                 # anchor null + replaces = re-decide an AUTHORED entry: edits that
                 # authorship patch in place (anchor stays null), never an anchored
                 # patch (which would orphan the decision — see _reauthor).
@@ -95,7 +99,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
-from basis import UPSTREAM_SOURCE, anchor_key                    # noqa: E402
+from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
+                   UPSTREAM_SOURCE, anchor_key)
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
                      NOVELTY_NEW_WORD, PATCH_STATE_FLAGGED, load_view)
@@ -508,20 +513,56 @@ def handle_patch(state, request):
     if anchor is None and replaces:
         return _reauthor(state, record, _meta(author, request.get("note")), replaces)
 
-    # An edit/drop must anchor to a record that exists in the basis right now.
-    # Writing an anchor that resolves to nothing would create an orphan the build
-    # later fails on; reject it here where the actor can fix it. (Authorship —
-    # anchor null — attests a record no basis holds, so it is exempt.)
-    if anchor is not None and not state.view.by_anchor(anchor_key(anchor)):
-        return {"error": f"anchor resolves to no basis record: {anchor}"}
-
     meta = _meta(author, request.get("note"))
-    patch = make_patch(anchor, record, meta)
+
+    # Authorship (anchor null, record supplied): the record is self-contained, so
+    # `changes` IS the whole record and there is no op to resolve.
+    if anchor is None:
+        patch = make_patch(None, None, record, meta)
+        key = anchor_key(record)
+    else:
+        # An accept/drop must anchor to a record that exists in the basis right
+        # now. Writing an anchor that resolves to nothing would create an orphan
+        # the build later fails on; reject it here where the actor can fix it.
+        basis = state.view.basis_record(anchor_key(anchor))
+        if basis is None:
+            return {"error": f"anchor resolves to no basis record: {anchor}"}
+        if record is None:
+            patch = make_patch(anchor, OP_DROP, {}, meta)
+        else:
+            changes = _compute_changes(record, basis)
+            patch = make_patch(anchor, OP_ACCEPT, changes, meta)
+        key = anchor_key(anchor)
+
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)
-
-    key = anchor_key(anchor) if anchor is not None else anchor_key(record)
     return _write_result(state, key, result, patch["id"])
+
+
+def _compute_changes(record, basis):
+    """The minimal intrinsic diff of the client's wanted `record` against the
+    untouched `basis` record — the only fields an accept persists. Everything
+    else (source/confidence/freq/status) is derived at apply, never stored, so a
+    non-intrinsic key on the client record is simply ignored. Empty diff == the
+    client accepted the basis record unchanged (accept-as-is)."""
+    changes = {}
+    for field in INTRINSIC_FIELDS:
+        wanted = _intrinsic_value(record, field)
+        if wanted != _intrinsic_value(basis, field):
+            changes[field] = wanted
+    return changes
+
+
+# mergers defaults to [] and variant to False when absent; the other intrinsics
+# default to "" — so an absent field on one side and its default on the other are
+# NOT a change. This mirrors record_to_output/output_to_record, which emit these
+# only when non-default.
+def _intrinsic_value(record, field):
+    if field == "mergers":
+        return record.get("mergers") or []
+    if field == "variant":
+        return bool(record.get("variant"))
+    return record.get(field, "")
 
 
 def _reauthor(state, record, meta, prior_id):
@@ -530,7 +571,7 @@ def _reauthor(state, record, meta, prior_id):
     not there (surfaced to the actor, never a silent new-patch fallback)."""
     if record is None:
         return {"error": "authored re-decision requires a record"}
-    patch = make_patch(None, record, meta)
+    patch = make_patch(None, None, record, meta)
     try:
         replace_authored_patch(patch, prior_id)
     except (KeyError, ValueError) as exc:
@@ -540,18 +581,18 @@ def _reauthor(state, record, meta, prior_id):
 
 
 def handle_flag(state, request):
-    """Flag an anchor "looked at, no verdict yet". The flag patch carries the
-    source record UNCHANGED (built here from the basis, not the client, so it
-    provably equals the source) plus meta.flag. It replaces any prior verdict on
-    the anchor (upsert by anchor), and the applicator treats it as a no-op."""
+    """Flag an anchor "looked at, no verdict yet". The flag patch is
+    {anchor, op:"flag", changes:{}} — it leaves the anchored basis record
+    untouched. It replaces any prior verdict on the anchor (upsert by anchor),
+    and the applicator treats it as a no-op."""
     anchor = request.get("anchor")
     author = request.get("author")
     replaces = request.get("replaces")
     if not author:
         return {"error": "flag requires an author"}
 
-    # Flagging an AUTHORED entry re-authors it with meta.flag set, keeping anchor
-    # null — never an anchored flag patch that would orphan the decision.
+    # Flagging an AUTHORED entry re-authors it with op flag, keeping anchor null —
+    # never an anchored flag patch that would orphan the decision.
     if anchor is None and replaces:
         return _flag_authored(state, author, request.get("note"), replaces)
 
@@ -561,14 +602,10 @@ def handle_flag(state, request):
     if error:
         return {"error": error}
 
-    source = state.view.by_anchor(anchor_key(anchor))
-    if not source:
+    if state.view.basis_record(anchor_key(anchor)) is None:
         return {"error": f"anchor resolves to no basis record: {anchor}"}
 
-    record = _source_record(source[0])
-    meta = _meta(author, request.get("note"))
-    meta["flag"] = True
-    patch = make_patch(anchor, record, meta)
+    patch = make_patch(anchor, OP_FLAG, {}, _meta(author, request.get("note")))
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)
     return _write_result(state, anchor_key(anchor), result, patch["id"])
@@ -576,21 +613,19 @@ def handle_flag(state, request):
 
 def _flag_authored(state, author, note, prior_id):
     """Flag an authored entry: re-author it with the SAME record the prior patch
-    holds (a flag leaves the entry unchanged) plus meta.flag. The record is read
+    holds (a flag leaves the entry unchanged), with op flag. The record is read
     from the prior authored patch, not the client, so it provably equals it.
     Fails loud if the prior patch is not there."""
     prior = state.view.authored_patch(prior_id)
     if prior is None:
         return {"error": f"no authored patch with id: {prior_id}"}
-    meta = _meta(author, note)
-    meta["flag"] = True
-    patch = make_patch(None, prior["record"], meta)
+    patch = make_patch(None, OP_FLAG, prior["changes"], _meta(author, note))
     try:
         replace_authored_patch(patch, prior_id)
     except (KeyError, ValueError) as exc:
         return {"error": str(exc)}
     state.view.apply_reauthor(patch, prior_id)
-    return _write_result(state, anchor_key(prior["record"]), "replaced", patch["id"])
+    return _write_result(state, anchor_key(prior["changes"]), "replaced", patch["id"])
 
 
 def handle_unpatch(state, request):
@@ -622,21 +657,6 @@ def handle_unpatch(state, request):
     records = state.view.by_anchor(key) if key is not None else []
     return {"result": "deleted", "id": None,
             "records": [serialisable(r) for r in records]}
-
-
-# The editable-field subset of an annotated record, mapped back to a patch's
-# self-contained `record` shape. A flag stores exactly what the basis holds.
-def _source_record(annotated):
-    record = {field: annotated[field] for field in ANCHOR_FIELDS}
-    for field in ("ipa", "freq", "source", "status", "confidence"):
-        value = annotated.get(field)
-        if value not in (None, ""):
-            record[field] = value
-    if annotated.get("mergers"):
-        record["mergers"] = annotated["mergers"]
-    if annotated.get("variant"):
-        record["variant"] = annotated["variant"]
-    return record
 
 
 def _meta(author, note):

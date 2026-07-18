@@ -16,13 +16,31 @@ docs/editorial-overlay-design.md.
   - A patch's `anchor` is the natural key (word.lower(), pos, shaw, var) of the
     ONE basis record it reviews. Each dialect var is reviewed independently.
 
+A patch is a MINIMAL DIFF over the live basis, not a full-record snapshot:
+
+    {anchor, op, changes, meta}
+
+  op        "accept"  — sanction the anchored basis record, with the intrinsic
+                        edits in `changes` layered over it (empty = accept as-is).
+            "drop"    — emit nothing for the anchored key.
+            "flag"    — "looked at, no verdict yet"; a production no-op.
+  changes   the INTRINSIC field edits {word, shaw, pos, ipa, var, mergers,
+            variant} an accept lays over the basis record — and ONLY those. For
+            an authorship patch (anchor null) `changes` is the WHOLE record, as
+            there is no basis to diff against.
+
+resolve_patch layers a patch over the live basis to the canonical output record,
+so a decision follows upstream as it drifts rather than freezing a stale copy.
+Derived provenance is NOT stored in `changes`: `source` comes from the basis
+origin map, `confidence` from the basis record, and `freq` is replaced wholesale
+by the stage-2 frequency pass — so an accept's status is always "sanctioned".
+
 Two record shapes meet here, and the mapping between them lives in one place:
 
   canonical   the ReadLex on-disk shape: Latn/Shaw/pos/ipa/freq/var (+provenance).
               What the basis holds and the applicator emits.
   record      the patch/UI shape: word/shaw/pos/ipa/freq/var/status (+provenance).
-              What a patch stores and the editor displays. Self-contained — the
-              patch's `record` IS the wanted state, emitted verbatim with no merge.
+              What the editor displays and an authorship patch's `changes` holds.
 """
 
 import json
@@ -81,6 +99,35 @@ SUPPLEMENT_SOURCES = {
 # dictionary. `status` lives in the record because downstream consumers read it.
 PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source"]
 
+# A patch's operation. An accept sanctions the anchored basis record (with any
+# intrinsic edits in `changes`); a drop removes it; a flag is a production no-op.
+OP_ACCEPT = "accept"
+OP_DROP = "drop"
+OP_FLAG = "flag"
+
+# The intrinsic, human-editable fields — the ONLY keys a patch's `changes` may
+# carry. Everything else (source, confidence, freq, status) is DERIVED at apply:
+# source from the basis origin map, confidence from the basis record, freq from
+# the stage-2 frequency pass, and status is implied by the op (accept ->
+# "sanctioned"). Storing any of them in `changes` would freeze a value the
+# pipeline recomputes.
+INTRINSIC_FIELDS = ("word", "shaw", "pos", "ipa", "var", "mergers", "variant")
+
+# The status every accepted record carries. An accept IS a sanction; the old
+# finer statuses (new / pos-gap / supplement / pos-gap-shifted) collapse to this
+# one, so the operation alone determines status — it is never stored in a patch.
+ACCEPTED_STATUS = "sanctioned"
+
+# resolve_patch's sentinel for a flag: the anchored basis record is left exactly
+# as upstream had it (no removal, no re-emit). Distinct from None, which a drop
+# returns to mean "emit nothing".
+PATCH_NOOP = object()
+
+# resolve_patch's sentinel for an accept whose anchor no longer resolves against
+# the basis (upstream drifted since the decision was made). The caller surfaces
+# it as an orphan and fails loud — never a silent drop or a stale snapshot.
+PATCH_ORPHAN = object()
+
 
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
@@ -133,18 +180,18 @@ def anchor_key(anchor):
 
 
 def is_flag_patch(patch):
-    """Whether a patch is a FLAG — "looked at, no verdict yet". A flag carries the
-    source record unchanged with a meta marker; it counts as reviewed (leaves the
-    unreviewed pool) but is NOT an editorial change, so the applicator treats it as
-    a no-op. The single definition shared by the overlay and the applicator."""
-    return bool(patch.get("meta", {}).get("flag"))
+    """Whether a patch is a FLAG — "looked at, no verdict yet". A flag leaves the
+    anchored basis record untouched; it counts as reviewed (leaves the unreviewed
+    pool) but is NOT an editorial change, so the applicator treats it as a no-op.
+    The single definition shared by the overlay and the applicator."""
+    return patch.get("op") == OP_FLAG
 
 
 def record_to_output(record):
-    """The canonical dictionary entry (Latn/Shaw/...) for a patch's complete
-    `record` (word/shaw/...). Emitted verbatim — no merge with the source. The
-    single UI-shape → canonical mapping shared by the applicator (which writes it
-    to data/readlex.json) and the overlay (which round-trips display records)."""
+    """The canonical dictionary entry (Latn/Shaw/...) for a resolved `record`
+    (word/shaw/...). The single UI-shape → canonical mapping shared by the
+    applicator (which writes it to data/readlex.json) and the overlay (which
+    round-trips display records)."""
     entry = {
         "Latn": record["word"],
         "Shaw": record["shaw"],
@@ -182,6 +229,63 @@ def output_to_record(entry):
         if entry.get(field) not in (None, ""):
             record[field] = entry[field]
     return record
+
+
+def effective_record(base_entry, changes, source):
+    """The resolved UI-shape record for an ACCEPTED anchor: the basis record
+    (`base_entry`, canonical shape) turned back into a record, with the patch's
+    intrinsic `changes` laid over it, its origin-derived `source`, the basis
+    record's confidence carried through, and status set to the sanction.
+
+    The single overlay layering shared by the applicator (resolve_patch, which
+    canonicalises this for readlex.json) and the overlay (which shows it in the
+    UI): one definition of "accept = basis + edits", so the two can never drift."""
+    record = output_to_record(base_entry)
+    record.update(changes)
+    record["source"] = source
+    if "confidence" in base_entry:
+        record["confidence"] = base_entry["confidence"]
+    record["status"] = ACCEPTED_STATUS
+    return record
+
+
+def resolve_patch(patch, basis_index, basis_source):
+    """The canonical dictionary entry a patch resolves to over the LIVE basis, or
+    a sentinel the caller acts on. The single applied-shape resolution shared by
+    the applicator and the overlay — the one place the patch model is interpreted.
+
+      op flag                 PATCH_NOOP: production no-op. For an anchored flag
+                              the basis record is left as-is; for an authored
+                              flag (anchor null) the authored record is NOT
+                              emitted — a flag is "no verdict yet" either way.
+      anchor null (authored)  record_to_output(changes): `changes` is the whole
+                              self-contained record (no basis to diff against).
+      op drop                 None: emit nothing for the anchored key.
+      op accept               record_to_output(effective_record(...)): the basis
+                              record with the intrinsic `changes` laid over it,
+                              sanctioned. If the anchor no longer resolves against
+                              the basis, PATCH_ORPHAN — the caller fails loud."""
+    # A flag is "looked at, no verdict yet" whether the row is a basis candidate
+    # or an authored one — in both cases nothing reaches production, so this test
+    # precedes the authored/anchored split.
+    if is_flag_patch(patch):
+        return PATCH_NOOP
+
+    if patch["anchor"] is None:
+        return record_to_output(patch["changes"])
+
+    op = patch["op"]
+    if op == OP_DROP:
+        return None
+    if op != OP_ACCEPT:
+        raise ValueError(f"unknown patch op: {op!r}")
+
+    key = anchor_key(patch["anchor"])
+    base_entry = basis_index.get(key)
+    if base_entry is None:
+        return PATCH_ORPHAN
+    return record_to_output(
+        effective_record(base_entry, patch["changes"], basis_source[key]))
 
 
 def basis_source(path):

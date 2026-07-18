@@ -10,18 +10,22 @@ docs/editorial-overlay-design.md, "The patch record (settled model)"):
     candidates — computed on-demand. Every candidate, including the ~85K
     unreviewed supplemental ones, is a record in the basis. Nothing is frozen.
 
-  - A PATCH (data/patches/patches.jsonl) is {anchor, record, meta}:
-      anchor  the natural key {word, pos, shaw, var} of the ONE basis record it
-              reviews, or null for authorship. Immutable identity — never changed
-              when the record is edited.
-      record  the COMPLETE record you want {word, pos, shaw, var, ipa, freq,
-              status, …}, emitted VERBATIM with no source+patch merge; or null to
-              drop the anchored record.
+  - A PATCH (data/patches/patches.jsonl) is {anchor, op, changes, meta}:
+      anchor   the natural key {word, pos, shaw, var} of the ONE basis record it
+               reviews, or null for authorship. Immutable identity — never changed
+               when the record is edited.
+      op       accept (sanction the anchored basis record) / drop (remove it) /
+               flag (production no-op). Authorship has no op.
+      changes  the intrinsic edits {word, shaw, pos, ipa, var, mergers, variant}
+               an accept lays over the LIVE basis record (empty = accept as-is);
+               or, for authorship, the whole self-contained record.
 
   - The OUTPUT starts as upstream ReadLex (an unreviewed candidate has no patch,
-    so it never enters the output) and is mutated patch by patch: the anchored
-    source record is removed, then `record` (if non-null) is emitted verbatim.
-    Authorship (anchor null) simply emits `record`.
+    so it never enters the output) and is mutated patch by patch. Each patch is
+    resolved over the LIVE basis (basis.resolve_patch): an accept removes the
+    anchored source record and re-emits it sanctioned with `changes` laid over
+    it; a drop removes it; a flag leaves it untouched. Authorship (anchor null)
+    emits `changes` as a standalone record.
 
   - FAIL LOUD on an orphaned decision: an anchor that resolves against NOTHING in
     the basis (upstream drifted since the decision was made) is surfaced, not
@@ -35,21 +39,32 @@ Usage:
 """
 
 import json
+import os
 import sys
+from pathlib import Path
 
 from basis import (
+    PATCH_NOOP,
+    PATCH_ORPHAN,
     PROJECT_ROOT,
     SUPPLEMENT_PATHS,
     anchor_key,
     anchor_of,
-    build_basis_index,
-    is_flag_patch,
+    build_basis,
     load_upstream,
-    record_to_output,
+    resolve_patch,
 )
 
-PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
+DEFAULT_PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex.json"
+
+
+def patches_path():
+    """The patch store to apply — the SHAW_SPELL_PATCH_STORE env var if set, else
+    the live store. Resolved at call time so a migrated scratchpad store can be
+    applied without touching the live one (mirrors patchstore._store_path)."""
+    env = os.environ.get("SHAW_SPELL_PATCH_STORE")
+    return Path(env) if env else DEFAULT_PATCHES_PATH
 
 # Valid Shavian chars — a record whose Shaw contains anything else (e.g. an
 # unconverted IPA fragment) is skipped, matching the legacy applicator.
@@ -59,7 +74,7 @@ KNOWN_SHAW = set("𐑐𐑚𐑑𐑛𐑒𐑜𐑓𐑝𐑔𐑞𐑕𐑟𐑖𐑠𐑗�
 
 def load_patches():
     patches = []
-    with open(PATCHES_PATH, "r", encoding="utf-8") as f:
+    with open(patches_path(), "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -104,48 +119,48 @@ def is_emittable(word, shaw, stats):
 
 def patch_order_key(patch):
     """Total, deterministic apply order over anchor identity then patch id. An
-    authorship patch (anchor null) is ordered by its record's natural key."""
-    anchor = patch["anchor"] or patch["record"]
+    authorship patch (anchor null) is ordered by its record's natural key, which
+    for authorship IS its `changes`."""
+    anchor = patch["anchor"] or patch["changes"]
     return (*anchor_key(anchor), patch["id"])
 
 
-def apply_patches(output, basis_index, patches):
+def apply_patches(output, basis_index, basis_source, patches):
     stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
              "skipped_numeral": 0, "skipped_shaw": 0}
     orphans = []
 
     for patch in sorted(patches, key=patch_order_key):
-        anchor, record = patch["anchor"], patch["record"]
+        entry = resolve_patch(patch, basis_index, basis_source)
 
         # A flag carries no editorial change ("looked at, no verdict yet"): it is
         # a pure no-op for production. The record leaves the output exactly as
         # upstream had it — no removal, no re-emit.
-        if is_flag_patch(patch):
+        if entry is PATCH_NOOP:
             stats["flag"] += 1
             continue
 
-        if anchor is None:
-            # Authorship: a standalone record no source attests.
-            if is_emittable(record["word"], record["shaw"], stats):
-                insert_entry(output, record_to_output(record))
-                stats["authorship"] += 1
-            continue
-
-        # Resolve the anchor against the basis by its full natural key.
-        if anchor_key(anchor) not in basis_index:
-            # Upstream drifted: the record this decision was made against no
-            # longer exists. Surface it loudly rather than dropping it.
+        # Upstream drifted: the record this decision was made against no longer
+        # exists. Surface it loudly rather than dropping it.
+        if entry is PATCH_ORPHAN:
             orphans.append(patch)
             stats["orphaned"] += 1
             continue
 
-        remove_anchored(output, anchor_key(anchor))
+        if patch["anchor"] is None:
+            # Authorship: a standalone record no source attests.
+            if is_emittable(entry["Latn"], entry["Shaw"], stats):
+                insert_entry(output, entry)
+                stats["authorship"] += 1
+            continue
 
-        if record is None:
+        # Accept or drop: the anchored source record leaves the output first.
+        remove_anchored(output, anchor_key(patch["anchor"]))
+
+        if entry is None:
             stats["removal"] += 1
             continue
 
-        entry = record_to_output(record)
         if is_emittable(entry["Latn"], entry["Shaw"], stats):
             insert_entry(output, entry)
         stats["update"] += 1
@@ -155,7 +170,6 @@ def apply_patches(output, basis_index, patches):
 
 def main():
     import argparse
-    from pathlib import Path
     ap = argparse.ArgumentParser(description="Apply the patch store to produce merged readlex")
     ap.add_argument("--out", dest="out_path", default=str(OUTPUT_PATH),
                     help="where to write the merged readlex (default: data/readlex.json)")
@@ -164,14 +178,14 @@ def main():
     output = load_upstream()
     print(f"Upstream: {len(output):,} keys, {sum(len(v) for v in output.values()):,} entries")
 
-    basis_index = build_basis_index()
+    basis_index, basis_source = build_basis()
     print(f"Basis:    {len(basis_index):,} records "
           f"(upstream + {len(SUPPLEMENT_PATHS)} supplements)")
 
     patches = load_patches()
     print(f"Patches:  {len(patches):,}")
 
-    stats, orphans = apply_patches(output, basis_index, patches)
+    stats, orphans = apply_patches(output, basis_index, basis_source, patches)
 
     # Fail loud on orphaned decisions BEFORE writing anything. An anchor that no
     # longer resolves means upstream drifted out from under an editorial

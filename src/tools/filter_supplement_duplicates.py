@@ -44,7 +44,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from basis import PROJECT_ROOT, anchor_key, anchor_of
+from basis import OP_ACCEPT, PROJECT_ROOT, anchor_key, anchor_of
 
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
@@ -56,10 +56,6 @@ SUPPLEMENTS = [
     (PROJECT_ROOT / "data" / "supplement-wiktionary-neardot.json",
      PROJECT_ROOT / "data" / "supplement-wiktionary-deduped.json"),
 ]
-
-# An established entry counts only if the owner has sanctioned it; other patch
-# states are still under review and do not establish anything.
-SANCTIONED_STATUS = "sanctioned"
 
 # The var wildcard: an established RRP entry covers every dialect, so it is
 # broader than any specific candidate var.
@@ -105,9 +101,14 @@ def pos_covers(established_pos, candidate_pos):
 
 def build_established_index(upstream, patches):
     """(word_lower, shaw) -> list of (var, pos) established scopes, drawn from
-    upstream ReadLex and sanctioned patches. Keyed on word+shaw because a
-    candidate is only ever a duplicate of a same-spelling established entry; the
-    var/pos comparison is the lattice test done at filter time."""
+    upstream ReadLex and accepted patches. Keyed on word+shaw because a candidate
+    is only ever a duplicate of a same-spelling established entry; the var/pos
+    comparison is the lattice test done at filter time.
+
+    An ACCEPT sanctions its anchor; drops and flags establish nothing. The
+    accepted scope is the anchor's (word, shaw, var, pos) with any intrinsic edit
+    in `changes` laid over it — the same overlay the applicator emits, so the
+    filter's notion of "established" matches what ships."""
     index = {}
 
     def register(word, shaw, var, pos):
@@ -119,11 +120,14 @@ def build_established_index(upstream, patches):
                      entry.get("pos", ""))
 
     for patch in patches:
-        record = patch.get("record")
-        if record is None or record.get("status") != SANCTIONED_STATUS:
+        anchor = patch["anchor"]
+        if anchor is None or patch["op"] != OP_ACCEPT:
             continue
-        register(record["word"], record["shaw"], record.get("var", ""),
-                 record.get("pos", ""))
+        changes = patch["changes"]
+        register(changes.get("word", anchor["word"]),
+                 changes.get("shaw", anchor["shaw"]),
+                 changes.get("var", anchor["var"]),
+                 changes.get("pos", anchor["pos"]))
 
     return index
 

@@ -8,10 +8,12 @@ the basis, resolving each patch's `anchor` against the basis by the SAME natural
 key (word, pos, shaw, var) the applicator uses — imported from src/tools/basis.py,
 never re-implemented here.
 
-Under the settled model a patch's `record` is complete and authoritative, so an
-annotated row's DISPLAYED content is simply the patch's `record` when a patch
-exists on its anchor, else the untouched source record. There is no source+patch
-merge — that merge was the source of the "edit invisible in the UI" bug.
+Under the settled model a patch is a MINIMAL DIFF over the live basis: an accept
+displays the basis record with the patch's intrinsic `changes` laid over it
+(basis.effective_record — the SAME layering the applicator emits, so the UI can
+never diverge from what ships); a flag or a drop displays the untouched source
+record. An accept-as-is (empty `changes`) and an accept-with-edits differ only in
+whether `changes` is non-empty, which `patch_state` reflects.
 
 Each annotated record carries the displayed content (word/shaw/pos/ipa/freq/var
 plus provenance), its stable `anchor` (immutable identity, so an edited row never
@@ -19,9 +21,10 @@ moves), a `reviewed` flag (a patch exists — the primary filter partition), and
 `patch_state` for the ledger stamp:
 
     unreviewed  no patch resolves to this anchor
-    edited      a patch supplies a record (accept / edit / respell)
-    dropped     a patch drops it (record is null)
-    flagged     a patch marks it "looked at, no verdict yet" (see is_flag_patch)
+    accepted    an accept with no edits (changes empty) — sanctioned as-is
+    edited      an accept carrying intrinsic edits (accept-with-edits / respell)
+    dropped     a drop (op == "drop")
+    flagged     a flag "looked at, no verdict yet" (see is_flag_patch)
     authored    a standalone record no basis anchor attests (anchor is null)
 
 `dropped` rows still DISPLAY the source content (flagged, not hidden — the editor
@@ -31,10 +34,11 @@ synthesized into the view so the editor sees everything a human has ruled on.
 
 import threading
 
-from basis import (UPSTREAM_SOURCE, anchor_key, build_basis, is_flag_patch,
-                   output_to_record)
+from basis import (OP_DROP, UPSTREAM_SOURCE, anchor_key, build_basis,
+                   effective_record, is_flag_patch, output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
+PATCH_STATE_ACCEPTED = "accepted"
 PATCH_STATE_EDITED = "edited"
 PATCH_STATE_DROPPED = "dropped"
 PATCH_STATE_FLAGGED = "flagged"
@@ -90,10 +94,11 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
 def annotate_basis_record(candidate, source, patch):
     """One annotated row for a basis candidate under its overlaid patch.
 
-    Unpatched: displays the source record, unreviewed. Patched with a record:
-    displays that record (accept/edit/respell), reviewed. Patched to a drop:
-    displays the source record, flagged dropped. Flag patch: displays the source
-    record, reviewed-but-undecided."""
+    Unpatched: displays the source record, unreviewed. Accepted: displays the
+    basis record with the patch's intrinsic `changes` laid over it, sanctioned
+    (state `accepted` when `changes` is empty, `edited` when it carries edits).
+    Dropped: displays the source record, flagged dropped. Flag: displays the
+    source record, reviewed-but-undecided."""
     anchor = {"word": candidate["Latn"], "pos": candidate["pos"],
               "shaw": candidate["Shaw"], "var": candidate.get("var", "")}
     default_status = UPSTREAM_STATUS if source == "readlex" else SUPPLEMENT_STATUS
@@ -102,19 +107,23 @@ def annotate_basis_record(candidate, source, patch):
         shown, reviewed, state = output_to_record(candidate), False, PATCH_STATE_UNREVIEWED
     elif is_flag_patch(patch):
         shown, reviewed, state = output_to_record(candidate), True, PATCH_STATE_FLAGGED
-    elif patch["record"] is None:
+    elif patch["op"] == OP_DROP:
         shown, reviewed, state = output_to_record(candidate), True, PATCH_STATE_DROPPED
     else:
-        shown, reviewed, state = patch["record"], True, PATCH_STATE_EDITED
+        changes = patch["changes"]
+        shown = effective_record(candidate, changes, source)
+        state = PATCH_STATE_EDITED if changes else PATCH_STATE_ACCEPTED
+        reviewed = True
 
     return _ui_record(shown, anchor, source, default_status, reviewed, state, patch)
 
 
 def annotate_authored_record(patch):
     """One annotated row from an authorship patch (anchor is null): the record a
-    human invented, which has no basis anchor. Its displayed content IS the
-    record; its stable anchor is that record's own natural key."""
-    record = patch["record"]
+    human invented, which has no basis anchor. Its displayed content IS the record
+    (the patch's `changes`, self-contained — no basis to diff against); its stable
+    anchor is that record's own natural key."""
+    record = patch["changes"]
     anchor = {"word": record["word"], "pos": record["pos"],
               "shaw": record["shaw"], "var": record.get("var", "")}
     return _ui_record(record, anchor, record.get("source", AUTHORED_STATUS),
@@ -164,6 +173,16 @@ class AnnotatedView:
         with self._lock:
             return list(self.by_anchor_index.get(key, ()))
 
+    def basis_record(self, key):
+        """The UNTOUCHED basis record on `key` in UI (record) shape, or None if the
+        basis holds no such anchor. This is the reference an accept's `changes`
+        diffs against — the raw upstream/supplement candidate, never a prior
+        patch's annotation. Read under the lock (basis_index is not mutated after
+        construction, but the lock keeps the access uniform with the others)."""
+        with self._lock:
+            candidate = self.basis_index.get(key)
+            return output_to_record(candidate) if candidate is not None else None
+
     def by_word(self, word):
         """A snapshot of every annotated record whose Latin word matches `word`
         case-insensitively — the related-entries read. Resolved through the
@@ -201,7 +220,7 @@ class AnnotatedView:
             removed = self.authored.pop(prior_id, None)
             if removed is None:
                 raise KeyError(f"no authored patch in view: {prior_id}")
-            key = anchor_key(removed["record"])
+            key = anchor_key(removed["changes"])
             self._forget_record(key, lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
                                 and r["patch"]["id"] == prior_id)
             self._apply_authored_patch(patch)
@@ -220,7 +239,7 @@ class AnnotatedView:
             removed = self.authored.pop(patch_id, None)
             if removed is None:
                 raise KeyError(f"no authored patch in view: {patch_id}")
-            key = anchor_key(removed["anchor"] or removed["record"])
+            key = anchor_key(removed["anchor"] or removed["changes"])
             self._forget_record(key, lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
                                 and r["patch"]["id"] == patch_id)
 
@@ -240,7 +259,7 @@ class AnnotatedView:
     def _apply_authored_patch(self, patch):
         self.authored[patch["id"]] = patch
         annotated = annotate_authored_record(patch)
-        key = anchor_key(patch["record"])
+        key = anchor_key(patch["changes"])
         self._replace_record(
             key, annotated,
             lambda r: r["patch_state"] == PATCH_STATE_AUTHORED

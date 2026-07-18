@@ -202,6 +202,11 @@ PAGE = """<!DOCTYPE html>
     <div class="cheatsheet" id="cheatsheet" role="dialog" aria-modal="true"
          aria-label="Keyboard shortcuts" aria-hidden="true"></div>
 
+    <!-- The shared create-entry modal (New Entry blank, or Clone-as-dialect
+         prepopulated). Empty in markup — editor.js builds the form on open. -->
+    <div class="create-modal" id="createModal" role="dialog" aria-modal="true"
+         aria-label="Create entry" aria-hidden="true"></div>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="editor.js"></script>

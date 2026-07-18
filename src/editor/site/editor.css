@@ -1064,6 +1064,11 @@ body {
 .act.unflag:hover, .act.undo:hover { background: var(--ink-soft); color: var(--paper); }
 .act.clear { color: var(--state-unreviewed); }
 .act.clear:hover { background: var(--state-unreviewed); color: var(--paper); }
+/* Clone wears the authored tone — it mints a new authored sibling, like New Entry.
+   It lives on its own row below the verdicts, a secondary action. */
+.act.clone { color: var(--state-authored); }
+.act.clone:hover { background: var(--state-authored); color: var(--paper); }
+.clone-bar { display: flex; margin-top: 14px; }
 
 
 /* ---- related entries — the context index below the focused card ---- */
@@ -1174,6 +1179,9 @@ kbd {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.18s, transform 0.18s;
+    /* Above the modals (z-index 40) so validation/error toasts the create-clone
+       modal raises while it stays open aren't hidden behind its backdrop. */
+    z-index: 50;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.error { background: var(--state-dropped); }
@@ -1280,6 +1288,48 @@ kbd {
     cursor: pointer;
 }
 .cheat-close:hover { background: var(--accent); }
+
+/* ---- create-entry modal (shared by New Entry and Clone-as-dialect) ---- */
+/* The backdrop shell mirrors the cheatsheet's; the card wears the authored top-rule
+   to read unmistakably as "creating". The form inside reuses the record editor's
+   field styles (.field-stack / .edit-field / .actions). */
+.create-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+}
+.create-modal.open { display: flex; }
+.create-card {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--state-authored);
+    border-radius: 4px;
+    padding: 24px 28px 28px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+.create-dismiss {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+.create-dismiss:hover { color: var(--ink); }
 
 /* ---- mobile: one big detail card, ledger tucked into a drawer ---- */
 @media (max-width: 860px) {

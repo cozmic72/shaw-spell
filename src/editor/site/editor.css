@@ -865,6 +865,27 @@ body {
     white-space: nowrap;
 }
 
+/* The novelty marker ("new word"/"new spelling"/"new POS"), read-at-a-glance beside
+   the word: is this word/spelling/pos new to the dictionary versus upstream ReadLex.
+   A quiet triage pill like the def badge (soft-ink, not editable); `known` rows
+   render nothing (the absence is the signal, mirroring the other provenance pills). */
+.novelty-badges {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.novelty-badge {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    color: var(--ink-soft);
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+
 /* The relabel-provenance marker ("was GenAm"), read-at-a-glance beside the word:
    the dialect var a pipeline transform changed this record's var away from. Derived
    provenance like the def badge (soft-ink, not editable), but a DASHED border marks

@@ -61,6 +61,17 @@ const DEFINITION_LABEL = "def";
 // glance. Absent when no transform moved the var — the absence is the signal.
 const ORIG_VAR_PREFIX = "was ";
 
+// The novelty marker: is this word/spelling/pos new to the dictionary, measured
+// against upstream ReadLex (read-only; a triage fact the daemon computes, not
+// editable). Shown as a quiet pill beside the word for the new-* buckets — the
+// signal that matters; `known` (all present upstream) shows nothing, mirroring the
+// absence-is-the-signal convention of the other badges.
+const NOVELTY_LABELS = new Map([
+    ["new-word", "new word"],
+    ["new-spelling", "new spelling"],
+    ["new-pos", "new POS"],
+]);
+
 // Dictionaries to look the word up in while deciding. {word} is URL-encoded so
 // phrases and apostrophes ("A for effort", "don't") stay valid.
 const REFERENCES = [
@@ -959,6 +970,7 @@ function recordEditor(record, opts) {
         mergerBadges(record.mergers),
         variantBadge(record.variant),
         definitionBadge(record.has_definition),
+        noveltyBadge(record.novelty),
         origVarBadge(record.orig_var, record.var),
         detailFacts(record),
         editedSummary(overridden),
@@ -1429,6 +1441,20 @@ function origVarBadge(origVar, currentVar) {
         const badge = cell("orig-var-badge", ORIG_VAR_PREFIX + origVar);
         badge.title = `relabelled ${origVar} → ${currentVar} by the pipeline`;
         wrap.append(badge);
+    }
+    return wrap;
+}
+
+// A record's novelty against upstream ReadLex, as a quiet pill beside the word: is
+// this word/spelling/pos new to the dictionary. Shown only for the new-* buckets —
+// the triage signal that matters; `known` (present upstream) renders nothing, the
+// absence being the signal, mirroring the def/orig-var provenance badges.
+function noveltyBadge(novelty) {
+    const wrap = document.createElement("span");
+    wrap.className = "novelty-badges";
+    const label = NOVELTY_LABELS.get(novelty);
+    if (label) {
+        wrap.append(cell(`novelty-badge ${novelty}`, label));
     }
     return wrap;
 }

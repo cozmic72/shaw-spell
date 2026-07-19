@@ -78,7 +78,24 @@ NOVELTY_NEW_POS = "new-pos"          # word+shaw present upstream, this pos is n
 NOVELTY_KNOWN = "known"              # word+shaw+pos all present upstream (see classify)
 
 
-def _ui_record(record, anchor, source, default_status, reviewed, patch_state, patch):
+def _novelty(record, source, established):
+    """The record's novelty bucket against upstream ReadLex (new-word/new-spelling/
+    new-pos/known), attached to the UI shape so the owner sees at a glance whether a
+    row is new to the dictionary — the same signal the daemon's novelty filter uses.
+
+    Mirrors _matches_novelty's short-circuit exactly: an upstream row IS the baseline
+    novelty is measured against, so it is `known` by definition and spared a
+    classify() call. Every other row is classified live (cheap dict lookups). Because
+    both this and the filter call the SAME established.classify, the badge and the
+    filter can never disagree."""
+    if UPSTREAM_SOURCE in source:
+        return NOVELTY_KNOWN
+    return established.classify(
+        record.get("word", ""), record.get("shaw", ""), record.get("pos", ""))
+
+
+def _ui_record(record, anchor, source, default_status, reviewed, patch_state, patch,
+               established):
     """One annotated row in the UI record shape (word/shaw/...). Provenance the
     record carries (source/status/confidence) wins; the origin-derived defaults
     stand in otherwise.
@@ -96,6 +113,8 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     `has_definition` is the provenance boolean marking whether the upstream
     source(s) carry a definition for this record — always present (False == no
     upstream definition) so the UI can show the `def` pill and filter on it.
+    `novelty` is the record's bucket against upstream ReadLex (new-word/new-spelling/
+    new-pos/known) — always present so the UI can badge new-* rows (see _novelty).
 
     `orig_var`/`orig_shaw`/`orig_ipa` are DERIVED provenance: the pre-transform
     value of a key field a pipeline stage changed (see basis.mark_original —
@@ -114,6 +133,7 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
         "mergers": record.get("mergers", []),
         "variant": bool(record.get("variant")),
         "has_definition": bool(record.get("has_definition")),
+        "novelty": _novelty(record, source, established),
         "source": record.get("source", source),
         "confidence": record.get("confidence"),
         "status": record.get("status", default_status),
@@ -128,7 +148,7 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     return ui
 
 
-def annotate_basis_record(candidate, source, patch):
+def annotate_basis_record(candidate, source, patch, established):
     """One annotated row for a basis candidate under its overlaid patch.
 
     Unpatched: displays the source record, unreviewed. Accepted: displays the
@@ -153,10 +173,11 @@ def annotate_basis_record(candidate, source, patch):
         state = PATCH_STATE_EDITED if changes else PATCH_STATE_ACCEPTED
         reviewed = True
 
-    return _ui_record(shown, anchor, source, default_status, reviewed, state, patch)
+    return _ui_record(shown, anchor, source, default_status, reviewed, state, patch,
+                      established)
 
 
-def annotate_authored_record(patch):
+def annotate_authored_record(patch, established):
     """One annotated row from an authorship patch (anchor is null): the record a
     human invented, which has no basis anchor. Its displayed content IS the record
     (the patch's `changes`, self-contained — no basis to diff against); its stable
@@ -169,13 +190,13 @@ def annotate_authored_record(patch):
     anchor = {"word": record["word"], "pos": record["pos"],
               "shaw": record["shaw"], "var": record.get("var", "")}
     ui = _ui_record(record, anchor, [AUTHORED_STATUS], AUTHORED_STATUS, True,
-                    PATCH_STATE_AUTHORED, patch)
+                    PATCH_STATE_AUTHORED, patch, established)
     if not isinstance(ui["source"], list):
         ui["source"] = [ui["source"]]
     return ui
 
 
-def annotate_orphaned_record(patch):
+def annotate_orphaned_record(patch, established):
     """One annotated row for an ORPHANED anchored patch: its anchor key is absent
     from the current basis, so there is no basis record to annotate. The row is
     synthesized from the patch itself — the anchor supplies the identity and the
@@ -193,7 +214,7 @@ def annotate_orphaned_record(patch):
               "pos": anchor["pos"], "var": anchor.get("var", "")}
     record.update(patch["changes"])
     ui = _ui_record(record, anchor, [ORPHANED_STATUS], ORPHANED_STATUS, True,
-                    PATCH_STATE_ORPHANED, patch)
+                    PATCH_STATE_ORPHANED, patch, established)
     return ui
 
 
@@ -221,11 +242,11 @@ class AnnotatedView:
         self.basis_index = basis_index
         self.basis_source = basis_source
         self.anchored, self.authored = _index_patches_by_anchor(patches)
+        self.established = EstablishedIndex(basis_index, basis_source)
         self.by_anchor_index = _build_records(
-            basis_index, basis_source, self.anchored, self.authored)
+            basis_index, basis_source, self.anchored, self.authored, self.established)
         self.by_word_index = _build_word_index(self.by_anchor_index)
         self.by_shaw_index = _build_shaw_index(self.by_anchor_index)
-        self.established = EstablishedIndex(basis_index, basis_source)
         self._lock = threading.Lock()
 
     @property
@@ -339,13 +360,14 @@ class AnnotatedView:
             raise KeyError(f"no basis record on anchor: {key}")
         if patch is not None:
             self.anchored[key] = patch
-        annotated = annotate_basis_record(candidate, self.basis_source[key], patch)
+        annotated = annotate_basis_record(candidate, self.basis_source[key], patch,
+                                          self.established)
         self._replace_record(key, annotated,
                              lambda r: r["patch_state"] != PATCH_STATE_AUTHORED)
 
     def _apply_authored_patch(self, patch):
         self.authored[patch["id"]] = patch
-        annotated = annotate_authored_record(patch)
+        annotated = annotate_authored_record(patch, self.established)
         key = anchor_key(patch["changes"])
         self._replace_record(
             key, annotated,
@@ -410,7 +432,7 @@ def _index_patches_by_anchor(patches):
     return anchored, authored
 
 
-def _build_records(basis_index, basis_source, anchored, authored):
+def _build_records(basis_index, basis_source, anchored, authored, established):
     """The per-anchor record index: anchor key -> its annotated rows, built once
     from the basis and overlay. Basis anchors come first (in basis order), then
     authored rows, then ORPHANED anchored patches (those whose anchor key is absent
@@ -425,15 +447,16 @@ def _build_records(basis_index, basis_source, anchored, authored):
     index = {}
     for key, candidate in basis_index.items():
         index.setdefault(key, []).append(
-            annotate_basis_record(candidate, basis_source[key], anchored.get(key)))
+            annotate_basis_record(candidate, basis_source[key], anchored.get(key),
+                                  established))
 
     for patch in authored.values():
-        record = annotate_authored_record(patch)
+        record = annotate_authored_record(patch, established)
         index.setdefault(anchor_key(record["anchor"]), []).append(record)
 
     for key, patch in anchored.items():
         if key not in basis_index and _is_orphan(patch):
-            index.setdefault(key, []).append(annotate_orphaned_record(patch))
+            index.setdefault(key, []).append(annotate_orphaned_record(patch, established))
 
     return index
 

@@ -56,7 +56,30 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # (shaw_gb), US Shavian ONLY where it diverges (shaw_us, else null),
                 # POS tag + its Shavian (shaw_pos). A null shaw_* / an empty senses
                 # list is a coverage gap the UI renders explicitly. Reads a SEPARATE
-                # index, never the basis or the patch store.
+                # index, never the basis or the patch store. Each sense also carries
+                # `source` (derived provenance: "wordnet" today — every synset is a
+                # WordNet offset — or "generated" for a future drafted batch), the
+                # discriminator between a machine-drafted gloss and a WordNet one.
+
+    Request:   {"op": "definition_patch",
+                "anchor": {"word","synset","dialect"}, "changes": {"shaw": "…"},
+                "author": "…", "note"?: "…"}
+    Response:  {"result": "appended"|"replaced", "id": "dp_…", "senses": [...]}
+                # Correct ONE sense's Shavian transliteration — the primary edit
+                # (design §5c). anchor = per-sense key (word LOWERCASED, WordNet
+                # synset, dialect gb|us); the only editable field is `shaw` (gloss +
+                # synset are stable identity, read-only). Written to the SEPARATE
+                # data/patches/definition-patches.jsonl store (NEVER the word
+                # patches.jsonl) and overlaid onto the definitions index so the
+                # inline view shows the correction. Owner's edit wins silently. No
+                # accept/flag/drop — definitions are canonical by default; a
+                # correction is an edit, not a sanction. `senses` is the word's
+                # senses re-serialised after overlay.
+
+    Request:   {"op": "definition_unpatch", "anchor": {"word","synset","dialect"}}
+    Response:  {"result": "deleted", "id": null, "senses": [...]}
+                # Remove a correction; the sense reverts to its machine
+                # transliteration. Fails loud if no correction holds that anchor.
 
     Request:   {"op": "patch", "anchor": {"word","pos","shaw","var"} | null,
                 "record": {...} | null, "author": "…", "replaces"?: "p_…"}
@@ -131,6 +154,7 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
                    PROJECT_ROOT, UPSTREAM_SOURCE, anchor_key)
 from definitions import load_definitions_index                   # noqa: E402
+import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
                      NOVELTY_NEW_WORD, PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
@@ -623,6 +647,93 @@ def handle_definitions(state, request):
     return {"word": word, "senses": state.definitions.senses(word)}
 
 
+# The definition-patch anchor identity (per-sense): word LOWERCASED, WordNet synset
+# offset, dialect. The word is lowercased so the anchor is stable regardless of the
+# corpus headword's case (CAT vs cat) — the index is lowercased too.
+DEFINITION_ANCHOR_FIELDS = ("word", "synset", "dialect")
+
+
+def _normalise_definition_anchor(anchor):
+    """The def-patch anchor with its word lowercased and its fields validated. The
+    anchor is the sense's immutable identity; the correction is keyed on it. Returns
+    (normalised_anchor, error): error is a string on a malformed anchor, else None."""
+    if not isinstance(anchor, dict):
+        return None, "definition_patch requires an anchor {word, synset, dialect}"
+    missing = [f for f in DEFINITION_ANCHOR_FIELDS if not anchor.get(f)]
+    if missing:
+        return None, f"definition anchor missing {', '.join(missing)}"
+    if anchor["dialect"] not in definition_patches.DIALECTS:
+        return None, (f"definition anchor dialect must be one of "
+                      f"{'/'.join(definition_patches.DIALECTS)}, got {anchor['dialect']!r}")
+    normalised = {"word": anchor["word"].lower(),
+                  "synset": anchor["synset"],
+                  "dialect": anchor["dialect"]}
+    return normalised, None
+
+
+def handle_definition_patch(state, request):
+    """Correct one sense's Shavian transliteration. Writes a minimal-diff patch to
+    the SEPARATE definition-patches store and overlays it onto the index so the
+    inline view shows the correction. The word patches.jsonl is never touched.
+
+    v1 edits the Shavian only (`changes.shaw`); the gloss + synset are stable
+    identity, read-only. The anchor names ONE dialect, so a correction targets that
+    dialect's transliteration — the daemon does not fan a gb edit onto us (the UI
+    decides whether an edit covers one dialect or both, per the design's lean (c)).
+    A correction whose anchor resolves to no live sense is rejected here, where the
+    actor can fix it, rather than written as an immediate orphan."""
+    author = request.get("author")
+    if not author:
+        return {"error": "definition_patch requires an author"}
+    anchor, error = _normalise_definition_anchor(request.get("anchor"))
+    if error:
+        return {"error": error}
+
+    changes = request.get("changes")
+    if not isinstance(changes, dict):
+        return {"error": "definition_patch requires changes {shaw: …}"}
+    unknown = set(changes) - set(definition_patches.CHANGE_FIELDS)
+    if unknown:
+        return {"error": f"definition_patch changes has unknown keys: "
+                f"{', '.join(sorted(unknown))} (only shaw is editable)"}
+    shaw = changes.get("shaw")
+    if not shaw or not str(shaw).strip():
+        return {"error": "definition_patch changes.shaw must be non-empty"}
+    changes = {"shaw": str(shaw).strip()}
+
+    # The anchor must resolve to a live corpus sense right now — writing a
+    # correction that resolves to nothing would create an orphan at the next
+    # startup. _find takes the index lock; reject here where the actor can fix it.
+    with state.definitions._lock:
+        if state.definitions._find(anchor["word"], anchor["synset"]) is None:
+            return {"error": f"anchor resolves to no definition sense: {anchor}"}
+
+    patch = definition_patches.make_patch(anchor, changes, _meta(author, request.get("note")))
+    result, _previous = definition_patches.upsert_patch(patch)
+    # Overlay onto the in-memory index so the next read reflects the correction
+    # without a reload (mirrors the word view's incremental apply_patch).
+    state.definitions.correct(anchor, changes)
+    return {"result": result, "id": patch["id"],
+            "senses": state.definitions.senses(anchor["word"])}
+
+
+def handle_definition_unpatch(state, request):
+    """Remove a correction, reverting the sense to its machine transliteration.
+    Fails loud if no correction holds that anchor. The in-memory revert reloads the
+    sense's original Shavian from the untouched corpus files — the index was
+    corrected in place, so the source string must be re-read to undo it."""
+    anchor, error = _normalise_definition_anchor(request.get("anchor"))
+    if error:
+        return {"error": error}
+    try:
+        definition_patches.delete_patch(anchor)
+    except KeyError as exc:
+        return {"error": str(exc)}
+    state.definitions.revert(anchor)
+    return {"result": "deleted", "id": None,
+            "senses": state.definitions.senses(anchor["word"])}
+
+
 ANCHOR_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_REQUIRED_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_ALLOWED_FIELDS = {"word", "pos", "shaw", "var", "ipa", "freq",
@@ -1008,6 +1119,8 @@ HANDLERS = {
     "entry": handle_entry,
     "related": handle_related,
     "definitions": handle_definitions,
+    "definition_patch": handle_definition_patch,
+    "definition_unpatch": handle_definition_unpatch,
     "patch": handle_patch,
     "flag": handle_flag,
     "unpatch": handle_unpatch,
@@ -1095,8 +1208,23 @@ def main():
 
     logging.info("loading Shavian definitions corpus (gb + us)")
     definitions = load_definitions_index()
+    def_patches = definition_patches.load_patches()
+    orphans = definition_patches.overlay_corpus(definitions, def_patches)
+    logging.info("definitions ready: %d correction(s) overlaid, %d orphaned",
+                 len(def_patches) - len(orphans), len(orphans))
+    if orphans:
+        # Soft-fail: an orphaned correction (its sense left the corpus) is LOGGED
+        # and RETAINED, never dropped — mirrors the word applicator. The store is
+        # untouched; the owner can re-anchor or clear it.
+        logging.warning("%d orphaned definition correction(s) — anchor no longer "
+                        "resolves against the corpus; retained in the store:",
+                        len(orphans))
+        for patch in orphans:
+            a = patch["anchor"]
+            logging.warning("    word=%r synset=%s dialect=%s (id=%s)",
+                            a.get("word"), a.get("synset"), a.get("dialect"),
+                            patch.get("id"))
     state = State(view, definitions)
-    logging.info("definitions ready")
 
     socket_path = args.socket
     if os.path.exists(socket_path):

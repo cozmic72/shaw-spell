@@ -247,6 +247,14 @@ const state = {
     // response for a previously-focused word is dropped rather than painted over
     // the current word's senses.
     definitionsGeneration: 0,
+
+    // The open definition-correction modal's context (the sense being corrected +
+    // the DOM node whose senses re-render after a write), or null when closed. This
+    // is a SEPARATE modal from the record editor (state.modalEditor): it edits a
+    // dictionary sense's Shavian transliteration, not a basis record, so it must
+    // NOT set modalEditor (which would route record-editor verdict keys). While set,
+    // it owns the keyboard (Escape dismisses) and suppresses workbench verdicts.
+    definitionModal: null,
 };
 
 // Long-press threshold to enter touch multi-select, and the movement slop beyond
@@ -1214,7 +1222,7 @@ async function loadDefinitions(record, section) {
             || !current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
             return;
         }
-        renderDefinitions(section, result.senses);
+        renderDefinitions(section, record.word, result.senses);
     } catch (error) {
         if (generation === state.definitionsGeneration && section.isConnected) {
             renderDefinitionsError(section, error.message);
@@ -1222,7 +1230,10 @@ async function loadDefinitions(record, section) {
     }
 }
 
-function renderDefinitions(section, senses) {
+// `word` is threaded through so each sense's ✎ can build its correction anchor
+// (word + synset + dialect). `section` is retained on the list so a write can
+// re-render the just-corrected word's senses in place (see saveDefinitionPatch).
+function renderDefinitions(section, word, senses) {
     if (!senses.length) {
         section.replaceChildren(definitionsSummary(0), definitionsEmpty());
         return;
@@ -1230,10 +1241,31 @@ function renderDefinitions(section, senses) {
     const list = document.createElement("ul");
     list.className = "definitions-list";
     for (const sense of senses) {
-        list.append(definitionRow(sense));
+        list.append(definitionRow(word, sense, section));
     }
     section.replaceChildren(definitionsSummary(senses.length), list);
     section.open = true;
+}
+
+// Re-fetch and re-render the senses for `word` into `section` after a correction,
+// so the inline view reflects the just-saved Shavian without a full landing. Uses
+// the definitions generation guard like loadDefinitions so a stale response for a
+// word no longer focused is dropped.
+async function reloadDefinitions(word, section) {
+    if (!section || !section.isConnected) {
+        return;
+    }
+    const generation = ++state.definitionsGeneration;
+    try {
+        const result = await callDaemon({ op: "definitions", word });
+        if (generation === state.definitionsGeneration && section.isConnected) {
+            renderDefinitions(section, word, result.senses);
+        }
+    } catch (error) {
+        if (generation === state.definitionsGeneration && section.isConnected) {
+            renderDefinitionsError(section, error.message);
+        }
+    }
 }
 
 // The "this word has no definition" state — the coverage gap made visible rather
@@ -1252,11 +1284,14 @@ function renderDefinitionsError(section, message) {
     section.replaceChildren(definitionsSummary(null), note);
 }
 
-// One sense: a POS tag, the English gloss, and the Shavian transliteration beneath.
-// The Shavian is the shaw_gb line; a divergent US transliteration (shaw_us) gets its
-// own dialect-tagged line. A sense with no transliteration yet renders the explicit
-// "no transliteration yet" gap state, so the coverage tail is discoverable.
-function definitionRow(sense) {
+// One sense: a POS tag, a source-provenance tag, the English gloss, a ✎ edit
+// affordance, and the Shavian transliteration beneath. The source tag is the
+// discriminator the owner wants — "wordnet" vs a future "generated" gloss — so a
+// reviewer judges trust at a glance. The ✎ opens the correction modal for THIS
+// sense. A divergent US transliteration (shaw_us) gets its own dialect-tagged line;
+// a sense with no transliteration yet renders the explicit "no transliteration yet"
+// gap state, so the coverage tail is discoverable.
+function definitionRow(word, sense, section) {
     const row = document.createElement("li");
     row.className = "definition-row";
 
@@ -1266,11 +1301,42 @@ function definitionRow(sense) {
     if (pos) {
         head.append(cell("definition-pos", pos));
     }
+    if (sense.source) {
+        head.append(definitionSourceTag(sense.source));
+    }
     head.append(cell("definition-gloss", sense.gloss || "(no gloss)"));
+    head.append(definitionEditButton(word, sense, section));
     row.append(head);
 
     row.append(definitionShaw(sense));
     return row;
+}
+
+// The source-provenance tag: a quiet pill naming where the gloss came from. WordNet
+// is the neutral default; "generated" (a future machine-drafted / function-word
+// batch) is highlighted so a low-trust gloss stands out. Read-only — provenance is
+// a fact, not editable.
+function definitionSourceTag(source) {
+    const tag = cell("definition-source", source);
+    tag.classList.add(`definition-source-${source}`);
+    tag.title = source === "wordnet"
+        ? "Gloss from WordNet"
+        : `Gloss source: ${source}`;
+    return tag;
+}
+
+// The ✎ per-sense affordance: opens the correction modal for this sense. It sits in
+// the sense head so it is discoverable inline (design §5b) but the actual editing
+// happens in the focused modal (§5c).
+function definitionEditButton(word, sense, section) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "definition-edit";
+    button.textContent = "✎";
+    button.title = "Correct this transliteration";
+    button.setAttribute("aria-label", "Correct this transliteration");
+    button.addEventListener("click", () => openDefinitionModal(word, sense, section));
+    return button;
 }
 
 // The Shavian transliteration line(s) of a sense. The GB Shavian is the primary
@@ -1301,6 +1367,186 @@ function shawLine(shaw, dialect) {
     }
     line.append(cell("definition-shaw-text", shaw));
     return line;
+}
+
+// ---- definition correction modal (§5c) ----
+// The focused surface for correcting a sense's SHAVIAN transliteration. The English
+// gloss + synset + source are read-only identity; the Shavian is editable. It reuses
+// the modal shell chrome (CREATE_MODAL card/backdrop) but NOT the record-editor
+// context (state.modalEditor) — it edits a dictionary sense, not a basis record, and
+// writes to the SEPARATE definition-patches store via the definition_patch op.
+//
+// gb/us edit behaviour (design lean (c), simplest correct):
+//   - gb == us (the view shows ONE Shavian line): ONE editable field. Save writes a
+//     patch to BOTH dialects, keeping the shared transliteration in sync — the owner
+//     corrected "the transliteration".
+//   - gb != us (the view shows TWO lines): ONE field PER dialect, each saving its own
+//     dialect patch, so a correction to GB never disturbs a genuinely-different US.
+// A sense with no transliteration yet (shaw_gb absent) is still correctable — the
+// single field starts empty and the save fills the coverage gap for both dialects.
+
+function openDefinitionModal(word, sense, section) {
+    const diverges = Boolean(sense.shaw_us);
+    // The dialects the modal edits: both-in-one when they match (or when neither is
+    // set yet), or each independently when they diverge.
+    const fields = diverges
+        ? [{ dialect: "gb", label: "GB", value: sense.shaw_gb || "" },
+           { dialect: "us", label: "US", value: sense.shaw_us || "" }]
+        : [{ dialect: "both", label: null, value: sense.shaw_gb || "" }];
+
+    state.definitionModal = { word, synset: sense.synset, section };
+
+    const card = document.createElement("div");
+    card.className = "create-card definition-modal-card";
+    card.setAttribute("role", "document");
+
+    const dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.className = "create-dismiss";
+    dismiss.setAttribute("aria-label", "Cancel");
+    dismiss.textContent = "×";
+    dismiss.addEventListener("click", closeDefinitionModal);
+
+    card.append(dismiss, definitionModalBody(word, sense, fields));
+    CREATE_MODAL.replaceChildren(card);
+    CREATE_MODAL.classList.add("open");
+    CREATE_MODAL.setAttribute("aria-hidden", "false");
+
+    const first = card.querySelector(".definition-shaw-input");
+    if (first) {
+        first.focus();
+    }
+}
+
+function definitionModalBody(word, sense, fields) {
+    const body = document.createElement("div");
+    body.className = "definition-modal-body";
+
+    const title = document.createElement("div");
+    title.className = "detail-create-title";
+    title.textContent = `Correct transliteration · ${word}`;
+    body.append(title);
+
+    // Read-only identity: POS, source provenance, and the English gloss.
+    const meta = document.createElement("div");
+    meta.className = "definition-modal-meta";
+    const pos = definitionPosLabel(sense.pos);
+    if (pos) {
+        meta.append(cell("definition-pos", pos));
+    }
+    if (sense.source) {
+        meta.append(definitionSourceTag(sense.source));
+    }
+    body.append(meta);
+
+    const gloss = document.createElement("p");
+    gloss.className = "definition-modal-gloss";
+    gloss.textContent = sense.gloss || "(no gloss)";
+    body.append(gloss);
+
+    const inputs = [];
+    for (const field of fields) {
+        body.append(definitionModalField(field, inputs));
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "definition-modal-actions";
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "definition-save";
+    save.textContent = "Save";
+    save.addEventListener("click", () => saveDefinitionPatch(inputs));
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "definition-cancel";
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", closeDefinitionModal);
+    actions.append(save, cancel);
+    body.append(actions);
+
+    return body;
+}
+
+// One editable Shavian field for a dialect. `inputs` collects {dialect, input} so
+// the shared Save reads every field's current value. Enter in the field saves;
+// Escape dismisses (its own listener, so the field-focused global guard leaves it).
+function definitionModalField(field, inputs) {
+    const wrap = document.createElement("label");
+    wrap.className = "definition-modal-field";
+    if (field.label) {
+        wrap.append(cell("definition-dialect", field.label));
+    }
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "text-filter shavian-input definition-shaw-input";
+    input.value = field.value;
+    input.spellcheck = false;
+    input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            saveDefinitionPatch(inputs);
+        } else if (event.key === "Escape") {
+            event.preventDefault();
+            closeDefinitionModal();
+        }
+    });
+    wrap.append(input);
+    inputs.push({ dialect: field.dialect, input });
+    return wrap;
+}
+
+// Save the correction(s): one definition_patch per edited dialect. A "both" field
+// fans onto gb AND us (they were in sync); a per-dialect field targets that dialect.
+// Empty Shavian is rejected (a correction must be a real transliteration; removing a
+// sense is not a UI feature). After the writes, the inline view re-renders the word's
+// senses so the correction shows through.
+async function saveDefinitionPatch(inputs) {
+    const modal = state.definitionModal;
+    if (!modal) {
+        return;
+    }
+    const jobs = [];
+    for (const { dialect, input } of inputs) {
+        const shaw = input.value.trim();
+        if (!shaw) {
+            showToast("Shavian cannot be empty.", true);
+            return;
+        }
+        const dialects = dialect === "both" ? ["gb", "us"] : [dialect];
+        for (const d of dialects) {
+            jobs.push({ dialect: d, shaw });
+        }
+    }
+    try {
+        for (const job of jobs) {
+            await callDaemon({
+                op: "definition_patch",
+                anchor: { word: modal.word, synset: modal.synset, dialect: job.dialect },
+                changes: { shaw: job.shaw },
+                author: AUTHOR,
+            });
+        }
+        showToast(`transliteration · saved (${jobs.length})`);
+        const { word, section } = modal;
+        closeDefinitionModal();
+        reloadDefinitions(word, section);
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+
+function isDefinitionModalOpen() {
+    return state.definitionModal !== null;
+}
+
+function closeDefinitionModal() {
+    if (!isDefinitionModalOpen()) {
+        return;
+    }
+    state.definitionModal = null;
+    CREATE_MODAL.classList.remove("open");
+    CREATE_MODAL.setAttribute("aria-hidden", "true");
+    CREATE_MODAL.replaceChildren();
 }
 
 // ---- related-entries context ----
@@ -2838,6 +3084,18 @@ function onGlobalKey(event) {
         }
         return;
     }
+    if (isDefinitionModalOpen()) {
+        // The definition-correction modal owns the screen: only Escape acts (dismiss);
+        // its Shavian field and Save button handle their own keys. Workbench verdicts
+        // must not leak to the record behind the backdrop.
+        if (event.key === "Escape"
+            && !(event.target instanceof Element
+                 && event.target.matches("input, select, textarea"))) {
+            event.preventDefault();
+            closeDefinitionModal();
+        }
+        return;
+    }
     if (isModalEditorOpen()) {
         handleModalKey(event);
         return;
@@ -3229,7 +3487,13 @@ COMMIT_DECISIONS.addEventListener("click", () => commitDecisions());
 // backdrop itself (not the card) counts.
 CREATE_MODAL.addEventListener("click", (event) => {
     if (event.target === CREATE_MODAL) {
-        closeModal();
+        // The shared shell hosts either the record modal or the definition-correction
+        // modal; dismiss whichever is open.
+        if (isDefinitionModalOpen()) {
+            closeDefinitionModal();
+        } else {
+            closeModal();
+        }
     }
 });
 ADD_FILTER.addEventListener("click", () => toggleAddMenu());

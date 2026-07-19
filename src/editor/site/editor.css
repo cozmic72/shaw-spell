@@ -1244,6 +1244,87 @@ body {
     font-style: italic;
     color: var(--ink-soft);
 }
+/* The source-provenance tag: where the gloss came from, so the owner judges trust.
+   WordNet is the neutral default; a generated/drafted gloss is highlighted. */
+.definition-source {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    background: var(--rule);
+    color: var(--ink-soft);
+}
+.definition-source-generated {
+    background: color-mix(in srgb, var(--warn, #c60) 22%, transparent);
+    color: var(--warn, #c60);
+}
+/* The ✎ per-sense correction affordance. Pushed to the row's end; quiet until hover. */
+.definition-edit {
+    margin-left: auto;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 4px;
+    color: var(--ink-soft);
+    border-radius: 4px;
+}
+.definition-edit:hover { color: var(--accent); background: var(--rule); }
+
+/* The definition-correction modal: read-only gloss identity + editable Shavian. It
+   reuses the create-card shell chrome but its own body layout. */
+.definition-modal-card { max-width: 640px; }
+.definition-modal-body { display: flex; flex-direction: column; gap: 14px; }
+.definition-modal-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.definition-modal-gloss {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin: 0;
+}
+.definition-modal-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.definition-shaw-input {
+    flex: 1;
+    font-family: var(--shaw);
+    font-size: 22px;
+    padding: 8px 10px;
+}
+.definition-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+}
+.definition-save,
+.definition-cancel {
+    font-size: 14px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid var(--rule);
+}
+.definition-save {
+    background: var(--accent);
+    color: var(--bg, #fff);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+.definition-save:hover { filter: brightness(1.08); }
+.definition-cancel { background: none; color: var(--ink-soft); }
+.definition-cancel:hover { color: var(--ink); }
 
 .related {
     margin-top: 30px;

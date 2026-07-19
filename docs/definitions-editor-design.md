@@ -120,6 +120,11 @@ Word detail panel
   definition correction wants room (multi-line gloss, the transliteration, examples, a shave-vs-
   correction diff) and shouldn't cramp the word panel. This is exactly why the word editor uses a
   modal for clone/create.
+- **A reviewer must be able to REJECT a POS, not just accept/edit a gloss.** The drafted
+  function-word candidates (see [[function-word-defs-178]]) carry ~35% spurious POS tags (you-VVI,
+  that-AJ0, what-NN1) that should be *removed*, not glossed. So each sense's POS is itself a review
+  target: a reject action drops that (word,pos) sense. This is a first-class verb in the definitions
+  editor, alongside gloss-edit and transliteration-correct.
 - **⚑ flag per sense** — "this transliteration is wrong" without fixing it now (mirrors the word
   flag op). Feeds a "definitions needing review" filter.
 - **Coverage gaps are visible inline** — a sense with no transliteration renders a `needs
@@ -143,7 +148,18 @@ fight the word-review flow. Inline *view* + modal *edit* keeps each surface doin
 after using it the owner wants true inline editing for quick one-glyph fixes, it's an additive
 enhancement — the modal stays for the heavy cases.)
 
-## 6. Open questions for the owner
+## 6a. OWNER DECISIONS (2026-07-19) — resolving the questions below
+- **Scope: the editor works over the SHAVIAN definitions only** (`definitions-shavian-{gb,us}.json`,
+  keyed `word|synset-id`). The Latin↔Shavian keying "incompatibility" (old Q1) is MOOT — only the
+  Shavian side is in play; one direction. This de-risks the build.
+- **Edit scope = TRANSLITERATION ONLY** (old Q4). English gloss read-only; correct the Shavian. No
+  gloss-editing / source-selection in v1.
+- **New sources:** ingest **Wikidata CC0** (names gap) only. OEWN already in use. kaikki examples
+  DROPPED (owner: "we want definitions not examples"). See [[definitions-sources-rnd]].
+- Q2 (separate definition-patches.jsonl store), Q3 (shave gap-fill only), Q5 (entry point off the word
+  panel), Q6 (source provenance in UI) — my leans stand unless owner says otherwise; not build-blocking.
+
+## 6. Open questions for the owner (LARGELY RESOLVED — see 6a)
 
 1. **gb/us split.** Correct one dialect or both at once? Options: (a) edit each dialect
    separately (two patches); (b) one correction applies to both unless they diverge; (c) treat

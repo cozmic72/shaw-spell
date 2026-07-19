@@ -31,13 +31,26 @@ data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.
 	@echo "Generating Wiktionary supplement (this takes a few minutes)..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_wiktionary_supplement.py
 
+# Shave-generated slice of the no-IPA WordNet words (net-new + non-zero corpus
+# freq) that the reliable/neardot buckets miss. Like the -reliable.json files it
+# consults the NON-DETERMINISTIC shave tool, so its prerequisites are order-only
+# (after `|`): make builds it only when MISSING (fresh clone), never on a mere
+# mtime bump — a checkout shuffling mtimes must not silently re-shave and orphan
+# review decisions. To re-baseline on purpose, delete it and re-make (or use
+# regenerate-supplements below). See generate_supplement_speculative.py.
+data/supplement-generated.json: | $(SRC_TOOLS)/generate_supplement_speculative.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/apply_frequency_data.py data/supplement-wordnet-speculative.json $(FREQUENCY_CORPUS)
+	@echo "Generating shave-spelled supplement from no-IPA WordNet words..."
+	$(RUN) python3 $(SRC_TOOLS)/generate_supplement_speculative.py
+
 # Deliberately regenerate the reliable supplements (re-runs the non-deterministic
 # shave tool — expect Shavian drift; only run when you intend to re-baseline).
 .PHONY: regenerate-supplements
 regenerate-supplements:
 	rm -f data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json \
-	      data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json
-	@$(MAKE) data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+	      data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json \
+	      data/supplement-generated.json
+	@$(MAKE) data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json \
+	         data/supplement-generated.json
 
 ###########################################
 # Confidence re-scoring (fast, uses shave)
@@ -124,6 +137,7 @@ data/supplement-combined-filtered.json: $(SUPPLEMENT_STEP_MODULES) \
 		data/supplement-wiktionary-neardot.json \
 		data/supplement-wiktionary-reliable.json \
 		data/supplement-names.json \
+		data/supplement-generated.json \
 		external/readlex/readlex.json \
 		$(WORDNET_YAML) $(WIKTIONARY_JSONL) \
 		data/patches/patches.jsonl

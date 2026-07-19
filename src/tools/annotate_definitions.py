@@ -71,6 +71,11 @@ WIKTIONARY_JSONL = (PROJECT_ROOT / "external" / "wiktionary"
 # The source labels combine_supplements writes onto each record's `source` list.
 SOURCE_WORDNET = "wordnet"
 SOURCE_WIKTIONARY = "wiktionary"
+# The shave-generated slice (supplement-generated) is WordNet's OWN no-IPA
+# output re-spelled by shave — the word/pos still carries the WordNet gloss, so
+# it credits against the WordNet definition keys exactly as the `wordnet` label
+# does. See generate_supplement_speculative.py.
+SOURCE_GENERATED = "generated"
 
 # The synset YAML files carry the WordNet definitions (the entry YAML only points
 # at synset ids). Same globs as build_wordnet_cache.parse_synset_files.
@@ -171,8 +176,10 @@ def annotate(supplement, wn_keys, wikt_keys, tallies=None):
         for entry in entries:
             sources = entry.get("source", [])
             wn_word = entry["Latn"].lower()
+            from_wordnet = (SOURCE_WORDNET in sources
+                            or SOURCE_GENERATED in sources)
             has_def = (
-                (SOURCE_WORDNET in sources
+                (from_wordnet
                  and (wn_word, entry["pos"]) in wn_keys)
                 or (SOURCE_WIKTIONARY in sources
                     and (entry["Latn"], entry["pos"]) in wikt_keys)

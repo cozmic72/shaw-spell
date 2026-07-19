@@ -79,10 +79,15 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
 
     # Convert strict IPA symbols to ReadLex conventions
     ipa = ipa.replace("ɹ", "r")    # alveolar approximant → r
-    ipa = ipa.replace("ɛː", "ɜː") # long open-e → NURSE (rare)
+    # ɛː is the SQUARE vowel in modern SSB/CUBE (Lindsey) transcriptions —
+    # "air", "aerial" — so it maps to eə (SQUARE → 𐑺), NOT NURSE. (The old code
+    # rewrote ɛː→ɜː on the assumption it was a rare long-open-e = NURSE case, but
+    # in these sources ɛː is systematically SQUARE; the only genuine ɛː→NURSE
+    # word, "tradesperson", arrives via source="readlex" and never reaches here.)
+    ipa = ipa.replace("ɛː", "eə")  # SQUARE vowel (air, aerial)
 
     # Handle ɛ carefully: ɛə should become eə (SQUARE), standalone ɛ → e (DRESS)
-    # But ɛː is NURSE (already handled above)
+    # (ɛː was already turned into eə above, so no bare ɛ survives from it.)
     ipa = ipa.replace("ɛ", "e")
 
     # Britfone-specific: ɐ → ʌ (STRUT vowel)
@@ -263,7 +268,11 @@ def _restore_rhoticity_ml(ipa: str, word: str) -> str:
         vec = _features_to_vector(features, char_vocab, r_vowels).reshape(1, -1)
         pred = model.predict(vec)[0]
         insert_pos = site_pos + len(vowel)
-        if pred:
+        # Idempotent: don't insert an R where the vowel is already followed by a
+        # rhotic (R or r). Otherwise a source that already carries the linking r
+        # (e.g. ɚ→əR from the common normalization) would get a second one,
+        # producing a doubled RR (e.g. 'abuser' əbjuːzəR → əbjuːzəRR).
+        if pred and stripped[insert_pos:insert_pos + 1] not in ('R', 'r'):
             insertions.append(insert_pos)
 
     # Insert R at predicted positions (reverse order to preserve indices)
@@ -506,6 +515,12 @@ PHONEME_MAP = [
 
     # Yew ligature (must come before j and uː)
     ("juː", "𐑿"),  # YEW ligature: you, use, new
+
+    # iəʊ = weak /i/ + GOAT (əʊ), e.g. audio, radio, adagio → …𐑦𐑴.
+    # Must precede "iə" (NEAR) so the greedy matcher doesn't grab "iə"→𐑾 and
+    # strand the ʊ. Only bare "iəʊ" matches here — "eɪəʊ"/"aɪəʊ" (baobab, bio)
+    # and "iːəʊ" (creole) start with a different vowel and are unaffected.
+    ("iəʊ", "𐑦𐑴"),  # weak i + GOAT: audio, radio
 
     # R-colored long vowels/diphthongs (with capital R)
     ("ɜːR", "𐑻"),  # NURSE (stressed): bird, err

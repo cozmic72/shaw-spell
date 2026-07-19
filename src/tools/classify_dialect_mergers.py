@@ -79,7 +79,7 @@ def load_json(path):
         return json.load(f)
 
 
-def non_merged_spellings(supplement):
+def non_merged_spellings(supplement, upstream=None):
     """(word_lower, pos) -> the set of non-merged spellings attesting it. These are
     the canonical forms a candidate's merger swap is measured against.
 
@@ -108,7 +108,9 @@ def non_merged_spellings(supplement):
         for entry in entries:
             if entry.get("var") in BASE_NON_MERGED and not entry.get("mergers"):
                 index[(entry["Latn"].lower(), entry["pos"])].add(entry["Shaw"])
-    for entries in load_upstream().values():
+    if upstream is None:
+        upstream = load_upstream()
+    for entries in upstream.values():
         for entry in entries:
             # Only NON-merged ReadLex forms attest: a reinterpreted TrapBath entry
             # already carries mergers=[trap-bath] and is itself a merged 𐑨 form.
@@ -152,10 +154,11 @@ def merger_for(entry, non_merged_index):
     return None, None
 
 
-def classify_supplement(supplement, tallies, samples):
+def classify_supplement(supplement, tallies, samples, upstream=None):
     """A copy of a supplement dict with each record's `mergers` set. The field is
-    written only when non-empty (additive: absent == empty)."""
-    non_merged_index = non_merged_spellings(supplement)
+    written only when non-empty (additive: absent == empty). `upstream` (the
+    reinterpreted ReadLex) is threaded in by the orchestrator; None loads it."""
+    non_merged_index = non_merged_spellings(supplement, upstream)
     classified = {}
     for key, entries in supplement.items():
         annotated = []

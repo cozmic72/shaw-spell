@@ -61,13 +61,14 @@ def output_bucket_key(entry):
     return f"{entry['Latn']}_{entry['pos']}_{entry['Shaw']}"
 
 
-def combine(tallies):
-    """Merge the per-source supplements into one anchor-keyed pool. Returns an
-    anchor -> record map in first-seen order; each record carries a `source` list
-    accumulating every origin that attested its anchor, deduped and order-stable."""
+def combine_sources(sources_data, tallies):
+    """Merge already-loaded per-source supplements into one anchor-keyed pool.
+    `sources_data` is a list of (label, supplement_dict) in canonical source order.
+    Returns an anchor -> record map in first-seen order; each record carries a
+    `source` list accumulating every origin that attested its anchor, deduped and
+    order-stable. Pure over its inputs (no disk I/O)."""
     merged = {}
-    for label, path in SOURCES:
-        supplement = load_json(path)
+    for label, supplement in sources_data:
         for entries in supplement.values():
             for entry in entries:
                 anchor = anchor_of(entry)
@@ -93,6 +94,12 @@ def bucket(merged):
     return {key: buckets[key] for key in sorted(buckets)}
 
 
+def build_combined(sources_data, tallies):
+    """Combine already-loaded sources into the bucketed `word_pos_shaw` dict the
+    pruning chain consumes. The in-memory entry point the orchestrator calls."""
+    return bucket(combine_sources(sources_data, tallies))
+
+
 def report(tallies):
     print("\n=== supplement combine report ===")
     print(f"Distinct anchors (records): {tallies['records']:,}")
@@ -102,8 +109,8 @@ def report(tallies):
 
 def main():
     tallies = Counter()
-    merged = combine(tallies)
-    buckets = bucket(merged)
+    sources_data = [(label, load_json(path)) for label, path in SOURCES]
+    buckets = build_combined(sources_data, tallies)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(buckets, f, ensure_ascii=False, indent=4)
     print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}: "

@@ -152,11 +152,21 @@ def wiktionary_def_keys():
     return keys
 
 
-def annotate(supplement, wn_keys, wikt_keys, tallies):
+def build_def_keys():
+    """Build the (WordNet, Wiktionary) definition key sets from the source YAML/
+    JSONL. The disk-reading edge the annotate pure fn consumes; call once."""
+    wn_keys = wordnet_def_keys()
+    wikt_keys = wiktionary_def_keys()
+    return wn_keys, wikt_keys
+
+
+def annotate(supplement, wn_keys, wikt_keys, tallies=None):
     """Set `has_definition` on every record: the LOGICAL OR, over the record's
     attesting sources, of whether that source carries a definition for the
     record's (word, pos). A source not in the record's list does not contribute.
     Mutates records in place; returns the supplement."""
+    if tallies is None:
+        tallies = Counter()
     for entries in supplement.values():
         for entry in entries:
             sources = entry.get("source", [])

@@ -76,122 +76,59 @@ data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py 
 	@echo "Correcting NEAR syllable-dot collapses..."
 	$(RUN) python3 $(SRC_TOOLS)/fix_near_syllable_dots.py
 
-# Combine — unify the per-source candidate pools into ONE before any pruning, so
-# every downstream filter runs on the union. Merges on the full anchor (word,
-# pos, shaw, var); records gain a `source` list (union of attesting origins).
-# This is what lets the identical-dialect collapse see a cross-source spelling
-# collision. See src/tools/combine_supplements.py. (No patches prereq: combining
-# is content-neutral — it neither drops nor edits, only unions.)
-data/supplement-combined-raw.json: $(SRC_TOOLS)/combine_supplements.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-neardot.json data/supplement-names.json
-	@echo "Combining per-source supplement pools..."
-	$(RUN) python3 $(SRC_TOOLS)/combine_supplements.py
+# Supplement preprocessing — ONE in-memory pipeline, ONE recipe, ONE output.
+#
+# build_supplement.py is the orchestrator: it LOADS the source pools + upstream +
+# patches + definition/phrase indexes ONCE, composes every preprocessing transform
+# IN MEMORY (combine -> annotate -> dedup -> classify_mergers -> reclassify_rrp ->
+# generate_rrp -> collapse -> decontaminate -> phrases), and WRITES
+# supplement-combined-filtered.json ONCE. The previous nine per-stage targets
+# (combined-raw ... combined-decontaminated) round-tripped JSON through disk and
+# encoded the real step ordering in Python hardcoded paths, not these prerequisites
+# — so `make -j` could race and corrupt the build. Now the orchestrator OWNS the
+# ordering in one process, so the whole chain is a SINGLE recipe and -j-safe by
+# construction. Each step module keeps a thin CLI main() for single-stage
+# debugging; the orchestrator imports and calls their PURE transform functions.
+#
+# Prerequisites below are the UNION of everything the composed chain reads: the
+# orchestrator + every step module + the shared helpers (basis, dialect_mergers,
+# rrp_classifier, rrp_generator, ipa_to_shavian, detect_phrase_divergence, the two
+# generator modules whose POS_MAP/synset logic the definition annotator reuses) +
+# the data inputs (the three source pools, upstream ReadLex, the WordNet YAML and
+# Wiktionary JSONL the definition indexes read, and patches — read-only — for the
+# dedup/contamination/phrase anchor-exemption). For debugging, the orchestrator's
+# --dump flag re-emits the old per-stage intermediates, but Make never depends on
+# them: ordering lives in the orchestrator, not the build graph.
+SUPPLEMENT_STEP_MODULES := \
+	$(SRC_TOOLS)/build_supplement.py \
+	$(SRC_TOOLS)/combine_supplements.py \
+	$(SRC_TOOLS)/annotate_definitions.py \
+	$(SRC_TOOLS)/filter_supplement_duplicates.py \
+	$(SRC_TOOLS)/classify_dialect_mergers.py \
+	$(SRC_TOOLS)/reclassify_rrp.py \
+	$(SRC_TOOLS)/generate_rrp.py \
+	$(SRC_TOOLS)/collapse_identical_dialects.py \
+	$(SRC_TOOLS)/filter_supplement_contamination.py \
+	$(SRC_TOOLS)/filter_supplement_phrases.py \
+	$(SRC_TOOLS)/basis.py \
+	$(SRC_TOOLS)/dialect_mergers.py \
+	$(SRC_TOOLS)/rrp_classifier.py \
+	$(SRC_TOOLS)/rrp_generator.py \
+	$(SRC_TOOLS)/ipa_to_shavian.py \
+	$(SRC_TOOLS)/detect_phrase_divergence.py \
+	$(SRC_TOOLS)/generate_wordnet_supplement.py \
+	$(SRC_TOOLS)/generate_wiktionary_supplement.py
 
-# Definition annotation — join a `has_definition` provenance boolean onto each
-# combined record: does the upstream source(s) that produced it carry a definition
-# (wordnet synset gloss / wiktionary sense gloss)? A SEPARATE pass reading the SAME
-# source files as the generators (never re-running them — shave is non-deterministic
-# and would orphan patches). has_definition is the LOGICAL OR over the record's
-# source list; it rides verbatim through the rest of the chain into the basis. See
-# src/tools/annotate_definitions.py. (No patches prereq: annotation only adds a
-# field, it neither drops nor reshapes.)
-data/supplement-combined-defs.json: $(SRC_TOOLS)/annotate_definitions.py $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-combined-raw.json $(WORDNET_YAML) $(WIKTIONARY_JSONL)
-	@echo "Annotating supplement candidates with upstream-definition provenance..."
-	$(RUN) python3 $(SRC_TOOLS)/annotate_definitions.py
-
-# Pass 1 — duplicate filtering. A candidate whose (word, shaw) an established
-# entry (upstream ReadLex + sanctioned patches) already covers on both the var
-# and pos axes is dropped. See src/tools/filter_supplement_duplicates.py.
-data/supplement-combined-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-combined-defs.json external/readlex/readlex.json data/patches/patches.jsonl
-	@echo "Filtering duplicate supplement candidates..."
-	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_duplicates.py
-
-# Pass 2 — dialect merger classification. Each candidate is annotated with a
-# `mergers` list: a GenAm spelling that is an exact within-accent vowel-merger
-# swap (trap-bath 𐑭->𐑨, cot-caught 𐑷->𐑪) of a non-merged {RSSB, RRP} sibling is
-# tagged with that merger; the field is additive and absent when empty. The base
-# accent `var` is unchanged. On the combined pool a sibling may come from either
-# source. Runs BEFORE the RRP reclassifier so the reclassifier can see the flag
-# and hold merged forms back from canonicalization. See
-# src/tools/classify_dialect_mergers.py and docs/dialect-mergers.md. (No patches
-# prereq: classification only annotates, it neither drops nor reshapes.)
-data/supplement-combined-classified.json: $(SRC_TOOLS)/classify_dialect_mergers.py $(SRC_TOOLS)/dialect_mergers.py $(SRC_TOOLS)/basis.py data/supplement-combined-deduped.json
-	@echo "Classifying dialect vowel mergers..."
-	$(RUN) python3 $(SRC_TOOLS)/classify_dialect_mergers.py
-
-# Pass 2.5 — RRP reclassification (canonicalization). Each classified candidate is
-# judged by the accent-agnostic "does this pass as RRP?" classifier: a candidate
-# whose Shavian spelling is what the Guide's stress-based rules sanction as the
-# RRP default is relabelled onto var RRP (recording orig_var, and orig_shaw for a
-# deterministic Guide-table respell) as an UNREVIEWED review candidate; a
-# candidate the rules will not canonicalize stays in its source dialect, one the
-# classifier cannot judge is flagged for review (rrp_review), and a merger-flagged
-# form (spelt differently from its RRP sibling) is held back untouched. This is
-# Goal 1: expand the dictionary with conformal, canonical entries. It is a
-# PASS/no-pass JUDGE only — no collapse, no variant/merger flagging (those are
-# downstream), no auto-accept, no shave (so it is byte-deterministic run-to-run and
-# never orphans a patch via respell churn). It runs AFTER the merger classifier so
-# it can respect the `mergers` flag; running it before collapses merged forms to
-# RRP and destroys merger attestation (verified). See src/tools/reclassify_rrp.py +
-# src/tools/rrp_classifier.py. (No patches prereq: it only relabels/annotates, it
-# neither drops nor merges — every input record survives to the output.)
-data/supplement-combined-reclassified.json: $(SRC_TOOLS)/reclassify_rrp.py $(SRC_TOOLS)/rrp_classifier.py $(SRC_TOOLS)/basis.py data/supplement-combined-classified.json
-	@echo "Reclassifying RRP-passable candidates (canonicalization)..."
-	$(RUN) python3 $(SRC_TOOLS)/reclassify_rrp.py
-
-# Pass 2.75 — RRP generation (mint canonical RRP from scratch). Where the
-# reclassifier left a (word, pos) group with NO RRP entry but the record HAS ipa,
-# the generator produces the RRP spelling the Guide's stress-based rules sanction
-# and attaches it ALONGSIDE the record's existing spelling as a proposal
-# (generated_shaw / generated_tier / generated_method / generated_from) — never
-# overwriting the record's own Shaw (owner decision D2). It also enforces the D3
-# flag-gate: a merger/variant flag is kept only when its canonical RRP counterpart
-# is HIGH-confidence (an established ReadLex RRP entry, or an in-group sibling the
-# reclassifier passed at tier A/B, or a generated tier-A/B sibling); on a
-# low-confidence canonical the flag is stripped (recorded in merger_gate) and both
-# records stay plain low-confidence review candidates. IPA-basis path ONLY (no
-# shave), so it is byte-deterministic run-to-run and never orphans a patch. Runs
-# AFTER the reclassifier (so a group's RRP entries and the sibling rrp_tier the gate
-# reads already exist) and BEFORE collapse. It is count-preserving — it only ADDS
-# proposal fields and STRIPS gated flags, never dropping or splitting a record — and
-# never auto-accepts (every proposal + gate action is a review candidate; the patch
-# store is untouched). See src/tools/generate_rrp.py + src/tools/rrp_generator.py.
-# (No patches prereq: it only annotates; every input record survives to the output.)
-data/supplement-combined-generated.json: $(SRC_TOOLS)/generate_rrp.py $(SRC_TOOLS)/rrp_generator.py $(SRC_TOOLS)/rrp_classifier.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-combined-reclassified.json
-	@echo "Generating canonical RRP spellings for no-RRP candidates..."
-	$(RUN) python3 $(SRC_TOOLS)/generate_rrp.py
-
-# Pass 3 — identical-spelling dialect collapse. When 2+ dialects spell a
-# (word, pos) the SAME way, that spelling is not a real dialect difference, so
-# every record is relabelled onto the highest-precedence var (RRP > RSSB > GenAm)
-# and merged — source lists union — so the reviewer sees it once with full
-# provenance. Records disagreeing on the `mergers` flag stay separate (a real
-# within-accent difference). See src/tools/collapse_identical_dialects.py. (No
-# patches prereq: collapsing is a pure dialect-hierarchy rewrite; an orphaned
-# anchor fails loud downstream by design.)
-data/supplement-combined-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-combined-generated.json
-	@echo "Collapsing identical-spelling dialect variants..."
-	$(RUN) python3 $(SRC_TOOLS)/collapse_identical_dialects.py
-
-# Pass 3.5 — contamination pruning. ipa_to_shavian passes an unmapped IPA symbol
-# (a foreign/dialectal phoneme) through verbatim, so a candidate's Shaw can carry
-# a Latin letter, IPA symbol or diacritic — garbage Shavian. Any such candidate
-# is dropped so the review surface never sees it. Upstream ReadLex is untouched
-# (its ring-point/word-joiner acronym markers are intentional conventions). See
-# src/tools/filter_supplement_contamination.py.
-data/supplement-combined-decontaminated.json: $(SRC_TOOLS)/filter_supplement_contamination.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-combined-collapsed.json data/patches/patches.jsonl
-	@echo "Pruning contaminated (non-Shavian) supplement candidates..."
-	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_contamination.py
-
-# Pass 4 — phrase pruning. A multi-word candidate whose pronunciation is just
-# its component words glued together (classified `matches`) is dropped, so the
-# review surface never sees sum-of-parts noise. The -filtered.json output is
-# what the editorial basis reads (records pass through verbatim, so the merger
-# annotation and source list survive). The phrase classifier's citation index is
-# still built from the per-source -reliable dumps. See
-# src/tools/filter_supplement_phrases.py.
-data/supplement-combined-filtered.json: $(SRC_TOOLS)/filter_supplement_phrases.py $(SRC_TOOLS)/detect_phrase_divergence.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-combined-decontaminated.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json data/patches/patches.jsonl
-	@echo "Pruning sum-of-parts phrase candidates..."
-	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_phrases.py
+data/supplement-combined-filtered.json: $(SUPPLEMENT_STEP_MODULES) \
+		data/supplement-wordnet-reliable.json \
+		data/supplement-wiktionary-neardot.json \
+		data/supplement-wiktionary-reliable.json \
+		data/supplement-names.json \
+		external/readlex/readlex.json \
+		$(WORDNET_YAML) $(WIKTIONARY_JSONL) \
+		data/patches/patches.jsonl
+	@echo "Building supplement pool (in-memory pipeline, one write)..."
+	$(RUN) python3 $(SRC_TOOLS)/build_supplement.py
 
 ###########################################
 # Merged readlex (combines original + supplements)

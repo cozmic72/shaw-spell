@@ -7,13 +7,21 @@ The supplement candidates carry a scalar base-accent `var` (every multi-spelling
 group is exactly an {RSSB, GenAm} pair — RSSB is the non-merged British standard,
 GenAm the merged American accent). This stage layers the merger axis on top: a
 GenAm spelling that is an exact vowel-merger swap (trap-bath 𐑭->𐑨 or cot-caught
-𐑷->𐑪) of an RSSB sibling in the same (word, pos) group is tagged with that
+𐑷->𐑪) of a non-merged sibling in the same (word, pos) group is tagged with that
 merger. Its base `var` is unchanged — the flag is additive.
 
   RSSB record                     -> base RSSB, no merger (the non-merged form)
   GenAm = merger swap of a sibling -> base GenAm, mergers=[<that merger>]
   GenAm differing otherwise        -> base GenAm, no merger (just base accent)
   single spelling for the group    -> no merger
+
+The non-merged sibling is drawn from TWO attestations (see non_merged_spellings):
+an RSSB spelling within the supplement pool, OR a non-merged ReadLex/RRP spelling
+for the same (word, pos). The ReadLex attestation is what lets a GenAm candidate
+be flagged trap-bath even when its own supplement group has no RSSB sibling — the
+common case for names / GenAm-sourced imports. A candidate with no non-merged
+sibling in EITHER source is the sole (canonical) spelling of its (word, pos): the
+pairing cannot fire, so an isolated form is never flagged.
 
 A record's `mergers` is emitted only when non-empty, keeping the field additive:
 absent means the empty list. See dialect_mergers.py for the swap detection and
@@ -41,7 +49,7 @@ Usage:
 import json
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT
+from basis import PROJECT_ROOT, load_upstream
 from dialect_mergers import merger_of
 
 # (deduped input, classified output) — one combined pool.
@@ -61,20 +69,50 @@ def load_json(path):
 
 
 def non_merged_spellings(supplement):
-    """(word_lower, pos) -> the set of RSSB spellings attesting it. These are the
-    canonical forms a GenAm candidate's merger swap is measured against."""
+    """(word_lower, pos) -> the set of non-merged spellings attesting it. These are
+    the canonical forms a candidate's merger swap is measured against.
+
+    The attestation pool is the union of two sources:
+
+      1. RSSB siblings WITHIN the supplement pool — the original within-supplement
+         pairing (an {RSSB, GenAm} group's non-merged British spelling).
+      2. Non-merged ReadLex/RRP spellings for the same (word, pos) — every ReadLex
+         entry NOT already carrying a merger flag (see reinterpret_upstream: a
+         `TrapBath` record is the MERGED 𐑨 form and is excluded here, so it can
+         never masquerade as the non-merged attestation it is measured against).
+
+    This index is merger-agnostic: it holds the non-merged spellings, and
+    merger_for/merger_of decide per-candidate which known merger (if any) the swap
+    is — so the ReadLex attestation feeds BOTH trap-bath (𐑭→𐑨) and cot-caught
+    (𐑷→𐑪) uniformly, no merger is privileged.
+
+    Adding (2) lets a supplement candidate be flagged off an attested ReadLex
+    sibling (a 𐑭 form for trap-bath, a 𐑷 form for cot-caught) even when its own
+    supplement group has no RSSB sibling — the common case for names / GenAm-sourced
+    imports. It is still a pure PAIRING claim against an attested sibling; a
+    candidate with no non-merged sibling in EITHER source is the sole (canonical)
+    spelling of its (word, pos) and is never flagged."""
     index = defaultdict(set)
     for entries in supplement.values():
         for entry in entries:
             if entry.get("var") == BASE_NON_MERGED:
                 index[(entry["Latn"].lower(), entry["pos"])].add(entry["Shaw"])
+    for entries in load_upstream().values():
+        for entry in entries:
+            # Only NON-merged ReadLex forms attest: a reinterpreted TrapBath entry
+            # already carries mergers=[trap-bath] and is itself a merged 𐑨 form.
+            if entry.get("mergers"):
+                continue
+            key = (entry.get("Latn", "").lower(), entry.get("pos", ""))
+            index[key].add(entry.get("Shaw", ""))
     return index
 
 
 def merger_for(entry, non_merged_index):
     """The (merger, non_merged_sibling) `entry` is tagged with, or (None, None).
-    Only a GenAm spelling that is an exact merger swap of some RSSB sibling in its
-    (word, pos) group is tagged; RSSB (and unmatched GenAm) forms carry none."""
+    Only a merged spelling that is an exact merger swap of some non-merged sibling
+    (an RSSB supplement sibling OR a non-merged ReadLex/RRP form) in its (word, pos)
+    group is tagged; RSSB (and unmatched) forms carry none."""
     if entry.get("var") == BASE_NON_MERGED:
         return None, None
     siblings = non_merged_index.get((entry["Latn"].lower(), entry["pos"]))
@@ -125,8 +163,10 @@ def report(tallies, samples):
     for merger in ("trap-bath", "cot-caught"):
         print(f"\nSample [{merger}]:")
         for entry, sibling in samples[merger]:
+            # The sibling may be an RSSB supplement form OR a non-merged ReadLex/RRP
+            # form — both attest — so it is labelled generically, not "RSSB".
             print(f"  {entry['Latn']} [{entry['pos']}]: "
-                  f"RSSB {sibling} -> GenAm {entry['Shaw']}")
+                  f"non-merged {sibling} -> {entry.get('var', '')} {entry['Shaw']}")
 
 
 def main():

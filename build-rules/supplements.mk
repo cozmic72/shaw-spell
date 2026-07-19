@@ -107,14 +107,36 @@ data/supplement-combined-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates
 
 # Pass 2 — dialect merger classification. Each candidate is annotated with a
 # `mergers` list: a GenAm spelling that is an exact within-accent vowel-merger
-# swap (trap-bath 𐑭->𐑨, cot-caught 𐑷->𐑪) of an RSSB sibling is tagged with that
-# merger; the field is additive and absent when empty. The base accent `var` is
-# unchanged. On the combined pool a sibling may come from either source. See
+# swap (trap-bath 𐑭->𐑨, cot-caught 𐑷->𐑪) of a non-merged {RSSB, RRP} sibling is
+# tagged with that merger; the field is additive and absent when empty. The base
+# accent `var` is unchanged. On the combined pool a sibling may come from either
+# source. Runs BEFORE the RRP reclassifier so the reclassifier can see the flag
+# and hold merged forms back from canonicalization. See
 # src/tools/classify_dialect_mergers.py and docs/dialect-mergers.md. (No patches
 # prereq: classification only annotates, it neither drops nor reshapes.)
-data/supplement-combined-classified.json: $(SRC_TOOLS)/classify_dialect_mergers.py $(SRC_TOOLS)/dialect_mergers.py data/supplement-combined-deduped.json
+data/supplement-combined-classified.json: $(SRC_TOOLS)/classify_dialect_mergers.py $(SRC_TOOLS)/dialect_mergers.py $(SRC_TOOLS)/basis.py data/supplement-combined-deduped.json
 	@echo "Classifying dialect vowel mergers..."
 	$(RUN) python3 $(SRC_TOOLS)/classify_dialect_mergers.py
+
+# Pass 2.5 — RRP reclassification (canonicalization). Each classified candidate is
+# judged by the accent-agnostic "does this pass as RRP?" classifier: a candidate
+# whose Shavian spelling is what the Guide's stress-based rules sanction as the
+# RRP default is relabelled onto var RRP (recording orig_var, and orig_shaw for a
+# deterministic Guide-table respell) as an UNREVIEWED review candidate; a
+# candidate the rules will not canonicalize stays in its source dialect, one the
+# classifier cannot judge is flagged for review (rrp_review), and a merger-flagged
+# form (spelt differently from its RRP sibling) is held back untouched. This is
+# Goal 1: expand the dictionary with conformal, canonical entries. It is a
+# PASS/no-pass JUDGE only — no collapse, no variant/merger flagging (those are
+# downstream), no auto-accept, no shave (so it is byte-deterministic run-to-run and
+# never orphans a patch via respell churn). It runs AFTER the merger classifier so
+# it can respect the `mergers` flag; running it before collapses merged forms to
+# RRP and destroys merger attestation (verified). See src/tools/reclassify_rrp.py +
+# src/tools/rrp_classifier.py. (No patches prereq: it only relabels/annotates, it
+# neither drops nor merges — every input record survives to the output.)
+data/supplement-combined-reclassified.json: $(SRC_TOOLS)/reclassify_rrp.py $(SRC_TOOLS)/rrp_classifier.py $(SRC_TOOLS)/basis.py data/supplement-combined-classified.json
+	@echo "Reclassifying RRP-passable candidates (canonicalization)..."
+	$(RUN) python3 $(SRC_TOOLS)/reclassify_rrp.py
 
 # Pass 3 — identical-spelling dialect collapse. When 2+ dialects spell a
 # (word, pos) the SAME way, that spelling is not a real dialect difference, so
@@ -124,7 +146,7 @@ data/supplement-combined-classified.json: $(SRC_TOOLS)/classify_dialect_mergers.
 # within-accent difference). See src/tools/collapse_identical_dialects.py. (No
 # patches prereq: collapsing is a pure dialect-hierarchy rewrite; an orphaned
 # anchor fails loud downstream by design.)
-data/supplement-combined-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-combined-classified.json
+data/supplement-combined-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-combined-reclassified.json
 	@echo "Collapsing identical-spelling dialect variants..."
 	$(RUN) python3 $(SRC_TOOLS)/collapse_identical_dialects.py
 

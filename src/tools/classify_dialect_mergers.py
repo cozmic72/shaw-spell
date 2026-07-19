@@ -3,17 +3,22 @@
 Classify each supplement candidate's within-accent vowel mergers, annotating it
 with a `mergers` list before it reaches the editorial basis.
 
-The supplement candidates carry a scalar base-accent `var` (every multi-spelling
-group is exactly an {RSSB, GenAm} pair — RSSB is the non-merged British standard,
-GenAm the merged American accent). This stage layers the merger axis on top: a
-GenAm spelling that is an exact vowel-merger swap (trap-bath 𐑭->𐑨, cot-caught
-𐑷->𐑪, or lot-palm 𐑭->𐑪) of a non-merged sibling in the same (word, pos) group is
-tagged with that merger. Its base `var` is unchanged — the flag is additive.
+The supplement candidates carry a scalar base-accent `var` (a multi-spelling
+group pairs a merged GenAm form against a non-merged RSSB/RRP form). This stage
+layers the merger axis on top: a GenAm spelling that is an exact vowel-merger
+swap (trap-bath 𐑭->𐑨, cot-caught 𐑷->𐑪, or lot-palm 𐑭->𐑪) of a non-merged
+sibling in the same (word, pos) group is tagged with that merger. Its base `var`
+is unchanged — the flag is additive.
 
-  RSSB record                     -> base RSSB, no merger (the non-merged form)
+  RSSB/RRP record                  -> non-merged base, no merger
   GenAm = merger swap of a sibling -> base GenAm, mergers=[<that merger>]
   GenAm differing otherwise        -> base GenAm, no merger (just base accent)
   single spelling for the group    -> no merger
+
+This runs BEFORE the RRP reclassifier (reclassify_rrp.py): the reclassifier must
+see the `mergers` flag so it can HOLD BACK a merged form (spelt differently from
+its RRP sibling) from canonicalization, rather than collapsing it to RRP and
+erasing the merger relationship this stage detected.
 
 The non-merged sibling is drawn from TWO attestations (see non_merged_spellings):
 an RSSB spelling within the supplement pool, OR a non-merged ReadLex/RRP spelling
@@ -27,12 +32,13 @@ A record's `mergers` is emitted only when non-empty, keeping the field additive:
 absent means the empty list. See dialect_mergers.py for the swap detection and
 docs/dialect-mergers.md for the model.
 
-This is a pruning-chain stage between the duplicate filter and the identical-
-dialect collapse over the source-combined pool: combined-deduped -> HERE
-(classified) -> collapsed -> decontaminated -> filtered -> basis. Downstream
-stages pass records through verbatim, so the `mergers` annotation survives to the
-basis. Only the annotation is added; no candidate is dropped or reshaped, and the
-per-record `source` list is preserved by the dict copy.
+This is a pruning-chain stage between the duplicate filter and the RRP
+reclassifier over the source-combined pool: combined-deduped -> HERE
+(classified) -> reclassified -> collapsed -> decontaminated -> filtered ->
+basis. Downstream stages pass records through verbatim, so the `mergers`
+annotation survives to the basis. Only the annotation is added; no candidate is
+dropped or reshaped, and the per-record `source` list is preserved by the dict
+copy.
 
 Because the pool is source-combined, an RSSB sibling one source attested now sits
 in the same group as a GenAm candidate from another source, so cross-source
@@ -56,9 +62,14 @@ from dialect_mergers import MERGER_SWAPS, merger_of
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-deduped.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
 
-# The non-merged British standard: an RSSB spelling is the canonical form a GenAm
-# merger swap is measured against, and is never itself tagged.
-BASE_NON_MERGED = "RSSB"
+# The non-merged base spellings a GenAm merger swap is measured against, and
+# which are themselves never tagged. RSSB is the non-merged British standard; a
+# supplement RRP form (e.g. an IPA-rescued copied-homograph, or — should the RRP
+# reclassifier ever precede this stage — a canonicalized sibling) is equally a
+# non-merged base. Including both is directional-safe: merger_of only ever treats
+# an RSSB/RRP form as the non-merged SIBLING, never as the merged target (the
+# merged form is GenAm). Verified net-neutral vs the RSSB-only pool on live data.
+BASE_NON_MERGED = ("RSSB", "RRP")
 
 SAMPLE_LIMIT = 12
 
@@ -95,7 +106,7 @@ def non_merged_spellings(supplement):
     index = defaultdict(set)
     for entries in supplement.values():
         for entry in entries:
-            if entry.get("var") == BASE_NON_MERGED:
+            if entry.get("var") in BASE_NON_MERGED and not entry.get("mergers"):
                 index[(entry["Latn"].lower(), entry["pos"])].add(entry["Shaw"])
     for entries in load_upstream().values():
         for entry in entries:
@@ -125,7 +136,7 @@ def merger_for(entry, non_merged_index):
     claim records that matched NOTHING before). Which sibling is the "true" one is a
     data question the tag doesn't settle — every tagged record is a review
     candidate — so a stable, documented precedence is the honest resolution."""
-    if entry.get("var") == BASE_NON_MERGED:
+    if entry.get("var") in BASE_NON_MERGED:
         return None, None
     siblings = non_merged_index.get((entry["Latn"].lower(), entry["pos"]))
     if not siblings:

@@ -45,11 +45,11 @@ This stage is patch-unaware: it collapses purely on the dialect hierarchy. If a
 lower-precedence var the owner anchored is relabelled away, its patch orphans and
 apply_patches.py fails loud — that is intentional and handled downstream.
 
-This is a pruning-chain stage between the merger classifier and the contamination
-filter: combined-classified -> HERE (collapsed) -> decontaminated -> filtered ->
-basis. Downstream stages read the collapsed output verbatim.
+This is a pruning-chain stage between the RRP reclassifier and the contamination
+filter: combined-reclassified -> HERE (collapsed) -> decontaminated -> filtered
+-> basis. Downstream stages read the collapsed output verbatim.
 
-Inputs:  data/supplement-combined-classified.json.
+Inputs:  data/supplement-combined-reclassified.json.
 Outputs: data/supplement-combined-collapsed.json.
 
 Usage:
@@ -61,8 +61,11 @@ from collections import Counter, defaultdict
 
 from basis import PROJECT_ROOT, mark_original
 
-# (classified input, collapsed output) — one combined pool.
-INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
+# (reclassified input, collapsed output) — one combined pool. The RRP
+# reclassifier runs immediately upstream (canonicalizing non-merger candidates
+# to RRP), so a candidate the rules allowed and an original-RRP twin now share
+# the RRP var and this stage merges their identical spellings.
+INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-reclassified.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-collapsed.json"
 
 # Dialect precedence: lower rank wins. Any var not listed ranks below every

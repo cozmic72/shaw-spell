@@ -99,7 +99,13 @@ UPSTREAM_SOURCE = "readlex"
 # Provenance fields a record may carry beyond the canonical core, in output
 # order. `note` is patch metadata and is deliberately NOT emitted to the
 # dictionary. `status` lives in the record because downstream consumers read it.
-PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source"]
+# The rrp_* fields are the RRP reclassifier's review-triage provenance
+# (reclassify_rrp.py): rrp_outcome (PASS/PASS_RESPELL/STAY/REVIEW/SKIP_MERGER),
+# rrp_tier (A..F confidence), rrp_review (True on a low-confidence flag). Like
+# source/ipa_source they are DERIVED — carried through so the editor can surface
+# and sort the review pool, never an editable patch field (not in INTRINSIC_FIELDS).
+PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source",
+                     "rrp_outcome", "rrp_tier", "rrp_review"]
 
 # ORIGINAL-VALUE provenance (orig_*): the pre-transform value of a key field a
 # pipeline transform CHANGED. The natural key is (word, pos, shaw, var), so any

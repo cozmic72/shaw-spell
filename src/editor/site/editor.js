@@ -54,6 +54,13 @@ const VARIANT_LABEL = "variant";
 // Shown as a quiet "def" pill beside the word; absent == no upstream definition.
 const DEFINITION_LABEL = "def";
 
+// The relabel-provenance marker: the dialect var a pipeline transform CHANGED this
+// record's var FROM (basis.orig_var — e.g. the identical-dialect collapse relabels a
+// lower-precedence dialect onto the winning var). Read-only (derived provenance, not
+// editable); shown as a quiet "was GenAm" pill so the transformation is visible at a
+// glance. Absent when no transform moved the var — the absence is the signal.
+const ORIG_VAR_PREFIX = "was ";
+
 // Dictionaries to look the word up in while deciding. {word} is URL-encoded so
 // phrases and apostrophes ("A for effort", "don't") stay valid.
 const REFERENCES = [
@@ -952,6 +959,7 @@ function recordEditor(record, opts) {
         mergerBadges(record.mergers),
         variantBadge(record.variant),
         definitionBadge(record.has_definition),
+        origVarBadge(record.orig_var, record.var),
         detailFacts(record),
         editedSummary(overridden),
         confidenceBadge(record.confidence),
@@ -1405,6 +1413,22 @@ function definitionBadge(hasDefinition) {
     wrap.className = "def-badges";
     if (hasDefinition) {
         wrap.append(cell("def-badge", DEFINITION_LABEL));
+    }
+    return wrap;
+}
+
+// A record's relabel provenance, as a quiet "was GenAm" pill beside the word: the
+// var a pipeline transform changed this record's var away from (basis.orig_var).
+// Read-only — derived provenance, an audit/triage signal, never editable. Shown
+// only when orig_var is present and genuinely differs from the current var; equal
+// or absent shows nothing (the absence is the signal, mirroring the other badges).
+function origVarBadge(origVar, currentVar) {
+    const wrap = document.createElement("span");
+    wrap.className = "orig-var-badges";
+    if (origVar && origVar !== currentVar) {
+        const badge = cell("orig-var-badge", ORIG_VAR_PREFIX + origVar);
+        badge.title = `relabelled ${origVar} → ${currentVar} by the pipeline`;
+        wrap.append(badge);
     }
     return wrap;
 }

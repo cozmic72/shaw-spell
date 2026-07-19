@@ -865,6 +865,28 @@ body {
     white-space: nowrap;
 }
 
+/* The relabel-provenance marker ("was GenAm"), read-at-a-glance beside the word:
+   the dialect var a pipeline transform changed this record's var away from. Derived
+   provenance like the def badge (soft-ink, not editable), but a DASHED border marks
+   it as transformation history — a record that was moved — distinct from the solid
+   provenance pills. Absent (no transform moved the var) renders nothing. */
+.orig-var-badges {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.orig-var-badge {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    color: var(--ink-soft);
+    border: 1px dashed currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+
 /* The read-only provenance facts (status/source/freq), folded into the heading
    strip as compact label·value pairs — the table they replaced is gone. Quiet by
    default; they sit inline with the badges so every fact is glanceable. */

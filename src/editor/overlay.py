@@ -53,8 +53,8 @@ no-ops.
 
 import threading
 
-from basis import (OP_ACCEPT, OP_DROP, UPSTREAM_SOURCE, anchor_key, build_basis,
-                   effective_record, is_flag_patch, output_to_record)
+from basis import (OP_ACCEPT, OP_DROP, ORIG_FIELDS, UPSTREAM_SOURCE, anchor_key,
+                   build_basis, effective_record, is_flag_patch, output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
 PATCH_STATE_ACCEPTED = "accepted"
@@ -95,8 +95,16 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     when True (see basis.record_to_output).
     `has_definition` is the provenance boolean marking whether the upstream
     source(s) carry a definition for this record — always present (False == no
-    upstream definition) so the UI can show the `def` pill and filter on it."""
-    return {
+    upstream definition) so the UI can show the `def` pill and filter on it.
+
+    `orig_var`/`orig_shaw`/`orig_ipa` are DERIVED provenance: the pre-transform
+    value of a key field a pipeline stage changed (see basis.mark_original —
+    e.g. the identical-dialect collapse records the var a record was relabelled
+    from). They are additive, present only when a transform actually changed that
+    field, so each is passed through only when the record carries it. Read-only in
+    the UI: the owner never edits provenance, it is shown as an audit marker (the
+    original var a record was collapsed from, so the transformation is visible)."""
+    ui = {
         "word": record.get("word", ""),
         "shaw": record.get("shaw", ""),
         "pos": record.get("pos", ""),
@@ -114,6 +122,10 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
         "patch_state": patch_state,
         "patch": patch,
     }
+    for orig_key in ORIG_FIELDS.values():
+        if record.get(orig_key) not in (None, ""):
+            ui[orig_key] = record[orig_key]
+    return ui
 
 
 def annotate_basis_record(candidate, source, patch):

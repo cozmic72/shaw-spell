@@ -59,7 +59,7 @@ Usage:
 import json
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT
+from basis import PROJECT_ROOT, mark_original
 
 # (classified input, collapsed output) — one combined pool.
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
@@ -137,8 +137,18 @@ def collapse_group(entries):
             else:
                 union_sources(merged, entry)
     for entry in entries:
-        if entry.get("var", "") != winning_var:
+        loser_var = entry.get("var", "")
+        if loser_var != winning_var:
             union_sources(merged, entry)
+            # RELABEL provenance: the loser's key (word, pos, shaw, loser_var) is
+            # gone — it collapsed onto this winning-var record. Record the pre-
+            # relabel var so the applicator can AUTO-RE-ANCHOR any editorial patch
+            # anchored to that old key onto the merged record's current key, rather
+            # than orphaning the owner's verdict (see basis.mark_original /
+            # reanchor_index). SET-ONCE: with several losers only the first pre-image
+            # is kept (one field holds one old key); a rarer multi-loser collision
+            # leaves the later losers to surface via the 'orphaned' filter.
+            mark_original(merged, "var", loser_var)
     return [merged], "collapsed"
 
 

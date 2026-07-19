@@ -22,16 +22,16 @@ surface and is exempt — dropping it would orphan the patch's anchor
 (apply_patches.py fails loud on that).
 
 This is a pruning-chain stage between the identical-dialect collapse and the
-phrase filter: reliable -> deduped -> classified -> collapsed -> HERE
-(decontaminated) -> filtered -> basis. The phrase filter reads the
-decontaminated output next; records pass through verbatim (only contaminated
-ones are dropped), so each candidate's `mergers` annotation survives.
+phrase filter over the source-combined pool: combined-collapsed -> HERE
+(decontaminated) -> filtered -> basis. The phrase filter reads the decontaminated
+output next; records pass through verbatim (only contaminated ones are dropped),
+so each candidate's `mergers` annotation and `source` list survive.
 
-Inputs:  data/supplement-{wordnet,wiktionary}-collapsed.json,
+Inputs:  data/supplement-combined-collapsed.json,
          data/patches/patches.jsonl.
-Outputs: data/supplement-{wordnet,wiktionary}-decontaminated.json  — the phrase
-         filter reads these next. The -collapsed.json files are left untouched;
-         the dropped candidates are regenerable machine output.
+Outputs: data/supplement-combined-decontaminated.json  — the phrase filter reads
+         this next. The combined-collapsed file is left untouched; the dropped
+         candidates are regenerable machine output.
 
 Usage:
     python3 src/tools/filter_supplement_contamination.py
@@ -44,13 +44,9 @@ from basis import PROJECT_ROOT, anchor_of
 from filter_supplement_duplicates import anchored_keys, load_patches
 from ipa_to_shavian import contains_non_shavian
 
-# (collapsed input, decontaminated output) per supplement source.
-SUPPLEMENTS = [
-    (PROJECT_ROOT / "data" / "supplement-wordnet-collapsed.json",
-     PROJECT_ROOT / "data" / "supplement-wordnet-decontaminated.json"),
-    (PROJECT_ROOT / "data" / "supplement-wiktionary-collapsed.json",
-     PROJECT_ROOT / "data" / "supplement-wiktionary-decontaminated.json"),
-]
+# (collapsed input, decontaminated output) — one combined pool.
+INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-collapsed.json"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-decontaminated.json"
 
 SAMPLE_LIMIT = 12
 
@@ -103,15 +99,13 @@ def main():
     dropped_samples = []
     total_dropped = 0
 
-    for collapsed_path, decontaminated_path in SUPPLEMENTS:
-        supplement = load_json(collapsed_path)
-        pruned, dropped = prune_supplement(
-            supplement, exempt_keys, dropped_samples)
-        total_dropped += dropped
-        with open(decontaminated_path, "w", encoding="utf-8") as f:
-            json.dump(pruned, f, ensure_ascii=False, indent=4)
-        print(f"Wrote {decontaminated_path.relative_to(PROJECT_ROOT)}: "
-              f"{sum(len(v) for v in pruned.values()):,} candidates kept")
+    supplement = load_json(INPUT_PATH)
+    pruned, dropped = prune_supplement(supplement, exempt_keys, dropped_samples)
+    total_dropped += dropped
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(pruned, f, ensure_ascii=False, indent=4)
+    print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}: "
+          f"{sum(len(v) for v in pruned.values()):,} candidates kept")
 
     report(total_dropped, dropped_samples)
 

@@ -20,13 +20,19 @@ absent means the empty list. See dialect_mergers.py for the swap detection and
 docs/dialect-mergers.md for the model.
 
 This is a pruning-chain stage between the duplicate filter and the identical-
-dialect collapse: reliable -> deduped -> HERE (classified) -> collapsed ->
-filtered -> basis. Downstream stages pass records through verbatim, so the
-`mergers` annotation survives to the basis. Only the annotation is added; no
-candidate is dropped or reshaped.
+dialect collapse over the source-combined pool: combined-deduped -> HERE
+(classified) -> collapsed -> decontaminated -> filtered -> basis. Downstream
+stages pass records through verbatim, so the `mergers` annotation survives to the
+basis. Only the annotation is added; no candidate is dropped or reshaped, and the
+per-record `source` list is preserved by the dict copy.
 
-Inputs:  data/supplement-{wordnet,wiktionary}-deduped.json
-Outputs: data/supplement-{wordnet,wiktionary}-classified.json
+Because the pool is source-combined, an RSSB sibling one source attested now sits
+in the same group as a GenAm candidate from another source, so cross-source
+merger swaps are tagged here — intended, and the reason combining runs before
+this stage.
+
+Inputs:  data/supplement-combined-deduped.json
+Outputs: data/supplement-combined-classified.json
 
 Usage:
     python3 src/tools/classify_dialect_mergers.py
@@ -38,13 +44,9 @@ from collections import Counter, defaultdict
 from basis import PROJECT_ROOT
 from dialect_mergers import merger_of
 
-# (deduped input, classified output) per supplement source.
-SUPPLEMENTS = [
-    (PROJECT_ROOT / "data" / "supplement-wordnet-deduped.json",
-     PROJECT_ROOT / "data" / "supplement-wordnet-classified.json"),
-    (PROJECT_ROOT / "data" / "supplement-wiktionary-deduped.json",
-     PROJECT_ROOT / "data" / "supplement-wiktionary-classified.json"),
-]
+# (deduped input, classified output) — one combined pool.
+INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-deduped.json"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
 
 # The non-merged British standard: an RSSB spelling is the canonical form a GenAm
 # merger swap is measured against, and is never itself tagged.
@@ -131,16 +133,15 @@ def main():
     tallies = Counter()
     samples = defaultdict(list)
 
-    for deduped_path, classified_path in SUPPLEMENTS:
-        supplement = load_json(deduped_path)
-        classified = classify_supplement(supplement, tallies, samples)
-        with open(classified_path, "w", encoding="utf-8") as f:
-            json.dump(classified, f, ensure_ascii=False, indent=4)
-        tagged = sum(1 for entries in classified.values()
-                     for entry in entries if entry.get("mergers"))
-        print(f"Wrote {classified_path.relative_to(PROJECT_ROOT)}: "
-              f"{sum(len(v) for v in classified.values()):,} records, "
-              f"{tagged:,} merger-tagged")
+    supplement = load_json(INPUT_PATH)
+    classified = classify_supplement(supplement, tallies, samples)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(classified, f, ensure_ascii=False, indent=4)
+    tagged = sum(1 for entries in classified.values()
+                 for entry in entries if entry.get("mergers"))
+    print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}: "
+          f"{sum(len(v) for v in classified.values()):,} records, "
+          f"{tagged:,} merger-tagged")
 
     report(tallies, samples)
 

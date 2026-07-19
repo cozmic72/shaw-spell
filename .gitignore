@@ -26,6 +26,21 @@ build-cache/
 # Wiktionary data (large JSONL dumps)
 external/wiktionary/
 
+# Supplement pipeline intermediates (rebuildable; never committed). The combined
+# pool superseded the per-source *-{deduped,classified,collapsed,decontaminated,
+# filtered} files; none of these are tracked.
+data/supplement-combined-*.json
+data/supplement-wordnet-deduped.json
+data/supplement-wiktionary-deduped.json
+data/supplement-wordnet-classified.json
+data/supplement-wiktionary-classified.json
+data/supplement-wordnet-collapsed.json
+data/supplement-wiktionary-collapsed.json
+data/supplement-wordnet-decontaminated.json
+data/supplement-wiktionary-decontaminated.json
+data/supplement-wordnet-filtered.json
+data/supplement-wiktionary-filtered.json
+
 # Editor
 .vscode/
 .idea/

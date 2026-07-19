@@ -18,19 +18,20 @@ are outside the phrase classifier's scope and always pass through. A candidate a
 patch already anchors to has left the review surface and is exempt — dropping it
 would orphan the patch's anchor (apply_patches.py fails loud on that).
 
-This is the last pass of supplement candidate pruning, chained after the
-duplicate filter, the merger classifier, the identical-dialect collapse and the
-contamination filter: reliable -> deduped -> classified -> collapsed ->
-decontaminated -> here (filtered) -> basis. Records pass through verbatim (only
-`matches` phrases are dropped), so each candidate's `mergers` annotation survives
-to the basis. The classification logic is reused wholesale from
-detect_phrase_divergence; this module only decides drop/keep and rewrites files.
+This is the last pass of supplement candidate pruning over the source-combined
+pool, chained after the duplicate filter, the merger classifier, the identical-
+dialect collapse and the contamination filter: combined-deduped -> classified ->
+collapsed -> decontaminated -> here (filtered) -> basis. Records pass through
+verbatim (only `matches` phrases are dropped), so each candidate's `mergers`
+annotation and `source` list survive to the basis. The classification logic is
+reused wholesale from detect_phrase_divergence; this module only decides drop/keep
+and rewrites files. (The phrase classifier's own citation index is still built
+from the per-source -reliable dumps — that is left as-is.)
 
-Inputs:  data/supplement-{wordnet,wiktionary}-decontaminated.json  (the
-         contamination filter's output).
-Outputs: data/supplement-{wordnet,wiktionary}-filtered.json  — the basis reads
-         these (see src/tools/basis.py). The -decontaminated.json files are left
-         untouched.
+Inputs:  data/supplement-combined-decontaminated.json  (the contamination
+         filter's output).
+Outputs: data/supplement-combined-filtered.json  — the basis reads this (see
+         src/tools/basis.py). The combined-decontaminated file is left untouched.
 
 Usage:
     python3 src/tools/filter_supplement_phrases.py
@@ -46,13 +47,9 @@ from detect_phrase_divergence import (
 )
 from filter_supplement_duplicates import anchored_keys, load_patches
 
-# (decontaminated input, filtered output) per supplement source.
-SUPPLEMENTS = [
-    (PROJECT_ROOT / "data" / "supplement-wordnet-decontaminated.json",
-     PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json"),
-    (PROJECT_ROOT / "data" / "supplement-wiktionary-decontaminated.json",
-     PROJECT_ROOT / "data" / "supplement-wiktionary-filtered.json"),
-]
+# (decontaminated input, filtered output) — one combined pool.
+INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-decontaminated.json"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-filtered.json"
 
 SAMPLE_LIMIT = 8
 
@@ -125,18 +122,17 @@ def main():
     total_phrases = 0
     total_dropped = 0
 
-    for collapsed_path, filtered_path in SUPPLEMENTS:
-        supplement = load_json(collapsed_path)
-        total_phrases += sum(
-            1 for entries in supplement.values()
-            for entry in entries if is_phrase_record(entry))
-        pruned, dropped = prune_supplement(
-            supplement, label_of, exempt_keys, dropped_samples, kept_samples)
-        total_dropped += dropped
-        with open(filtered_path, "w", encoding="utf-8") as f:
-            json.dump(pruned, f, ensure_ascii=False, indent=4)
-        print(f"Wrote {filtered_path.relative_to(PROJECT_ROOT)}: "
-              f"{sum(len(v) for v in pruned.values()):,} candidates kept")
+    supplement = load_json(INPUT_PATH)
+    total_phrases += sum(
+        1 for entries in supplement.values()
+        for entry in entries if is_phrase_record(entry))
+    pruned, dropped = prune_supplement(
+        supplement, label_of, exempt_keys, dropped_samples, kept_samples)
+    total_dropped += dropped
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(pruned, f, ensure_ascii=False, indent=4)
+    print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}: "
+          f"{sum(len(v) for v in pruned.values()):,} candidates kept")
 
     report(total_phrases, total_dropped, dropped_samples, kept_samples)
 

@@ -76,10 +76,20 @@ data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py 
 	@echo "Correcting NEAR syllable-dot collapses..."
 	$(RUN) python3 $(SRC_TOOLS)/fix_near_syllable_dots.py
 
+# Combine — unify the per-source candidate pools into ONE before any pruning, so
+# every downstream filter runs on the union. Merges on the full anchor (word,
+# pos, shaw, var); records gain a `source` list (union of attesting origins).
+# This is what lets the identical-dialect collapse see a cross-source spelling
+# collision. See src/tools/combine_supplements.py. (No patches prereq: combining
+# is content-neutral — it neither drops nor edits, only unions.)
+data/supplement-combined-raw.json: $(SRC_TOOLS)/combine_supplements.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-neardot.json
+	@echo "Combining per-source supplement pools..."
+	$(RUN) python3 $(SRC_TOOLS)/combine_supplements.py
+
 # Pass 1 — duplicate filtering. A candidate whose (word, shaw) an established
 # entry (upstream ReadLex + sanctioned patches) already covers on both the var
 # and pos axes is dropped. See src/tools/filter_supplement_duplicates.py.
-data/supplement-wordnet-deduped.json data/supplement-wiktionary-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-neardot.json external/readlex/readlex.json data/patches/patches.jsonl
+data/supplement-combined-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-combined-raw.json external/readlex/readlex.json data/patches/patches.jsonl
 	@echo "Filtering duplicate supplement candidates..."
 	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_duplicates.py
 
@@ -87,17 +97,22 @@ data/supplement-wordnet-deduped.json data/supplement-wiktionary-deduped.json: $(
 # `mergers` list: a GenAm spelling that is an exact within-accent vowel-merger
 # swap (trap-bath 𐑭->𐑨, cot-caught 𐑷->𐑪) of an RSSB sibling is tagged with that
 # merger; the field is additive and absent when empty. The base accent `var` is
-# unchanged. See src/tools/classify_dialect_mergers.py and docs/dialect-mergers.md.
-data/supplement-wordnet-classified.json data/supplement-wiktionary-classified.json: $(SRC_TOOLS)/classify_dialect_mergers.py $(SRC_TOOLS)/dialect_mergers.py data/supplement-wordnet-deduped.json data/supplement-wiktionary-deduped.json
+# unchanged. On the combined pool a sibling may come from either source. See
+# src/tools/classify_dialect_mergers.py and docs/dialect-mergers.md. (No patches
+# prereq: classification only annotates, it neither drops nor reshapes.)
+data/supplement-combined-classified.json: $(SRC_TOOLS)/classify_dialect_mergers.py $(SRC_TOOLS)/dialect_mergers.py data/supplement-combined-deduped.json
 	@echo "Classifying dialect vowel mergers..."
 	$(RUN) python3 $(SRC_TOOLS)/classify_dialect_mergers.py
 
-# Pass 3 — identical-spelling dialect collapse. When 2+ specific dialects spell a
-# (word, pos) the SAME way, that spelling is universal, so the identical-spelling
-# variants collapse to a single RRP (all-dialects) record — the reviewer sees it
-# once, not per dialect. Records disagreeing on the `mergers` flag stay separate
-# (a real within-accent difference). See src/tools/collapse_identical_dialects.py.
-data/supplement-wordnet-collapsed.json data/supplement-wiktionary-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-wordnet-classified.json data/supplement-wiktionary-classified.json data/patches/patches.jsonl
+# Pass 3 — identical-spelling dialect collapse. When 2+ dialects spell a
+# (word, pos) the SAME way, that spelling is not a real dialect difference, so
+# every record is relabelled onto the highest-precedence var (RRP > RSSB > GenAm)
+# and merged — source lists union — so the reviewer sees it once with full
+# provenance. Records disagreeing on the `mergers` flag stay separate (a real
+# within-accent difference). See src/tools/collapse_identical_dialects.py. (No
+# patches prereq: collapsing is a pure dialect-hierarchy rewrite; an orphaned
+# anchor fails loud downstream by design.)
+data/supplement-combined-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-combined-classified.json
 	@echo "Collapsing identical-spelling dialect variants..."
 	$(RUN) python3 $(SRC_TOOLS)/collapse_identical_dialects.py
 
@@ -107,7 +122,7 @@ data/supplement-wordnet-collapsed.json data/supplement-wiktionary-collapsed.json
 # is dropped so the review surface never sees it. Upstream ReadLex is untouched
 # (its ring-point/word-joiner acronym markers are intentional conventions). See
 # src/tools/filter_supplement_contamination.py.
-data/supplement-wordnet-decontaminated.json data/supplement-wiktionary-decontaminated.json: $(SRC_TOOLS)/filter_supplement_contamination.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wordnet-collapsed.json data/supplement-wiktionary-collapsed.json data/patches/patches.jsonl
+data/supplement-combined-decontaminated.json: $(SRC_TOOLS)/filter_supplement_contamination.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-combined-collapsed.json data/patches/patches.jsonl
 	@echo "Pruning contaminated (non-Shavian) supplement candidates..."
 	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_contamination.py
 
@@ -115,8 +130,10 @@ data/supplement-wordnet-decontaminated.json data/supplement-wiktionary-decontami
 # its component words glued together (classified `matches`) is dropped, so the
 # review surface never sees sum-of-parts noise. The -filtered.json output is
 # what the editorial basis reads (records pass through verbatim, so the merger
-# annotation survives). See src/tools/filter_supplement_phrases.py.
-data/supplement-wordnet-filtered.json data/supplement-wiktionary-filtered.json: $(SRC_TOOLS)/filter_supplement_phrases.py $(SRC_TOOLS)/detect_phrase_divergence.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wordnet-decontaminated.json data/supplement-wiktionary-decontaminated.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json data/patches/patches.jsonl
+# annotation and source list survive). The phrase classifier's citation index is
+# still built from the per-source -reliable dumps. See
+# src/tools/filter_supplement_phrases.py.
+data/supplement-combined-filtered.json: $(SRC_TOOLS)/filter_supplement_phrases.py $(SRC_TOOLS)/detect_phrase_divergence.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-combined-decontaminated.json data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json external/readlex/readlex.json data/patches/patches.jsonl
 	@echo "Pruning sum-of-parts phrase candidates..."
 	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_phrases.py
 
@@ -124,7 +141,7 @@ data/supplement-wordnet-filtered.json data/supplement-wiktionary-filtered.json: 
 # Merged readlex (combines original + supplements)
 ###########################################
 
-SUPPLEMENT_DEPS := data/supplement-wordnet-filtered.json data/supplement-wiktionary-filtered.json
+SUPPLEMENT_DEPS := data/supplement-combined-filtered.json
 
 # readlex.json is produced by a two-stage SEQUENTIAL pipeline so the frequency
 # enrichment can never be silently reverted by a rebuild:

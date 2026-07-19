@@ -24,17 +24,16 @@ The filter trims only the UNREVIEWED review surface: a candidate a patch already
 anchors to has left that surface, so it is exempt. Removing it would serve no
 purpose and would orphan the patch's anchor (see apply_patches.py).
 
-This is the first pass of supplement candidate pruning; the phrase-pruning pass
-(filter_supplement_phrases.py) reads the -deduped.json output next and produces
-the -filtered.json the basis consumes.
+This is the first pruning pass over the source-combined candidate pool (see
+combine_supplements.py); the merger classifier reads the -deduped.json output
+next. Kept candidates are copied verbatim, so each record's `source` list rides
+through untouched.
 
-Inputs:  data/supplement-wordnet-reliable.json (the generator's output) and
-         data/supplement-wiktionary-neardot.json (generator output augmented with
-         rescued proper nouns and NEAR syllable-dot corrections),
+Inputs:  data/supplement-combined-raw.json (the combined candidate pool),
          external/readlex/readlex.json, data/patches/patches.jsonl.
-Outputs: data/supplement-{wordnet,wiktionary}-deduped.json  — the phrase filter
-         reads these. The -reliable.json files are left untouched; the removed
-         candidates are regenerable machine output.
+Outputs: data/supplement-combined-deduped.json  — the merger classifier reads
+         this. The combined-raw file is left untouched; the removed candidates
+         are regenerable machine output.
 
 Usage:
     python3 src/tools/filter_supplement_duplicates.py
@@ -49,13 +48,9 @@ from basis import OP_ACCEPT, PROJECT_ROOT, anchor_key, anchor_of
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 
-# (reliable input, deduped output) per supplement source.
-SUPPLEMENTS = [
-    (PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json",
-     PROJECT_ROOT / "data" / "supplement-wordnet-deduped.json"),
-    (PROJECT_ROOT / "data" / "supplement-wiktionary-neardot.json",
-     PROJECT_ROOT / "data" / "supplement-wiktionary-deduped.json"),
-]
+# (combined input, deduped output) — one combined pool.
+INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-raw.json"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-deduped.json"
 
 # The var wildcard: an established RRP entry covers every dialect, so it is
 # broader than any specific candidate var.
@@ -269,17 +264,15 @@ def main():
     removed_samples = {r: [] for r in ("exact-var", "rrp-wildcard", "pos-broadening")}
     kept_close_samples = {kind: [] for kind in KEPT_CLOSE_KINDS}
 
-    total = 0
-    for reliable_path, filtered_path in SUPPLEMENTS:
-        supplement = load_json(reliable_path)
-        total += sum(len(entries) for entries in supplement.values())
-        filtered = filter_supplement(supplement, established_index, exempt_keys,
-                                     removed_by_reason, removed_samples,
-                                     kept_close_samples)
-        with open(filtered_path, "w", encoding="utf-8") as f:
-            json.dump(filtered, f, ensure_ascii=False, indent=4)
-        print(f"Wrote {filtered_path.relative_to(PROJECT_ROOT)}: "
-              f"{sum(len(v) for v in filtered.values()):,} candidates kept")
+    supplement = load_json(INPUT_PATH)
+    total = sum(len(entries) for entries in supplement.values())
+    filtered = filter_supplement(supplement, established_index, exempt_keys,
+                                 removed_by_reason, removed_samples,
+                                 kept_close_samples)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(filtered, f, ensure_ascii=False, indent=4)
+    print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}: "
+          f"{sum(len(v) for v in filtered.values()):,} candidates kept")
 
     report(total, removed_by_reason, removed_samples, kept_close_samples,
            dirty_vars)

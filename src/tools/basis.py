@@ -52,18 +52,19 @@ from dialect_mergers import MERGER_TRAP_BATH
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 
-# Supplement candidate sources that make up the basis alongside upstream ReadLex.
-# These are the PHRASE-FILTERED views of the merger-classified candidates
-# (reliable -> deduped -> classified -> collapsed -> decontaminated -> filtered;
-# see the supplement pruning chain): candidates an established entry already
-# resolves to, identical-spelling dialect variants (collapsed to one RRP record),
-# candidates whose Shavian carries a non-Shavian character (unmapped IPA
-# passthrough), or sum-of-parts phrase noise, are dropped upstream, so the
-# basis — and thus the editor's review surface — never sees them. Each record
-# carries its `mergers` annotation.
+# The supplement candidates that make up the basis alongside upstream ReadLex:
+# the phrase-filtered view of the SOURCE-COMBINED, merger-classified pool
+# (combine -> deduped -> classified -> collapsed -> decontaminated -> filtered;
+# see the supplement pruning chain). The per-source wordnet and wiktionary pools
+# are unified up front (combine_supplements.py) so every prune runs on the union;
+# candidates an established entry already resolves to, identical-spelling dialect
+# variants (collapsed onto the highest-precedence var), candidates whose Shavian
+# carries a non-Shavian character (unmapped IPA passthrough), or sum-of-parts
+# phrase noise, are dropped upstream, so the basis — and thus the editor's review
+# surface — never sees them. Each record carries its `mergers` annotation and its
+# `source` list (the origins that attested its anchor).
 SUPPLEMENT_PATHS = [
-    PROJECT_ROOT / "data" / "supplement-wordnet-filtered.json",
-    PROJECT_ROOT / "data" / "supplement-wiktionary-filtered.json",
+    PROJECT_ROOT / "data" / "supplement-combined-filtered.json",
 ]
 
 # ReadLex's read-only `var: "TrapBath"` records ARE the trap-bath-merged form. The
@@ -88,13 +89,10 @@ UPSTREAM_VARIANT_BASE = "RRP"
 UPSTREAM_VAR_TYPO = "Gen Am"
 UPSTREAM_VAR_TYPO_FIX = "GenAm"
 
-# The record's origin, derived from which basis file supplied it. Upstream
-# ReadLex is the sanctioned dictionary; the supplements are candidates.
+# Upstream ReadLex is the sanctioned dictionary; every record loaded from it
+# carries this origin. Supplement records instead carry their own `source` list
+# (the origins that attested the anchor), written by the combine + prune chain.
 UPSTREAM_SOURCE = "readlex"
-SUPPLEMENT_SOURCES = {
-    "supplement-wordnet-filtered.json": "wordnet",
-    "supplement-wiktionary-filtered.json": "wiktionary",
-}
 
 # Provenance fields a record may carry beyond the canonical core, in output
 # order. `note` is patch metadata and is deliberately NOT emitted to the
@@ -290,14 +288,13 @@ def resolve_patch(patch, basis_index, basis_source):
         effective_record(base_entry, patch["changes"], basis_source[key]))
 
 
-def basis_source(path):
-    """The origin label for records loaded from a basis file."""
+def entry_sources(path, entry):
+    """The origin labels a basis record attests. Upstream ReadLex records take the
+    single readlex label; a combined supplement record carries its own `source`
+    list (the origins that attested its anchor), read straight off the record."""
     if path == UPSTREAM_PATH:
-        return UPSTREAM_SOURCE
-    source = SUPPLEMENT_SOURCES.get(path.name)
-    if source is None:
-        raise ValueError(f"unknown basis source file: {path}")
-    return source
+        return [UPSTREAM_SOURCE]
+    return entry.get("source", [])
 
 
 def enrich_basis_frequency(index):
@@ -332,11 +329,11 @@ def build_basis(enrich_freq=False):
       index   (word_lower, pos, shaw, var) -> the basis candidate. Upstream
               ReadLex is seen first and wins over a supplement that attests the
               same natural key.
-      source  same key -> ordered list of the origin labels that attested it, in
-              canonical load order (readlex, wordnet, wiktionary), deduped. A
-              record content-deduped by a later source keeps its FIRST record but
-              records that a later source ALSO attested it — the multi-source
-              agreement signal, preserved for filtering rather than discarded.
+      source  same key -> ordered list of the origin labels that attested it,
+              deduped. Upstream ReadLex contributes the readlex label; a
+              supplement record contributes its own `source` list (the union of
+              origins the combine + collapse chain recorded for that anchor) —
+              the multi-source agreement signal, preserved for filtering.
 
     With enrich_freq, every record is put on the corpus frequency scale so the
     editor's freq-desc sort triages the review pool by real frequency, uniformly
@@ -347,7 +344,6 @@ def build_basis(enrich_freq=False):
     index = {}
     source = {}
     for source_path in [UPSTREAM_PATH, *SUPPLEMENT_PATHS]:
-        label = basis_source(source_path)
         data = (load_upstream() if source_path == UPSTREAM_PATH
                 else load_json(source_path))
         for entries in data.values():
@@ -355,8 +351,9 @@ def build_basis(enrich_freq=False):
                 key = anchor_of(entry)
                 index.setdefault(key, entry)
                 sources = source.setdefault(key, [])
-                if label not in sources:
-                    sources.append(label)
+                for label in entry_sources(source_path, entry):
+                    if label not in sources:
+                        sources.append(label)
     if enrich_freq:
         enrich_basis_frequency(index)
     return index, source

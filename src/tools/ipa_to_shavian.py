@@ -99,6 +99,12 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     # Wiktionary narrow transcription conventions → ReadLex broad
     ipa = ipa.replace("ɫ", "l")    # dark l → plain l
     ipa = ipa.replace("ɒʊ", "əʊ")  # GOAT: Wiktionary sometimes uses ɒʊ, ReadLex uses əʊ
+    # ʌɪ is the SSB/Lindsey narrow transcription of the PRICE diphthong (price,
+    # my, I) → ReadLex aɪ (𐑲). Left un-normalized it strands as ʌ+ɪ → 𐑳𐑦. The
+    # data carries no genuine ʌ+ɪ boundary (only slider ˈslʌɪdəR → 𐑕𐑤𐑲𐑛𐑩𐑼);
+    # any real morpheme split is protected by the + boundary, which the converter
+    # splits on before matching.
+    ipa = ipa.replace("ʌɪ", "aɪ")  # PRICE: SSB narrow form → ReadLex aɪ
     ipa = ipa.replace("ɪi", "iː")  # happy tensing narrow form → broad iː
     ipa = ipa.replace("i̯", "iː")  # another narrow happy form
 
@@ -243,6 +249,62 @@ def _nurse_stressed(word_ipa: str, pos: int) -> bool:
     return True
 
 
+def _genam_stressed_i_to_fleece(ipa: str) -> str:
+    """Rewrite a STRESSED bare i (no length mark) to iː per word, so it converts
+    to FLEECE (𐑰) rather than KIT (𐑦). An unstressed bare i (happY, final -y,
+    weak i in -iə) is left untouched. A bare i is 'stressed' when, scanning back
+    through its onset, a stress mark (or the word start / an affix boundary —
+    the first nucleus defaults to stressed) is met before any other nucleus."""
+    return ' '.join(_genam_stressed_i_word(w) for w in ipa.split(' '))
+
+
+def _genam_stressed_i_word(word_ipa: str) -> str:
+    result = []
+    i = 0
+    while i < len(word_ipa):
+        # Only a BARE i: not i already lengthened to iː (skip past both chars so
+        # the ː is not re-scanned as a fresh position).
+        if word_ipa[i] == 'i' and word_ipa[i + 1:i + 2] != 'ː':
+            # Leave the NEAR-with-r centering diphthong (iəR / iər) alone: here
+            # hiəR, beer biəR, pierce piəRs are NEAR (𐑽), not FLEECE+lettER.
+            # Lengthening the i there would invent 𐑰𐑼. The bare-iə hiatus with no
+            # following rhotic (aegean dʒiən, caribbean biən) is genuine FLEECE+
+            # schwa and IS converted.
+            is_near_r = bool(re.match(r'ə[Rr]', word_ipa[i + 1:i + 3]))
+            if not is_near_r and _genam_i_stressed(word_ipa, i):
+                result.append('iː')
+            else:
+                result.append('i')
+            i += 1
+        else:
+            result.append(word_ipa[i])
+            i += 1
+    return ''.join(result)
+
+
+# The i-stress scan must also see ReadLex's uppercase vowel variants as nuclei.
+# Æ (TRAP), Ɑ (long TRAP-BATH), Ə (suffix schwa) and I (weak vowel) are all
+# syllable nuclei that can precede a bare i (alexandria zÆndriə, banquet-style
+# I…). They are absent from _NURSE_SCAN_VOWELS (which never meets them), so
+# scanning past them would wrongly report an unstressed i as stressed.
+_I_SCAN_VOWELS = _NURSE_SCAN_VOWELS | set('ÆⱭƏI')
+
+
+def _genam_i_stressed(word_ipa: str, pos: int) -> bool:
+    """Whether the bare i at pos sits in a stressed syllable (same onset-scan as
+    _nurse_stressed): back through the onset, a stress mark / word start / affix
+    boundary before any other nucleus means stressed."""
+    j = pos - 1
+    while j >= 0:
+        c = word_ipa[j]
+        if c in 'ˈˌ' or c == '+':
+            return True
+        if c in _I_SCAN_VOWELS or c == 'ː':
+            return False
+        j -= 1
+    return True
+
+
 def _normalize_genam(ipa: str) -> str:
     """Normalize GenAm IPA symbols to ReadLex RRP conventions.
 
@@ -262,6 +324,13 @@ def _normalize_genam(ipa: str) -> str:
     ReadLex only exist for genuine exceptions (yod-dropping, etc.).
     """
     # R-colored vowels and bare ɜ now handled in common normalize_ipa() section.
+
+    # Stressed bare i → iː (FLEECE). GenAm transcriptions write bare i (no length
+    # mark) for the FLEECE vowel where RP writes iː. Under stress it is FLEECE
+    # (𐑰: three ˈθri, antique ænˈtik, aegean ɪˈdʒiən); UNSTRESSED it is the KIT/
+    # happY vowel (𐑦: city ˈsɪti, happy ˈhæpi) and must stay bare i. Runs before
+    # the flap/vowel rewrites below — none of them touch i.
+    ipa = _genam_stressed_i_to_fleece(ipa)
 
     # Flap
     ipa = ipa.replace("ɾ", "t")      # alveolar flap → t
@@ -642,6 +711,8 @@ PHONEME_MAP = [
     ("ɑR", "𐑸"),   # START without length (barnburning bɑRn, jacquard kɑRd)
     ("ɑr", "𐑸"),   # START without length, lowercase r
     ("ɑɪ", "𐑲"),   # PRICE variant notation (reigelheimer rɑɪ-)
+    ("ʌɪ", "𐑲"),   # PRICE: SSB narrow form reaching the converter unnormalized
+                   # (readlex-source entries bypass normalize_ipa: slider ˈslʌɪdəR)
     ("ɑ", "𐑪"),    # LOT, GenAm-style bare ɑ (hodler hɑdləR)
 
     # Affricates (must come before component stops/fricatives)

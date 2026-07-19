@@ -18,6 +18,11 @@ def norm_rp(ipa: str, word: str) -> str:
     return ipa_to_shavian(normalize_ipa(ipa, word, "wiktionary_rp"))
 
 
+def norm_gam(ipa: str, word: str = "") -> str:
+    """Normalize as a GenAm wiktionary source, then convert."""
+    return ipa_to_shavian(normalize_ipa(ipa, word, "wiktionary_gam"))
+
+
 class Bug1SquareVowel(unittest.TestCase):
     """ɛː is the SQUARE vowel (eə → 𐑺) in modern SSB, not NURSE (𐑻)."""
 
@@ -199,12 +204,75 @@ class ScorerShaveOptions(unittest.TestCase):
         self.assertIsNone(override)
 
 
+class Bug7PriceNarrowSsb(unittest.TestCase):
+    """ʌɪ is the SSB/Lindsey narrow PRICE diphthong (price, my, I) → 𐑲, not a
+    stranded ʌ+ɪ → 𐑳𐑦."""
+
+    def test_adonai_price_ending(self):
+        # normalize path (any non-readlex source) rewrites ʌɪ → aɪ → 𐑲
+        self.assertTrue(norm_rp("ˌædɒˈnʌɪ", "adonai").endswith("𐑲"))
+
+    def test_brooklynite_price_medial(self):
+        self.assertEqual(norm_rp("ˈbrʊklɪnʌɪt", "brooklynite"), "𐑚𐑮𐑫𐑒𐑤𐑦𐑯𐑲𐑑")
+
+    def test_converter_backstop_slider(self):
+        # readlex-source entries bypass normalize_ipa: the PHONEME_MAP backstop
+        # must render ʌɪ as PRICE 𐑲 directly (slider ˈslʌɪdəR).
+        self.assertEqual(ipa_to_shavian("ˈslʌɪdəR"), "𐑕𐑤𐑲𐑛𐑼")
+
+    def test_price_matches_ai(self):
+        # ʌɪ and aɪ converge on the same PRICE glyph.
+        self.assertEqual(ipa_to_shavian("ˈslʌɪd"), ipa_to_shavian("ˈslaɪd"))
+
+
+class Bug8GenAmStressedFleece(unittest.TestCase):
+    """GenAm bare i (no length mark) is FLEECE (𐑰) under STRESS, KIT/happY (𐑦)
+    unstressed. The stressed-vs-unstressed distinction is the crux."""
+
+    def test_three_monosyllable_fleece(self):
+        self.assertEqual(norm_gam("ˈθri", "three"), "𐑔𐑮𐑰")
+
+    def test_antique_stressed_fleece(self):
+        self.assertEqual(norm_gam("ænˈtik", "antique"), "𐑨𐑯𐑑𐑰𐑒")
+
+    def test_aegean_stressed_i_before_schwa(self):
+        # Stressed i in an iə hiatus (no following r) → FLEECE + schwa.
+        self.assertEqual(norm_gam("ɪˈdʒiən", "aegean"), "𐑦𐑡𐑰𐑩𐑯")
+
+    def test_media_first_i_fleece_second_stays(self):
+        # First (stressed) i → FLEECE; second (weak, in diə) stays.
+        self.assertEqual(norm_gam("ˈmidiə", "media"), "𐑥𐑰𐑛𐑾")
+
+    # --- happY guard: unstressed final/weak i must STAY 𐑦 (the key non-regression) ---
+
+    def test_happy_word_stays_kit(self):
+        self.assertEqual(norm_gam("ˈhæpi", "happy"), "𐑣𐑨𐑐𐑦")
+        self.assertEqual(norm_gam("ˈsɪti", "city"), "𐑕𐑦𐑑𐑦")
+        self.assertEqual(norm_gam("ˈkɔfi", "coffee"), "𐑒𐑪𐑓𐑦")
+
+    def test_unstressed_i_after_uppercase_variant_stays_kit(self):
+        # alexandria zÆndriə: the i is unstressed (Æ nucleus precedes it). The
+        # onset-scan must see Æ as a nucleus, so the i stays weak (NEAR 𐑾),
+        # NOT wrongly lengthened to FLEECE.
+        self.assertEqual(norm_gam("ˌælɪɡˈzÆndriə", "alexandria"), "𐑨𐑤𐑦𐑜𐑟𐑨𐑯𐑛𐑮𐑾")
+
+    def test_near_with_r_untouched(self):
+        # here/beer/lear: iəR is the NEAR-with-r centering diphthong (𐑽), never
+        # FLEECE+lettER. The rule must leave it alone even under stress.
+        self.assertEqual(norm_gam("hiəR", "here"), "𐑣𐑽")
+        self.assertEqual(norm_gam("ˈbiəR", "beer"), "𐑚𐑽")
+        self.assertEqual(norm_gam("liəR", "lear"), "𐑤𐑽")
+
+
 class Determinism(unittest.TestCase):
     """The converter is pure: same input → same output."""
 
     def test_repeatable(self):
-        for ipa in ["ˈɔːdiəʊ", "ˈɛːrɪəl", "məˈtɪəriəl"]:
+        for ipa in ["ˈɔːdiəʊ", "ˈɛːrɪəl", "məˈtɪəriəl", "ˈslʌɪdəR"]:
             self.assertEqual(ipa_to_shavian(ipa), ipa_to_shavian(ipa))
+
+    def test_genam_normalize_repeatable(self):
+        self.assertEqual(norm_gam("ˈθri", "three"), norm_gam("ˈθri", "three"))
 
     def test_normalize_repeatable(self):
         self.assertEqual(

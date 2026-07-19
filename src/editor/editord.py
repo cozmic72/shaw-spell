@@ -45,6 +45,19 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # context for a landing. The shaw union brings in variant siblings
                 # (same shaw, different word — estrogen/oestrogen). Deduped.
 
+    Request:   {"op": "definitions", "word": "cat"}
+    Response:  {"word": "cat", "senses": [
+                  {"synset": "02123649-n", "gloss": "any of various …",
+                   "pos": "n", "shaw_pos": "…",
+                   "shaw_gb": "…", "shaw_us": "…"|null}, …]}
+                # READ-ONLY inline sense summary (definitions viewer, phase P2). The
+                # Shavian definitions corpus keyed by lowercased headword -> its
+                # senses. Per sense: English gloss + GB Shavian transliteration
+                # (shaw_gb), US Shavian ONLY where it diverges (shaw_us, else null),
+                # POS tag + its Shavian (shaw_pos). A null shaw_* / an empty senses
+                # list is a coverage gap the UI renders explicitly. Reads a SEPARATE
+                # index, never the basis or the patch store.
+
     Request:   {"op": "patch", "anchor": {"word","pos","shaw","var"} | null,
                 "record": {...} | null, "author": "…", "replaces"?: "p_…"}
     Response:  {"result": "appended"|"replaced", "id": "p_…",
@@ -117,6 +130,7 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
                    PROJECT_ROOT, UPSTREAM_SOURCE, anchor_key)
+from definitions import load_definitions_index                   # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
                      NOVELTY_NEW_WORD, PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
@@ -139,10 +153,16 @@ ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED, PATCH_STATE_AUTHORE
 class State:
     """The annotated view for the daemon's lifetime. A write updates the affected
     anchor in the view incrementally (see AnnotatedView.apply_patch); rebuild()
-    reloads the whole view from disk and is kept for startup only."""
+    reloads the whole view from disk and is kept for startup only.
 
-    def __init__(self, view):
+    `definitions` is a SEPARATE, read-only index of the Shavian definitions corpus
+    (definitions.py) — the inline sense summary reads it, but it never touches the
+    basis or the patch store. Held here so it lives for the daemon's lifetime like
+    the view, loaded once at startup."""
+
+    def __init__(self, view, definitions):
         self.view = view
+        self.definitions = definitions
 
     def rebuild(self):
         self.view = load_view()
@@ -590,6 +610,19 @@ def handle_related(state, request):
     return {"records": [serialisable(r) for r in deduped]}
 
 
+def handle_definitions(state, request):
+    """The Shavian definitions senses for a word (case-insensitive), for the
+    editor's inline read-only sense summary. Each sense carries the English gloss,
+    its Shavian transliteration (GB, plus US only where it diverges), and the POS
+    tag with its Shavian transliteration. An empty list = no definition for the
+    word (the coverage gap the view renders explicitly). Read-only: it reads the
+    separate definitions index, never the basis or the patch store."""
+    word = request.get("word")
+    if not word:
+        return {"error": "definitions requires a word"}
+    return {"word": word, "senses": state.definitions.senses(word)}
+
+
 ANCHOR_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_REQUIRED_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_ALLOWED_FIELDS = {"word", "pos", "shaw", "var", "ipa", "freq",
@@ -974,6 +1007,7 @@ HANDLERS = {
     "facets": handle_facets,
     "entry": handle_entry,
     "related": handle_related,
+    "definitions": handle_definitions,
     "patch": handle_patch,
     "flag": handle_flag,
     "unpatch": handle_unpatch,
@@ -1056,8 +1090,13 @@ def main():
     )
 
     logging.info("building annotated view (basis + patches)")
-    state = State(load_view())
-    logging.info("view ready: %d annotated records", len(state.view.records))
+    view = load_view()
+    logging.info("view ready: %d annotated records", len(view.records))
+
+    logging.info("loading Shavian definitions corpus (gb + us)")
+    definitions = load_definitions_index()
+    state = State(view, definitions)
+    logging.info("definitions ready")
 
     socket_path = args.socket
     if os.path.exists(socket_path):

@@ -241,6 +241,12 @@ const state = {
     // reload after a write) is superseded and drops its result, so a slow in-flight
     // response can never paint stale rows over the current, freshest one.
     relatedGeneration: 0,
+
+    // Monotonic token for the definitions fetch, mirroring relatedGeneration: each
+    // loadDefinitions bumps it, and only the LATEST fetch may render — a slow
+    // response for a previously-focused word is dropped rather than painted over
+    // the current word's senses.
+    definitionsGeneration: 0,
 };
 
 // Long-press threshold to enter touch multi-select, and the movement slop beyond
@@ -997,9 +1003,11 @@ function renderDetail(record) {
     );
     const editor = recordEditor(record, { scope: "detail", mode: "edit" });
     state.mainContext.editing = wasEditing;
+    const definitions = definitionsSection();
     const related = relatedSection();
-    DETAIL.replaceChildren(editor, related);
+    DETAIL.replaceChildren(editor, definitions, related);
     setDetailMode();
+    loadDefinitions(record, definitions);
     loadRelated(record, related);
 }
 
@@ -1132,6 +1140,167 @@ function summariseCounts(counts) {
         .sort((a, b) => b[1] - a[1])
         .map(([value, count]) => `${value} ·${count}`)
         .join(", ");
+}
+
+// ---- definitions (read-only inline sense summary) ----
+// A collapsed, READ-ONLY summary of the focused word's definitions (dictionary
+// senses): each sense's English gloss, its Shavian transliteration, and its POS —
+// docs/definitions-editor-design.md §5b, phase P2. It is purely a VIEW: no edit or
+// flag affordances (those are a later phase). Fetched async off the definitions op
+// so a landing never blocks the review loop; a stale response for a previously-
+// focused word is dropped (guarded by the definitions generation token).
+//
+// gb/us: one row per sense with the GB Shavian; the US Shavian is shown as a second
+// line ONLY where the daemon reports it diverges (shaw_us present) — "one view, both
+// shown only on divergence". The English gloss and POS are shared across dialects.
+
+const DEFINITIONS_TITLE = "Definitions";
+
+// The WordNet POS tags the corpus carries, expanded to a readable label for the
+// sense summary. `n-1`/`v-2` style disambiguated tags share the base letter's label
+// (the trailing index is an internal sense-split, not a different part of speech).
+const DEFINITION_POS_LABELS = new Map([
+    ["n", "noun"],
+    ["v", "verb"],
+    ["a", "adjective"],
+    ["s", "adjective"],
+    ["r", "adverb"],
+]);
+
+function definitionPosLabel(pos) {
+    if (!pos) {
+        return "";
+    }
+    return DEFINITION_POS_LABELS.get(pos.split("-")[0]) || pos;
+}
+
+// The section starts collapsed under a summary/disclosure (<details>), so the sense
+// list never crowds the word panel until the owner opens it — the design's "collapsed
+// summary". The header carries the sense count once loaded.
+function definitionsSection() {
+    const section = document.createElement("details");
+    section.className = "definitions";
+    section.setAttribute("aria-label", DEFINITIONS_TITLE);
+    section.append(definitionsSummary(null), definitionsLoading());
+    return section;
+}
+
+function definitionsSummary(count) {
+    const summary = document.createElement("summary");
+    summary.className = "definitions-title";
+    summary.textContent = count === null
+        ? DEFINITIONS_TITLE
+        : `${DEFINITIONS_TITLE} · ${count}`;
+    return summary;
+}
+
+function definitionsLoading() {
+    const loading = document.createElement("p");
+    loading.className = "definitions-loading";
+    loading.textContent = "Loading definitions…";
+    return loading;
+}
+
+// Fetch the focused word's senses and fill `section` when it returns. Mirrors
+// loadRelated's staleness discipline: the generation token plus the focused-anchor
+// and connected checks ensure only the newest fetch for the current word may render.
+async function loadDefinitions(record, section) {
+    const generation = ++state.definitionsGeneration;
+    const focused = record.anchor;
+    try {
+        const result = await callDaemon({ op: "definitions", word: record.word });
+        const current = state.records[state.selected];
+        if (generation !== state.definitionsGeneration
+            || !current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
+            return;
+        }
+        renderDefinitions(section, result.senses);
+    } catch (error) {
+        if (generation === state.definitionsGeneration && section.isConnected) {
+            renderDefinitionsError(section, error.message);
+        }
+    }
+}
+
+function renderDefinitions(section, senses) {
+    if (!senses.length) {
+        section.replaceChildren(definitionsSummary(0), definitionsEmpty());
+        return;
+    }
+    const list = document.createElement("ul");
+    list.className = "definitions-list";
+    for (const sense of senses) {
+        list.append(definitionRow(sense));
+    }
+    section.replaceChildren(definitionsSummary(senses.length), list);
+    section.open = true;
+}
+
+// The "this word has no definition" state — the coverage gap made visible rather
+// than hidden (the design: ~50% of words have none). A plain note, not an error.
+function definitionsEmpty() {
+    const note = document.createElement("p");
+    note.className = "definitions-empty";
+    note.textContent = "No definition on record for this word.";
+    return note;
+}
+
+function renderDefinitionsError(section, message) {
+    const note = document.createElement("p");
+    note.className = "definitions-loading";
+    note.textContent = `Couldn't load definitions: ${message}`;
+    section.replaceChildren(definitionsSummary(null), note);
+}
+
+// One sense: a POS tag, the English gloss, and the Shavian transliteration beneath.
+// The Shavian is the shaw_gb line; a divergent US transliteration (shaw_us) gets its
+// own dialect-tagged line. A sense with no transliteration yet renders the explicit
+// "no transliteration yet" gap state, so the coverage tail is discoverable.
+function definitionRow(sense) {
+    const row = document.createElement("li");
+    row.className = "definition-row";
+
+    const head = document.createElement("div");
+    head.className = "definition-head";
+    const pos = definitionPosLabel(sense.pos);
+    if (pos) {
+        head.append(cell("definition-pos", pos));
+    }
+    head.append(cell("definition-gloss", sense.gloss || "(no gloss)"));
+    row.append(head);
+
+    row.append(definitionShaw(sense));
+    return row;
+}
+
+// The Shavian transliteration line(s) of a sense. The GB Shavian is the primary
+// line (untagged when it is the only one); a divergent US transliteration is a
+// second line tagged "US" (and the primary is then tagged "GB"), so the two
+// dialects read as distinct where they genuinely differ. Absent GB Shavian renders
+// the "no transliteration yet" gap state.
+function definitionShaw(sense) {
+    const wrap = document.createElement("div");
+    wrap.className = "definition-shaw-wrap";
+    if (!sense.shaw_gb) {
+        wrap.append(cell("definition-no-shaw", "no transliteration yet"));
+        return wrap;
+    }
+    const diverges = Boolean(sense.shaw_us);
+    wrap.append(shawLine(sense.shaw_gb, diverges ? "GB" : null));
+    if (diverges) {
+        wrap.append(shawLine(sense.shaw_us, "US"));
+    }
+    return wrap;
+}
+
+function shawLine(shaw, dialect) {
+    const line = document.createElement("div");
+    line.className = "definition-shaw shavian";
+    if (dialect) {
+        line.append(cell("definition-dialect", dialect));
+    }
+    line.append(cell("definition-shaw-text", shaw));
+    return line;
 }
 
 // ---- related-entries context ----

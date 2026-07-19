@@ -1161,6 +1161,90 @@ body {
    shares this Latin word (capitalisation dupes, homographs), each stamped by its
    provenance + review state. Colour rides the same --state-* palette as the
    ledger; the glyph and text label carry the meaning off-colour too. */
+/* Definitions — the read-only inline sense summary (design §5b). A <details>
+   disclosure so the sense list stays collapsed until the owner opens it, keeping
+   the word panel uncrowded. Mirrors the related section's top rule + mono header. */
+.definitions {
+    margin-top: 30px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+}
+.definitions-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    cursor: pointer;
+    list-style-position: inside;
+}
+.definitions-title:hover { color: var(--ink); }
+.definitions[open] .definitions-title { margin-bottom: 12px; }
+.definitions-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
+.definitions-empty { color: var(--ink-soft); font-size: 13px; }
+.definitions-list { list-style: none; }
+/* One sense: a POS/gloss head line, and the Shavian transliteration beneath. Rows
+   are generously spaced and full-width (readable + mobile-friendly per the editor's
+   UX rule), not squeezed into the dense grid the related rows use. */
+.definition-row {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule);
+    border-left: 3px solid transparent;
+}
+.definition-row:last-child { border-bottom: none; }
+.definition-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+.definition-pos {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+}
+.definition-gloss {
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--ink);
+}
+.definition-shaw-wrap {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.definition-shaw {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.definition-shaw-text {
+    font-family: var(--shaw);
+    font-size: 22px;
+    line-height: 1.35;
+    color: var(--ink);
+}
+/* The GB/US dialect tag, shown only where the two transliterations diverge. */
+.definition-dialect {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    min-width: 20px;
+}
+/* The coverage gap made visible: a sense whose Shavian transliteration is missing. */
+.definition-no-shaw {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--ink-soft);
+}
+
 .related {
     margin-top: 30px;
     padding-top: 22px;

@@ -101,6 +101,30 @@ UPSTREAM_SOURCE = "readlex"
 # dictionary. `status` lives in the record because downstream consumers read it.
 PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source"]
 
+# ORIGINAL-VALUE provenance (orig_*): the pre-transform value of a key field a
+# pipeline transform CHANGED. The natural key is (word, pos, shaw, var), so any
+# transform that rewrites `var` (the identical-dialect collapse) or respells
+# `shaw` (a forthcoming RRP classifier) moves a record's key and ORPHANS every
+# editorial patch anchored to the old key. Recording the pre-image lets the
+# applicator AUTO-RE-ANCHOR such a patch (see reanchor_index / apply_patches):
+# a transformed record still carries the key its patch was written against.
+#
+# Additive, like `mergers`/`variant`: a field is present only when that field was
+# actually changed, and absent means "unchanged" — a record without any orig_*
+# behaves exactly as before this convention existed (backward-compatible).
+#
+# SET-ONCE (FIRST pre-image wins). A patch is anchored against the value the
+# owner reviewed — the ORIGINAL, before ANY transform touched it. So a second
+# transform that changes the same field again must NOT overwrite an existing
+# orig_*: mark_original is a no-op when the field is already recorded. orig_*
+# always holds the earliest pre-image, which is the anchor a patch resolves to.
+#
+# DERIVED, never owner-editable: orig_* is set by transforms, so it is excluded
+# from INTRINSIC_FIELDS (a patch's `changes` may not carry it) — but it is carried
+# through the record <-> output mappings like `mergers` so it survives to the basis
+# where the applicator reads it. The field it shadows -> the orig key it records:
+ORIG_FIELDS = {"var": "orig_var", "shaw": "orig_shaw", "ipa": "orig_ipa"}
+
 # A patch's operation. An accept sanctions the anchored basis record (with any
 # intrinsic edits in `changes`); a drop removes it; a flag is a production no-op.
 OP_ACCEPT = "accept"
@@ -183,6 +207,115 @@ def anchor_key(anchor):
     return (anchor["word"].lower(), anchor["pos"], anchor["shaw"], anchor["var"])
 
 
+# The canonical-entry (Latn/Shaw/...) field a transform changes, and the natural-
+# key slot it occupies. mark_original works on the canonical shape because that is
+# what pipeline transforms (collapse_identical_dialects, a future classifier) read
+# and write. `ipa` shadows no key slot — orig_ipa is pure visibility, never a
+# re-anchor axis (ipa is not in the anchor key).
+_ORIG_ENTRY_FIELD = {"var": "var", "shaw": "Shaw", "ipa": "ipa"}
+
+
+def mark_original(entry, field, old_value):
+    """Record `old_value` as the pre-transform value of `field` on a canonical
+    basis `entry`, in place — the shared way a transform preserves what it changed
+    (see ORIG_FIELDS). `field` is one of "var" / "shaw" / "ipa".
+
+    Call it AFTER updating the field: `entry["var"] = new; mark_original(entry,
+    "var", old)`. It records `old_value` under orig_<field> unless one of two guards
+    applies:
+
+      SET-ONCE — if the entry already carries orig_<field> (an earlier transform
+      changed it first), this is a NO-OP. The earliest pre-image is the one a patch
+      was anchored against, so a later transform never overwrites it. orig_<field>
+      always holds the value the field started at.
+
+      NO-CHANGE — if old_value equals the value now on the entry, nothing changed,
+      so no orig_<field> is planted. This keeps the field additive: orig_<field> is
+      present iff the field genuinely differs from where it started.
+
+    Fails loud on an unknown field rather than silently mis-recording provenance."""
+    orig_key = ORIG_FIELDS.get(field)
+    if orig_key is None:
+        raise ValueError(f"mark_original: {field!r} is not an orig-tracked field "
+                         f"(one of {sorted(ORIG_FIELDS)})")
+    if orig_key in entry:
+        return  # set-once: keep the FIRST pre-image (the patch anchor's value)
+    if entry.get(_ORIG_ENTRY_FIELD[field], "") == old_value:
+        return  # no genuine change; stay additive
+    entry[orig_key] = old_value
+
+
+def reanchor_index(basis_index):
+    """Map every recoverable OLD natural key to the CURRENT key of the basis record
+    that carries it — the auto-re-anchor lookup the applicator consults before
+    soft-failing an orphaned patch.
+
+    A basis record that a transform rewrote carries the pre-image of what changed
+    in orig_var / orig_shaw (orig_ipa is not a key axis, so it is ignored here).
+    Reconstructing the key the record had BEFORE the transform — its current key
+    with the changed slot(s) swapped back to the orig value — yields the exact key
+    a patch was anchored against. That old key maps to the record's current key, so
+    an orphaned anchor matching it re-anchors to where the record lives now.
+
+    Only records carrying an orig_* key contribute (an untouched record's key never
+    moved, so it needs no redirect). A collision — two records both claiming the
+    same old key — cannot be resolved to one target, so it is dropped from the index
+    (the patch stays orphaned and is surfaced, never silently mis-applied)."""
+    old_to_current = {}
+    collided = set()
+    for current_key, entry in basis_index.items():
+        old_key = _pre_transform_key(current_key, entry)
+        if old_key == current_key:
+            continue  # no key-moving orig_* on this record
+        if old_key in old_to_current or old_key in collided:
+            collided.add(old_key)
+            old_to_current.pop(old_key, None)
+            continue
+        old_to_current[old_key] = current_key
+    return old_to_current
+
+
+def _pre_transform_key(current_key, entry):
+    """The natural key `entry` had before its key-moving transforms — its current
+    key with each orig-tracked key slot (shaw, var) swapped back to the recorded
+    pre-image. Slots without an orig_* are left as-is. Equal to current_key when the
+    record carries no key-moving orig_*."""
+    word, pos, shaw, var = current_key
+    if "orig_shaw" in entry:
+        shaw = entry["orig_shaw"]
+    if "orig_var" in entry:
+        var = entry["orig_var"]
+    return (word, pos, shaw, var)
+
+
+def anchor_from_key(key):
+    """A patch-anchor dict {word, pos, shaw, var} for a natural key tuple — the
+    inverse of anchor_key. Used to re-point an orphaned patch's anchor at the
+    current key of the record that now carries its pre-image."""
+    word, pos, shaw, var = key
+    return {"word": word, "pos": pos, "shaw": shaw, "var": var}
+
+
+def reanchor_patch(patch, reanchor_map):
+    """A copy of an orphaned `patch` re-pointed at the CURRENT key of the record
+    carrying its pre-image, or None if no orig_* record covers its anchor.
+
+    The applicator's FIRST resort for an anchor that no longer resolves against the
+    basis: a key-moving transform (var relabel, respell) rewrote the record but
+    preserved its old key in orig_* (see reanchor_index / mark_original), so the
+    old key the patch was anchored against maps to where the record lives now. The
+    returned patch has the SAME op/changes/id/meta — only its anchor moves, and only
+    in memory for this apply. The store on disk is never rewritten (the transforms
+    carry orig_* forward, so re-anchoring is recomputed every apply, not persisted).
+
+    None when the anchor's old key is absent from the map (no record preserved this
+    pre-image, or a collision dropped it) — the caller then soft-fails as before."""
+    current_key = reanchor_map.get(anchor_key(patch["anchor"]))
+    if current_key is None:
+        return None
+    return {**patch, "anchor": anchor_from_key(current_key)}
+
+
 def is_flag_patch(patch):
     """Whether a patch is a FLAG — "looked at, no verdict yet". A flag leaves the
     anchored basis record untouched; it counts as reviewed (leaves the unreviewed
@@ -210,6 +343,9 @@ def record_to_output(record):
         entry["variant"] = record["variant"]
     if record.get("has_definition"):
         entry["has_definition"] = record["has_definition"]
+    for orig_key in ORIG_FIELDS.values():
+        if orig_key in record:
+            entry[orig_key] = record[orig_key]
     for field in PROVENANCE_FIELDS:
         if record.get(field) not in (None, ""):
             entry[field] = record[field]
@@ -233,6 +369,9 @@ def output_to_record(entry):
         record["variant"] = entry["variant"]
     if entry.get("has_definition"):
         record["has_definition"] = entry["has_definition"]
+    for orig_key in ORIG_FIELDS.values():
+        if orig_key in entry:
+            record[orig_key] = entry[orig_key]
     for field in PROVENANCE_FIELDS:
         if entry.get(field) not in (None, ""):
             record[field] = entry[field]

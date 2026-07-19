@@ -56,6 +56,8 @@ from basis import (
     anchor_of,
     build_basis,
     load_upstream,
+    reanchor_index,
+    reanchor_patch,
     resolve_patch,
 )
 
@@ -131,8 +133,15 @@ def patch_order_key(patch):
 
 def apply_patches(output, basis_index, basis_source, patches):
     stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
-             "skipped_numeral": 0, "skipped_shaw": 0}
+             "reanchored": 0, "skipped_numeral": 0, "skipped_shaw": 0}
     orphans = []
+
+    # The auto-re-anchor lookup: an OLD natural key a key-moving transform rewrote
+    # -> the CURRENT key of the record now carrying it (via orig_*). Built once so
+    # the FIRST resort for an orphaned anchor is to follow the record to its new
+    # key, ahead of the soft-fail below. Empty (and free) when no basis record
+    # carries orig_* — the pre-convention behaviour.
+    reanchor_map = reanchor_index(basis_index)
 
     for patch in sorted(patches, key=patch_order_key):
         entry = resolve_patch(patch, basis_index, basis_source)
@@ -144,14 +153,29 @@ def apply_patches(output, basis_index, basis_source, patches):
             stats["flag"] += 1
             continue
 
-        # Upstream drifted: the record this decision was made against no longer
-        # exists. Collect it to log below, and skip applying it — it contributes
-        # nothing to the output. The patch stays in the store (this applicator
-        # never rewrites it) and is surfaced via the editor's `orphaned` filter.
+        # The anchor no longer resolves against the basis. FIRST resort: a key-
+        # moving transform (var relabel / respell) may have rewritten the record
+        # but preserved its old key in orig_*. If so, follow the record to its new
+        # key and apply the decision there — the verdict is preserved automatically,
+        # no manual migration. Only if no orig_* record covers the anchor does it
+        # fall through to the soft-fail below.
         if entry is PATCH_ORPHAN:
-            orphans.append(patch)
-            stats["orphaned"] += 1
-            continue
+            moved = reanchor_patch(patch, reanchor_map)
+            reresolved = (resolve_patch(moved, basis_index, basis_source)
+                          if moved is not None else None)
+            if moved is None or reresolved is PATCH_ORPHAN:
+                # Still orphaned: upstream drifted and no orig_* pre-image covers
+                # it. Collect to log below and skip — it contributes nothing to the
+                # output. The patch stays in the store (this applicator never
+                # rewrites it) and is surfaced via the editor's `orphaned` filter.
+                orphans.append(patch)
+                stats["orphaned"] += 1
+                continue
+            # Auto-re-anchored: apply against the record's current key. The removal
+            # below must target the CURRENT anchor (where the record now lives), so
+            # carry the moved patch forward.
+            patch, entry = moved, reresolved
+            stats["reanchored"] += 1
 
         if patch["anchor"] is None:
             # Authorship: a standalone record no source attests.
@@ -218,6 +242,9 @@ def main():
     print(f"  update/respell:      {stats['update']:,}")
     print(f"  removal:             {stats['removal']:,}")
     print(f"  flag (no-op):        {stats['flag']:,}")
+    print(f"  auto-re-anchored:    {stats['reanchored']:,}"
+          + ("  — orphaned anchor followed to its transformed record via orig_*"
+             if stats['reanchored'] else ""))
     print(f"  orphaned (skipped):  {stats['orphaned']:,}"
           + ("  — see log above; retained in store, surface via editor 'orphaned' filter"
              if stats['orphaned'] else ""))

@@ -78,12 +78,24 @@ def batch_shave(words: list[str], dialect: str = "british",
     for i in range(0, len(words), chunk_size):
         chunk = words[i:i + chunk_size]
         try:
+            # Separate words with BLANK lines so shave treats each as an
+            # isolated token. Plain newlines make shave read the batch as a
+            # SENTENCE, whose POS/phrase heuristics contaminate homograph
+            # disambiguation across word boundaries (e.g. 'bow' 𐑚𐑴↔𐑚𐑬).
             proc = subprocess.run(
                 ["shave", flag],
-                input="\n".join(chunk),
+                input="\n\n".join(chunk),
                 capture_output=True, text=True, timeout=120,
             )
-            for word, line in zip(chunk, proc.stdout.strip().split("\n")):
+            # shave ECHOES the blank separators, so filter empty output lines
+            # before zipping. One non-blank line per input word — assert so a
+            # mismatch fails loud instead of silently mis-aligning every word.
+            out_lines = [l for l in proc.stdout.strip().split("\n") if l.strip()]
+            if len(out_lines) != len(chunk):
+                raise RuntimeError(
+                    f"shave output/input count mismatch: {len(out_lines)} "
+                    f"output lines for {len(chunk)} input words")
+            for word, line in zip(chunk, out_lines):
                 shaw = line.strip()
                 # A line with no Shavian letters is shave's unknown-word/digit
                 # echo, not an opinion — see contains_shavian.

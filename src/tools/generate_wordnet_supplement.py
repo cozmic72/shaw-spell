@@ -130,7 +130,11 @@ def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, 
     from shave's stderr when it disambiguates a homograph.
     """
     try:
-        input_text = "\n".join(words)
+        # Separate words with BLANK lines so shave treats each as an isolated
+        # token. Plain newlines make shave read the batch as a SENTENCE, whose
+        # POS/phrase heuristics contaminate homograph disambiguation across word
+        # boundaries (e.g. 'bow' 𐑚𐑴↔𐑚𐑬).
+        input_text = "\n\n".join(words)
         flag = "--readlex-british" if dialect == "british" else "--readlex-american"
         result = subprocess.run(
             ["shave", flag],   # not -q: need WSD on stderr
@@ -139,7 +143,14 @@ def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, 
             text=True,
             timeout=60,
         )
-        lines = result.stdout.strip().split("\n")
+        # shave ECHOES the blank separators, so filter empty output lines before
+        # zipping. One non-blank line per input word — assert so a mismatch fails
+        # loud instead of silently mis-aligning every word to the wrong spelling.
+        lines = [l for l in result.stdout.strip().split("\n") if l.strip()]
+        if len(lines) != len(words):
+            raise RuntimeError(
+                f"shave output/input count mismatch: {len(lines)} output "
+                f"lines for {len(words)} input words")
         mapping = {}
         for word, shaw_line in zip(words, lines):
             shaw = shaw_line.strip()

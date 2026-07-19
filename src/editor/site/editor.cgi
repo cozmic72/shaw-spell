@@ -161,6 +161,7 @@ PAGE = """<!DOCTYPE html>
         <div data-field="mergers" data-kind="categorical" data-label="Mergers">
             <label class="chip"><input value="trap-bath"><span>TRAP–BATH</span></label>
             <label class="chip"><input value="cot-caught"><span>COT–CAUGHT</span></label>
+            <label class="chip"><input value="lot-palm"><span>LOT–PALM</span></label>
             <label class="chip"><input value="(none)"><span>(none / canonical)</span></label>
         </div>
         <div data-field="variant" data-kind="categorical" data-label="Variant">

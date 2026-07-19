@@ -42,6 +42,7 @@ const EDITABLE_FIELDS = ["shaw", "var", "ipa"];
 const MERGERS = [
     ["trap-bath", "TRAP–BATH"],
     ["cot-caught", "COT–CAUGHT"],
+    ["lot-palm", "LOT–PALM"],
 ];
 
 // The within-accent free-variation marker: an alternate spelling of the same

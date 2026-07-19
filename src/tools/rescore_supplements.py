@@ -19,7 +19,8 @@ import argparse
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from ipa_to_shavian import score_confidence, upgrade_confidence_shave
+from ipa_to_shavian import (contains_shavian, score_confidence,
+                            upgrade_confidence_shave)
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -31,13 +32,16 @@ SUPPLEMENTS = [
 ]
 
 
-_WSD_RE = re.compile(r"^WSD:\s+(\S+)\s+->\s+(\S+)\s+(\d+)%\s+/\s+(\S+)\s+(\d+)%")
+# Shave labels its homograph-disambiguation diagnostics "Homograph:" (older
+# builds said "WSD:" — accept both so the protection can't silently die again).
+_WSD_RE = re.compile(
+    r"^(?:WSD|Homograph):\s+(\S+)\s+->\s+(\S+)\s+(\d+)%\s+/\s+(\S+)\s+(\d+)%")
 
 
 def _parse_wsd_stderr(stderr_text: str) -> dict[str, int]:
-    """Parse shave's WSD diagnostic lines from stderr.
+    """Parse shave's homograph (WSD) diagnostic lines from stderr.
 
-    Each line like 'WSD: tear -> 𐑑𐑺 53% / 𐑑𐑽 47%' tells us shave was uncertain
+    Each line like 'Homograph: tear -> 𐑑𐑺 53% / 𐑑𐑽 47%' tells us shave was uncertain
     about a homograph. Returns {word_lower: top_percent}. Words NOT in the dict
     were unambiguous (shave was confident about that token).
     """
@@ -81,7 +85,9 @@ def batch_shave(words: list[str], dialect: str = "british",
             )
             for word, line in zip(chunk, proc.stdout.strip().split("\n")):
                 shaw = line.strip()
-                if shaw:
+                # A line with no Shavian letters is shave's unknown-word/digit
+                # echo, not an opinion — see contains_shavian.
+                if shaw and contains_shavian(shaw):
                     results[word] = shaw
             # Merge WSD confidences from this chunk's stderr
             for w, pct in _parse_wsd_stderr(proc.stderr).items():

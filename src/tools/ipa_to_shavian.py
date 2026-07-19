@@ -120,6 +120,7 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     ipa = ipa.replace("ə˞", "əR")   # rhotacized schwa → schwa + R
     ipa = ipa.replace("˞", "")       # any remaining rhoticity hook
     ipa = ipa.replace("ʉ", "uː")    # close central rounded → GOOSE
+    ipa = ipa.replace("ɵː", "ʊə")   # long ɵː is the SSB CURE vowel (kjɵː)
     ipa = ipa.replace("ɵ", "ʊ")     # close-mid central rounded → FOOT
     ipa = ipa.replace("ɨ", "ɪ")     # close central unrounded → KIT
     ipa = ipa.replace("ᵻ", "ɪ")     # superscript barred i → KIT
@@ -146,6 +147,27 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
 
     # Bare ɜ without length mark → ɜː (NURSE)
     ipa = re.sub(r'ɜ(?!ː)', 'ɜː', ipa)
+
+    # --- Modern SSB long-monophthong conventions (Lindsey/CUBE) → ReadLex ---
+    # These run before R-restoration so the restorer sees the ReadLex vowel and
+    # can supply its linking R.
+    # Stray length mark on a diphthong (beəːr, deɪː, ɪəː) — drop the ː first so
+    # the monophthong rules below cannot mangle the diphthong.
+    ipa = re.sub(r'(eə|ɪə|ʊə|[eæɑao]ɪ|[aəo]ʊ)ː', r'\1', ipa)
+    # jəː is the SSB CURE-lowered vowel after yod (cure /kjəː/, Europe /jəːrəp/):
+    # ReadLex CURE, not NURSE.
+    ipa = ipa.replace('jəː', 'jʊə')
+    # ɪː is the SSB NEAR monophthong (peerage /pɪːɪdʒ/).
+    ipa = ipa.replace('ɪː', 'ɪə')
+    # oː is the SSB THOUGHT/FORCE monophthong (four /foː/, mature /mətʃoː/).
+    ipa = ipa.replace('oː', 'ɔː')
+    # aː is a narrow PALM (father /faːðə/).
+    ipa = ipa.replace('aː', 'ɑː')
+    # əː is the SSB NURSE monophthong — but only under stress. Unstressed əː
+    # (the -burn/-ford name pattern: /blækbəːn/) is the lettER vowel: plain ə,
+    # for the R-restorer to turn into əR (𐑼), matching ReadLex's own editorial
+    # choice (goulburn ˈɡəʊlbəːRn → 𐑜𐑴𐑤𐑚𐑼𐑯).
+    ipa = _rewrite_ssb_nurse(ipa)
 
     # Voiceless velar fricative → 𐑒 (anglicized)
     # But only IPA x (which is ASCII), not when it's part of a word
@@ -179,6 +201,46 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
         ipa = _normalize_to_readlex_dialect(ipa, word)
 
     return ipa
+
+
+# Vowel letters for the NURSE stress scan: anything that ends a syllable
+# nucleus. Scanning back from an əː, meeting one of these before a stress mark
+# means the əː sits in an unstressed syllable.
+_NURSE_SCAN_VOWELS = set('iɪeɛæɑɒɔʊuəʌɜaoɐ')
+
+
+def _rewrite_ssb_nurse(ipa: str) -> str:
+    """Rewrite the SSB NURSE monophthong əː per word: stressed → ɜː (𐑻),
+    unstressed → ə (which R-restoration then turns into əR → 𐑼)."""
+    return ' '.join(_rewrite_ssb_nurse_word(w) for w in ipa.split(' '))
+
+
+def _rewrite_ssb_nurse_word(word_ipa: str) -> str:
+    result = []
+    i = 0
+    while i < len(word_ipa):
+        if word_ipa[i] == 'ə' and word_ipa[i + 1:i + 2] == 'ː':
+            result.append('ɜː' if _nurse_stressed(word_ipa, i) else 'ə')
+            i += 2
+        else:
+            result.append(word_ipa[i])
+            i += 1
+    return ''.join(result)
+
+
+def _nurse_stressed(word_ipa: str, pos: int) -> bool:
+    """Whether the əː at pos is in a stressed syllable: scanning back through
+    the onset, a stress mark (or the word start / an affix boundary — the
+    first nucleus defaults to stressed) is met before any other nucleus."""
+    j = pos - 1
+    while j >= 0:
+        c = word_ipa[j]
+        if c in 'ˈˌ' or c == '+':
+            return True
+        if c in _NURSE_SCAN_VOWELS or c == 'ː':
+            return False
+        j -= 1
+    return True
 
 
 def _normalize_genam(ipa: str) -> str:
@@ -473,11 +535,14 @@ def _normalize_to_readlex_dialect(ipa: str, word: str) -> str:
         ipa = re.sub(r'blɪ$', 'bli', ipa)  # -bly keeps ɪ→i actually
 
     # --- Unstressed jʊ → jə ---
-    # ReadLex prefers ə where modern pronunciation has reduced ʊ after j
+    # ReadLex prefers ə where modern pronunciation has reduced ʊ after j.
+    # NOT when the ʊ opens the CURE diphthong jʊə (cure, curator, European) or
+    # a long jʊː (security): reducing those would mangle CURE (𐑫𐑼) into 𐑩𐑼.
     result = list(ipa)
     i = 0
     while i < len(result) - 1:
-        if result[i] == 'j' and result[i + 1] == 'ʊ':
+        if (result[i] == 'j' and result[i + 1] == 'ʊ'
+                and result[i + 2:i + 3] not in (['ə'], ['ː'])):
             stressed = False
             for j in range(i - 1, max(i - 3, -1), -1):
                 if result[j] == 'ˈ':
@@ -541,6 +606,8 @@ PHONEME_MAP = [
     ("ʊər", "𐑫𐑼"), # CURE: poor (lowercase r variant)
 
     # R-colored short vowels (with capital R or lowercase r)
+    ("əːR", "𐑼"),  # narrow lettER with stray length (upstream: goulburn)
+    ("əːr", "𐑼"),  # narrow lettER, lowercase r variant
     ("əR", "𐑼"),   # lettER (unstressed): better
     ("ər", "𐑼"),   # lettER (lowercase r variant)
 
@@ -555,17 +622,27 @@ PHONEME_MAP = [
     ("əʊ", "𐑴"),   # GOAT: go, no
     ("oʊ", "𐑴"),   # GOAT (GenAm variant)
     ("ɪə", "𐑾"),   # NEAR (without R): idea, area
+    ("ɪː", "𐑾"),   # NEAR, SSB monophthong notation (peerage pɪːɪdʒ)
     ("iə", "𐑾"),   # NEAR: weak /i/ + schwa, e.g. material, editorial, coaxial
     ("eə", "𐑺"),   # SQUARE (without R, rare in ReadLex)
-    ("ʊə", "𐑫𐑼"), # CURE (without R)
+    ("ʊə", "𐑫𐑩"), # ʊ+ə hiatus with no r (cissexual, jewel); CURE carries R
 
     # Long vowels
     ("iː", "𐑰"),   # FLEECE: be, see
     ("ɑː", "𐑭"),   # BATH/PALM: father
+    ("aː", "𐑭"),   # PALM, narrow notation (upstream: sabah)
     ("ɔː", "𐑷"),   # THOUGHT: caught, all
+    ("oː", "𐑷"),   # THOUGHT/FORCE, SSB monophthong notation
     ("uː", "𐑵"),   # GOOSE: too, blue
     ("ɜː", "𐑻"),   # NURSE without R (rare in ReadLex)
+    ("əː", "𐑻"),   # NURSE, SSB monophthong notation (erskine əːskɪn)
     ("ɛː", "𐑻"),   # NURSE variant (tradesperson etc.)
+
+    # Bare ɑ (no length mark): upstream narrow/GenAm-style notation
+    ("ɑR", "𐑸"),   # START without length (barnburning bɑRn, jacquard kɑRd)
+    ("ɑr", "𐑸"),   # START without length, lowercase r
+    ("ɑɪ", "𐑲"),   # PRICE variant notation (reigelheimer rɑɪ-)
+    ("ɑ", "𐑪"),    # LOT, GenAm-style bare ɑ (hodler hɑdləR)
 
     # Affricates (must come before component stops/fricatives)
     ("tʃ", "𐑗"),   # CHURCH: chop
@@ -708,6 +785,14 @@ SHAVIAN_BLOCK = range(0x10450, 0x10480)  # Unicode Shavian block
 NON_SHAVIAN_ALLOWED = frozenset(" -'’·")
 
 
+def contains_shavian(text: str) -> bool:
+    """Whether the text carries at least one Shavian letter. A shave stdout
+    line with none is the tool's unknown-word/digit echo (the input passed
+    through, 'Unknown:' on stderr) — not a spelling opinion, and recording it
+    as one would fabricate a disagreement."""
+    return any(ord(ch) in SHAVIAN_BLOCK for ch in text)
+
+
 def contains_non_shavian(shaw: str) -> bool:
     """Whether a converted Shavian string carries any contaminating character.
 
@@ -793,10 +878,12 @@ def score_confidence(word: str, ipa: str, shaw: str,
         notes.append(f"ml_disagrees:{ml_shaw}")
         penalties.append("ml_disagrees")
 
-    # Check r-gap (spelling has more r's than IPA)
+    # Check r-gap (spelling has more r's than IPA). Spelling r's are counted as
+    # GROUPS — a doubled 'rr' (carrier, Andorra) is one /r/ phoneme, not two —
+    # so orthographic doubling alone never counts as a missing r.
     word_lower = word.lower()
     if 'r' in word_lower:
-        spelling_r = word_lower.count('r')
+        spelling_r = len(re.findall(r'r+', word_lower))
         ipa_r = ipa.count('r') + ipa.count('R')
         if spelling_r > ipa_r:
             notes.append(f"r_gap:spelling={spelling_r},ipa={ipa_r}")
@@ -864,12 +951,20 @@ def upgrade_confidence_shave(pct: int, notes: list[str],
     # but ReadLex stores spellings without it.
     shave_shaw = shave_shaw.lstrip("·")
 
-    if shave_shaw == shaw:
+    # Shave renders a homograph/multi-pronunciation word as a bracketed option
+    # list ("[𐑨 / 𐑚]"). Our spelling appearing IN that list is agreement —
+    # shave itself sanctions it as a valid rendering.
+    options = None
+    if shave_shaw.startswith("[") and shave_shaw.endswith("]"):
+        options = [o.strip().lstrip("·") for o in shave_shaw[1:-1].split("/")]
+
+    if shave_shaw == shaw or (options is not None and shaw in options):
         # Shave agrees with rules
         new_pct = max(pct, 95) if pct < 89 else max(pct, 97)
         notes.append("shave_agrees")
         return new_pct, notes, None
-    elif ml_shaw and shave_shaw == ml_shaw:
+    elif ml_shaw and (shave_shaw == ml_shaw
+                      or (options is not None and ml_shaw in options)):
         # Shave + ML consensus would normally override — but refuse if shave
         # flagged this word as WSD-ambiguous below threshold.
         if wsd_confidence is not None and wsd_confidence < WSD_OVERRIDE_THRESHOLD:
@@ -877,7 +972,9 @@ def upgrade_confidence_shave(pct: int, notes: list[str],
             return pct, notes, None
         suffix = f"; wsd={wsd_confidence}%" if wsd_confidence is not None else ""
         notes.append(f"overridden:was={shaw}; shave+ml_consensus{suffix}")
-        return 99, notes, shave_shaw
+        # When the consensus was via shave's option list, the override is the
+        # concrete agreed spelling (ml_shaw), never the bracketed list itself.
+        return 99, notes, ml_shaw
     else:
         # Shave disagrees with both
         notes.append(f"shave_says:{shave_shaw}")

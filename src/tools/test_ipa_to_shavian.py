@@ -87,6 +87,118 @@ class Bug3IdempotentR(unittest.TestCase):
                 self.assertEqual(norm_rp(ipa, word), expected)
 
 
+class Bug4CureNotReduced(unittest.TestCase):
+    """The unstressed jʊ→jə reduction must not mangle CURE (jʊə → 𐑫𐑼) or a
+    long jʊː. Ground truth (the Guide / ReadLex): cure 𐑒𐑘𐑫𐑼, pure 𐑐𐑘𐑫𐑼 —
+    yod + CURE, never 𐑘𐑩𐑼."""
+
+    def test_cure_diphthong_notation(self):
+        self.assertEqual(norm_rp("kjʊə", "cure"), "𐑒𐑘𐑫𐑼")
+
+    def test_cure_ssb_monophthong_notations(self):
+        # Lindsey-style CURE: kjəː and kjɵː both land on 𐑒𐑘𐑫𐑼.
+        self.assertEqual(norm_rp("kjəː", "cure"), "𐑒𐑘𐑫𐑼")
+        self.assertEqual(norm_rp("kjɵː", "cure"), "𐑒𐑘𐑫𐑼")
+
+    def test_cure_words(self):
+        self.assertEqual(norm_rp("ˌɪnsɪkjʊə", "insecure"), "𐑦𐑯𐑕𐑦𐑒𐑘𐑫𐑼")
+        self.assertEqual(norm_rp("ˈdʒænjʊəɹi", "January"), "𐑡𐑨𐑯𐑘𐑫𐑼𐑦")
+
+    def test_weak_yod_u_still_reduced(self):
+        # regular's jʊ is the weak yod-u — the reduction must still apply.
+        self.assertEqual(norm_rp("ˈreɡjʊlə", "regular"), "𐑮𐑧𐑜𐑘𐑩𐑤𐑼")
+
+
+class Bug5SsbLongMonophthongs(unittest.TestCase):
+    """SSB/CUBE long-monophthong notations must map onto the ReadLex vowels,
+    not leak through as base-letter + stripped length mark."""
+
+    def test_nurse_stressed(self):
+        self.assertEqual(norm_rp("wəːk", "work"), "𐑢𐑻𐑒")
+        self.assertEqual(norm_rp("ˈəːskɪn", "Erskine"), "𐑻𐑕𐑒𐑦𐑯")
+
+    def test_nurse_unstressed_is_letter(self):
+        # ReadLex's own editorial choice for -burn/-ford names (goulburn 𐑚𐑼𐑯).
+        self.assertEqual(norm_rp("ˈblækbəːn", "Blackburn"), "𐑚𐑤𐑨𐑒𐑚𐑼𐑯")
+        self.assertEqual(norm_rp("ˈsænfəːd", "Sandford"), "𐑕𐑨𐑯𐑓𐑼𐑛")
+
+    def test_force_thought(self):
+        self.assertEqual(norm_rp("foː", "four"), "𐑓𐑹")
+        self.assertEqual(norm_rp("oːl", "all"), "𐑷𐑤")
+
+    def test_near(self):
+        self.assertEqual(norm_rp("ˈpɪːɪdʒ", "peerage"), "𐑐𐑽𐑦𐑡")
+
+    def test_palm(self):
+        self.assertEqual(norm_rp("ˈfaːðə", "father"), "𐑓𐑭𐑞𐑼")
+
+    def test_stray_length_on_diphthong_harmless(self):
+        # deɪː / beəːr: the length mark is dropped, the diphthong survives.
+        self.assertEqual(norm_rp("deɪː", "day"), "𐑛𐑱")
+        self.assertEqual(norm_rp("beəːr", "bear"), "𐑚𐑺")
+
+    def test_converter_backstops(self):
+        # Stored/upstream IPA hits the converter without normalization.
+        self.assertEqual(ipa_to_shavian("ˈɡəʊlbəːRn"), "𐑜𐑴𐑤𐑚𐑼𐑯")   # goulburn
+        self.assertEqual(ipa_to_shavian("ˈsaːbɑː"), "𐑕𐑭𐑚𐑭")          # sabah
+        self.assertEqual(ipa_to_shavian("ˈbɑRnbɜːRnɪŋ"), "𐑚𐑸𐑯𐑚𐑻𐑯𐑦𐑙")  # barnburning
+        self.assertEqual(ipa_to_shavian("ˈhɑdləR"), "𐑣𐑪𐑛𐑤𐑼")        # hodler
+
+
+class Bug6BareUaHiatus(unittest.TestCase):
+    """ʊə with no r is the ʊ+ə hiatus (𐑫𐑩), not CURE-with-r (𐑫𐑼): the old
+    mapping invented an r-sound in r-less words."""
+
+    def test_hiatus_words(self):
+        self.assertEqual(ipa_to_shavian("ˌsɪsˈsekʃʊəl"), "𐑕𐑦𐑕𐑕𐑧𐑒𐑖𐑫𐑩𐑤")  # cissexual
+        self.assertEqual(norm_rp("ˈdʒʊəl", "jewel"), "𐑡𐑫𐑩𐑤")
+        self.assertEqual(norm_rp("ˈakʃʊəli", "actually"), "𐑨𐑒𐑖𐑫𐑩𐑤𐑦")
+
+    def test_cure_with_r_untouched(self):
+        self.assertEqual(ipa_to_shavian("pʊəR"), "𐑐𐑫𐑼")   # poor
+        self.assertEqual(ipa_to_shavian("bjʊəˈret"), "𐑚𐑘𐑫𐑼𐑧𐑑")  # burette (ʊə+r)
+
+
+class ScorerRGroups(unittest.TestCase):
+    """r_gap counts spelling r GROUPS: a doubled rr is one phoneme."""
+
+    def test_double_r_not_a_gap(self):
+        from ipa_to_shavian import score_confidence
+        pct, notes = score_confidence("carrion", "ˈkærɪən", "𐑒𐑨𐑮𐑾𐑯")
+        self.assertFalse(any(n.startswith("r_gap") for n in notes))
+
+    def test_genuine_gap_still_flagged(self):
+        from ipa_to_shavian import score_confidence
+        pct, notes = score_confidence("charged", "tʃɑːdʒd", "𐑗𐑭𐑡𐑛")
+        self.assertTrue(any(n.startswith("r_gap") for n in notes))
+
+
+class ScorerShaveOptions(unittest.TestCase):
+    """A bracketed shave option list containing our spelling is agreement."""
+
+    def test_membership_is_agreement(self):
+        from ipa_to_shavian import upgrade_confidence_shave
+        pct, notes, override = upgrade_confidence_shave(
+            5, [], "𐑛𐑪𐑜𐑚𐑼𐑦", "[𐑛𐑪𐑜𐑚𐑼𐑦 / 𐑛𐑪𐑜𐑚𐑧𐑮𐑦]", None)
+        self.assertGreaterEqual(pct, 95)
+        self.assertIsNone(override)
+        self.assertIn("shave_agrees", notes)
+
+    def test_ml_membership_is_consensus_with_concrete_override(self):
+        from ipa_to_shavian import upgrade_confidence_shave
+        pct, notes, override = upgrade_confidence_shave(
+            5, [], "𐑛𐑪𐑜𐑚𐑧𐑮𐑦", "[𐑛𐑪𐑜𐑚𐑼𐑦 / 𐑛𐑪𐑜𐑚𐑼𐑮𐑦]", "𐑛𐑪𐑜𐑚𐑼𐑦")
+        self.assertEqual(pct, 99)
+        self.assertEqual(override, "𐑛𐑪𐑜𐑚𐑼𐑦")   # never the bracket string
+
+    def test_non_member_still_disagrees(self):
+        from ipa_to_shavian import upgrade_confidence_shave
+        pct, notes, override = upgrade_confidence_shave(
+            5, [], "𐑨", "[𐑚 / 𐑜]", None)
+        self.assertEqual(pct, 5)
+        self.assertIsNone(override)
+
+
 class Determinism(unittest.TestCase):
     """The converter is pure: same input → same output."""
 

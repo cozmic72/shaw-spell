@@ -20,7 +20,8 @@ from collections import Counter
 
 # Add tools directory to path for ipa_to_shavian
 sys.path.insert(0, str(Path(__file__).parent))
-from ipa_to_shavian import ipa_to_shavian, normalize_ipa, score_confidence, upgrade_confidence_shave
+from ipa_to_shavian import (contains_shavian, ipa_to_shavian, normalize_ipa,
+                            score_confidence, upgrade_confidence_shave)
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -54,7 +55,10 @@ POS_MAP = {
     "punct": "UNC",
 }
 
-_WSD_RE = re.compile(r"^WSD:\s+(\S+)\s+->\s+(\S+)\s+(\d+)%\s+/\s+(\S+)\s+(\d+)%")
+# Shave labels its homograph-disambiguation diagnostics "Homograph:" (older
+# builds said "WSD:" — accept both so the protection can't silently die).
+_WSD_RE = re.compile(
+    r"^(?:WSD|Homograph):\s+(\S+)\s+->\s+(\S+)\s+(\d+)%\s+/\s+(\S+)\s+(\d+)%")
 
 
 def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, str], dict[str, int]]:
@@ -78,7 +82,9 @@ def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, 
         mapping = {}
         for word, shaw_line in zip(words, lines):
             shaw = shaw_line.strip()
-            if shaw:
+            # A line with no Shavian letters is shave's unknown-word/digit
+            # echo, not an opinion — see contains_shavian.
+            if shaw and contains_shavian(shaw):
                 mapping[word] = shaw
         wsd: dict[str, int] = {}
         for line in result.stderr.split("\n"):

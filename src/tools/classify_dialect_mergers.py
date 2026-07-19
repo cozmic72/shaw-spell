@@ -6,9 +6,9 @@ with a `mergers` list before it reaches the editorial basis.
 The supplement candidates carry a scalar base-accent `var` (every multi-spelling
 group is exactly an {RSSB, GenAm} pair — RSSB is the non-merged British standard,
 GenAm the merged American accent). This stage layers the merger axis on top: a
-GenAm spelling that is an exact vowel-merger swap (trap-bath 𐑭->𐑨 or cot-caught
-𐑷->𐑪) of a non-merged sibling in the same (word, pos) group is tagged with that
-merger. Its base `var` is unchanged — the flag is additive.
+GenAm spelling that is an exact vowel-merger swap (trap-bath 𐑭->𐑨, cot-caught
+𐑷->𐑪, or lot-palm 𐑭->𐑪) of a non-merged sibling in the same (word, pos) group is
+tagged with that merger. Its base `var` is unchanged — the flag is additive.
 
   RSSB record                     -> base RSSB, no merger (the non-merged form)
   GenAm = merger swap of a sibling -> base GenAm, mergers=[<that merger>]
@@ -50,7 +50,7 @@ import json
 from collections import Counter, defaultdict
 
 from basis import PROJECT_ROOT, load_upstream
-from dialect_mergers import merger_of
+from dialect_mergers import MERGER_SWAPS, merger_of
 
 # (deduped input, classified output) — one combined pool.
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-deduped.json"
@@ -112,19 +112,32 @@ def merger_for(entry, non_merged_index):
     """The (merger, non_merged_sibling) `entry` is tagged with, or (None, None).
     Only a merged spelling that is an exact merger swap of some non-merged sibling
     (an RSSB supplement sibling OR a non-merged ReadLex/RRP form) in its (word, pos)
-    group is tagged; RSSB (and unmatched) forms carry none."""
+    group is tagged; RSSB (and unmatched) forms carry none.
+
+    A single (sibling, entry) pair is never ambiguous — merger_of returns at most
+    one merger. But a word can carry SEVERAL non-merged siblings, and a merged 𐑪
+    form can be a cot-caught swap of a 𐑷 sibling AND a lot-palm swap of a 𐑭 sibling
+    (e.g. `vase`: 𐑝𐑷𐑟 and 𐑝𐑭𐑟 both attested, GenAm 𐑝𐑪𐑟). The two candidate
+    tags then compete. We resolve by MERGER declaration precedence, not by sibling
+    sort order: try each merger over the whole sibling set in MERGER_SWAPS order
+    and take the first that fires. This is deterministic and keeps the pre-existing
+    mergers' tags stable when a later merger is added (a newly-added merger can only
+    claim records that matched NOTHING before). Which sibling is the "true" one is a
+    data question the tag doesn't settle — every tagged record is a review
+    candidate — so a stable, documented precedence is the honest resolution."""
     if entry.get("var") == BASE_NON_MERGED:
         return None, None
     siblings = non_merged_index.get((entry["Latn"].lower(), entry["pos"]))
     if not siblings:
         return None, None
     shaw = entry["Shaw"]
-    # Sorted so the tagged merger and its reported sibling are deterministic
-    # regardless of set iteration order.
-    for sibling in sorted(siblings):
-        merger = merger_of(sibling, shaw)
-        if merger is not None:
-            return merger, sibling
+    # Sorted siblings keep the REPORTED sibling deterministic within a merger;
+    # the outer loop is merger-precedence so an earlier merger wins a multi-sibling
+    # tie (see docstring).
+    for merger_name in MERGER_SWAPS:
+        for sibling in sorted(siblings):
+            if merger_of(sibling, shaw) == merger_name:
+                return merger_name, sibling
     return None, None
 
 
@@ -152,15 +165,15 @@ def classify_supplement(supplement, tallies, samples):
 
 
 def report(tallies, samples):
-    tagged = tallies["trap-bath"] + tallies["cot-caught"]
+    tagged = sum(tallies[m] for m in MERGER_SWAPS)
     total = tagged + tallies["none"]
     print("\n=== dialect merger classification report ===")
     print(f"Records classified: {total:,}")
-    print(f"  trap-bath tagged: {tallies['trap-bath']:,}")
-    print(f"  cot-caught tagged:{tallies['cot-caught']:,}")
+    for merger in MERGER_SWAPS:
+        print(f"  {merger} tagged: {tallies[merger]:,}")
     print(f"  no merger:        {tallies['none']:,}")
 
-    for merger in ("trap-bath", "cot-caught"):
+    for merger in MERGER_SWAPS:
         print(f"\nSample [{merger}]:")
         for entry, sibling in samples[merger]:
             # The sibling may be an RSSB supplement form OR a non-merged ReadLex/RRP

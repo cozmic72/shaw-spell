@@ -9,6 +9,9 @@ field (`RRP`/`RSSB`/`GenAm`/…); mergers move to an additive **`mergers`** list
   PALM `𐑭` → TRAP `𐑨` (BATH words spelt with the short TRAP vowel).
 - **`mergers: ["cot-caught"]`** = a spelling produced by the cot-caught merger:
   THOUGHT `𐑷` → LOT `𐑪`.
+- **`mergers: ["lot-palm"]`** = a spelling produced by the lot-palm (father-bother)
+  merger: PALM `𐑭` → LOT `𐑪` (GenAm renders broad-A / foreign PALM words with the
+  LOT vowel, so `father` and `bother` rhyme).
 
 The field is additive: an existing consumer that ignores `mergers` sees the same
 records it always did, with the **one intended exception** below (ReadLex's
@@ -55,6 +58,12 @@ Merger-tagged **records** (the additive flag), per source:
 |---|---:|---:|---|
 | trap-bath | 1,697 | 578 | ReadLex = the whole `TrapBath` var, reinterpreted |
 | cot-caught | 0 | 715 | ReadLex has no cot-caught var; all from supplements |
+| lot-palm | 0 | 534 | ReadLex has no lot-palm var; all from supplements |
+
+The supplement figures above are the historical basis-stage tallies. Measured at
+the `classified` stage on the current combined-deduped pool the tallies are
+trap-bath **883**, cot-caught **1,212**, lot-palm **534** — the first two are
+unchanged by adding lot-palm (merger precedence keeps prior tags stable).
 
 ReadLex's 1,697 `TrapBath` records are exactly the trap-bath-tagged ReadLex set:
 1,690 are a clean PALM→TRAP swap of an RRP sibling; the other 7 (the
@@ -80,6 +89,47 @@ supplement set) and consistent with `ipa_to_shavian.py` ("GenAm merges LOT into
 | aforethought [AJ0] | 𐑩𐑓𐑹𐑔**𐑷**𐑑 | 𐑩𐑓𐑹𐑔**𐑪**𐑑 |
 | baltimore [NN1] | 𐑚**𐑷**𐑤𐑑𐑦𐑥𐑹 | 𐑚**𐑪**𐑤𐑑𐑦𐑥𐑹 |
 | bengal [NN1] | 𐑚𐑧𐑙𐑜**𐑷**𐑤 | 𐑚𐑧𐑙𐑜**𐑪**𐑤 |
+
+## Lot-palm direction (confirmed)
+
+The merged (GenAm) form flattens **PALM `𐑭` → LOT `𐑪`** — the *opposite* endpoint
+to trap-bath (which flattens PALM onto TRAP `𐑨`). Confirmed on real data: in the
+deduped supplement pool the forward direction (non-merged `𐑭` → merged `𐑪`)
+outnumbers the reverse **543 to 230**, and every clean case is a broad-A / foreign
+PALM word GenAm renders with the LOT vowel. Same target convention as cot-caught
+(ReadLex canonical is LOT `𐑪`). Samples (non-merged PALM `𐑭` → GenAm LOT `𐑪`):
+
+| Word (pos) | non-merged (PALM 𐑭) | lot-palm (LOT 𐑪) |
+|---|---|---|
+| Aachen [NP0] | **𐑭**𐑒𐑩𐑯 | **𐑪**𐑒𐑩𐑯 |
+| Abaza [NN1] | 𐑩𐑚**𐑭**𐑟𐑩 | 𐑩𐑚**𐑪**𐑟𐑩 |
+| Accra [NP0] | 𐑩𐑒𐑮**𐑭** | 𐑩𐑒𐑮**𐑪** |
+| Abba [NN1] | 𐑨𐑚**𐑭** | 𐑨𐑚**𐑪** |
+
+### Ambiguity: distinct swaps, one multi-sibling tie-break
+
+The three swaps are **distinct ordered vowel-pairs** — `𐑭→𐑨` (trap-bath),
+`𐑷→𐑪` (cot-caught), `𐑭→𐑪` (lot-palm). `lot-palm` and `trap-bath` share the
+distinguished vowel `𐑭` but flatten it to different targets, so a *single*
+spelling-pair can still only match one merger: `merger_of` fixes both endpoints at
+every differing position, and no two swaps share the same ordered pair. Verified
+by brute force — **0** of 52,333 sibling comparisons matched more than one merger.
+
+There is one real edge, at the *sibling-set* level (not the pair level): a word can
+carry two non-merged siblings, and a merged `𐑪` form can be a cot-caught swap of a
+`𐑷` sibling **and** a lot-palm swap of a `𐑭` sibling (e.g. `vase`: `𐑝𐑷𐑟` and
+`𐑝𐑭𐑟` both attested, GenAm `𐑝𐑪𐑟`). `merger_for` resolves this by **merger
+declaration precedence** (`MERGER_SWAPS` order: trap-bath, cot-caught, lot-palm),
+not sibling sort order — so an added merger can only claim records that matched
+*nothing* before, and the pre-existing trap-bath (883) and cot-caught (1,212)
+counts are **unchanged** by adding lot-palm. Which sibling is truly the word's RP
+vowel is a data question the flag does not settle (for `spa`/`qualm`/`vase` ReadLex
+attests PALM, so lot-palm is right; for `gaunt`/`bengal` it attests THOUGHT, so
+cot-caught is right) — every tagged record is a **review candidate**, so a stable,
+documented precedence is the honest resolution rather than a correctness claim.
+
+Adding lot-palm tags **534** supplement records (the 543 forward swaps minus the 9
+that cot-caught keeps under precedence).
 
 ## Samples per category
 
@@ -111,6 +161,11 @@ Base stays; the swap spelling gains `mergers: ["trap-bath"]`:
 See the direction table above; further examples: `altogether [AV0]`, `auction
 [VVI]`, `aweless [AJ0]`, `caller [AJ0]`, `brother-in-law [NN1]`, `autotroph
 [NN1]`.
+
+### lot-palm tagged (PALM 𐑭 → LOT 𐑪)
+See the lot-palm direction table above; further examples: `Aalborg [NP0]`,
+`Aaronical [AJ0]`, `Abt system [NN1]`, `Alanic [AJ0]`, `Algonquin [NN1]`. Almost
+all are proper nouns / foreign borrowings whose broad-A vowel GenAm renders as LOT.
 
 ### Unrecognized residue (left as-is, no flag)
 11,882 complex groups do not reduce to a single known merger. Bucketed by shape:

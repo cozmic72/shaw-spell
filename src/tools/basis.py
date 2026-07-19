@@ -101,11 +101,19 @@ UPSTREAM_SOURCE = "readlex"
 # dictionary. `status` lives in the record because downstream consumers read it.
 # The rrp_* fields are the RRP reclassifier's review-triage provenance
 # (reclassify_rrp.py): rrp_outcome (PASS/PASS_RESPELL/STAY/REVIEW/SKIP_MERGER),
-# rrp_tier (A..F confidence), rrp_review (True on a low-confidence flag). Like
-# source/ipa_source they are DERIVED — carried through so the editor can surface
-# and sort the review pool, never an editable patch field (not in INTRINSIC_FIELDS).
+# rrp_tier (A..F confidence), rrp_review (True on a low-confidence flag). The
+# generated_* fields are the RRP generator's PROPOSE-ALONGSIDE provenance
+# (generate_rrp.py): generated_shaw (a minted RRP spelling proposed BESIDE the
+# record's own Shaw, never overwriting it), generated_tier (A..F), generated_method
+# ("ipa-converter"), generated_from (lineage/witnesses), generated_flags (a gated
+# site). merger_gate records a D3 flag-strip (which flag was removed and why the
+# canonical counterpart was not high-confidence). Like source/ipa_source they are
+# all DERIVED — carried through so the editor can surface and sort the review pool,
+# never an editable patch field (not in INTRINSIC_FIELDS).
 PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source",
-                     "rrp_outcome", "rrp_tier", "rrp_review"]
+                     "rrp_outcome", "rrp_tier", "rrp_review",
+                     "generated_shaw", "generated_tier", "generated_method",
+                     "generated_from", "generated_flags", "merger_gate"]
 
 # ORIGINAL-VALUE provenance (orig_*): the pre-transform value of a key field a
 # pipeline transform CHANGED. The natural key is (word, pos, shaw, var), so any

@@ -138,6 +138,28 @@ data/supplement-combined-reclassified.json: $(SRC_TOOLS)/reclassify_rrp.py $(SRC
 	@echo "Reclassifying RRP-passable candidates (canonicalization)..."
 	$(RUN) python3 $(SRC_TOOLS)/reclassify_rrp.py
 
+# Pass 2.75 — RRP generation (mint canonical RRP from scratch). Where the
+# reclassifier left a (word, pos) group with NO RRP entry but the record HAS ipa,
+# the generator produces the RRP spelling the Guide's stress-based rules sanction
+# and attaches it ALONGSIDE the record's existing spelling as a proposal
+# (generated_shaw / generated_tier / generated_method / generated_from) — never
+# overwriting the record's own Shaw (owner decision D2). It also enforces the D3
+# flag-gate: a merger/variant flag is kept only when its canonical RRP counterpart
+# is HIGH-confidence (an established ReadLex RRP entry, or an in-group sibling the
+# reclassifier passed at tier A/B, or a generated tier-A/B sibling); on a
+# low-confidence canonical the flag is stripped (recorded in merger_gate) and both
+# records stay plain low-confidence review candidates. IPA-basis path ONLY (no
+# shave), so it is byte-deterministic run-to-run and never orphans a patch. Runs
+# AFTER the reclassifier (so a group's RRP entries and the sibling rrp_tier the gate
+# reads already exist) and BEFORE collapse. It is count-preserving — it only ADDS
+# proposal fields and STRIPS gated flags, never dropping or splitting a record — and
+# never auto-accepts (every proposal + gate action is a review candidate; the patch
+# store is untouched). See src/tools/generate_rrp.py + src/tools/rrp_generator.py.
+# (No patches prereq: it only annotates; every input record survives to the output.)
+data/supplement-combined-generated.json: $(SRC_TOOLS)/generate_rrp.py $(SRC_TOOLS)/rrp_generator.py $(SRC_TOOLS)/rrp_classifier.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-combined-reclassified.json
+	@echo "Generating canonical RRP spellings for no-RRP candidates..."
+	$(RUN) python3 $(SRC_TOOLS)/generate_rrp.py
+
 # Pass 3 — identical-spelling dialect collapse. When 2+ dialects spell a
 # (word, pos) the SAME way, that spelling is not a real dialect difference, so
 # every record is relabelled onto the highest-precedence var (RRP > RSSB > GenAm)
@@ -146,7 +168,7 @@ data/supplement-combined-reclassified.json: $(SRC_TOOLS)/reclassify_rrp.py $(SRC
 # within-accent difference). See src/tools/collapse_identical_dialects.py. (No
 # patches prereq: collapsing is a pure dialect-hierarchy rewrite; an orphaned
 # anchor fails loud downstream by design.)
-data/supplement-combined-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-combined-reclassified.json
+data/supplement-combined-collapsed.json: $(SRC_TOOLS)/collapse_identical_dialects.py data/supplement-combined-generated.json
 	@echo "Collapsing identical-spelling dialect variants..."
 	$(RUN) python3 $(SRC_TOOLS)/collapse_identical_dialects.py
 

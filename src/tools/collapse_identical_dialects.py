@@ -61,11 +61,15 @@ from collections import Counter, defaultdict
 
 from basis import PROJECT_ROOT, mark_original
 
-# (reclassified input, collapsed output) — one combined pool. The RRP
-# reclassifier runs immediately upstream (canonicalizing non-merger candidates
-# to RRP), so a candidate the rules allowed and an original-RRP twin now share
-# the RRP var and this stage merges their identical spellings.
-INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-reclassified.json"
+# (generated input, collapsed output) — one combined pool. The RRP reclassifier
+# then the RRP generator run immediately upstream: the reclassifier canonicalizes
+# non-merger candidates to RRP, and the generator mints RRP proposals ALONGSIDE
+# no-RRP candidates and gates merger/variant flags on canonical confidence (it
+# adds proposal fields + strips gated flags, never changing a record's own Shaw or
+# var). So a candidate the rules allowed and an original-RRP twin share the RRP var
+# and this stage merges their identical spellings; the propose-alongside
+# generated_* fields ride through on the winning-var payload.
+INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-generated.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-collapsed.json"
 
 # Dialect precedence: lower rank wins. Any var not listed ranks below every

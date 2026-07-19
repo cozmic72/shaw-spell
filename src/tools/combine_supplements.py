@@ -20,9 +20,10 @@ iterated in canonical order; the first to attest an anchor keeps its record
 verbatim (wordnet wins on content, matching basis.build_basis's load order), and
 every later source that also attests the anchor only adds its label to the list.
 
-Inputs:  data/supplement-wordnet-reliable.json (wordnet uses reliable directly)
-         and data/supplement-wiktionary-neardot.json (wiktionary after rescue +
-         NEAR syllable-dot correction).
+Inputs:  data/supplement-wordnet-reliable.json (wordnet uses reliable directly),
+         data/supplement-wiktionary-neardot.json (wiktionary after rescue +
+         NEAR syllable-dot correction), and data/supplement-names.json (the
+         curated proper-name slice).
 Output:  data/supplement-combined-raw.json  — the duplicate filter reads this
          next. The input files are left untouched.
 
@@ -40,6 +41,11 @@ from basis import PROJECT_ROOT, anchor_of
 SOURCES = [
     ("wordnet", PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
     ("wiktionary", PROJECT_ROOT / "data" / "supplement-wiktionary-neardot.json"),
+    # Curated proper-name slice (shave+CMUdict agreement, synthetic). Its own
+    # `names` label keeps the name flood filterable in the review surface. These
+    # are wiktionary-dropped names, but the label reflects what they are (names).
+    # Records carry synthetic/tier/shaw_source through to the basis.
+    ("names", PROJECT_ROOT / "data" / "supplement-names.json"),
 ]
 
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-raw.json"

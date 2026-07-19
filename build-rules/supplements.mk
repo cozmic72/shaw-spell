@@ -82,7 +82,7 @@ data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py 
 # This is what lets the identical-dialect collapse see a cross-source spelling
 # collision. See src/tools/combine_supplements.py. (No patches prereq: combining
 # is content-neutral — it neither drops nor edits, only unions.)
-data/supplement-combined-raw.json: $(SRC_TOOLS)/combine_supplements.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-neardot.json
+data/supplement-combined-raw.json: $(SRC_TOOLS)/combine_supplements.py data/supplement-wordnet-reliable.json data/supplement-wiktionary-neardot.json data/supplement-names.json
 	@echo "Combining per-source supplement pools..."
 	$(RUN) python3 $(SRC_TOOLS)/combine_supplements.py
 

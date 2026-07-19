@@ -166,6 +166,10 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="variant"><span>variant</span></label>
             <label class="chip"><input value="canonical"><span>canonical</span></label>
         </div>
+        <div data-field="has_definition" data-kind="categorical" data-label="Definition">
+            <label class="chip"><input value="has-definition"><span>has definition</span></label>
+            <label class="chip"><input value="no-definition"><span>no definition</span></label>
+        </div>
         <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>
         <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"></div>
     </div>

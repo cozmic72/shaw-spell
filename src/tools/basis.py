@@ -54,15 +54,17 @@ UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 
 # The supplement candidates that make up the basis alongside upstream ReadLex:
 # the phrase-filtered view of the SOURCE-COMBINED, merger-classified pool
-# (combine -> deduped -> classified -> collapsed -> decontaminated -> filtered;
-# see the supplement pruning chain). The per-source wordnet and wiktionary pools
+# (combine -> defs-annotated -> deduped -> classified -> collapsed ->
+# decontaminated -> filtered; see the supplement pruning chain). The per-source
+# wordnet and wiktionary pools
 # are unified up front (combine_supplements.py) so every prune runs on the union;
 # candidates an established entry already resolves to, identical-spelling dialect
 # variants (collapsed onto the highest-precedence var), candidates whose Shavian
 # carries a non-Shavian character (unmapped IPA passthrough), or sum-of-parts
 # phrase noise, are dropped upstream, so the basis — and thus the editor's review
-# surface — never sees them. Each record carries its `mergers` annotation and its
-# `source` list (the origins that attested its anchor).
+# surface — never sees them. Each record carries its `mergers` annotation, its
+# `source` list (the origins that attested its anchor), and its `has_definition`
+# provenance boolean (whether any attesting source carries a definition).
 SUPPLEMENT_PATHS = [
     PROJECT_ROOT / "data" / "supplement-combined-filtered.json",
 ]
@@ -204,6 +206,8 @@ def record_to_output(record):
         entry["mergers"] = record["mergers"]
     if record.get("variant"):
         entry["variant"] = record["variant"]
+    if record.get("has_definition"):
+        entry["has_definition"] = record["has_definition"]
     for field in PROVENANCE_FIELDS:
         if record.get(field) not in (None, ""):
             entry[field] = record[field]
@@ -225,6 +229,8 @@ def output_to_record(entry):
         record["mergers"] = entry["mergers"]
     if entry.get("variant"):
         record["variant"] = entry["variant"]
+    if entry.get("has_definition"):
+        record["has_definition"] = entry["has_definition"]
     for field in PROVENANCE_FIELDS:
         if entry.get(field) not in (None, ""):
             record[field] = entry[field]

@@ -86,10 +86,22 @@ data/supplement-combined-raw.json: $(SRC_TOOLS)/combine_supplements.py data/supp
 	@echo "Combining per-source supplement pools..."
 	$(RUN) python3 $(SRC_TOOLS)/combine_supplements.py
 
+# Definition annotation — join a `has_definition` provenance boolean onto each
+# combined record: does the upstream source(s) that produced it carry a definition
+# (wordnet synset gloss / wiktionary sense gloss)? A SEPARATE pass reading the SAME
+# source files as the generators (never re-running them — shave is non-deterministic
+# and would orphan patches). has_definition is the LOGICAL OR over the record's
+# source list; it rides verbatim through the rest of the chain into the basis. See
+# src/tools/annotate_definitions.py. (No patches prereq: annotation only adds a
+# field, it neither drops nor reshapes.)
+data/supplement-combined-defs.json: $(SRC_TOOLS)/annotate_definitions.py $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-combined-raw.json $(WORDNET_YAML) $(WIKTIONARY_JSONL)
+	@echo "Annotating supplement candidates with upstream-definition provenance..."
+	$(RUN) python3 $(SRC_TOOLS)/annotate_definitions.py
+
 # Pass 1 — duplicate filtering. A candidate whose (word, shaw) an established
 # entry (upstream ReadLex + sanctioned patches) already covers on both the var
 # and pos axes is dropped. See src/tools/filter_supplement_duplicates.py.
-data/supplement-combined-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-combined-raw.json external/readlex/readlex.json data/patches/patches.jsonl
+data/supplement-combined-deduped.json: $(SRC_TOOLS)/filter_supplement_duplicates.py data/supplement-combined-defs.json external/readlex/readlex.json data/patches/patches.jsonl
 	@echo "Filtering duplicate supplement candidates..."
 	$(RUN) python3 $(SRC_TOOLS)/filter_supplement_duplicates.py
 

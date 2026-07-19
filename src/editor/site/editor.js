@@ -49,6 +49,11 @@ const MERGERS = [
 // reviewer toggles it on the detail card and it round-trips in the patch.
 const VARIANT_LABEL = "variant";
 
+// The upstream-definition provenance marker: the source(s) that produced this
+// candidate carry a definition for it (read-only; a provenance fact, not editable).
+// Shown as a quiet "def" pill beside the word; absent == no upstream definition.
+const DEFINITION_LABEL = "def";
+
 // Dictionaries to look the word up in while deciding. {word} is URL-encoded so
 // phrases and apostrophes ("A for effort", "don't") stay valid.
 const REFERENCES = [
@@ -946,6 +951,7 @@ function recordEditor(record, opts) {
         pos,
         mergerBadges(record.mergers),
         variantBadge(record.variant),
+        definitionBadge(record.has_definition),
         detailFacts(record),
         editedSummary(overridden),
         confidenceBadge(record.confidence),
@@ -1387,6 +1393,18 @@ function variantBadge(variant) {
     wrap.className = "variant-badges";
     if (variant) {
         wrap.append(cell("variant-badge", VARIANT_LABEL));
+    }
+    return wrap;
+}
+
+// A record's upstream-definition provenance, as a small "def" badge beside the
+// word. Shown only when the source(s) carry a definition; no-definition shows
+// nothing — the absence is the signal, mirroring the merger/variant badges.
+function definitionBadge(hasDefinition) {
+    const wrap = document.createElement("span");
+    wrap.className = "def-badges";
+    if (hasDefinition) {
+        wrap.append(cell("def-badge", DEFINITION_LABEL));
     }
     return wrap;
 }

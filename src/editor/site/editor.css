@@ -844,6 +844,27 @@ body {
     white-space: nowrap;
 }
 
+/* The upstream-definition provenance marker, read-at-a-glance beside the word. A
+   quiet provenance fact like the merger/variant badges, so it mirrors their pill
+   but in the soft-ink tint to read as informational, not editable. Absent (no
+   upstream definition) renders nothing. */
+.def-badges {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.def-badge {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    color: var(--ink-soft);
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+
 /* The read-only provenance facts (status/source/freq), folded into the heading
    strip as compact label·value pairs — the table they replaced is gone. Quiet by
    default; they sit inline with the badges so every fact is glanceable. */

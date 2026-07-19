@@ -205,7 +205,8 @@ class QueryFilters:
 
 # The categorical facets are multi-select: the request carries a LIST of values
 # per facet (source, status, pos, var, patch_state, reviewed, word_kind,
-# novelty), and a record matches the facet if its value is ANY of them (OR).
+# novelty, has_definition), and a record matches the facet if its value is ANY of
+# them (OR).
 # Facets still AND across each other. The substring (word/shaw) and numeric
 # (confidence_min/max) filters stay scalar. An empty list is no constraint.
 def matches(record, query, established):
@@ -244,6 +245,8 @@ def _field_matches(record, key, value, established):
         return any(_matches_merger(record, v) for v in value)
     if key == "variant":
         return any(_matches_variant(record, v) for v in value)
+    if key == "has_definition":
+        return any(_matches_has_definition(record, v) for v in value)
     if key == "reviewed":
         return any(_matches_review_state(record, v) for v in value)
     if key == "word_kind":
@@ -358,6 +361,25 @@ def _matches_variant(record, value):
     if value == VARIANT_HAS:
         return is_variant
     return not is_variant
+
+
+# The has_definition facet partitions on the provenance boolean: whether the
+# upstream source(s) carry a definition for the record ("has-definition") or not
+# ("no-definition"). A chip outside this closed pair fails loud.
+HAS_DEFINITION_YES = "has-definition"
+HAS_DEFINITION_NO = "no-definition"
+HAS_DEFINITION_FILTER_VALUES = frozenset({HAS_DEFINITION_YES, HAS_DEFINITION_NO})
+
+
+def _matches_has_definition(record, value):
+    if value not in HAS_DEFINITION_FILTER_VALUES:
+        raise ValueError(
+            f"has_definition filter wants "
+            f"{'/'.join(sorted(HAS_DEFINITION_FILTER_VALUES))}, got {value!r}")
+    has_def = bool(record.get("has_definition"))
+    if value == HAS_DEFINITION_YES:
+        return has_def
+    return not has_def
 
 
 def filter_records(records, query, established):

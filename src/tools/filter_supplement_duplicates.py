@@ -25,14 +25,15 @@ anchors to has left that surface, so it is exempt. Removing it would serve no
 purpose and would orphan the patch's anchor (see apply_patches.py).
 
 This is the first pruning pass over the source-combined candidate pool (see
-combine_supplements.py); the merger classifier reads the -deduped.json output
-next. Kept candidates are copied verbatim, so each record's `source` list rides
+combine_supplements.py, then definition-annotated by annotate_definitions.py);
+the merger classifier reads the -deduped.json output next. Kept candidates are
+copied verbatim, so each record's `source` list and `has_definition` flag ride
 through untouched.
 
-Inputs:  data/supplement-combined-raw.json (the combined candidate pool),
-         external/readlex/readlex.json, data/patches/patches.jsonl.
+Inputs:  data/supplement-combined-defs.json (the combined, definition-annotated
+         candidate pool), external/readlex/readlex.json, data/patches/patches.jsonl.
 Outputs: data/supplement-combined-deduped.json  — the merger classifier reads
-         this. The combined-raw file is left untouched; the removed candidates
+         this. The combined-defs file is left untouched; the removed candidates
          are regenerable machine output.
 
 Usage:
@@ -48,8 +49,8 @@ from basis import OP_ACCEPT, PROJECT_ROOT, anchor_key, anchor_of
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 
-# (combined input, deduped output) — one combined pool.
-INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-raw.json"
+# (combined+annotated input, deduped output) — one combined pool.
+INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-defs.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-deduped.json"
 
 # The var wildcard: an established RRP entry covers every dialect, so it is

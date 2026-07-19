@@ -94,11 +94,17 @@ def var_rank(entry):
 
 
 def union_sources(into, extra):
-    """Append `extra`'s source labels to `into`'s, deduped and order-stable."""
+    """Fold `extra` into `into` at a merge: append its source labels (deduped,
+    order-stable) and OR its `has_definition` in. `has_definition` is a per-source
+    provenance OR, so a merge that unions sources must union the flag alongside —
+    a relabelled record whose source has a definition makes the merged record
+    has_definition=true even when the winning-var payload's source did not."""
     sources = into.setdefault("source", [])
     for label in extra.get("source", ()):
         if label not in sources:
             sources.append(label)
+    if extra.get("has_definition"):
+        into["has_definition"] = True
 
 
 def collapse_group(entries):

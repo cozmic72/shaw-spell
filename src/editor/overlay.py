@@ -71,7 +71,10 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     though it is emitted to disk only when non-empty (see basis.record_to_output).
     `variant` is the additive boolean marking a within-accent free-variation
     alternate spelling — always present (False == canonical), emitted to disk only
-    when True (see basis.record_to_output)."""
+    when True (see basis.record_to_output).
+    `has_definition` is the provenance boolean marking whether the upstream
+    source(s) carry a definition for this record — always present (False == no
+    upstream definition) so the UI can show the `def` pill and filter on it."""
     return {
         "word": record.get("word", ""),
         "shaw": record.get("shaw", ""),
@@ -81,6 +84,7 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
         "var": record.get("var", ""),
         "mergers": record.get("mergers", []),
         "variant": bool(record.get("variant")),
+        "has_definition": bool(record.get("has_definition")),
         "source": record.get("source", source),
         "confidence": record.get("confidence"),
         "status": record.get("status", default_status),

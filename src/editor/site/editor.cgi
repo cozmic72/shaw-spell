@@ -156,6 +156,7 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="dropped"><span>dropped</span></label>
             <label class="chip"><input value="flagged"><span>flagged</span></label>
             <label class="chip"><input value="authored"><span>authored</span></label>
+            <label class="chip"><input value="orphaned"><span>orphaned</span></label>
         </div>
         <div data-field="mergers" data-kind="categorical" data-label="Mergers">
             <label class="chip"><input value="trap-bath"><span>TRAP–BATH</span></label>
@@ -169,6 +170,10 @@ PAGE = """<!DOCTYPE html>
         <div data-field="has_definition" data-kind="categorical" data-label="Definition">
             <label class="chip"><input value="has-definition"><span>has definition</span></label>
             <label class="chip"><input value="no-definition"><span>no definition</span></label>
+        </div>
+        <div data-field="orphaned" data-kind="categorical" data-label="Orphaned">
+            <label class="chip"><input value="orphaned"><span>orphaned</span></label>
+            <label class="chip"><input value="not-orphaned"><span>not orphaned</span></label>
         </div>
         <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>
         <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"></div>

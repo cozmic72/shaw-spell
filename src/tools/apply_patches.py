@@ -27,9 +27,13 @@ docs/editorial-overlay-design.md, "The patch record (settled model)"):
     it; a drop removes it; a flag leaves it untouched. Authorship (anchor null)
     emits `changes` as a standalone record.
 
-  - FAIL LOUD on an orphaned decision: an anchor that resolves against NOTHING in
-    the basis (upstream drifted since the decision was made) is surfaced, not
-    silently dropped.
+  - SOFT-FAIL on an orphaned decision: an anchor that resolves against NOTHING in
+    the basis (upstream drifted since the decision was made) is LOGGED and SKIPPED
+    (it contributes nothing to the output), but the build still succeeds. The
+    patch is RETAINED in the store (this applicator never rewrites it) and surfaced
+    in the editor via the `orphaned` filter, where the owner re-anchors or discards
+    it. An orphan is a recoverable, visible state — never a fatal error, and never
+    a silent lost verdict.
 
 Determinism: patches are applied in a total order over their anchor identity and
 id, so identical inputs yield an identical readlex.json.
@@ -141,7 +145,9 @@ def apply_patches(output, basis_index, basis_source, patches):
             continue
 
         # Upstream drifted: the record this decision was made against no longer
-        # exists. Surface it loudly rather than dropping it.
+        # exists. Collect it to log below, and skip applying it — it contributes
+        # nothing to the output. The patch stays in the store (this applicator
+        # never rewrites it) and is surfaced via the editor's `orphaned` filter.
         if entry is PATCH_ORPHAN:
             orphans.append(patch)
             stats["orphaned"] += 1
@@ -187,19 +193,21 @@ def main():
 
     stats, orphans = apply_patches(output, basis_index, basis_source, patches)
 
-    # Fail loud on orphaned decisions BEFORE writing anything. An anchor that no
-    # longer resolves means upstream drifted out from under an editorial
-    # decision; shipping a dictionary that silently dropped it is the exact
-    # "lost verdicts" failure this system exists to prevent. No output written.
+    # Soft-fail on orphaned decisions: an anchor that no longer resolves means
+    # upstream drifted out from under an editorial decision. LOG each one (so it is
+    # never silently lost) and SKIP it (it applied nothing above), but still write
+    # the output and exit 0 — an orphan is a recoverable, surfaced state, not a
+    # blocked build. The patch stays in the store (this applicator never rewrites
+    # it); the owner finds and fixes it via the editor's `orphaned` filter.
     if orphans:
-        print(f"FATAL: {len(orphans)} orphaned decision(s) — an anchor no longer "
-              f"resolves against the basis. Re-anchor or remove them.",
+        print(f"WARNING: {len(orphans)} orphaned decision(s) skipped — an anchor no "
+              f"longer resolves against the basis (upstream drifted). Retained in the "
+              f"store; surface via the editor 'orphaned' filter to re-anchor or drop.",
               file=sys.stderr)
         for patch in orphans:
             anchor = patch["anchor"]
             print(f"    {anchor['word']!r} pos={anchor['pos']} shaw={anchor['shaw']} "
                   f"var={anchor['var']} (id={patch['id']})", file=sys.stderr)
-        raise SystemExit(1)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
@@ -210,6 +218,9 @@ def main():
     print(f"  update/respell:      {stats['update']:,}")
     print(f"  removal:             {stats['removal']:,}")
     print(f"  flag (no-op):        {stats['flag']:,}")
+    print(f"  orphaned (skipped):  {stats['orphaned']:,}"
+          + ("  — see log above; retained in store, surface via editor 'orphaned' filter"
+             if stats['orphaned'] else ""))
     print(f"  skipped (numeral):   {stats['skipped_numeral']:,}")
     print(f"  skipped (bad shaw):  {stats['skipped_shaw']:,}")
     print(f"\nWrote {out_path}")

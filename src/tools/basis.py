@@ -126,8 +126,10 @@ ACCEPTED_STATUS = "sanctioned"
 PATCH_NOOP = object()
 
 # resolve_patch's sentinel for an accept whose anchor no longer resolves against
-# the basis (upstream drifted since the decision was made). The caller surfaces
-# it as an orphan and fails loud — never a silent drop or a stale snapshot.
+# the basis (upstream drifted since the decision was made). The applicator soft-
+# fails on it — logs and skips it, retaining the patch in the store — and the
+# editor overlay surfaces it as an `orphaned` pseudo-row for the owner to re-anchor
+# or discard. Never a silent drop or a stale snapshot.
 PATCH_ORPHAN = object()
 
 
@@ -270,7 +272,8 @@ def resolve_patch(patch, basis_index, basis_source):
       op accept               record_to_output(effective_record(...)): the basis
                               record with the intrinsic `changes` laid over it,
                               sanctioned. If the anchor no longer resolves against
-                              the basis, PATCH_ORPHAN — the caller fails loud."""
+                              the basis, PATCH_ORPHAN — the applicator soft-fails
+                              (logs + skips + retains) and the editor surfaces it."""
     # A flag is "looked at, no verdict yet" whether the row is a basis candidate
     # or an authored one — in both cases nothing reaches production, so this test
     # precedes the authored/anchored split.

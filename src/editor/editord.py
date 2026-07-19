@@ -120,7 +120,8 @@ from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
                      NOVELTY_NEW_WORD, PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
-                     PATCH_STATE_EDITED, PATCH_STATE_FLAGGED, load_view)
+                     PATCH_STATE_EDITED, PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
+                     load_view)
 from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
     replace_authored_patch, upsert_patch)
@@ -205,8 +206,8 @@ class QueryFilters:
 
 # The categorical facets are multi-select: the request carries a LIST of values
 # per facet (source, status, pos, var, patch_state, reviewed, word_kind,
-# novelty, has_definition), and a record matches the facet if its value is ANY of
-# them (OR).
+# novelty, has_definition, orphaned), and a record matches the facet if its value
+# is ANY of them (OR).
 # Facets still AND across each other. The substring (word/shaw) and numeric
 # (confidence_min/max) filters stay scalar. An empty list is no constraint.
 def matches(record, query, established):
@@ -247,6 +248,8 @@ def _field_matches(record, key, value, established):
         return any(_matches_variant(record, v) for v in value)
     if key == "has_definition":
         return any(_matches_has_definition(record, v) for v in value)
+    if key == "orphaned":
+        return any(_matches_orphaned(record, v) for v in value)
     if key == "reviewed":
         return any(_matches_review_state(record, v) for v in value)
     if key == "word_kind":
@@ -380,6 +383,27 @@ def _matches_has_definition(record, value):
     if value == HAS_DEFINITION_YES:
         return has_def
     return not has_def
+
+
+# The orphaned facet partitions on whether a record is an ORPHANED anchored patch
+# — its anchor no longer resolves against the basis (upstream drifted), so the
+# decision is dangling and must be re-anchored or discarded. "orphaned" isolates
+# them for a cleanup sweep; "not-orphaned" is every live review row. A chip outside
+# this closed pair fails loud.
+ORPHANED_YES = "orphaned"
+ORPHANED_NO = "not-orphaned"
+ORPHANED_FILTER_VALUES = frozenset({ORPHANED_YES, ORPHANED_NO})
+
+
+def _matches_orphaned(record, value):
+    if value not in ORPHANED_FILTER_VALUES:
+        raise ValueError(
+            f"orphaned filter wants "
+            f"{'/'.join(sorted(ORPHANED_FILTER_VALUES))}, got {value!r}")
+    is_orphaned = record["patch_state"] == PATCH_STATE_ORPHANED
+    if value == ORPHANED_YES:
+        return is_orphaned
+    return not is_orphaned
 
 
 def filter_records(records, query, established):

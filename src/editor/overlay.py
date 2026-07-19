@@ -26,15 +26,34 @@ moves), a `reviewed` flag (a patch exists — the primary filter partition), and
     dropped     a drop (op == "drop")
     flagged     a flag "looked at, no verdict yet" (see is_flag_patch)
     authored    a standalone record no basis anchor attests (anchor is null)
+    orphaned    an ANCHORED patch whose anchor no longer resolves against the basis
+                (upstream drifted out from under the decision — see below)
 
 `dropped` rows still DISPLAY the source content (flagged, not hidden — the editor
 must see a drop to roll it back). `authored` rows are not in the basis; they are
 synthesized into the view so the editor sees everything a human has ruled on.
+
+`orphaned` rows are the soft-fail counterpart of the applicator's orphan handling
+(apply_patches.py): an anchored ACCEPT whose anchor key is absent from the current
+basis (upstream drifted out from under a sanction). This is a LOST VERDICT — a
+record the owner sanctioned that no longer resolves to anything shippable. The
+record it reviewed is gone, so there is no basis row to annotate; instead the
+patch is synthesized into the view from its OWN anchor + changes, marked
+`orphaned`, so the owner can find it (via the `orphaned` filter) and act on it
+(clear it to discard, or re-accept a live anchor to re-anchor).
+
+Only an ACCEPT orphans — matching the applicator, whose resolve_patch returns
+PATCH_ORPHAN only for an accept. A DROP of a vanished anchor is a satisfied no-op
+(the record it wanted gone IS gone), and a FLAG of a vanished anchor shipped
+nothing either; neither is a lost verdict, so neither is surfaced as an orphan
+(they simply drop out of the view, as they did before, contributing nothing to
+production). Surfacing them would bury the one real lost verdict under benign
+no-ops.
 """
 
 import threading
 
-from basis import (OP_DROP, UPSTREAM_SOURCE, anchor_key, build_basis,
+from basis import (OP_ACCEPT, OP_DROP, UPSTREAM_SOURCE, anchor_key, build_basis,
                    effective_record, is_flag_patch, output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
@@ -43,10 +62,12 @@ PATCH_STATE_EDITED = "edited"
 PATCH_STATE_DROPPED = "dropped"
 PATCH_STATE_FLAGGED = "flagged"
 PATCH_STATE_AUTHORED = "authored"
+PATCH_STATE_ORPHANED = "orphaned"
 
 UPSTREAM_STATUS = "sanctioned"
 SUPPLEMENT_STATUS = "supplement"
 AUTHORED_STATUS = "manual"
+ORPHANED_STATUS = "orphaned"
 
 # A candidate's novelty against the upstream ReadLex corpus ONLY for its word —
 # see EstablishedIndex. This is an immutable fact ("does this word/spelling/pos
@@ -139,6 +160,28 @@ def annotate_authored_record(patch):
                     PATCH_STATE_AUTHORED, patch)
     if not isinstance(ui["source"], list):
         ui["source"] = [ui["source"]]
+    return ui
+
+
+def annotate_orphaned_record(patch):
+    """One annotated row for an ORPHANED anchored patch: its anchor key is absent
+    from the current basis, so there is no basis record to annotate. The row is
+    synthesized from the patch itself — the anchor supplies the identity and the
+    displayed word/pos/shaw/var (the record the decision was made against), with
+    the patch's intrinsic `changes` laid over it so the owner sees the intended
+    edit, not just the stale anchor. Marked `orphaned` and reviewed, so it is a
+    dangling decision the owner must re-anchor or discard.
+
+    Displaying the anchor overlaid with `changes` (rather than a full basis record)
+    is the best available reconstruction: the basis record is gone, but the anchor
+    plus the intended edit is exactly the lost-verdict content the owner needs to
+    decide what to do. A drop's empty `changes` leaves the anchor showing as-is."""
+    anchor = patch["anchor"]
+    record = {"word": anchor["word"], "shaw": anchor["shaw"],
+              "pos": anchor["pos"], "var": anchor.get("var", "")}
+    record.update(patch["changes"])
+    ui = _ui_record(record, anchor, [ORPHANED_STATUS], ORPHANED_STATUS, True,
+                    PATCH_STATE_ORPHANED, patch)
     return ui
 
 
@@ -251,12 +294,19 @@ class AnnotatedView:
             self._apply_authored_patch(patch)
 
     def apply_unpatch_anchor(self, anchor):
-        """Remove the anchored patch on the given anchor, reverting its basis
-        record to the untouched source annotation."""
+        """Remove the anchored patch on the given anchor. If the basis holds the
+        anchor, its record reverts to the untouched source annotation. If it does
+        not, the patch was ORPHANED (a synthesized pseudo-row with no basis record):
+        forget that row entirely — discarding the dangling decision is exactly what
+        the owner asked for."""
         key = anchor_key(anchor)
         with self._lock:
             self.anchored.pop(key, None)
-            self._reannotate_basis_anchor(key, None)
+            if key in self.basis_index:
+                self._reannotate_basis_anchor(key, None)
+            else:
+                self._forget_record(
+                    key, lambda r: r["patch_state"] == PATCH_STATE_ORPHANED)
 
     def apply_unpatch_id(self, patch_id):
         """Remove the authorship patch with the given id, dropping its row."""
@@ -351,7 +401,15 @@ def _index_patches_by_anchor(patches):
 def _build_records(basis_index, basis_source, anchored, authored):
     """The per-anchor record index: anchor key -> its annotated rows, built once
     from the basis and overlay. Basis anchors come first (in basis order), then
-    authored rows appended — the order the flattened `records` view preserves."""
+    authored rows, then ORPHANED anchored patches (those whose anchor key is absent
+    from the basis) synthesized as pseudo-rows — the order the flattened `records`
+    view preserves.
+
+    An anchored ACCEPT is orphaned when the basis holds no record on its anchor key
+    (upstream drifted). It has no basis row to annotate, so it is surfaced from the
+    patch itself (annotate_orphaned_record) rather than dropped from the view —
+    mirroring the applicator's soft-fail, which logs and retains such a patch. A
+    drop/flag on a vanished anchor is NOT surfaced (see module docstring)."""
     index = {}
     for key, candidate in basis_index.items():
         index.setdefault(key, []).append(
@@ -361,7 +419,20 @@ def _build_records(basis_index, basis_source, anchored, authored):
         record = annotate_authored_record(patch)
         index.setdefault(anchor_key(record["anchor"]), []).append(record)
 
+    for key, patch in anchored.items():
+        if key not in basis_index and _is_orphan(patch):
+            index.setdefault(key, []).append(annotate_orphaned_record(patch))
+
     return index
+
+
+def _is_orphan(patch):
+    """Whether an anchored patch whose anchor no longer resolves against the basis
+    is a lost verdict to surface. Only an ACCEPT qualifies — matching the
+    applicator's resolve_patch, which returns PATCH_ORPHAN for an accept alone. A
+    drop is satisfied (its record is already gone) and a flag shipped nothing, so
+    neither is a lost verdict."""
+    return patch.get("op") == OP_ACCEPT
 
 
 def _build_word_index(by_anchor_index):

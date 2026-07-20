@@ -96,6 +96,16 @@ UPSTREAM_VAR_TYPO_FIX = "GenAm"
 # (the origins that attested the anchor), written by the combine + prune chain.
 UPSTREAM_SOURCE = "readlex"
 
+# A GENERAL-PURPOSE informational field: a catch-all list of non-essential
+# metadata strings that rides end-to-end from a supplement source to the basis and
+# editor (its first intended use is Wiktionary quality tags — obsolete/dialectal/
+# dated… — but it holds any informational label). A LIST like `mergers`/`source`,
+# so tags accumulate and round-trip uniformly. Additive: absent means "no info",
+# and a record without it behaves exactly as before. Deliberately NOT the patch
+# `note` (which is patch metadata, never emitted): this is a RECORD field, DERIVED
+# and read-only (not in INTRINSIC_FIELDS), surfaced but never an editable patch field.
+INFO_FIELD = "info"
+
 # Provenance fields a record may carry beyond the canonical core, in output
 # order. `note` is patch metadata and is deliberately NOT emitted to the
 # dictionary. `status` lives in the record because downstream consumers read it.
@@ -357,6 +367,8 @@ def record_to_output(record):
         entry["variant"] = record["variant"]
     if record.get("has_definition"):
         entry["has_definition"] = record["has_definition"]
+    if record.get(INFO_FIELD):
+        entry[INFO_FIELD] = record[INFO_FIELD]
     for orig_key in ORIG_FIELDS.values():
         if orig_key in record:
             entry[orig_key] = record[orig_key]
@@ -383,6 +395,8 @@ def output_to_record(entry):
         record["variant"] = entry["variant"]
     if entry.get("has_definition"):
         record["has_definition"] = entry["has_definition"]
+    if entry.get(INFO_FIELD):
+        record[INFO_FIELD] = entry[INFO_FIELD]
     for orig_key in ORIG_FIELDS.values():
         if orig_key in entry:
             record[orig_key] = entry[orig_key]

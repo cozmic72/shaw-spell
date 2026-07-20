@@ -106,6 +106,13 @@ const DEFINITION_LABEL = "def";
 // glance. Absent when no transform moved the var — the absence is the signal.
 const ORIG_VAR_PREFIX = "was ";
 
+// The general-purpose informational field (basis.INFO_FIELD): a catch-all list of
+// non-essential metadata strings (e.g. Wiktionary quality tags obsolete/dialectal/
+// dated). Read-only — derived provenance, not editable; shown as quiet pills beside
+// the word, one per tag. Absent/empty renders nothing — the absence is the signal,
+// mirroring the def/orig-var provenance badges.
+const INFO_FIELD = "info";
+
 // The novelty marker: is this word/spelling/pos new to the dictionary, measured
 // against upstream ReadLex (read-only; a triage fact the daemon computes, not
 // editable). Shown as a quiet pill beside the word for the new-* buckets — the
@@ -1031,6 +1038,7 @@ function recordEditor(record, opts) {
         definitionBadge(record.has_definition),
         noveltyBadge(record.novelty),
         origVarBadge(record.orig_var, record.var),
+        infoBadges(record[INFO_FIELD]),
         detailFacts(record),
         editedSummary(overridden),
         confidenceBadge(record.confidence),
@@ -1933,6 +1941,21 @@ function noveltyBadge(novelty) {
     const label = NOVELTY_LABELS.get(novelty);
     if (label) {
         wrap.append(cell(`novelty-badge ${novelty}`, label));
+    }
+    return wrap;
+}
+
+// A record's informational metadata (basis.INFO_FIELD), as quiet pills beside the
+// word — one per tag (e.g. obsolete/dialectal). Read-only derived provenance, never
+// editable. Shown only when the list is non-empty; absent/empty renders nothing,
+// the absence being the signal, mirroring the def/orig-var provenance badges.
+function infoBadges(info) {
+    const wrap = document.createElement("span");
+    wrap.className = "info-badges";
+    if (Array.isArray(info)) {
+        for (const tag of info) {
+            wrap.append(cell("info-badge", tag));
+        }
     }
     return wrap;
 }

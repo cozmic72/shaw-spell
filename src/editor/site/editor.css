@@ -908,6 +908,27 @@ body {
     white-space: nowrap;
 }
 
+/* The general-purpose informational metadata (basis.INFO_FIELD): a catch-all list of
+   non-essential tags (e.g. Wiktionary quality tags obsolete/dialectal), one quiet pill
+   each beside the word. Read-only derived provenance like the def badge (soft-ink, not
+   editable); an empty list renders nothing (the absence is the signal). */
+.info-badges {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.info-badge {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    color: var(--ink-soft);
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+
 /* The read-only provenance facts (status/source/freq), folded into the heading
    strip as compact label·value pairs — the table they replaced is gone. Quiet by
    default; they sit inline with the badges so every fact is glanceable. */

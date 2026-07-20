@@ -53,8 +53,9 @@ no-ops.
 
 import threading
 
-from basis import (OP_ACCEPT, OP_DROP, ORIG_FIELDS, UPSTREAM_SOURCE, anchor_key,
-                   build_basis, effective_record, is_flag_patch, output_to_record)
+from basis import (INFO_FIELD, OP_ACCEPT, OP_DROP, ORIG_FIELDS, UPSTREAM_SOURCE,
+                   anchor_key, build_basis, effective_record, is_flag_patch,
+                   output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
 PATCH_STATE_ACCEPTED = "accepted"
@@ -122,7 +123,12 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     from). They are additive, present only when a transform actually changed that
     field, so each is passed through only when the record carries it. Read-only in
     the UI: the owner never edits provenance, it is shown as an audit marker (the
-    original var a record was collapsed from, so the transformation is visible)."""
+    original var a record was collapsed from, so the transformation is visible).
+
+    `info` is the general-purpose informational field (see basis.INFO_FIELD): a
+    catch-all list of non-essential metadata strings (e.g. Wiktionary quality tags
+    obsolete/dialectal/dated). Additive and read-only — passed through only when the
+    record carries it, so a record without it is unaffected."""
     ui = {
         "word": record.get("word", ""),
         "shaw": record.get("shaw", ""),
@@ -145,6 +151,8 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     for orig_key in ORIG_FIELDS.values():
         if record.get(orig_key) not in (None, ""):
             ui[orig_key] = record[orig_key]
+    if record.get(INFO_FIELD):
+        ui[INFO_FIELD] = record[INFO_FIELD]
     return ui
 
 

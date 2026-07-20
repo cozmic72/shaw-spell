@@ -1507,7 +1507,7 @@ body {
    (they are what's being reviewed); the metadata tracks are fixed/narrow. */
 .related-head, .related-row {
     display: grid;
-    grid-template-columns: 22px 88px minmax(0, 1.1fr) 42px 72px minmax(0, 1.2fr) 108px;
+    grid-template-columns: 22px 88px minmax(0, 1.4fr) 42px 56px minmax(0, 1.5fr) 108px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 10px;

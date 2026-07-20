@@ -166,16 +166,32 @@ def build_supplement(shave_fn=None, enable_shave=None):
     yield "classified", supplement
 
     # 5. reclassify RRP (pure judge/relabel; count-preserving)
-    supplement, _n_in = reclassify_mod.reclassify_supplement(
+    #    Same fail-loud invariant the stage's CLI main() enforces: this stage
+    #    relabels but never drops or merges, so a count change is a bug.
+    supplement, n_in = reclassify_mod.reclassify_supplement(
         supplement, Counter(), defaultdict(list))
+    n_out = count(supplement)
+    if n_out != n_in:
+        raise SystemExit(
+            f"reclassify_rrp: record count changed ({n_in} -> {n_out}); this "
+            f"stage relabels but never drops or merges — a count change is a bug")
     yield "reclassified", supplement
 
     # 6. generate RRP proposals + flag-gate (shave/names path threaded, gated off
     #    by default — IPA-basis only unless enable_shave is explicitly set)
+    #    Count-preserving: only ADDS proposal fields and STRIPS gated flags, never
+    #    drops or splits a record (mirrors the stage's CLI fail-loud guard).
+    n_in = count(supplement)
     supplement = generate_mod.process(
         supplement, Counter(), defaultdict(list), Counter(), defaultdict(list),
         upstream=reinterpreted_upstream, shave_fn=shave_fn,
         enable_shave=enable_shave)
+    n_out = count(supplement)
+    if n_out != n_in:
+        raise SystemExit(
+            f"generate_rrp: record count changed ({n_in} -> {n_out}); this stage "
+            f"only ADDS proposal fields and STRIPS gated flags — it never drops or "
+            f"splits a record, so a count change is a bug")
     yield "generated", supplement
 
     # 7. collapse identical-spelling dialects

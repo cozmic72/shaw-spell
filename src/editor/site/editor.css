@@ -23,6 +23,7 @@
     --state-dropped: #a24632;
     --state-flagged: #b07d1a;
     --state-authored: #6b52a8;
+    --state-orphaned: #a24632;
 
     --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
     --shaw: 'Bernie Sans Beta', sans-serif;
@@ -47,6 +48,7 @@
         --state-dropped: #d97457;
         --state-flagged: #e0aa4e;
         --state-authored: #a690e0;
+        --state-orphaned: #d97457;
     }
 }
 
@@ -802,6 +804,34 @@ body {
 .state-badge.dropped { color: var(--state-dropped); }
 .state-badge.flagged { color: var(--state-flagged); }
 .state-badge.authored { color: var(--state-authored); }
+.state-badge.orphaned { color: var(--state-orphaned); }
+
+/* The orphan sub-tag, beside the state badge on an `orphaned` row: names the op +
+   why it orphaned. A lost-accept (a stranded sanction) reads in the quiet flagged
+   tone; a resurfaced-drop (the URGENT case — a suppressed record that RETURNED under
+   a relabelled var) reads in the loud dropped/warning tone with a filled ground so it
+   cannot be missed. Non-orphan rows render nothing. */
+.orphan-kind-badges {
+    align-self: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.orphan-kind-badge {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+.orphan-kind-badge.lost-accept { color: var(--state-flagged); }
+.orphan-kind-badge.resurfaced-drop {
+    color: var(--paper);
+    background: var(--state-dropped);
+    border-color: var(--state-dropped);
+}
 
 /* The record's active vowel mergers, read-at-a-glance beside the word. A
    phonological attribute, not a decision-state, so it stays in the quiet accent
@@ -1408,6 +1438,7 @@ body {
 .related-badge.dropped { color: var(--state-dropped); }
 .related-badge.flagged { color: var(--state-flagged); }
 .related-badge.authored { color: var(--state-authored); }
+.related-badge.orphaned { color: var(--state-orphaned); }
 .related-label {
     font-size: 10px;
     letter-spacing: 0.06em;

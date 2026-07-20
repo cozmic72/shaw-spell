@@ -124,6 +124,17 @@ const NOVELTY_LABELS = new Map([
     ["new-pos", "new POS"],
 ]);
 
+// An orphaned row's op + sub-kind (overlay.orphan_kind), so the owner can triage the
+// two apart: a lost-accept is a stranded sanction (re-anchor or clear), a
+// resurfaced-drop is URGENT — a suppression the basis EVADED, the junk returned under
+// a relabelled var. `label` names it, `title` explains it; the class hangs off the
+// kind for the palette (resurfaced-drop reads as a warning). Shown only on `orphaned`
+// rows, beside the state badge.
+const ORPHAN_KIND_TAGS = new Map([
+    ["lost-accept", { label: "accept-orphan", title: "a sanction whose record vanished upstream — re-anchor or clear it" }],
+    ["resurfaced-drop", { label: "drop — resurfaced", title: "a drop the basis evaded: the same word+pos+shaw is back under a different var, so the suppressed record returned — re-suppress it" }],
+]);
+
 // Dictionaries to look the word up in while deciding. {word} is URL-encoded so
 // phrases and apostrophes ("A for effort", "don't") stay valid.
 const REFERENCES = [
@@ -627,8 +638,10 @@ function ledgerRow(record, index) {
     row.className = `ledger-row state-${record.patch_state}`;
     row.dataset.index = String(index);
 
+    const stamp = cell("stamp col-state " + record.patch_state, record.patch_state);
+    stamp.append(orphanKindBadge(record));
     row.append(
-        cell("stamp col-state " + record.patch_state, record.patch_state),
+        stamp,
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
         varCell(record.var),
@@ -1038,6 +1051,7 @@ function recordEditor(record, opts) {
     heading.className = "detail-word";
     heading.append(
         stateBadge(record.patch_state),
+        orphanKindBadge(record),
         word,
         pos,
         mergerBadges(record.mergers),
@@ -1855,6 +1869,10 @@ function relatedProvenance(record) {
             return { state: "dropped", glyph: "✕", label: "dropped" };
         case "flagged":
             return { state: "flagged", glyph: "⚑", label: "flagged" };
+        case "orphaned":
+            return record.orphan_kind === "resurfaced-drop"
+                ? { state: "dropped", glyph: "⚠", label: "drop — resurfaced" }
+                : { state: "orphaned", glyph: "⚠", label: "accept-orphan" };
         case "accepted":
             return { state: "accepted", glyph: "✓", label: "sanctioned" };
         case "edited":
@@ -1880,6 +1898,26 @@ function setDetailMode() {
 
 function stateBadge(patchState) {
     return cell(`state-badge ${patchState}`, patchState);
+}
+
+// The orphan sub-tag: on an `orphaned` row, a small badge naming the op + why it
+// orphaned (accept-orphan vs the URGENT drop-resurfaced), from overlay.orphan_kind.
+// Non-orphan rows render nothing. Mirrors the other quiet badges (wrapped span,
+// empty when the signal is absent) so it sits naturally beside the state badge.
+function orphanKindBadge(record) {
+    const wrap = document.createElement("span");
+    wrap.className = "orphan-kind-badges";
+    if (record.patch_state !== "orphaned") {
+        return wrap;
+    }
+    const tag = ORPHAN_KIND_TAGS.get(record.orphan_kind);
+    if (!tag) {
+        return wrap;
+    }
+    const badge = cell(`orphan-kind-badge ${record.orphan_kind}`, tag.label);
+    badge.title = tag.title;
+    wrap.append(badge);
+    return wrap;
 }
 
 // The record's active vowel mergers, as small badges beside the word. Empty (a

@@ -34,21 +34,37 @@ must see a drop to roll it back). `authored` rows are not in the basis; they are
 synthesized into the view so the editor sees everything a human has ruled on.
 
 `orphaned` rows are the soft-fail counterpart of the applicator's orphan handling
-(apply_patches.py): an anchored ACCEPT whose anchor key is absent from the current
-basis (upstream drifted out from under a sanction). This is a LOST VERDICT — a
-record the owner sanctioned that no longer resolves to anything shippable. The
-record it reviewed is gone, so there is no basis row to annotate; instead the
-patch is synthesized into the view from its OWN anchor + changes, marked
-`orphaned`, so the owner can find it (via the `orphaned` filter) and act on it
-(clear it to discard, or re-accept a live anchor to re-anchor).
+(apply_patches.py): an anchored patch whose anchor key is absent from the current
+basis (upstream drifted out from under a decision). There are two sub-kinds, carried
+on the row as `orphan_kind` (see ORPHAN_* constants) so the owner can triage them
+apart:
 
-Only an ACCEPT orphans — matching the applicator, whose resolve_patch returns
-PATCH_ORPHAN only for an accept. A DROP of a vanished anchor is a satisfied no-op
-(the record it wanted gone IS gone), and a FLAG of a vanished anchor shipped
-nothing either; neither is a lost verdict, so neither is surfaced as an orphan
-(they simply drop out of the view, as they did before, contributing nothing to
-production). Surfacing them would bury the one real lost verdict under benign
-no-ops.
+  lost-accept       an ACCEPT whose anchor vanished — a LOST VERDICT, a record the
+                    owner sanctioned that no longer resolves to anything shippable.
+                    Act on it: clear to discard, or re-accept a live anchor.
+
+  resurfaced-drop   a DROP whose anchor vanished BUT whose same (word,pos,shaw) is
+                    back in the basis under a DIFFERENT var — the record was
+                    relabelled (RSSB/GenAm→RRP) and the drop no longer resolves to
+                    it. The drop is EVADED: the junk the owner suppressed (e.g. a
+                    contraction fragment like `'s`) has RETURNED. Surfacing this is
+                    the whole point of the case — it was invisible before.
+
+Either way there is no basis row to annotate, so the patch is synthesized into the
+view from its OWN anchor + changes, marked `orphaned`, so the owner can find it (via
+the `orphaned` filter) and act.
+
+A DROP whose (word,pos,shaw) is WHOLLY absent from the basis is genuinely SATISFIED
+(the record it wanted gone IS gone) and is NOT surfaced — it drops out of the view
+as before. A FLAG of a vanished anchor shipped nothing and is never a lost verdict,
+so it is not surfaced either. Surfacing those benign no-ops would bury the two real
+lost verdicts. (Of ~107 orphaned drops the owner found, ~102 had resurfaced — only
+~5 were genuinely satisfied.)
+
+NOTE (owner question, deliberately NOT acted on here): this is an editor-VIEW change
+only. The SHIPPED dictionary (apply_patches.py) still lets a resurfaced-drop through
+— it does not re-suppress the relabelled record. Whether it should is a separate
+decision for the owner; the overlay only surfaces the problem.
 """
 
 import threading
@@ -69,6 +85,16 @@ UPSTREAM_STATUS = "sanctioned"
 SUPPLEMENT_STATUS = "supplement"
 AUTHORED_STATUS = "manual"
 ORPHANED_STATUS = "orphaned"
+
+# Why an anchored patch orphaned — the sub-kind of an `orphaned` row, so the owner
+# can triage the two very differently:
+#   lost-accept    an ACCEPT whose anchor vanished — a lost verdict, the sanctioned
+#                  record no longer resolves to anything shippable (re-anchor or clear)
+#   resurfaced-drop  a DROP whose anchor vanished BUT the same (word,pos,shaw) is back
+#                  in the basis under a DIFFERENT var — the drop is EVADED, the junk
+#                  the owner suppressed has returned (URGENT: re-suppress at the new var)
+ORPHAN_LOST_ACCEPT = "lost-accept"
+ORPHAN_RESURFACED_DROP = "resurfaced-drop"
 
 # A candidate's novelty against the upstream ReadLex corpus ONLY for its word —
 # see EstablishedIndex. This is an immutable fact ("does this word/spelling/pos
@@ -128,7 +154,15 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     `info` is the general-purpose informational field (see basis.INFO_FIELD): a
     catch-all list of non-essential metadata strings (e.g. Wiktionary quality tags
     obsolete/dialectal/dated). Additive and read-only — passed through only when the
-    record carries it, so a record without it is unaffected."""
+    record carries it, so a record without it is unaffected.
+
+    `op` is the patch's operation (accept/drop/flag), or None for an unreviewed
+    row. It is carried onto the UI shape so the owner can tell WHAT verdict a
+    reviewed row records — most useful on orphan rows, where a lost accept
+    (redundant) and an EVADED drop (junk resurfaced under a relabelled var) need
+    distinct triage. The daemon strips the raw `patch` object from the wire shape
+    (serialisable), so anything the UI needs from the patch — here, the op — must
+    ride on the record itself."""
     ui = {
         "word": record.get("word", ""),
         "shaw": record.get("shaw", ""),
@@ -146,6 +180,7 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
         "anchor": anchor,
         "reviewed": reviewed,
         "patch_state": patch_state,
+        "op": patch.get("op") if patch else None,
         "patch": patch,
     }
     for orig_key in ORIG_FIELDS.values():
@@ -204,7 +239,7 @@ def annotate_authored_record(patch, established):
     return ui
 
 
-def annotate_orphaned_record(patch, established):
+def annotate_orphaned_record(patch, orphan_kind, established):
     """One annotated row for an ORPHANED anchored patch: its anchor key is absent
     from the current basis, so there is no basis record to annotate. The row is
     synthesized from the patch itself — the anchor supplies the identity and the
@@ -212,6 +247,13 @@ def annotate_orphaned_record(patch, established):
     the patch's intrinsic `changes` laid over it so the owner sees the intended
     edit, not just the stale anchor. Marked `orphaned` and reviewed, so it is a
     dangling decision the owner must re-anchor or discard.
+
+    `orphan_kind` (see ORPHAN_* constants) records WHY it orphaned so the owner can
+    triage: a `lost-accept` is a sanction whose record vanished (re-anchor or clear);
+    a `resurfaced-drop` is a suppression the basis EVADED — the same (word,pos,shaw)
+    is back under a different var, so the junk returned and the owner must act. It
+    rides on the UI shape (`orphan_kind`) alongside the patch `op` so the UI can
+    label the two apart.
 
     Displaying the anchor overlaid with `changes` (rather than a full basis record)
     is the best available reconstruction: the basis record is gone, but the anchor
@@ -223,6 +265,7 @@ def annotate_orphaned_record(patch, established):
     record.update(patch["changes"])
     ui = _ui_record(record, anchor, [ORPHANED_STATUS], ORPHANED_STATUS, True,
                     PATCH_STATE_ORPHANED, patch, established)
+    ui["orphan_kind"] = orphan_kind
     return ui
 
 
@@ -450,8 +493,17 @@ def _build_records(basis_index, basis_source, anchored, authored, established):
     An anchored ACCEPT is orphaned when the basis holds no record on its anchor key
     (upstream drifted). It has no basis row to annotate, so it is surfaced from the
     patch itself (annotate_orphaned_record) rather than dropped from the view —
-    mirroring the applicator's soft-fail, which logs and retains such a patch. A
-    drop/flag on a vanished anchor is NOT surfaced (see module docstring)."""
+    mirroring the applicator's soft-fail, which logs and retains such a patch.
+
+    A DROP whose anchor vanished is surfaced ONLY when it was EVADED: the same
+    (word_lower, pos, shaw) is back in the basis under a DIFFERENT var (upstream
+    relabelled the record — e.g. RSSB/GenAm→RRP — so the junk the owner suppressed
+    returned under a new key the drop no longer resolves against). A drop whose
+    (word,pos,shaw) is genuinely absent from the basis is SATISFIED (its record is
+    gone) and stays unsurfaced. A flag shipped nothing and is never a lost verdict.
+    The resurfaced-drop test consults `resurfaced_key_index`, the (word,pos,shaw)→
+    var-set fold of the basis (see _build_resurfaced_index)."""
+    resurfaced_index = _build_resurfaced_index(basis_index)
     index = {}
     for key, candidate in basis_index.items():
         index.setdefault(key, []).append(
@@ -463,19 +515,51 @@ def _build_records(basis_index, basis_source, anchored, authored, established):
         index.setdefault(anchor_key(record["anchor"]), []).append(record)
 
     for key, patch in anchored.items():
-        if key not in basis_index and _is_orphan(patch):
-            index.setdefault(key, []).append(annotate_orphaned_record(patch, established))
+        if key in basis_index:
+            continue
+        orphan_kind = _orphan_kind(patch, key, resurfaced_index)
+        if orphan_kind is not None:
+            index.setdefault(key, []).append(
+                annotate_orphaned_record(patch, orphan_kind, established))
 
     return index
 
 
-def _is_orphan(patch):
-    """Whether an anchored patch whose anchor no longer resolves against the basis
-    is a lost verdict to surface. Only an ACCEPT qualifies — matching the
-    applicator's resolve_patch, which returns PATCH_ORPHAN for an accept alone. A
-    drop is satisfied (its record is already gone) and a flag shipped nothing, so
-    neither is a lost verdict."""
-    return patch.get("op") == OP_ACCEPT
+def _build_resurfaced_index(basis_index):
+    """Map each basis (word_lower, pos, shaw) to the set of vars carrying it — the
+    fold that answers "did a dropped record resurface under a different var?". The
+    anchor key is (word_lower, pos, shaw, var), so this drops the var slot and
+    collects it into a set. Built once per view build; consulted per orphaned
+    drop."""
+    resurfaced = {}
+    for word_lower, pos, shaw, var in basis_index:
+        resurfaced.setdefault((word_lower, pos, shaw), set()).add(var)
+    return resurfaced
+
+
+def _orphan_kind(patch, key, resurfaced_index):
+    """The orphan sub-kind (ORPHAN_* ) to surface for an anchored patch whose anchor
+    `key` is absent from the basis, or None to leave it unsurfaced.
+
+    An ACCEPT is a lost verdict — matching the applicator's resolve_patch, which
+    returns PATCH_ORPHAN for an accept alone (ORPHAN_LOST_ACCEPT).
+
+    A DROP is surfaced ONLY as a resurfaced-drop: its (word_lower, pos, shaw) is
+    present in the basis under some var, and — since its own anchor var is absent
+    (`key` not in basis) — that var necessarily differs. The suppressed record has
+    returned under a relabelled var, so the drop is EVADED, not satisfied
+    (ORPHAN_RESURFACED_DROP). A drop whose (word,pos,shaw) is wholly absent is
+    satisfied (the record it wanted gone IS gone) and stays unsurfaced.
+
+    A FLAG shipped nothing and is never a lost verdict."""
+    op = patch.get("op")
+    if op == OP_ACCEPT:
+        return ORPHAN_LOST_ACCEPT
+    if op == OP_DROP:
+        word_lower, pos, shaw, _var = key
+        if (word_lower, pos, shaw) in resurfaced_index:
+            return ORPHAN_RESURFACED_DROP
+    return None
 
 
 def _build_word_index(by_anchor_index):

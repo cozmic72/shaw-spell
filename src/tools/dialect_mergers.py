@@ -18,6 +18,8 @@ sibling — see classify_dialect_mergers.py (supplements) and basis.py (ReadLex'
 TrapBath var).
 """
 
+import os
+
 PALM = "𐑭"
 TRAP = "𐑨"
 THOUGHT = "𐑷"
@@ -41,10 +43,38 @@ MERGER_LOT_PALM = "lot-palm"
 # 230 over the reverse — foreign/broad-A words (Aachen, Abaza, Accra) that GenAm
 # renders with the LOT vowel. Same convention as cot-caught: ReadLex canonical is
 # LOT, so the merged target is 𐑪.
-MERGER_SWAPS = {
+# The full vowel-swap table. Which mergers are ACTIVE is gated by MERGER_ENABLED
+# below — a per-merger off-switch. cot-caught and lot-palm are disabled for now:
+# their base-selection produces false flags on candidate-soup spellings (a
+# candidate sibling is trusted as a non-merged base even when the flagged word's
+# canonical vowel is already the flattened target — e.g. "lot" 𐑤𐑪𐑑 is LOT in every
+# accent, no merger applies). The swap DIRECTION is correct; the base-selection bug
+# is deferred. See scratchpad/merger-falseflag-investigation.md.
+_MERGER_SWAPS_ALL = {
     MERGER_TRAP_BATH: (PALM, TRAP),
     MERGER_COT_CAUGHT: (THOUGHT, LOT),
     MERGER_LOT_PALM: (PALM, LOT),
+}
+
+# Per-merger enable flags. Default: trap-bath ON, cot-caught + lot-palm OFF. Each
+# can be flipped via env (SHAW_SPELL_MERGER_<NAME>=1/0) without a code edit, so the
+# owner can re-enable one for review once the base-selection fix lands.
+def _merger_enabled(name, default):
+    env = os.environ.get(f"SHAW_SPELL_MERGER_{name.upper().replace('-', '_')}")
+    if env is None:
+        return default
+    return env.strip().lower() in ("1", "true", "yes", "on")
+
+MERGER_ENABLED = {
+    MERGER_TRAP_BATH: _merger_enabled(MERGER_TRAP_BATH, True),
+    MERGER_COT_CAUGHT: _merger_enabled(MERGER_COT_CAUGHT, False),
+    MERGER_LOT_PALM: _merger_enabled(MERGER_LOT_PALM, False),
+}
+
+# The active swap table: only enabled mergers. merger_of / classify iterate this,
+# so a disabled merger is simply never detected or flagged.
+MERGER_SWAPS = {
+    name: pair for name, pair in _MERGER_SWAPS_ALL.items() if MERGER_ENABLED[name]
 }
 
 

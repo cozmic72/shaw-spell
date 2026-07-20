@@ -482,7 +482,10 @@ body {
 .workbench {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(360px, 44%) 1fr;
+    /* The ledger is a compact fixed-column list (word/shaw/var/conf/freq/pos); it
+       needs only ~560px to breathe. Cap it there so on a wide screen it stops
+       growing and hands the extra width to the detail pane rather than sprawling. */
+    grid-template-columns: minmax(360px, min(44%, 560px)) 1fr;
     overflow: hidden;
 }
 

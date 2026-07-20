@@ -125,40 +125,57 @@ PAGE = """<!DOCTYPE html>
          label (data-label) and its kind (data-kind). A closed-vocabulary categorical
          field also lists its value→label pairs as .chip templates, so those labels stay
          authored here rather than duplicated in JS; a data-derived categorical field
-         (pos/var/status/source) omits them and takes its values from the daemon facets
+         (pos/var/source) omits them and takes its values from the daemon facets
          op. `data-pinned="true"` marks the always-shown fields (word + shaw search,
-         Review, Novelty) — permanent chips that seed the strip and cannot be removed;
-         the rest are added on demand from the +Add filter menu. The block is never
-         rendered — editor.js harvests it into the registry. -->
+         Review, Data, Novelty) — permanent chips that seed the strip and cannot be
+         removed; the rest are added on demand from the +Add filter menu. The block is
+         never rendered — editor.js harvests it into the registry.
+
+         The three pinned categoricals are ORTHOGONAL AXES: Review = process status
+         (the review lifecycle), Data = data predicates (origin/nature of the record),
+         Novelty = word-newness. OR within an axis, AND across axes — 'generated AND
+         unreviewed' is Data:generated + Review:unreviewed. -->
     <div class="filter-meta" id="filterMeta" hidden>
         <div data-field="word" data-kind="text" data-label="Word" data-pinned="true"
              data-placeholder="latin substring"></div>
         <div data-field="shaw" data-kind="text" data-label="Shaw" data-pinned="true"
              data-placeholder="𐑖𐑷 substring" data-shavian="true"></div>
-        <!-- Review: the ONE consolidated review-lifecycle facet. Its values are the
-             seven mutually-exclusive patch_states — the record is in exactly one — so
-             a single facet replaces the former overlapping reviewed / State / orphaned
-             filters (see editord _matches_review). Multi-select reconstructs their
-             every partition: {accepted,edited,dropped,authored,orphaned} = the old
-             reviewed=decided, all-but-unreviewed = reviewed=true, all-but-orphaned =
-             not-orphaned. Pinned (always shown). -->
+        <!-- AXIS 1 — Review: the review-lifecycle verdicts (mutually exclusive; a
+             record is in exactly one). authored/orphaned are origins, not verdicts —
+             they live in Data as manual/orphaned (see editord _matches_review). -->
         <div data-field="review" data-kind="categorical" data-label="Review" data-pinned="true">
             <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
             <label class="chip"><input value="accepted"><span>accepted</span></label>
             <label class="chip"><input value="edited"><span>edited</span></label>
             <label class="chip"><input value="dropped"><span>dropped</span></label>
             <label class="chip"><input value="flagged"><span>flagged</span></label>
-            <label class="chip"><input value="authored"><span>manual</span></label>
-            <label class="chip"><input value="orphaned"><span>orphaned</span></label>
         </div>
-        <!-- Novelty: orthogonal to Review (word newness, not review state). Pinned. -->
+        <!-- AXIS 2 — Data: origin/nature predicates, NON-mutually-exclusive (a record
+             can be generated AND have a definition). Absorbs the former Status and
+             Definition facets and Review's authored/orphaned (see editord
+             _matches_data). generated/supplement are CONTAINS tests on the source
+             list — a wiktionary+generated record is both — unlike the exact-combo
+             Source facet below. promoted = the reclassifier relabelled its var
+             (orig_var present). -->
+        <div data-field="data" data-kind="categorical" data-label="Data" data-pinned="true">
+            <label class="chip"><input value="manual"><span>manual</span></label>
+            <label class="chip"><input value="orphaned"><span>orphaned</span></label>
+            <label class="chip"><input value="generated"><span>generated</span></label>
+            <label class="chip"><input value="supplement"><span>supplement</span></label>
+            <label class="chip"><input value="promoted"><span>promoted</span></label>
+            <label class="chip"><input value="has-definition"><span>has definition</span></label>
+            <label class="chip"><input value="no-definition"><span>no definition</span></label>
+        </div>
+        <!-- AXIS 3 — Novelty: word-newness against upstream ReadLex; upstream = a
+             ReadLex-core row (the not-new baseline the new-* values are measured
+             against). Pinned. -->
         <div data-field="novelty" data-kind="categorical" data-label="Novelty" data-pinned="true">
             <label class="chip"><input value="new-word"><span>new word</span></label>
             <label class="chip"><input value="new-spelling"><span>new spelling</span></label>
             <label class="chip"><input value="new-pos"><span>new POS</span></label>
+            <label class="chip"><input value="upstream"><span>upstream</span></label>
         </div>
         <div data-field="source" data-kind="categorical" data-label="Source"></div>
-        <div data-field="status" data-kind="categorical" data-label="Status"></div>
         <div data-field="pos" data-kind="categorical" data-label="POS"></div>
         <div data-field="var" data-kind="categorical" data-label="Var"></div>
         <div data-field="word_kind" data-kind="categorical" data-label="Words">
@@ -174,10 +191,6 @@ PAGE = """<!DOCTYPE html>
         <div data-field="variant" data-kind="categorical" data-label="Variant">
             <label class="chip"><input value="variant"><span>variant</span></label>
             <label class="chip"><input value="canonical"><span>canonical</span></label>
-        </div>
-        <div data-field="has_definition" data-kind="categorical" data-label="Definition">
-            <label class="chip"><input value="has-definition"><span>has definition</span></label>
-            <label class="chip"><input value="no-definition"><span>no definition</span></label>
         </div>
         <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>
         <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"></div>

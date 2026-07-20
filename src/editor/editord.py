@@ -156,8 +156,9 @@ from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
-from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
-                     NOVELTY_NEW_WORD, PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
+from overlay import (AUTHORED_STATUS, NOVELTY_NEW_POS,           # noqa: E402
+                     NOVELTY_NEW_SPELLING, NOVELTY_NEW_WORD, ORPHANED_STATUS,
+                     PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
                      PATCH_STATE_DROPPED, PATCH_STATE_EDITED, PATCH_STATE_FLAGGED,
                      PATCH_STATE_ORPHANED, PATCH_STATE_UNREVIEWED, load_view)
 from patchstore import (                                        # noqa: E402
@@ -249,11 +250,17 @@ class QueryFilters:
 
 
 # The categorical facets are multi-select: the request carries a LIST of values
-# per facet (source, status, pos, var, review, word_kind, novelty,
-# has_definition, mergers, variant), and a record matches the facet if its value
-# is ANY of them (OR).
+# per facet (source, pos, var, review, data, word_kind, novelty, mergers,
+# variant), and a record matches the facet if its value is ANY of them (OR).
 # Facets still AND across each other. The substring (word/shaw) and numeric
 # (confidence_min/max) filters stay scalar. An empty list is no constraint.
+#
+# The three primary facets are ORTHOGONAL AXES (the owner's review lenses):
+#   review  — process status, the review lifecycle (axis 1)
+#   data    — data predicates, the origin/nature of the record (axis 2)
+#   novelty — word-newness against upstream ReadLex (axis 3)
+# OR within an axis, AND across axes: 'generated AND unreviewed' is
+# data=[generated] + review=[unreviewed].
 def matches(record, query, established):
     """Whether an annotated record passes every supplied filter. Absent filters
     do not constrain; a present filter that the record fails excludes it. `query`
@@ -273,7 +280,7 @@ def matches(record, query, established):
 # The equality facets test membership; the custom matchers are asked per value.
 # word/shaw are handled by QueryFilters' pre-compiled predicates, not here.
 def _field_matches(record, key, value, established):
-    if key in ("status", "pos", "var"):
+    if key in ("pos", "var"):
         if not isinstance(value, list):
             raise ValueError(f"{key} filter wants a list, got {value!r}")
         return record.get(key) in value
@@ -290,10 +297,10 @@ def _field_matches(record, key, value, established):
         return any(_matches_merger(record, v) for v in value)
     if key == "variant":
         return any(_matches_variant(record, v) for v in value)
-    if key == "has_definition":
-        return any(_matches_has_definition(record, v) for v in value)
     if key == "review":
         return any(_matches_review(record, v) for v in value)
+    if key == "data":
+        return any(_matches_data(record, v) for v in value)
     if key == "word_kind":
         return any(_matches_word_kind(record, v) for v in value)
     if key == "novelty":
@@ -307,20 +314,15 @@ def _field_matches(record, key, value, established):
     raise ValueError(f"unknown filter: {key}")
 
 
-# The Review facet is the ONE review-lifecycle filter: it replaced the former
-# overlapping `reviewed` (unreviewed/flagged/decided), `patch_state` (the raw State),
-# and `orphaned` (orphaned/not-orphaned) filters. Its vocabulary IS the set of
-# patch_states — a record is in exactly ONE — so the facet is genuinely mutually
-# exclusive, and the multi-select OR reconstructs every partition the old filters
-# expressed: {accepted, edited, dropped, authored, orphaned} = the old
-# reviewed="decided"; everything but "unreviewed" = reviewed=true; everything but
-# "orphaned" = the old orphaned="not-orphaned". A chip outside the closed vocabulary
-# fails loud. Provenance (`status` — where the record came from) is NOT a lifecycle
-# state and stays its own data-derived facet.
+# AXIS 1 — process status. The Review facet is the review-lifecycle filter: the
+# verdicts a record can be in (matched on patch_state). authored and orphaned are
+# patch_states too, but they describe the record's ORIGIN, not a review verdict,
+# so they live in the data facet (axis 2) as `manual`/`orphaned` — an authored or
+# orphaned row matches NO review value. A chip outside the closed vocabulary
+# fails loud.
 REVIEW_FILTER_VALUES = (
     PATCH_STATE_UNREVIEWED, PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED,
-    PATCH_STATE_DROPPED, PATCH_STATE_FLAGGED, PATCH_STATE_AUTHORED,
-    PATCH_STATE_ORPHANED)
+    PATCH_STATE_DROPPED, PATCH_STATE_FLAGGED)
 
 
 def _matches_review(record, value):
@@ -328,6 +330,66 @@ def _matches_review(record, value):
         raise ValueError(
             f"review filter wants {'/'.join(REVIEW_FILTER_VALUES)}, got {value!r}")
     return record["patch_state"] == value
+
+
+# AXIS 2 — data predicates: the origin/nature of the record, one consolidated
+# facet absorbing the former `status` and `has_definition` filters plus the
+# authored/orphaned values pulled out of Review. The values are NON-mutually-
+# exclusive predicates (a record can be generated AND have a definition), OR-ed
+# within the facet like every other; the AND-usecases come from crossing axes.
+#   manual         a human authored the record (patch_state authored — the old
+#                  status="manual" / Review "authored")
+#   orphaned       an anchored patch whose basis anchor is gone (patch_state
+#                  orphaned — the old status="orphaned" / Review "orphaned")
+#   generated      the RRP generator synthesized it (source CONTAINS "generated",
+#                  so wiktionary+generated combos count — unlike the exact-set
+#                  source facet)
+#   supplement     harvested from a supplement source (source CONTAINS an origin
+#                  outside NON_SUPPLEMENT_ORIGINS — wordnet/wiktionary/names/
+#                  any future harvest label). A generated+wiktionary record is
+#                  BOTH generated and supplement.
+#   promoted       a pipeline transform relabelled its var (orig_var present —
+#                  the reclassifier's [WAS X] RRP-promotion marker)
+#   has-definition / no-definition
+#                  the upstream-definition partition (the old has_definition
+#                  facet, absorbed whole so the no-definition gap-hunt survives)
+GENERATED_ORIGIN = "generated"
+# Origins that are NOT harvested-supplement attestations: the upstream core, the
+# generator's synthesized label, and the pseudo-origins authored/orphaned rows
+# carry in their source list (overlay's AUTHORED_STATUS/ORPHANED_STATUS).
+NON_SUPPLEMENT_ORIGINS = frozenset(
+    {UPSTREAM_SOURCE, GENERATED_ORIGIN, AUTHORED_STATUS, ORPHANED_STATUS})
+
+DATA_MANUAL = "manual"
+DATA_ORPHANED = "orphaned"
+DATA_GENERATED = "generated"
+DATA_SUPPLEMENT = "supplement"
+DATA_PROMOTED = "promoted"
+DATA_HAS_DEFINITION = "has-definition"
+DATA_NO_DEFINITION = "no-definition"
+DATA_FILTER_VALUES = (
+    DATA_MANUAL, DATA_ORPHANED, DATA_GENERATED, DATA_SUPPLEMENT,
+    DATA_PROMOTED, DATA_HAS_DEFINITION, DATA_NO_DEFINITION)
+
+
+def _matches_data(record, value):
+    if value == DATA_MANUAL:
+        return record["patch_state"] == PATCH_STATE_AUTHORED
+    if value == DATA_ORPHANED:
+        return record["patch_state"] == PATCH_STATE_ORPHANED
+    if value == DATA_GENERATED:
+        return GENERATED_ORIGIN in record.get("source", ())
+    if value == DATA_SUPPLEMENT:
+        return any(origin not in NON_SUPPLEMENT_ORIGINS
+                   for origin in record.get("source", ()))
+    if value == DATA_PROMOTED:
+        return bool(record.get("orig_var"))
+    if value == DATA_HAS_DEFINITION:
+        return bool(record.get("has_definition"))
+    if value == DATA_NO_DEFINITION:
+        return not record.get("has_definition")
+    raise ValueError(
+        f"data filter wants {'/'.join(DATA_FILTER_VALUES)}, got {value!r}")
 
 
 # A multi-word phrase is a Latin word carrying an internal whitespace after
@@ -349,26 +411,32 @@ def _source_key(record):
     return "+".join(sorted(record.get("source", ())))
 
 
-# Novelty classifies a supplement record by its relationship to the upstream
-# ReadLex corpus for its word — a genuinely new word, a new spelling of a known
-# word, or a new POS of a known word+shaw. It is measured against upstream ONLY
-# (never sanctioned patches), so sanctioning a record never changes its novelty,
-# and a reviewed row keeps the novelty it always had. Novelty is orthogonal to
-# review state: whether the owner has decided on a record is the separate
-# `review` filter (_matches_review), which ANDs with this one. Upstream
-# rows are the baseline against which novelty is measured; they classify as
-# `known` (not in NOVELTY_VALUES), so they never match new-* — the fast-path
-# below just spares ~111K upstream rows a classify() call. A "known" candidate —
-# word+shaw+pos all present upstream — would be a duplicate the B1 filter removes;
-# it classifies as `known` and never matches new-* here either.
-NOVELTY_VALUES = (NOVELTY_NEW_WORD, NOVELTY_NEW_SPELLING, NOVELTY_NEW_POS)
+# AXIS 3 — novelty classifies a supplement record by its relationship to the
+# upstream ReadLex corpus for its word — a genuinely new word, a new spelling of
+# a known word, or a new POS of a known word+shaw. It is measured against
+# upstream ONLY (never sanctioned patches), so sanctioning a record never
+# changes its novelty, and a reviewed row keeps the novelty it always had.
+# Novelty is orthogonal to the review and data axes, which AND with this one.
+# The fourth value, `upstream`, is the baseline itself: a ReadLex-core row
+# (source contains "readlex") — the not-new complement of the new-* values.
+# Upstream rows never match new-* (they ARE the measure; the short-circuit
+# spares ~111K rows a classify() call). A non-upstream "known" candidate —
+# word+shaw+pos all present upstream — would be a duplicate the B1 filter
+# removes; it classifies as `known` and matches neither new-* nor upstream.
+NOVELTY_UPSTREAM = "upstream"
+NOVELTY_FILTER_VALUES = (
+    NOVELTY_NEW_WORD, NOVELTY_NEW_SPELLING, NOVELTY_NEW_POS, NOVELTY_UPSTREAM)
 
 
 def _matches_novelty(record, value, established):
-    if value not in NOVELTY_VALUES:
+    if value not in NOVELTY_FILTER_VALUES:
         raise ValueError(
-            f"novelty filter wants {'/'.join(NOVELTY_VALUES)}, got {value!r}")
-    if UPSTREAM_SOURCE in record.get("source", ()):
+            f"novelty filter wants {'/'.join(NOVELTY_FILTER_VALUES)}, "
+            f"got {value!r}")
+    is_upstream = UPSTREAM_SOURCE in record.get("source", ())
+    if value == NOVELTY_UPSTREAM:
+        return is_upstream
+    if is_upstream:
         return False
     novelty = established.classify(record["word"], record["shaw"], record["pos"])
     return novelty == value
@@ -411,25 +479,6 @@ def _matches_variant(record, value):
     if value == VARIANT_HAS:
         return is_variant
     return not is_variant
-
-
-# The has_definition facet partitions on the provenance boolean: whether the
-# upstream source(s) carry a definition for the record ("has-definition") or not
-# ("no-definition"). A chip outside this closed pair fails loud.
-HAS_DEFINITION_YES = "has-definition"
-HAS_DEFINITION_NO = "no-definition"
-HAS_DEFINITION_FILTER_VALUES = frozenset({HAS_DEFINITION_YES, HAS_DEFINITION_NO})
-
-
-def _matches_has_definition(record, value):
-    if value not in HAS_DEFINITION_FILTER_VALUES:
-        raise ValueError(
-            f"has_definition filter wants "
-            f"{'/'.join(sorted(HAS_DEFINITION_FILTER_VALUES))}, got {value!r}")
-    has_def = bool(record.get("has_definition"))
-    if value == HAS_DEFINITION_YES:
-        return has_def
-    return not has_def
 
 
 def filter_records(records, query, established):
@@ -547,14 +596,17 @@ def handle_entries(state, request):
     }
 
 
-# The data-derived facets — pos, var, status, source — take their chips from the
+# The data-derived facets — pos, var, source — take their chips from the
 # distinct values actually present in the view, sorted, rather than a hardcoded
 # subset that would drift from the data (an unenumerated var like RRPVar becomes
 # unfilterable; a dead chip like source=pos-gap matches nothing). POS is the long
-# tail (100+ CLAWS tags); var/status/source are small but drift as upstream data
+# tail (100+ CLAWS tags); var/source are small but drift as upstream data
 # and cleanup targets come and go. The closed vocabularies the code itself defines
-# (review/word_kind/novelty) can't drift, so they stay in the page.
-DATA_DERIVED_FACETS = ("pos", "var", "status", "source")
+# (review/data/word_kind/novelty) can't drift, so they stay in the page.
+# The former `status` facet is DISSOLVED: status is fully derived, so each of its
+# values maps onto the axes — manual = data:manual, orphaned = data:orphaned,
+# sanctioned = novelty:upstream ∪ review:accepted/edited, supplement = the rest.
+DATA_DERIVED_FACETS = ("pos", "var", "source")
 
 
 def handle_facets(state, _request):

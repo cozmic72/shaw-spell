@@ -3748,11 +3748,26 @@ function loadSession() {
 // Adopt a saved session's active filters as the chip strip, dropping any entry whose
 // field the registry no longer knows (a field renamed or retired) and folding in the
 // always-shown pinned fields (a session saved before a field was pinned, or with a
-// pinned field removed, still gets it back). Called on load before the first query.
+// pinned field removed, still gets it back). Categorical values outside the field's
+// current vocabulary are dropped too — a retired value (e.g. Review's former
+// authored/orphaned, now Data's manual/orphaned) would otherwise wedge the session:
+// the daemon rejects it loudly and its checkbox no longer exists to unpick. Called
+// on load before the first query.
 function restoreActiveFilters(activeFilters) {
-    const known = activeFilters.filter((entry) => FIELD_REGISTRY.has(entry.field));
+    const known = activeFilters
+        .filter((entry) => FIELD_REGISTRY.has(entry.field))
+        .map((entry) => sanitizeRestoredEntry(entry));
     state.activeFilters = withPinnedFilters(known);
     renderChipStrip();
+}
+
+function sanitizeRestoredEntry(entry) {
+    const spec = fieldSpec(entry.field);
+    if (spec.kind !== "categorical") {
+        return entry;
+    }
+    const vocabulary = new Set(spec.entries.map((option) => option.value));
+    return { ...entry, value: entry.value.filter((value) => vocabulary.has(value)) };
 }
 
 // Off-canvas ledger drawer for narrow screens. On wide screens the list is always
@@ -3943,7 +3958,7 @@ document.addEventListener("keydown", onGlobalKey);
 // ---- field registry harvest ----
 // Populate FIELD_REGISTRY from the page's .filter-meta block (one div per field,
 // carrying its kind and human label, plus closed-vocabulary value→label pairs) and
-// the daemon facets op (data-derived vocabularies for pos/var/status/source). Runs
+// the daemon facets op (data-derived vocabularies for pos/var/source). Runs
 // once at boot; the registry order follows the meta block's document order.
 async function buildFieldRegistry() {
     const derived = await callDaemon({ op: "facets" });

@@ -23,6 +23,50 @@ const AUTHOR = "editor";
 const PAGE_LIMIT = 500;
 const ACCEPTED_STATUS = "sanctioned";
 const SESSION_KEY = "shaw-spell.editor.session";
+// Detail-panel sub-section expansion prefs. Persisted apart from SESSION_KEY (which
+// carries query/selection state) so the owner's "keep related at a glance" choice
+// sticks per section across record selections AND page reloads. Keyed by a stable
+// section id; the value is the remembered open/closed boolean.
+const SECTION_PREFS_KEY = "shaw-spell.editor.sections";
+// Default expansion when nothing is persisted: related opens (owner reads it at a
+// glance), definitions stay collapsed (they push related below the fold otherwise).
+const SECTION_DEFAULTS = { definitions: false, related: true };
+// In-memory shadow so the prefs survive record-switch re-renders even when browser
+// storage is unavailable (private mode / storage disabled). Seeded from storage on
+// first read; the ONLY graceful fallback here — everything else fails loud.
+let sectionPrefsCache = null;
+
+function loadSectionPrefs() {
+    if (sectionPrefsCache) {
+        return sectionPrefsCache;
+    }
+    sectionPrefsCache = { ...SECTION_DEFAULTS };
+    try {
+        const raw = localStorage.getItem(SECTION_PREFS_KEY);
+        if (raw) {
+            Object.assign(sectionPrefsCache, JSON.parse(raw));
+        }
+    } catch (error) {
+        // Storage unreadable (disabled/quota): fall back to in-memory defaults.
+    }
+    return sectionPrefsCache;
+}
+
+function sectionExpanded(id) {
+    const prefs = loadSectionPrefs();
+    return id in prefs ? prefs[id] : Boolean(SECTION_DEFAULTS[id]);
+}
+
+function setSectionExpanded(id, open) {
+    const prefs = loadSectionPrefs();
+    prefs[id] = open;
+    try {
+        localStorage.setItem(SECTION_PREFS_KEY, JSON.stringify(prefs));
+    } catch (error) {
+        // Storage unwritable: the in-memory cache still carries the preference for
+        // this page life, so record-switches within the session honour it.
+    }
+}
 // The default query sort — today's landing order, the highest-confidence review
 // candidates first. A column header click sets state.columnSort, which daemonSort()
 // composes into a `${column}_${dir}` sort the daemon applies to the whole filtered
@@ -1186,19 +1230,39 @@ function definitionPosLabel(pos) {
 // list never crowds the word panel until the owner opens it — the design's "collapsed
 // summary". The header carries the sense count once loaded.
 function definitionsSection() {
-    const section = document.createElement("details");
-    section.className = "definitions";
-    section.setAttribute("aria-label", DEFINITIONS_TITLE);
+    const section = collapsibleSection("definitions", DEFINITIONS_TITLE);
     section.append(definitionsSummary(null), definitionsLoading());
     return section;
 }
 
 function definitionsSummary(count) {
+    return collapsibleSummary("definitions-title", DEFINITIONS_TITLE, count);
+}
+
+// A detail-panel sub-section (definitions, related) as a native <details> whose
+// open state is seeded from the owner's persisted per-section preference, so it
+// re-opens the same way across record-switches and page reloads. Toggling writes
+// the new state back. `id` is the stable persistence key; `label` names it for AT.
+function collapsibleSection(id, label) {
+    const section = document.createElement("details");
+    section.className = id;
+    section.setAttribute("aria-label", label);
+    section.open = sectionExpanded(id);
+    section.addEventListener("toggle", () => setSectionExpanded(id, section.open));
+    return section;
+}
+
+// The <summary> for a collapsible section: a project chevron (matching the filter/
+// drawer toggles) plus the title, with an optional " · count" suffix. The chevron's
+// rotation is driven by the parent <details>[open] state in CSS.
+function collapsibleSummary(className, title, count) {
     const summary = document.createElement("summary");
-    summary.className = "definitions-title";
-    summary.textContent = count === null
-        ? DEFINITIONS_TITLE
-        : `${DEFINITIONS_TITLE} · ${count}`;
+    summary.className = className;
+    const chevron = document.createElement("span");
+    chevron.className = "chevron";
+    chevron.setAttribute("aria-hidden", "true");
+    const text = count === null ? title : `${title} · ${count}`;
+    summary.append(chevron, document.createTextNode(text));
     return summary;
 }
 
@@ -1244,7 +1308,6 @@ function renderDefinitions(section, word, senses) {
         list.append(definitionRow(word, sense, section));
     }
     section.replaceChildren(definitionsSummary(senses.length), list);
-    section.open = true;
 }
 
 // Re-fetch and re-render the senses for `word` into `section` after a correction,
@@ -1558,20 +1621,13 @@ function closeDefinitionModal() {
 const RELATED_TITLE = "Related entries";
 
 function relatedSection() {
-    const section = document.createElement("section");
-    section.className = "related";
-    section.setAttribute("aria-label", RELATED_TITLE);
+    const section = collapsibleSection("related", RELATED_TITLE);
     section.append(relatedHeading(null), relatedLoading());
     return section;
 }
 
 function relatedHeading(count) {
-    const heading = document.createElement("h2");
-    heading.className = "related-title";
-    heading.textContent = count === null
-        ? RELATED_TITLE
-        : `${RELATED_TITLE} · ${count}`;
-    return heading;
+    return collapsibleSummary("related-title", RELATED_TITLE, count);
 }
 
 // Fetch related for the focused record and fill `section` when it returns. Two things

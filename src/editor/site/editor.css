@@ -1169,7 +1169,14 @@ body {
     padding-top: 22px;
     border-top: 1px solid var(--rule);
 }
-.definitions-title {
+/* Both detail sub-sections (definitions, related) are collapsible <details>. Their
+   <summary> titles share a look and a project chevron (▸/▾), matching the filter and
+   drawer toggles, so the panel reads as one consistent set of collapsibles. */
+.definitions-title,
+.related-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-family: var(--mono);
     font-size: 11px;
     font-weight: 700;
@@ -1177,10 +1184,21 @@ body {
     text-transform: uppercase;
     color: var(--ink-soft);
     cursor: pointer;
-    list-style-position: inside;
 }
-.definitions-title:hover { color: var(--ink); }
+.definitions-title:hover,
+.related-title:hover { color: var(--ink); }
+/* Replace the native disclosure triangle with the project chevron span, so the
+   affordance is identical to the masthead toggles. */
+.definitions-title::-webkit-details-marker,
+.related-title::-webkit-details-marker { display: none; }
+.definitions-title { list-style: none; }
+.related-title { list-style: none; }
+/* The chevron rotates with the parent <details>[open] state (mirrors the
+   aria-expanded rotation the .chevron-toggle summaries use). */
+.definitions[open] .definitions-title .chevron,
+.related[open] .related-title .chevron { transform: rotate(90deg); }
 .definitions[open] .definitions-title { margin-bottom: 12px; }
+.related[open] .related-title { margin-bottom: 12px; }
 .definitions-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
 .definitions-empty { color: var(--ink-soft); font-size: 13px; }
 .definitions-list { list-style: none; }
@@ -1330,15 +1348,6 @@ body {
     margin-top: 30px;
     padding-top: 22px;
     border-top: 1px solid var(--rule);
-}
-.related-title {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    margin-bottom: 12px;
 }
 .related-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
 .related-list { list-style: none; }

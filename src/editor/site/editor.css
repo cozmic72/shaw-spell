@@ -1150,7 +1150,7 @@ body {
     align-items: flex-end;
     gap: 18px 24px;
 }
-.field-row > .edit-field:first-child { flex: 0 1 160px; }
+.field-row > .edit-field:first-child { flex: 0 1 96px; }
 .field-row > .edit-field { flex: 0 0 auto; }
 .edit-label {
     font-size: 11px;

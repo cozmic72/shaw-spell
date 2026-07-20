@@ -50,7 +50,8 @@ from collections import Counter, defaultdict
 from basis import PROJECT_ROOT, anchor_of
 from filter_supplement_duplicates import anchored_keys, load_patches
 from generate_wiktionary_supplement import (
-    POS_MAP, classify_dialect, clean_ipa, make_key, strip_ipa_delimiters,
+    POS_MAP, VAR_TO_NORM_SOURCE, classify_sound, clean_ipa, make_key,
+    strip_ipa_delimiters,
 )
 from ipa_to_shavian import ipa_to_shavian, normalize_ipa, score_confidence
 
@@ -67,10 +68,6 @@ NEAR_EXPANSIONS = {"𐑽": "𐑦𐑼", "𐑾": "𐑦𐑩"}
 
 # The dotted signature the generator lost: weak/kit vowel, syllable dot, schwa.
 DOTTED_NEAR_RE = re.compile(r'[iɪ]\.ə')
-
-# The stored dialect var -> the normalize_ipa source the generator used for it.
-# Mirrors process_entry in generate_wiktionary_supplement.py exactly.
-VAR_TO_NORM_SOURCE = {"RSSB": "wiktionary_rp", "GenAm": "wiktionary_gam"}
 
 # Provenance: survives through the pruning chain to the basis and UI so the owner
 # can see and filter these mechanical corrections.
@@ -89,20 +86,24 @@ def load_json(path):
         return json.load(f)
 
 
-def dialect_of_var(var):
-    """The kaikki dialect class ('RSSB'/'GenAm') a stored var re-matches against,
-    or None for vars that carry no dialect (UNC, etc.)."""
-    return var if var in VAR_TO_NORM_SOURCE else None
+def norm_source_of_var(var):
+    """The normalize_ipa source a stored var re-matches against, or None for vars
+    that carry no re-derivation axis (UNC, etc.). The var IS the index bucket —
+    the generator emits one record per accent var, and index_dotted_near_sounds
+    buckets each dotted sound under every var it would have been emitted for."""
+    return VAR_TO_NORM_SOURCE.get(var)
 
 
 def index_dotted_near_sounds(jsonl_path):
-    """(word_lower, pos_c5) -> {dialect_class: [raw_ipa, ...]} for kaikki sounds
-    whose RAW ipa carries the [iɪ].ə dotted signature.
+    """(word_lower, pos_c5) -> {var: [raw_ipa, ...]} for kaikki sounds whose RAW
+    ipa carries the [iɪ].ə dotted signature.
 
     Only dotted sounds are indexed — a (word, pos) absent here has no dot-collapse
     victim and its stored NEAR is genuine. File order is preserved so re-match is
-    deterministic. Dialect is classified exactly as the generator does; unlabelled
-    sounds default to the RSSB (wiktionary_rp) bucket, matching process_entry."""
+    deterministic. Each sound is classified exactly as the generator does and
+    indexed under EVERY accent var it would have been emitted for (a sound tagged
+    for several keep-accents lands in each); a dropped-geo sound is skipped, and an
+    untagged sound lands under SSB — mirroring process_entry."""
     index = defaultdict(lambda: defaultdict(list))
     with open(jsonl_path, "r", encoding="utf-8") as f:
         for line in f:
@@ -123,8 +124,11 @@ def index_dotted_near_sounds(jsonl_path):
                 stripped = strip_ipa_delimiters(ipa_raw)
                 if stripped.startswith("-") or stripped.endswith("-"):
                     continue  # fragment IPA, as the generator skips
-                dialect = classify_dialect(sound.get("tags", [])) or "RSSB"
-                index[(word.lower(), pos_c5)][dialect].append(ipa_raw)
+                accents, _info, drop = classify_sound(sound.get("tags", []))
+                if drop:
+                    continue
+                for var, _norm_source in accents:
+                    index[(word.lower(), pos_c5)][var].append(ipa_raw)
     return index
 
 
@@ -177,16 +181,17 @@ def correct_entry(entry, dotted_index, exempt_keys, stats):
         return False
 
     word = entry["Latn"]
-    dialect = dialect_of_var(entry.get("var", ""))
-    if dialect is None:
-        return False  # no dialect axis to re-match on
+    var = entry.get("var", "")
+    norm_source = norm_source_of_var(var)
+    if norm_source is None:
+        return False  # no re-derivation axis for this var
 
-    dotted = dotted_index.get((word.lower(), entry["pos"]), {}).get(dialect)
+    dotted = dotted_index.get((word.lower(), entry["pos"]), {}).get(var)
     if not dotted:
         stats["skipped_genuine_near"] += 1
         return False  # genuine NEAR — no dot-collapse victim for this scope
 
-    fix = select_dot_fix(shaw, dotted, word, VAR_TO_NORM_SOURCE[dialect])
+    fix = select_dot_fix(shaw, dotted, word, norm_source)
     if fix is None:
         stats["skipped_no_clean_fix"] += 1
         return False

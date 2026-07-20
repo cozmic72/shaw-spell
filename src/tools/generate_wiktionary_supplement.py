@@ -110,41 +110,128 @@ def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, 
         return {}, {}
 
 
-def _compute_ml_shaw(word: str, ipa: str, dialect: str,
+def _compute_ml_shaw(word: str, ipa: str, norm_source: str,
                      have_ml: bool, ml_model) -> str | None:
     """Get ML model's Shavian prediction, or None if unavailable.
 
-    Only applies ML to RSSB entries (the model is UK-trained).
-    For GenAm, returns None.
+    Only applies ML to the non-rhotic (UK-model) normalisation pathway — the
+    model is UK-trained. For the rhotic (GenAm/Canada/Ireland) path, returns None.
     """
-    if dialect != "RSSB" or not have_ml or not ml_model:
+    if norm_source != "wiktionary_rp" or not have_ml or not ml_model:
         return None
     ipa_stripped = strip_stress(ipa)
     ml_ipa = ml_normalize_ipa(ipa_stripped, word, ml_model)
     return ipa_to_shavian(ml_ipa)
 
 
-# Dialect tag classification
-RSSB_TAGS = {"Received-Pronunciation", "UK", "British"}
-GENAM_TAGS = {"General-American", "US"}
+# ---------------------------------------------------------------------------
+# Accent / dialect tag classification (multi-accent harvest, phase 1)
+#
+# Each Wiktionary `sound` carries geographic `tags`. We KEEP an allowlisted set
+# of standard NATIONAL accents, each with its own var; a sound tagged with more
+# than one keep-accent (e.g. ['General-American','Received-Pronunciation']) emits
+# ONE record per accent (phase 2's hierarchy collapse dedups the identical ones).
+# Any sub-national / finer geography that is NOT a keep-accent DROPS the sound.
+# A sound with no accent tag at all becomes SSB (the honest "general/unconfirmed
+# British" bucket; the RRP reclassifier promotes it to RRP downstream if it likes
+# it) — NOT the old default-guess RP.
+#
+# `norm_source` selects the IPA-normalisation pathway in ipa_to_shavian:
+#   "wiktionary_rp"  — non-rhotic: R-restoration + SSB monophthong conventions
+#   "wiktionary_gam" — rhotic: no R-restoration, GenAm vowel rewrites
+# Rhotic accents (GenAm, Canada, Ireland) MUST use the rhotic path so the
+# R-restorer does not double-insert an R the transcription already carries.
+# (Ireland is rhotic but not a GenAm vowel system — the GenAm vowel rewrites are
+# an imperfect fit; it rides at review confidence and is flagged for the owner.)
+# ---------------------------------------------------------------------------
+
+# var -> (tags that select it, norm_source pathway). Order is the deterministic
+# emission order when a sound carries several keep-accents.
+KEEP_ACCENTS: list[tuple[str, set[str], str]] = [
+    ("RRP",    {"Received-Pronunciation", "UK", "British"}, "wiktionary_rp"),
+    ("GenAm",  {"General-American", "US"},                  "wiktionary_gam"),
+    ("GenAus", {"General-Australian", "Australia"},         "wiktionary_rp"),
+    ("GenCan", {"Canada", "Canadian"},                      "wiktionary_gam"),
+    ("SthAfr", {"General-South-African", "South-African"},  "wiktionary_rp"),
+    ("NZ",     {"New-Zealand"},                             "wiktionary_rp"),
+    ("IrEng",  {"Ireland", "Irish"},                        "wiktionary_gam"),
+]
+
+# The untagged / accent-less bucket. Non-rhotic British normalisation.
+UNTAGGED_VAR = "SSB"
+UNTAGGED_NORM_SOURCE = "wiktionary_rp"
+
+# var -> the normalize_ipa source the generator used for it. The single source of
+# truth for var->norm_source, consumed by process_entry AND by downstream
+# re-derivation passes (fix_near_syllable_dots) so they normalise identically.
+VAR_TO_NORM_SOURCE = {var: norm_source for var, _sel, norm_source in KEEP_ACCENTS}
+VAR_TO_NORM_SOURCE[UNTAGGED_VAR] = UNTAGGED_NORM_SOURCE
+
+# var -> which `shave` dialect model reviews low-confidence records of that var.
+# Derived from each accent's norm_source: the non-rhotic (wiktionary_rp) accents
+# take the British model, the rhotic (wiktionary_gam) accents the American one.
+VAR_SHAVE_DIALECT = {
+    var: ("british" if norm_source == "wiktionary_rp" else "american")
+    for var, _sel, norm_source in KEEP_ACCENTS
+}
+
+# Quality / register tags → the record's `info` list (surfaced for review; the
+# owner chose schema-over-drop). They do NOT drop a record and do NOT pick an
+# accent.
+QUALITY_TAGS = {
+    "obsolete", "dialectal", "dated", "rare", "archaic",
+    "nonstandard", "proscribed", "colloquial",
+}
+
+# Sub-national / finer geographic tags. A sound carrying one of these but NO
+# keep-accent is DROPPED (it is the "specific geographical variation" we filter
+# out). If a keep-accent is ALSO present the sound is kept under that accent and
+# the finer geo is simply ignored. Derived from the observed kaikki tag census;
+# any geographic tag not in the keep-set belongs here.
+DROP_GEO_TAGS = {
+    "Scotland", "Northern-England", "India", "Singapore", "Philippines",
+    "Northumbria", "Northern-Ireland", "Multicultural-London-English",
+    "Southern-US", "New-York-City", "Wales", "Midlands", "Hong-Kong",
+    "Philadelphia", "Malaysia", "New-England", "Southern-England", "England",
+    "Boston", "Inland-Northern-American", "Northern-US", "Ontario",
+    "Caribbean", "Northwestern", "Jamaica", "Geordie", "California",
+    "Estuary-English", "Appalachia", "West-Country", "Pakistan", "Ulster",
+    "Yorkshire", "Midwestern-US", "Tasmanian", "Nigeria", "Cockney",
+    "Eastern-New-England", "Wearside", "Germany", "West-Midlands",
+    "South-Wales", "East-Coast", "Northeastern", "North-American",
+    "Hiberno-English", "Atlantic-Canada", "Virginia", "Western",
+    "African-American-Vernacular-English", "Southern", "North", "South",
+    "East", "West",
+}
 
 
-def classify_dialect(tags: list[str]) -> str | None:
-    """Classify a list of tags into a dialect variant.
+def classify_sound(tags: list[str]) -> tuple[list[tuple[str, str]], list[str], bool]:
+    """Classify one sound's tags into emission instructions.
 
-    Returns "RSSB", "GenAm", or None if no recognizable dialect tag.
+    Returns (accents, info, drop):
+      accents  list of (var, norm_source) records to emit for this sound.
+      info     quality/register tags to attach to every emitted record.
+      drop     True if the sound should be dropped entirely (no record).
+
+    Decision order:
+      1. Any keep-accent tag  -> one record per matched accent (info attached).
+      2. Else any drop-geo tag -> drop (no record).
+      3. Else (no accent, no drop-geo) -> SSB (info attached).
+    Quality tags never select an accent and never cause a drop; a dropped sound
+    simply discards them with the record.
     """
     tag_set = set(tags) if tags else set()
-    has_rssb = bool(tag_set & RSSB_TAGS)
-    has_genam = bool(tag_set & GENAM_TAGS)
-    if has_rssb and not has_genam:
-        return "RSSB"
-    if has_genam and not has_rssb:
-        return "GenAm"
-    if has_rssb and has_genam:
-        # Both — ambiguous, treat as unlabelled
-        return None
-    return None
+    info = sorted(tag_set & QUALITY_TAGS)
+
+    matched = [(var, norm_source) for var, sel, norm_source in KEEP_ACCENTS
+               if tag_set & sel]
+    if matched:
+        return matched, info, False
+
+    if tag_set & DROP_GEO_TAGS:
+        return [], info, True
+
+    return [(UNTAGGED_VAR, UNTAGGED_NORM_SOURCE)], info, False
 
 
 def strip_ipa_delimiters(ipa: str) -> str:
@@ -230,74 +317,81 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
 
         stats["with_ipa"] += 1
 
-        # Determine dialect for normalization source
-        dialect = classify_dialect(tags)
-        if dialect == "RSSB":
-            norm_source = "wiktionary_rp"
-        elif dialect == "GenAm":
-            norm_source = "wiktionary_gam"
-        else:
-            norm_source = "wiktionary_rp"  # default guess for unlabelled
-
-        # Normalize IPA to ReadLex conventions
-        ipa_normalized = normalize_ipa(ipa_clean, word=word, source=norm_source)
-
-        # Generate Shavian
-        try:
-            shaw = ipa_to_shavian(ipa_normalized)
-        except Exception:
-            stats["shavian_errors"] += 1
+        # Classify this sound's tags into accent records / info / drop.
+        accents, info, drop = classify_sound(tags)
+        if drop:
+            stats["dropped_subnational_geo"] += 1
             continue
 
-        if not shaw:
-            continue
+        # Emit one record per accent the sound is tagged with (a sound tagged
+        # for several keep-accents, e.g. [GenAm, RP], produces one record each —
+        # phase 2's hierarchy collapse dedups the identical ones). The IPA is
+        # normalised per-accent because rhotic vs non-rhotic accents take
+        # different normalisation pathways.
+        for var, norm_source in accents:
+            # Normalize IPA to ReadLex conventions
+            ipa_normalized = normalize_ipa(ipa_clean, word=word, source=norm_source)
 
-        var = dialect if dialect else "UNC"
+            # Generate Shavian
+            try:
+                shaw = ipa_to_shavian(ipa_normalized)
+            except Exception:
+                stats["shavian_errors"] += 1
+                continue
 
-        # Get ML prediction for confidence comparison (RSSB only)
-        ml_shaw = _compute_ml_shaw(word, ipa_normalized, var, have_ml, ml_model)
+            if not shaw:
+                continue
 
-        # Score confidence as percentage
-        conf_pct, notes = score_confidence(word, ipa_normalized, shaw, ml_shaw)
+            # ML confidence comparison only for the non-rhotic (UK-model) path.
+            ml_shaw = _compute_ml_shaw(word, ipa_normalized, norm_source,
+                                       have_ml, ml_model)
 
-        entry_data = {
-            "Latn": word,
-            "Shaw": shaw,
-            "pos": pos,
-            "ipa": ipa_normalized,
-            "freq": 0,
-            "var": var,
-            "confidence": conf_pct,
-        }
-        if notes:
-            entry_data["review"] = "; ".join(notes)
-        # Stash ml_shaw for shave consultation later
-        entry_data["_ml_shaw"] = ml_shaw
+            # Score confidence as percentage
+            conf_pct, notes = score_confidence(word, ipa_normalized, shaw, ml_shaw)
 
-        # Bucket for initial stats
-        if conf_pct >= 80:
-            stats["confidence_high"] += 1
-        elif conf_pct >= 30:
-            stats["confidence_medium"] += 1
-        else:
-            stats["confidence_low"] += 1
+            entry_data = {
+                "Latn": word,
+                "Shaw": shaw,
+                "pos": pos,
+                "ipa": ipa_normalized,
+                "freq": 0,
+                "var": var,
+                "confidence": conf_pct,
+            }
+            if info:
+                entry_data["info"] = list(info)
+                stats["records_with_info"] += 1
+            if notes:
+                entry_data["review"] = "; ".join(notes)
+            # Stash ml_shaw for shave consultation later
+            entry_data["_ml_shaw"] = ml_shaw
 
-        key = make_key(word, pos, shaw)
+            # Bucket for initial stats
+            if conf_pct >= 80:
+                stats["confidence_high"] += 1
+            elif conf_pct >= 30:
+                stats["confidence_medium"] += 1
+            else:
+                stats["confidence_low"] += 1
 
-        if dialect:
-            stats[f"dialect_{dialect}"] += 1
-            stats["reliable_entries"] += 1
-            if key not in reliable:
-                reliable[key] = []
+            key = make_key(word, pos, shaw)
+            stats[f"var_{var}"] += 1
+
+            # Untagged (SSB) records carry no explicit accent tag → speculative,
+            # preserving the old "unlabelled → speculative" split. Accent-tagged
+            # records → reliable.
+            if var == UNTAGGED_VAR:
+                stats["speculative_entries"] += 1
+                target = speculative
+            else:
+                stats["reliable_entries"] += 1
+                target = reliable
+
+            if key not in target:
+                target[key] = []
             # Avoid exact duplicates
-            if entry_data not in reliable[key]:
-                reliable[key].append(entry_data)
-        else:
-            stats["speculative_entries"] += 1
-            if key not in speculative:
-                speculative[key] = []
-            if entry_data not in speculative[key]:
-                speculative[key].append(entry_data)
+            if entry_data not in target[key]:
+                target[key].append(entry_data)
 
 
 def main():
@@ -355,9 +449,10 @@ def main():
     for key, entries in reliable.items():
         for e in entries:
             if e.get("confidence", 89) < 89:
-                if e.get("var") == "RSSB":
+                shave_dialect = VAR_SHAVE_DIALECT.get(e.get("var"))
+                if shave_dialect == "british":
                     review_british.add(e["Latn"])
-                elif e.get("var") == "GenAm":
+                elif shave_dialect == "american":
                     review_american.add(e["Latn"])
 
     shave_results_british = {}
@@ -402,11 +497,11 @@ def main():
             for e in entries:
                 if e.get("confidence", 89) >= 89:
                     continue
-                var = e.get("var")
-                if var == "RSSB":
+                shave_dialect = VAR_SHAVE_DIALECT.get(e.get("var"))
+                if shave_dialect == "british":
                     shave_results = shave_results_british
                     wsd_dict = wsd_british
-                elif var == "GenAm":
+                elif shave_dialect == "american":
                     shave_results = shave_results_american
                     wsd_dict = wsd_american
                 else:
@@ -484,18 +579,22 @@ def main():
     print(f"Sound items with IPA:       {stats['with_ipa']:,}")
     print(f"Skipped affix words:        {stats['skipped_affix']:,}")
     print(f"Skipped fragment IPA:       {stats['skipped_fragment_ipa']:,}")
+    print(f"Dropped sub-national geo:   {stats['dropped_subnational_geo']:,}")
     print(f"Shavian conversion errors:  {stats['shavian_errors']:,}")
     print(f"JSON parse errors:          {stats['json_errors']:,}")
     print()
-    print(f"Reliable entries (dialect-labelled):")
+    print(f"Reliable entries (accent-labelled):")
     print(f"  Total:  {stats['reliable_entries']:,}")
-    print(f"  RSSB:   {stats['dialect_RSSB']:,}")
-    print(f"  GenAm:   {stats['dialect_GenAm']:,}")
+    for var, _sel, _ns in KEEP_ACCENTS:
+        print(f"  {var:7} {stats[f'var_{var}']:,}")
     print(f"  Keys:   {len(reliable):,}")
     print()
-    print(f"Speculative entries (no dialect label):")
+    print(f"Speculative entries ({UNTAGGED_VAR}, no accent label):")
     print(f"  Total:  {stats['speculative_entries']:,}")
+    print(f"  {UNTAGGED_VAR:7} {stats[f'var_{UNTAGGED_VAR}']:,}")
     print(f"  Keys:   {len(speculative):,}")
+    print(f"  Records carrying info quality-tags: "
+          f"{stats['records_with_info']:,}")
     print()
     print(f"Confidence breakdown (final):")
     print(f"  {conf_buckets}")

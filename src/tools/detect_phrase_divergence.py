@@ -66,8 +66,22 @@ UNIVERSAL_VAR = "RRP"
 # identical-dialect collapse folds an agreed spelling into the universal wildcard.
 # ReadLex labels its British-standard citations RRP; RSSB is that same universal
 # British standard, so an RSSB (or already-RRP) phrase cites its components at RRP.
-PHRASE_VAR_TO_READLEX = {"RSSB": UNIVERSAL_VAR, "GenAm": "GenAm",
-                         UNIVERSAL_VAR: UNIVERSAL_VAR}
+# The multi-accent harvest adds standard national accents (GenAus/GenCan/SthAfr/
+# NZ/IrEng) and the untagged SSB bucket; ReadLex has no dedicated citation var for
+# any of them, so each cites its components at the universal RRP baseline (the
+# citation_ipa fallback), exactly as RSSB does. GenAm keeps its own citations
+# because ReadLex carries GenAm exceptions.
+PHRASE_VAR_TO_READLEX = {
+    "RSSB": UNIVERSAL_VAR,
+    "GenAm": "GenAm",
+    UNIVERSAL_VAR: UNIVERSAL_VAR,
+    "GenAus": UNIVERSAL_VAR,
+    "GenCan": UNIVERSAL_VAR,
+    "SthAfr": UNIVERSAL_VAR,
+    "NZ": UNIVERSAL_VAR,
+    "IrEng": UNIVERSAL_VAR,
+    "SSB": UNIVERSAL_VAR,
+}
 
 # Classification labels (also the divergence values written to the tagged file).
 DIVERGENT = "divergent"

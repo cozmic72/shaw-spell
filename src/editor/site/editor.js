@@ -285,6 +285,12 @@ const state = {
     // filtered corpus (not just the loaded page). null == DEFAULT_QUERY_SORT.
     // {key, dir} where key is a sortable column and dir is "asc" or "desc".
     columnSort: null,
+    // The related-entries list's client-side sort, set by clicking the related
+    // table's own header. null == the default order (compareRelated's chain).
+    // {key, dir} where key is a related column (state/word/pos/var/shaw/source)
+    // and dir is "asc"/"desc". The focused ("you are here") row is pinned to the
+    // top regardless — this only orders the siblings beneath it.
+    relatedSort: null,
     selected: -1,
     // The detail panel's record editor context (see makeEditorContext), created on
     // first render and reused. Carries the edit flag and the harvest root, so the
@@ -1757,21 +1763,103 @@ function relatedLoading() {
     return loading;
 }
 
+// The related list retains its records + focused anchor on the section node, so a
+// header sort-click can re-order and re-paint the rows in place without a re-fetch.
 function renderRelated(section, records, focusedAnchor) {
+    section.dataset.hasList = "true";
+    section._relatedRecords = records;
+    section._focusedAnchor = focusedAnchor;
+    section.replaceChildren(
+        relatedHeading(records.length),
+        relatedTableHead(),
+        relatedListEl(records, focusedAnchor),
+    );
+    syncRelatedSortIndicators(section);
+}
+
+// The <ul> of related rows in the current sort order. Split out so a header sort
+// click can rebuild just the list against the records stashed on the section.
+function relatedListEl(records, focusedAnchor) {
     const list = document.createElement("ul");
     list.className = "related-list";
     for (const record of sortedRelated(records, focusedAnchor)) {
         list.append(relatedRow(record, focusedAnchor));
     }
-    section.replaceChildren(relatedHeading(records.length), list);
+    return list;
+}
+
+// The related table's sortable header, mirroring the ledger's sort-head row: one
+// clickable header per column (state / word / pos / var / shaw / source) whose
+// click sets state.relatedSort and re-orders the list client-side. The state
+// header spans the badge + label tracks (one logical column), so the six headers
+// line up over the row cells they name.
+const RELATED_COLUMNS = [
+    ["state", "state", "related-head-state"],
+    ["word", "word", "related-word"],
+    ["pos", "pos", "related-pos"],
+    ["var", "var", "related-dialect"],
+    ["shaw", "shaw", "related-shaw"],
+    ["source", "source", "related-source"],
+];
+
+function relatedTableHead() {
+    const head = document.createElement("div");
+    head.className = "related-head";
+    for (const [key, label, colClass] of RELATED_COLUMNS) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `${colClass} sort-head related-sort`;
+        button.dataset.sortKey = key;
+        button.textContent = label;
+        button.addEventListener("click", () => onRelatedSortClick(key));
+        head.append(button);
+    }
+    return head;
+}
+
+// A related header was clicked: sort ascending, or flip to descending if that
+// column is already the ascending sort. Re-orders + re-paints the list in place
+// (client-side; no re-fetch), keeping the focused row pinned to the top.
+function onRelatedSortClick(key) {
+    if (state.relatedSort && state.relatedSort.key === key && state.relatedSort.dir === "asc") {
+        state.relatedSort = { key, dir: "desc" };
+    } else {
+        state.relatedSort = { key, dir: "asc" };
+    }
+    const section = DETAIL.querySelector(".related");
+    if (!section || !section.dataset.hasList) {
+        return;
+    }
+    const list = section.querySelector(".related-list");
+    if (list) {
+        list.replaceWith(relatedListEl(section._relatedRecords, section._focusedAnchor));
+    }
+    syncRelatedSortIndicators(section);
+}
+
+// Reflect the active related sort on its header: the sorted column carries the
+// direction class (▲/▼ via the shared sort-head CSS) and aria-sort; the rest clear.
+function syncRelatedSortIndicators(section) {
+    const head = section.querySelector(".related-head");
+    if (!head) {
+        return;
+    }
+    for (const header of head.querySelectorAll(".sort-head")) {
+        const active = state.relatedSort && state.relatedSort.key === header.dataset.sortKey;
+        header.classList.toggle("sort-asc", active && state.relatedSort.dir === "asc");
+        header.classList.toggle("sort-desc", active && state.relatedSort.dir === "desc");
+        header.setAttribute(
+            "aria-sort",
+            active ? (state.relatedSort.dir === "asc" ? "ascending" : "descending") : "none",
+        );
+    }
 }
 
 // Order the related rows deterministically so the list is stable across landings
 // (the daemon returns them in an unspecified index order). The focused entry ("you
-// are here") always leads, anchoring the eye to the card above; the rest sort by a
-// total key — pos, then dialect (var), then source, and within each such bunch the
-// canonical (unflagged) entry rises above its merger/variant-flagged alternates.
-// shaw is the final tiebreak, so no two distinct records ever tie.
+// are here") ALWAYS leads regardless of the active sort, anchoring the eye to the
+// card above. Beneath it the siblings sort by the active header sort (state.relatedSort)
+// when one is set, else the default chain (word, pos, var, source, canonical, shaw).
 function sortedRelated(records, focusedAnchor) {
     return [...records].sort((left, right) => {
         const leftHere = sameAnchor(left.anchor, focusedAnchor);
@@ -1779,8 +1867,52 @@ function sortedRelated(records, focusedAnchor) {
         if (leftHere !== rightHere) {
             return leftHere ? -1 : 1;
         }
+        if (state.relatedSort) {
+            const primary = compareRelatedByKey(left, right, state.relatedSort.key);
+            if (primary !== 0) {
+                return state.relatedSort.dir === "desc" ? -primary : primary;
+            }
+            // Fall through to the default chain as a stable tiebreak within equal keys.
+        }
         return compareRelated(left, right);
     });
+}
+
+// A ranking of the related state glyphs so a "state" sort orders by review status
+// meaningfully (unreviewed/candidate first — the rows that still need a decision —
+// then the settled verdicts) rather than by the raw patch_state string.
+const RELATED_STATE_ORDER = new Map([
+    ["unreviewed", 0],
+    ["orphaned", 1],
+    ["flagged", 2],
+    ["authored", 3],
+    ["dropped", 4],
+    ["edited", 5],
+    ["accepted", 6],
+]);
+
+// Compare two related records on one header column. Returns <0/0/>0 for the
+// ascending order of `key`; sortedRelated negates it for descending. String keys
+// compare case-sensitively except word (case-insensitive, matching the row/ledger).
+function compareRelatedByKey(left, right, key) {
+    if (key === "state") {
+        const l = RELATED_STATE_ORDER.get(relatedProvenance(left).state) ?? 99;
+        const r = RELATED_STATE_ORDER.get(relatedProvenance(right).state) ?? 99;
+        return l - r;
+    }
+    if (key === "word") {
+        return cmpStr((left.word || "").toLowerCase(), (right.word || "").toLowerCase());
+    }
+    if (key === "source") {
+        return cmpStr(sourceKey(left), sourceKey(right));
+    }
+    return cmpStr(left[key] || "", right[key] || "");
+}
+
+function cmpStr(a, b) {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
 }
 
 // A record with no dialect merger and no variant flag is the canonical spelling;

@@ -274,26 +274,33 @@ def main():
               f"{len(repairs):,} var-relabel re-anchor(s) into the store.")
         return
 
+    # A collision is not auto-resolvable (which verdict wins?), so we SKIP the
+    # colliding repair — leaving that patch exactly as it was, for the owner to
+    # adjudicate in the editor — and re-anchor the rest. (Refusing the whole write
+    # would throw away the clean repairs for no gain; version control is the net.)
+    colliding_ids = {patch["id"] for patch, _a, _o in collisions}
+    writable = [(i, p, a) for (i, p, a) in repairs if p["id"] not in colliding_ids]
     if collisions:
-        raise RuntimeError(
-            f"{len(collisions)} re-anchor collision(s) (see above); refusing to "
-            f"write. Resolve the conflicting decisions in the editor first.")
+        print(f"\nSkipping {len(collisions):,} colliding re-anchor(s) (left as-is for "
+              f"editorial review); re-anchoring the {len(writable):,} clean one(s).",
+              file=sys.stderr)
 
-    if not repairs:
-        print("\n--write: no var-relabel repairs to make; store left byte-identical.")
+    if not writable:
+        print("\n--write: no non-colliding var-relabel repairs to make; store left "
+              "byte-identical.")
         return
 
-    # Build the rewritten patch list: repairs move only their anchor, everything
-    # else stays exactly as loaded, in original order. rewrite_anchor fails loud on
-    # any inconsistency, so a corrupt plan aborts before we touch the store.
+    # Build the rewritten patch list: writable repairs move only their anchor,
+    # everything else (incl. skipped collisions) stays exactly as loaded, in
+    # original order. rewrite_anchor fails loud on any inconsistency.
     rewritten = list(patches)
-    for i, patch, new_anchor in repairs:
+    for i, patch, new_anchor in writable:
         rewritten[i] = rewrite_anchor(patch, new_anchor, basis_index)
 
     backup = backup_store(store_path)
     print(f"\nBacked up store -> {backup}")
     patchstore.write_patches(rewritten)
-    print(f"Rewrote {len(repairs):,} anchor(s) in {store_path}")
+    print(f"Rewrote {len(writable):,} anchor(s) in {store_path}")
     print("Re-run apply_patches to confirm these decisions now resolve (0 orphans "
           "for the repaired patches).")
 

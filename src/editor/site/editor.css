@@ -1813,9 +1813,23 @@ kbd {
 
     /* Drop the confidence pips from the crowded ledger row on narrow screens;
        the detail card still shows confidence. State, word, shaw, var, freq, pos —
-       six tracks (conf hidden). */
-    .ledger-head, .ledger-row { grid-template-columns: 74px 1fr 1.2fr 56px 48px 44px; }
+       six tracks (conf hidden). On a phone the fixed metadata columns starve
+       word + shaw (the things being reviewed), so give those the space: clip the
+       state pill and crank the var/freq/pos tracks down to just their short
+       content, and tighten the gap + padding to reclaim width. */
+    .ledger-head, .ledger-row {
+        grid-template-columns:
+            minmax(46px, auto) minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
+        gap: 6px;
+        padding: 0 10px;
+    }
     .col-conf { display: none; }
+    /* Clip the state pill so long labels (AUTHORED, UNREVIEWED) don't force the
+       state column wide; the color already carries the meaning. */
+    .stamp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .col-var, .col-freq, .col-pos {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
 
     /* Raise the touch row to the 44px target the rest of the UI uses, so a
        long-press or tap has a comfortable thumb target. */

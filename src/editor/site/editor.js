@@ -131,8 +131,18 @@ const NOVELTY_LABELS = new Map([
 // kind for the palette (resurfaced-drop reads as a warning). Shown only on `orphaned`
 // rows, beside the state badge.
 const ORPHAN_KIND_TAGS = new Map([
-    ["lost-accept", { label: "accept-orphan", title: "a sanction whose record vanished upstream — re-anchor or clear it" }],
-    ["resurfaced-drop", { label: "drop — resurfaced", title: "a drop the basis evaded: the same word+pos+shaw is back under a different var, so the suppressed record returned — re-suppress it" }],
+    ["lost-accept", {
+        label: "accept-orphan",
+        title: "a sanction whose record vanished upstream — re-anchor or clear it",
+        reason: "A sanction whose record vanished upstream.",
+        action: "Re-anchor it to the current record, or clear the patch.",
+    }],
+    ["resurfaced-drop", {
+        label: "drop — resurfaced",
+        title: "a drop the basis evaded: the same word+pos+shaw is back under a different var, so the suppressed record returned — re-suppress it",
+        reason: "A drop the basis evaded: the same word + pos + shaw returned under a different var, so the suppressed record is back.",
+        action: "Re-suppress it.",
+    }],
 ]);
 
 // Dictionaries to look the word up in while deciding. {word} is URL-encoded so
@@ -663,10 +673,17 @@ function syncSortIndicators() {
 function ledgerRow(record, index) {
     const row = document.createElement("li");
     row.className = `ledger-row state-${record.patch_state}`;
+    // An orphaned row's edge-bar + stamp are coloured by WHICH orphan reason it is
+    // (patch_state is just "orphaned" for both), so the two triage apart at a glance
+    // in the list. The wide DROP·RESURFACED / ACCEPT·ORPHAN badge is NOT crammed into
+    // the narrow state column any more (it overflowed onto the word); it lives in the
+    // detail panel, where there is room. Here the hue alone carries the distinction.
+    if (record.patch_state === "orphaned" && record.orphan_kind) {
+        row.classList.add(`orphan-${record.orphan_kind}`);
+    }
     row.dataset.index = String(index);
 
     const stamp = cell("stamp col-state " + record.patch_state, record.patch_state);
-    stamp.append(orphanKindBadge(record));
     row.append(
         stamp,
         cell("col-word", record.word),
@@ -1092,8 +1109,14 @@ function recordEditor(record, opts) {
         confidenceBadge(record.confidence),
     );
 
+    container.append(heading);
+    // On an orphaned record, spell out the reason + action right under the heading,
+    // where there is room — the ledger row shows only the coloured tag.
+    const orphanNote = orphanReasonNote(record);
+    if (orphanNote) {
+        container.append(orphanNote);
+    }
     container.append(
-        heading,
         referenceLinks(record.word),
         fieldGrid(ctx, record, overridden),
         actionBar(ctx, record),
@@ -1950,6 +1973,30 @@ function orphanKindBadge(record) {
     badge.title = tag.title;
     wrap.append(badge);
     return wrap;
+}
+
+// The detail-panel explanation of an orphaned record: the kind, WHY it orphaned, and
+// the action the owner should take. The ledger row shows only the coloured "orphaned"
+// tag (room is tight there); this note — shown where there is room — spells the reason
+// and action out in words rather than hiding them in a tooltip. Non-orphan records, or
+// an orphan of an unrecognised kind, render nothing.
+function orphanReasonNote(record) {
+    if (record.patch_state !== "orphaned") {
+        return null;
+    }
+    const tag = ORPHAN_KIND_TAGS.get(record.orphan_kind);
+    if (!tag) {
+        return null;
+    }
+    const note = document.createElement("div");
+    note.className = `orphan-note orphan-${record.orphan_kind}`;
+    const head = cell("orphan-note-kind", tag.label);
+    const reason = cell("orphan-note-reason", tag.reason);
+    const action = document.createElement("div");
+    action.className = "orphan-note-action";
+    action.append(cell("orphan-note-action-label", "Action"), cell("orphan-note-action-text", tag.action));
+    note.append(head, reason, action);
+    return note;
 }
 
 // The record's active vowel mergers, as small badges beside the word. Empty (a

@@ -23,7 +23,18 @@
     --state-dropped: #a24632;
     --state-flagged: #b07d1a;
     --state-authored: #6b52a8;
-    --state-orphaned: #a24632;
+    /* Orphaned is not one state but two, keyed off orphan_kind so the reasons triage
+       apart at a glance. Neither reuses another state's hue (was: == dropped, a
+       collision — an orphan looked like a plain drop). resurfaced-drop is the URGENT
+       case (suppressed junk RETURNED) → a hot raspberry-crimson, loud and distinct
+       from the brick-red of a deliberate drop. lost-accept is the quieter "needs
+       attention" case (a stranded sanction) → a slate-blue, distinct from
+       flagged-amber, dropped-red, authored-purple and the teal accent. */
+    --state-orphan-resurfaced: #b02a5b;
+    --state-orphan-lost: #4a6fa5;
+    /* Generic orphan tone for a bare `.orphaned` badge that has no kind to hand
+       (e.g. a relation badge). The kind-aware ledger row + detail note override it. */
+    --state-orphaned: #7a5a86;
 
     --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
     --shaw: 'Bernie Sans Beta', sans-serif;
@@ -48,7 +59,9 @@
         --state-dropped: #d97457;
         --state-flagged: #e0aa4e;
         --state-authored: #a690e0;
-        --state-orphaned: #d97457;
+        --state-orphan-resurfaced: #e0699a;
+        --state-orphan-lost: #7fa0d4;
+        --state-orphaned: #b590c4;
     }
 }
 
@@ -581,6 +594,12 @@ body {
 .ledger-row.state-dropped { --row-edge: var(--state-dropped); }
 .ledger-row.state-flagged { --row-edge: var(--state-flagged); }
 .ledger-row.state-authored { --row-edge: var(--state-authored); }
+/* Orphaned rows: the edge-bar hue is keyed off the orphan REASON, not the shared
+   "orphaned" state, so a resurfaced drop (urgent) and a lost accept read apart in the
+   list at a glance. */
+.ledger-row.state-orphaned { --row-edge: var(--state-orphaned); }
+.ledger-row.state-orphaned.orphan-resurfaced-drop { --row-edge: var(--state-orphan-resurfaced); }
+.ledger-row.state-orphaned.orphan-lost-accept { --row-edge: var(--state-orphan-lost); }
 .ledger-row:hover { background: var(--paper-raised); }
 .ledger-row.active { background: var(--paper-raised); }
 .ledger-row.active::before { width: 5px; background: var(--accent); }
@@ -666,6 +685,11 @@ body {
 .stamp.dropped { color: var(--state-dropped); }
 .stamp.flagged { color: var(--state-flagged); }
 .stamp.authored { color: var(--state-authored); }
+.stamp.orphaned { color: var(--state-orphaned); }
+/* The orphaned stamp text takes the reason's hue too (the class lives on the row),
+   so tag colour matches the edge-bar. */
+.ledger-row.orphan-resurfaced-drop .stamp.orphaned { color: var(--state-orphan-resurfaced); }
+.ledger-row.orphan-lost-accept .stamp.orphaned { color: var(--state-orphan-lost); }
 
 /* ---- detail (right) — the card the editor stares at while deciding ---- */
 .detail {
@@ -809,11 +833,12 @@ body {
 .state-badge.authored { color: var(--state-authored); }
 .state-badge.orphaned { color: var(--state-orphaned); }
 
-/* The orphan sub-tag, beside the state badge on an `orphaned` row: names the op +
-   why it orphaned. A lost-accept (a stranded sanction) reads in the quiet flagged
-   tone; a resurfaced-drop (the URGENT case — a suppressed record that RETURNED under
-   a relabelled var) reads in the loud dropped/warning tone with a filled ground so it
-   cannot be missed. Non-orphan rows render nothing. */
+/* The orphan sub-tag, beside the state badge in the DETAIL heading (no longer in the
+   ledger row — it overflowed the narrow state column onto the word). Names the op + why
+   it orphaned. A lost-accept (a stranded sanction) reads in the quiet slate tone; a
+   resurfaced-drop (the URGENT case — a suppressed record that RETURNED under a
+   relabelled var) reads loud, with a filled raspberry-crimson ground so it cannot be
+   missed. Non-orphan records render nothing. */
 .orphan-kind-badges {
     align-self: center;
     display: inline-flex;
@@ -829,11 +854,63 @@ body {
     border-radius: 2px;
     white-space: nowrap;
 }
-.orphan-kind-badge.lost-accept { color: var(--state-flagged); }
+.orphan-kind-badge.lost-accept { color: var(--state-orphan-lost); }
 .orphan-kind-badge.resurfaced-drop {
     color: var(--paper);
-    background: var(--state-dropped);
-    border-color: var(--state-dropped);
+    background: var(--state-orphan-resurfaced);
+    border-color: var(--state-orphan-resurfaced);
+}
+
+/* The orphan reason + action note, shown in the detail card under the heading (where
+   there is room, unlike the ledger row). Spells out WHY the record orphaned and WHAT to
+   do, in words rather than a tooltip. A left edge-bar in the reason's hue ties it to the
+   ledger row's edge for the same record. */
+.orphan-note {
+    margin: 10px 0 4px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--state-orphaned);
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--state-orphaned) 8%, transparent);
+}
+.orphan-note.orphan-resurfaced-drop {
+    border-left-color: var(--state-orphan-resurfaced);
+    background: color-mix(in srgb, var(--state-orphan-resurfaced) 9%, transparent);
+}
+.orphan-note.orphan-lost-accept {
+    border-left-color: var(--state-orphan-lost);
+    background: color-mix(in srgb, var(--state-orphan-lost) 9%, transparent);
+}
+.orphan-note-kind {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.orphan-note.orphan-resurfaced-drop .orphan-note-kind { color: var(--state-orphan-resurfaced); }
+.orphan-note.orphan-lost-accept .orphan-note-kind { color: var(--state-orphan-lost); }
+.orphan-note-reason {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink);
+}
+.orphan-note-action {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 8px;
+}
+.orphan-note-action-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.orphan-note-action-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
 }
 
 /* The record's active vowel mergers, read-at-a-glance beside the word. A

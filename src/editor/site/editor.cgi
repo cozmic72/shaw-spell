@@ -70,9 +70,24 @@ def serve_api():
     sys.stdout.write(raw_response)
 
 
+def asset_version(name):
+    """A cache-busting stamp for a sibling static asset: its mtime. The editor
+    serves editor.css/editor.js by plain filename, so browsers cache them hard
+    and an edit only shows after a manual hard-reload. Stamping the href with the
+    file's mtime makes every edit a fresh URL — no stale CSS/JS. Fails soft to
+    a constant if the file is missing (the browser just caches; no crash)."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+    try:
+        return str(int(os.path.getmtime(path)))
+    except OSError:
+        return "0"
+
+
 def serve_page():
     sys.stdout.write("Content-Type: text/html; charset=utf-8\r\n\r\n")
-    sys.stdout.write(PAGE)
+    page = PAGE.replace("{css_v}", asset_version("editor.css")) \
+               .replace("{js_v}", asset_version("editor.js"))
+    sys.stdout.write(page)
 
 
 PAGE = """<!DOCTYPE html>
@@ -81,7 +96,7 @@ PAGE = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shaw-Spell — Editorial Workbench</title>
-    <link rel="stylesheet" href="editor.css">
+    <link rel="stylesheet" href="editor.css?v={css_v}">
 </head>
 <body>
     <header class="masthead">
@@ -233,7 +248,7 @@ PAGE = """<!DOCTYPE html>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="editor.js"></script>
+    <script src="editor.js?v={js_v}"></script>
 </body>
 </html>"""
 

@@ -158,8 +158,8 @@ import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (NOVELTY_NEW_POS, NOVELTY_NEW_SPELLING,      # noqa: E402
                      NOVELTY_NEW_WORD, PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
-                     PATCH_STATE_EDITED, PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
-                     load_view)
+                     PATCH_STATE_DROPPED, PATCH_STATE_EDITED, PATCH_STATE_FLAGGED,
+                     PATCH_STATE_ORPHANED, PATCH_STATE_UNREVIEWED, load_view)
 from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
     replace_authored_patch, upsert_patch)
@@ -249,8 +249,8 @@ class QueryFilters:
 
 
 # The categorical facets are multi-select: the request carries a LIST of values
-# per facet (source, status, pos, var, patch_state, reviewed, word_kind,
-# novelty, has_definition, orphaned), and a record matches the facet if its value
+# per facet (source, status, pos, var, review, word_kind, novelty,
+# has_definition, mergers, variant), and a record matches the facet if its value
 # is ANY of them (OR).
 # Facets still AND across each other. The substring (word/shaw) and numeric
 # (confidence_min/max) filters stay scalar. An empty list is no constraint.
@@ -273,7 +273,7 @@ def matches(record, query, established):
 # The equality facets test membership; the custom matchers are asked per value.
 # word/shaw are handled by QueryFilters' pre-compiled predicates, not here.
 def _field_matches(record, key, value, established):
-    if key in ("status", "pos", "var", "patch_state"):
+    if key in ("status", "pos", "var"):
         if not isinstance(value, list):
             raise ValueError(f"{key} filter wants a list, got {value!r}")
         return record.get(key) in value
@@ -292,10 +292,8 @@ def _field_matches(record, key, value, established):
         return any(_matches_variant(record, v) for v in value)
     if key == "has_definition":
         return any(_matches_has_definition(record, v) for v in value)
-    if key == "orphaned":
-        return any(_matches_orphaned(record, v) for v in value)
-    if key == "reviewed":
-        return any(_matches_review_state(record, v) for v in value)
+    if key == "review":
+        return any(_matches_review(record, v) for v in value)
     if key == "word_kind":
         return any(_matches_word_kind(record, v) for v in value)
     if key == "novelty":
@@ -309,22 +307,27 @@ def _field_matches(record, key, value, established):
     raise ValueError(f"unknown filter: {key}")
 
 
-# The reviewed filter is three-way: a flag ("looked at, no verdict yet") is
-# reviewed but distinct from a real verdict, so "decided" excludes it while
-# "flagged" isolates it for a later sweep.
-def _matches_review_state(record, value):
-    reviewed = record["reviewed"]
-    flagged = record["patch_state"] == PATCH_STATE_FLAGGED
-    if value in ("unreviewed", "false", "0", False):
-        return not reviewed
-    if value == "flagged":
-        return flagged
-    if value == "decided":
-        return reviewed and not flagged
-    if value in ("reviewed", "true", "1", True):
-        return reviewed
-    raise ValueError(
-        f"reviewed filter wants unreviewed/flagged/decided/reviewed, got {value!r}")
+# The Review facet is the ONE review-lifecycle filter: it replaced the former
+# overlapping `reviewed` (unreviewed/flagged/decided), `patch_state` (the raw State),
+# and `orphaned` (orphaned/not-orphaned) filters. Its vocabulary IS the set of
+# patch_states — a record is in exactly ONE — so the facet is genuinely mutually
+# exclusive, and the multi-select OR reconstructs every partition the old filters
+# expressed: {accepted, edited, dropped, authored, orphaned} = the old
+# reviewed="decided"; everything but "unreviewed" = reviewed=true; everything but
+# "orphaned" = the old orphaned="not-orphaned". A chip outside the closed vocabulary
+# fails loud. Provenance (`status` — where the record came from) is NOT a lifecycle
+# state and stays its own data-derived facet.
+REVIEW_FILTER_VALUES = (
+    PATCH_STATE_UNREVIEWED, PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED,
+    PATCH_STATE_DROPPED, PATCH_STATE_FLAGGED, PATCH_STATE_AUTHORED,
+    PATCH_STATE_ORPHANED)
+
+
+def _matches_review(record, value):
+    if value not in REVIEW_FILTER_VALUES:
+        raise ValueError(
+            f"review filter wants {'/'.join(REVIEW_FILTER_VALUES)}, got {value!r}")
+    return record["patch_state"] == value
 
 
 # A multi-word phrase is a Latin word carrying an internal whitespace after
@@ -352,7 +355,7 @@ def _source_key(record):
 # (never sanctioned patches), so sanctioning a record never changes its novelty,
 # and a reviewed row keeps the novelty it always had. Novelty is orthogonal to
 # review state: whether the owner has decided on a record is the separate
-# `reviewed` filter (_matches_review_state), which ANDs with this one. Upstream
+# `review` filter (_matches_review), which ANDs with this one. Upstream
 # rows are the baseline against which novelty is measured; they classify as
 # `known` (not in NOVELTY_VALUES), so they never match new-* — the fast-path
 # below just spares ~111K upstream rows a classify() call. A "known" candidate —
@@ -427,27 +430,6 @@ def _matches_has_definition(record, value):
     if value == HAS_DEFINITION_YES:
         return has_def
     return not has_def
-
-
-# The orphaned facet partitions on whether a record is an ORPHANED anchored patch
-# — its anchor no longer resolves against the basis (upstream drifted), so the
-# decision is dangling and must be re-anchored or discarded. "orphaned" isolates
-# them for a cleanup sweep; "not-orphaned" is every live review row. A chip outside
-# this closed pair fails loud.
-ORPHANED_YES = "orphaned"
-ORPHANED_NO = "not-orphaned"
-ORPHANED_FILTER_VALUES = frozenset({ORPHANED_YES, ORPHANED_NO})
-
-
-def _matches_orphaned(record, value):
-    if value not in ORPHANED_FILTER_VALUES:
-        raise ValueError(
-            f"orphaned filter wants "
-            f"{'/'.join(sorted(ORPHANED_FILTER_VALUES))}, got {value!r}")
-    is_orphaned = record["patch_state"] == PATCH_STATE_ORPHANED
-    if value == ORPHANED_YES:
-        return is_orphaned
-    return not is_orphaned
 
 
 def filter_records(records, query, established):
@@ -571,7 +553,7 @@ def handle_entries(state, request):
 # unfilterable; a dead chip like source=pos-gap matches nothing). POS is the long
 # tail (100+ CLAWS tags); var/status/source are small but drift as upstream data
 # and cleanup targets come and go. The closed vocabularies the code itself defines
-# (reviewed/word_kind/novelty/patch_state) can't drift, so they stay in the page.
+# (review/word_kind/novelty) can't drift, so they stay in the page.
 DATA_DERIVED_FACETS = ("pos", "var", "status", "source")
 
 

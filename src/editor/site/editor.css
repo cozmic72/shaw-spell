@@ -258,6 +258,9 @@ body {
     cursor: pointer;
 }
 .chip-remove:hover { color: var(--state-dropped); }
+/* Pinned (always-shown) chips are permanent: no remove control, a quiet tinted
+   ground so they read as fixtures of the bar rather than user-added filters. */
+.filter-chip.pinned { background: var(--paper-raised); }
 
 /* +Add filter: the empty-state and always-present affordance that opens the field
    menu. Its wrapper anchors the menu popover. Disabled when every field is active. */

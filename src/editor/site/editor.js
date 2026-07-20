@@ -390,6 +390,33 @@ function blankEntry(field) {
     return { field, value: null };
 }
 
+// The always-shown fields (word + shaw search, Review, Novelty), marked
+// data-pinned in the CGI's filter-meta. They are permanent chips: seeded into the
+// strip at boot in registry order, never offered by +Add (already active), and not
+// removable (no ×). Every other field is added on demand.
+function pinnedFields() {
+    return [...FIELD_REGISTRY.values()]
+        .filter((spec) => spec.pinned)
+        .map((spec) => spec.field);
+}
+
+function isPinned(field) {
+    return fieldSpec(field).pinned;
+}
+
+// Merge the pinned fields into an activeFilters list, preserving any values the
+// list already carries for them (a restored session's word search survives) and
+// dropping duplicates. Pinned entries lead, in registry order, so the always-shown
+// chips keep a stable position; the rest follow in their existing order.
+function withPinnedFilters(activeFilters) {
+    const byField = new Map(activeFilters.map((entry) => [entry.field, entry]));
+    const pinned = pinnedFields().map(
+        (field) => byField.get(field) || blankEntry(field));
+    const pinnedSet = new Set(pinnedFields());
+    const rest = activeFilters.filter((entry) => !pinnedSet.has(entry.field));
+    return [...pinned, ...rest];
+}
+
 // ---- the critical invariant: state.activeFilters → the daemon filters dict ----
 // This MUST produce the exact dict the former readFilters() produced for the
 // equivalent form state, since the daemon is untouched:
@@ -3475,10 +3502,10 @@ function refreshPacing() {
 
 // "Unreviewed remaining" is meaningful only while reviewing the unreviewed pool;
 // under any other filter the total is not a remaining count, so we show it only
-// when the active filter is unreviewed.
+// when the active Review filter is exactly "unreviewed".
 function countUnreviewedRemaining() {
-    const reviewed = state.filters.reviewed;
-    if (!Array.isArray(reviewed) || reviewed.length !== 1 || reviewed[0] !== "unreviewed") {
+    const review = state.filters.review;
+    if (!Array.isArray(review) || review.length !== 1 || review[0] !== "unreviewed") {
         return null;
     }
     const decidedInSet = state.records.filter(
@@ -3523,10 +3550,12 @@ function loadSession() {
 }
 
 // Adopt a saved session's active filters as the chip strip, dropping any entry whose
-// field the registry no longer knows (a field renamed or retired). Entries keep their
-// stored order; the strip is rebuilt from them. Called on load before the first query.
+// field the registry no longer knows (a field renamed or retired) and folding in the
+// always-shown pinned fields (a session saved before a field was pinned, or with a
+// pinned field removed, still gets it back). Called on load before the first query.
 function restoreActiveFilters(activeFilters) {
-    state.activeFilters = activeFilters.filter((entry) => FIELD_REGISTRY.has(entry.field));
+    const known = activeFilters.filter((entry) => FIELD_REGISTRY.has(entry.field));
+    state.activeFilters = withPinnedFilters(known);
     renderChipStrip();
 }
 
@@ -3732,20 +3761,21 @@ async function buildFieldRegistry() {
 // (closed vocabulary); text carries its placeholder + Shavian flag; numeric is bare.
 function fieldSpecFromMeta(meta, derived) {
     const { field, kind, label } = meta.dataset;
+    const pinned = meta.dataset.pinned === "true";
     if (kind === "categorical") {
         const entries = field in derived
             ? derived[field].map((value) => ({ value, label: value }))
             : harvestVocab(meta);
-        return { field, kind, label, entries };
+        return { field, kind, label, pinned, entries };
     }
     if (kind === "text") {
         return {
-            field, kind, label,
+            field, kind, label, pinned,
             placeholder: meta.dataset.placeholder || "",
             shavian: meta.dataset.shavian === "true",
         };
     }
-    return { field, kind, label };
+    return { field, kind, label, pinned };
 }
 
 // The value→label pairs a closed-vocabulary categorical field ships in its meta div,
@@ -3791,14 +3821,19 @@ function filterChip(entry) {
     const panel = buildPicker(spec, entry);
     trigger.addEventListener("click", () => togglePicker(panel, trigger));
 
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "chip-remove";
-    remove.setAttribute("aria-label", `Remove ${spec.label} filter`);
-    remove.textContent = "×";
-    remove.addEventListener("click", () => removeFilter(entry));
-
-    wrap.append(trigger, panel, remove);
+    wrap.append(trigger, panel);
+    // Pinned (always-shown) chips carry no remove control — they are permanent.
+    if (!spec.pinned) {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "chip-remove";
+        remove.setAttribute("aria-label", `Remove ${spec.label} filter`);
+        remove.textContent = "×";
+        remove.addEventListener("click", () => removeFilter(entry));
+        wrap.append(remove);
+    } else {
+        wrap.classList.add("pinned");
+    }
     return wrap;
 }
 
@@ -3836,6 +3871,9 @@ function refreshChipLabel(entry) {
 // +Add menu), and re-query. Removal is the only way a chip leaves the strip — an
 // emptied categorical chip stays (its × is the explicit exit).
 function removeFilter(entry) {
+    if (isPinned(entry.field)) {
+        throw new Error(`pinned filter ${entry.field} cannot be removed`);
+    }
     state.activeFilters = state.activeFilters.filter((other) => other !== entry);
     renderChipStrip();
     requestFilterQuery();
@@ -4104,6 +4142,8 @@ async function boot() {
     const stored = loadSession();
     const restored = stored ? restoreSession(stored) : false;
     if (!restored) {
+        // No session: seed the always-shown pinned fields as the starting strip.
+        state.activeFilters = withPinnedFilters([]);
         renderChipStrip();
     }
     if (stored) {

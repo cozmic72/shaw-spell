@@ -126,12 +126,37 @@ PAGE = """<!DOCTYPE html>
          field also lists its value→label pairs as .chip templates, so those labels stay
          authored here rather than duplicated in JS; a data-derived categorical field
          (pos/var/status/source) omits them and takes its values from the daemon facets
-         op. The block is never rendered — editor.js harvests it into the registry. -->
+         op. `data-pinned="true"` marks the always-shown fields (word + shaw search,
+         Review, Novelty) — permanent chips that seed the strip and cannot be removed;
+         the rest are added on demand from the +Add filter menu. The block is never
+         rendered — editor.js harvests it into the registry. -->
     <div class="filter-meta" id="filterMeta" hidden>
-        <div data-field="word" data-kind="text" data-label="Word"
+        <div data-field="word" data-kind="text" data-label="Word" data-pinned="true"
              data-placeholder="latin substring"></div>
-        <div data-field="shaw" data-kind="text" data-label="Shaw"
+        <div data-field="shaw" data-kind="text" data-label="Shaw" data-pinned="true"
              data-placeholder="𐑖𐑷 substring" data-shavian="true"></div>
+        <!-- Review: the ONE consolidated review-lifecycle facet. Its values are the
+             seven mutually-exclusive patch_states — the record is in exactly one — so
+             a single facet replaces the former overlapping reviewed / State / orphaned
+             filters (see editord _matches_review). Multi-select reconstructs their
+             every partition: {accepted,edited,dropped,authored,orphaned} = the old
+             reviewed=decided, all-but-unreviewed = reviewed=true, all-but-orphaned =
+             not-orphaned. Pinned (always shown). -->
+        <div data-field="review" data-kind="categorical" data-label="Review" data-pinned="true">
+            <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
+            <label class="chip"><input value="accepted"><span>accepted</span></label>
+            <label class="chip"><input value="edited"><span>edited</span></label>
+            <label class="chip"><input value="dropped"><span>dropped</span></label>
+            <label class="chip"><input value="flagged"><span>flagged</span></label>
+            <label class="chip"><input value="authored"><span>authored</span></label>
+            <label class="chip"><input value="orphaned"><span>orphaned</span></label>
+        </div>
+        <!-- Novelty: orthogonal to Review (word newness, not review state). Pinned. -->
+        <div data-field="novelty" data-kind="categorical" data-label="Novelty" data-pinned="true">
+            <label class="chip"><input value="new-word"><span>new word</span></label>
+            <label class="chip"><input value="new-spelling"><span>new spelling</span></label>
+            <label class="chip"><input value="new-pos"><span>new POS</span></label>
+        </div>
         <div data-field="source" data-kind="categorical" data-label="Source"></div>
         <div data-field="status" data-kind="categorical" data-label="Status"></div>
         <div data-field="pos" data-kind="categorical" data-label="POS"></div>
@@ -139,24 +164,6 @@ PAGE = """<!DOCTYPE html>
         <div data-field="word_kind" data-kind="categorical" data-label="Words">
             <label class="chip"><input value="multi"><span>multi-word</span></label>
             <label class="chip"><input value="single"><span>single-word</span></label>
-        </div>
-        <div data-field="novelty" data-kind="categorical" data-label="Novelty">
-            <label class="chip"><input value="new-word"><span>new word</span></label>
-            <label class="chip"><input value="new-spelling"><span>new spelling</span></label>
-            <label class="chip"><input value="new-pos"><span>new POS</span></label>
-        </div>
-        <div data-field="reviewed" data-kind="categorical" data-label="Reviewed">
-            <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
-            <label class="chip"><input value="flagged"><span>flagged</span></label>
-            <label class="chip"><input value="decided"><span>decided</span></label>
-        </div>
-        <div data-field="patch_state" data-kind="categorical" data-label="State">
-            <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
-            <label class="chip"><input value="edited"><span>edited</span></label>
-            <label class="chip"><input value="dropped"><span>dropped</span></label>
-            <label class="chip"><input value="flagged"><span>flagged</span></label>
-            <label class="chip"><input value="authored"><span>authored</span></label>
-            <label class="chip"><input value="orphaned"><span>orphaned</span></label>
         </div>
         <div data-field="mergers" data-kind="categorical" data-label="Mergers">
             <label class="chip"><input value="trap-bath"><span>TRAP–BATH</span></label>
@@ -171,10 +178,6 @@ PAGE = """<!DOCTYPE html>
         <div data-field="has_definition" data-kind="categorical" data-label="Definition">
             <label class="chip"><input value="has-definition"><span>has definition</span></label>
             <label class="chip"><input value="no-definition"><span>no definition</span></label>
-        </div>
-        <div data-field="orphaned" data-kind="categorical" data-label="Orphaned">
-            <label class="chip"><input value="orphaned"><span>orphaned</span></label>
-            <label class="chip"><input value="not-orphaned"><span>not orphaned</span></label>
         </div>
         <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>
         <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"></div>

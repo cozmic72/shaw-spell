@@ -804,6 +804,9 @@ function pageButton(label, targetOffset) {
 // Selecting an entry always lands in REVIEW MODE (no field focused). Edit mode is
 // entered explicitly (enterEdit), never as a side effect of stepping.
 function select(index) {
+    // Leaving the currently-shown record: flush any genuine unsaved edit first, before
+    // state.selected and the main context switch to the new record.
+    autoSaveMainEdit();
     state.selected = index;
     if (state.mainContext) {
         state.mainContext.editing = false;
@@ -930,6 +933,10 @@ function enterTouchMulti() {
 // select bar, and the detail card (which flips to the bulk summary at 2+, back to
 // the focused record below that).
 function onSelectionChanged() {
+    // A selection change can swap the detail card (single → bulk summary, or to a
+    // different focused record) without routing through select(); flush an unsaved edit
+    // on the record leaving the card first.
+    autoSaveMainEdit();
     syncSelectionUI();
     if (inBulkMode()) {
         renderBulkDetail();
@@ -2194,7 +2201,6 @@ function actionBar(ctx, record) {
 
     bar.append(
         actionButton("accept", "Accept", acceptSelected),
-        actionButton("save", "Save edit", saveSelected),
         actionButton("drop", "Drop", dropSelected),
         actionButton("flag", "Flag", flagSelected),
     );
@@ -2591,10 +2597,17 @@ function insertAuthoredRecord(record) {
 // path handles its own errors (per-record, in runBulk), so this guards only the
 // single-record branch.
 async function single(action) {
+    // A single-record verdict may step/select to the next record as part of its own
+    // flow (accept → step → select). That leave has already been persisted by the
+    // verdict, so the auto-save-on-leave must NOT fire again for it — the flag
+    // suppresses auto-save for the duration of any verdict.
+    verdictInFlight = true;
     try {
         await action();
     } catch (error) {
         showToast(error.message, true);
+    } finally {
+        verdictInFlight = false;
     }
     // Every single-record action here mutates the patch store, so the uncommitted
     // count may have changed — keep the Commit button honest.
@@ -2603,6 +2616,9 @@ async function single(action) {
 
 // Save is inherently single-record — it writes the edited fields, which only make
 // sense for the focused record — so it has no bulk form (the group bar omits it).
+// No longer bound to a button: saving is now IMPLICIT (auto-save on leave, see
+// autoSaveMainEdit). Kept as the explicit "save now, don't step" path (⌘Enter in a
+// field) and as the shared writePatch("saved") core the auto-save reuses.
 async function saveSelected() {
     const selected = activeContext()?.record;
     if (!selected) {
@@ -2613,6 +2629,75 @@ async function saveSelected() {
         return;
     }
     await single(() => writePatch(anchorOf(selected), record, "saved", selected));
+}
+
+// Set while a single-record verdict runs (see single()); auto-save skips while it is
+// set, so a verdict's own step/select leave is never double-written.
+let verdictInFlight = false;
+
+// Auto-save the main detail edit when the focus is about to leave it (navigate to
+// another row, or dismiss to the empty state). Fires ONLY when the owner genuinely
+// changed an editable field from the record's current value — a stray keystroke that
+// nets back to the original writes nothing. A verdict (accept/drop/flag) already
+// persisted and stepped, so it suppresses this via verdictInFlight. The write reuses
+// saveSelected's writePatch("saved", …) exactly, targeting the leaving record's OWN
+// anchor, so it is independent of wherever the cursor lands next.
+function autoSaveMainEdit() {
+    if (verdictInFlight || isModalEditorOpen()) {
+        return;
+    }
+    const ctx = state.mainContext;
+    if (!ctx || ctx.mode === CREATE_MODE || !ctx.record) {
+        return;
+    }
+    // Only trust a harvest while the context's inputs still describe ctx.record. After a
+    // write, applyWriteResult replaces state.records[i] but ctx.record/DOM lag behind;
+    // that path runs under verdictInFlight, so it is already excluded above.
+    if (!mainEditIsDirty(ctx)) {
+        return;
+    }
+    const selected = ctx.record;
+    const record = harvestRecord(ctx);
+    if (!requireShaw(record)) {
+        // An empty/invalid Shavian is not a valid save — leave the edit unsaved (the
+        // toast says why) rather than shipping a blank shaw. Navigation still proceeds.
+        return;
+    }
+    // Fire-and-forget: navigation is synchronous and must not block on the daemon. The
+    // write hits the leaving record's anchor, so it can't race the record we land on.
+    (async () => {
+        try {
+            await writePatch(anchorOf(selected), record, "saved", selected, {
+                step: false,
+                refocus: false,
+            });
+        } catch (error) {
+            showToast(error.message, true);
+        }
+        await refreshCommitStatus();
+    })();
+}
+
+// Has an editable field (or an additive merger/variant flag) actually diverged from
+// the record the detail is currently showing? The dirty-check that gates auto-save:
+// harvest the live inputs and compare field-for-field against ctx.record's own values,
+// so a no-net-change edit saves nothing.
+function mainEditIsDirty(ctx) {
+    const harvested = harvestRecord(ctx);
+    for (const name of EDITABLE_FIELDS) {
+        if ((harvested[name] ?? "") !== ((ctx.record[name] ?? "").toString().trim())) {
+            return true;
+        }
+    }
+    const wasMergers = ctx.record.mergers ? [...ctx.record.mergers].sort() : [];
+    const nowMergers = harvested.mergers ? [...harvested.mergers].sort() : [];
+    if (wasMergers.join(" ") !== nowMergers.join(" ")) {
+        return true;
+    }
+    if (Boolean(ctx.record.variant) !== Boolean(harvested.variant)) {
+        return true;
+    }
+    return false;
 }
 
 async function acceptSelected() {
@@ -3096,7 +3181,6 @@ const REVIEW_KEYS = {
     a: acceptSelected,
     x: dropSelected,
     e: () => enterEdit(activeContext(), { focusShaw: true }),
-    s: saveSelected,
     f: flagSelected,
     c: clearSelected,
     u: undoLast,
@@ -3109,7 +3193,7 @@ const REVIEW_KEYS = {
 };
 
 // Keys that mutate must not double-fire on auto-repeat when a key is held.
-const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "c", "u", "v"]);
+const NON_REPEAT_KEYS = new Set(["a", "x", "f", "c", "u", "v"]);
 
 // The review keys an edit-mode modal honours: the verdicts and edit toggle, routed
 // through activeContext() to the MODAL record. Navigation (j/k/arrows) and bulk
@@ -3117,7 +3201,7 @@ const NON_REPEAT_KEYS = new Set(["a", "x", "s", "f", "c", "u", "v"]);
 // step the main cursor or touch the selection. Undo (u) is also omitted: it walks the
 // global undo stack and moves the main cursor, so it belongs to the main flow only —
 // Clear (c) is the modal's in-place "reset this entry's patch".
-const MODAL_REVIEW_KEYS = new Set(["a", "x", "e", "s", "f", "c"]);
+const MODAL_REVIEW_KEYS = new Set(["a", "x", "e", "f", "c"]);
 
 // The keyboard while a modal owns the screen. A create modal takes only Escape
 // (dismiss) and Enter (submit) — its fields carry no listeners, so those keys reach
@@ -3222,8 +3306,7 @@ const SHORTCUT_GROUPS = [
             { keys: ["A"], state: "edited", action: "Accept — promote & step on" },
             { keys: ["X"], state: "dropped", action: "Drop — reject & step on" },
             { keys: ["F"], state: "flagged", action: "Flag — looked at, no verdict yet" },
-            { keys: ["E"], state: null, action: "Edit — focus the Shavian field" },
-            { keys: ["S"], state: "edited", action: "Save the current edit & step on" },
+            { keys: ["E"], state: null, action: "Edit — focus the Shavian field (auto-saves on leave)" },
             { keys: ["C"], state: "unreviewed", action: "Clear — delete the patch, back to unreviewed" },
         ],
     },
@@ -3249,7 +3332,7 @@ const SHORTCUT_GROUPS = [
         rows: [
             { keys: ["Enter"], state: null, action: "Accept (in a field)" },
             { keys: ["⇧", "Enter"], state: null, action: "Drop (in a field)" },
-            { keys: ["⌘", "Enter"], state: null, action: "Save (in a field)" },
+            { keys: ["⌘", "Enter"], state: null, action: "Save now, stay on this entry (in a field)" },
             { keys: ["Esc"], state: null, action: "Leave edit mode / close this dialog" },
             { keys: ["U"], state: null, action: "Undo the last decision" },
             { keys: ["?"], state: null, action: "Toggle this dialog" },

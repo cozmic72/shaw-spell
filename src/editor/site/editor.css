@@ -1160,8 +1160,6 @@ body {
 }
 .act.accept { color: var(--state-edited); }
 .act.accept:hover { background: var(--state-edited); color: var(--paper); }
-.act.save { color: var(--accent); }
-.act.save:hover { background: var(--accent); color: var(--paper); }
 .act.drop { color: var(--state-dropped); }
 .act.drop:hover { background: var(--state-dropped); color: var(--paper); }
 .act.flag { color: var(--state-flagged); }

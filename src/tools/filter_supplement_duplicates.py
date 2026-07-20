@@ -5,7 +5,12 @@ editorial basis.
 
 A supplement candidate is a DUPLICATE — and is removed — when an already
 established entry would resolve to the same Shavian spelling for the candidate's
-scope. "Established" is upstream ReadLex plus sanctioned patches. Resolution is
+scope. "Established" is upstream ReadLex — read off the POOL's own core records
+(collated in at combine under the `readlex` source label; no separate
+readlex.json load) — plus sanctioned patches. An upstream record itself is NEVER
+a drop candidate: it would match its own scope in the established index and
+self-annihilate, and core must ride the chain untouched (basis.is_upstream).
+Resolution is
 grounded in the dialect/POS specificity lattice: a candidate is redundant iff
 some established entry with the SAME word (case-insensitive) and SAME Shaw has a
 (var, pos) scope that is the same as, or BROADER than, the candidate's on BOTH
@@ -31,7 +36,7 @@ copied verbatim, so each record's `source` list and `has_definition` flag ride
 through untouched.
 
 Inputs:  data/supplement-combined-defs.json (the combined, definition-annotated
-         candidate pool), external/readlex/readlex.json, data/patches/patches.jsonl.
+         candidate pool, core included), data/patches/patches.jsonl.
 Outputs: data/supplement-combined-deduped.json  — the merger classifier reads
          this. The combined-defs file is left untouched; the removed candidates
          are regenerable machine output.
@@ -42,11 +47,9 @@ Usage:
 
 import json
 from collections import Counter
-from pathlib import Path
 
-from basis import OP_ACCEPT, PROJECT_ROOT, anchor_key, anchor_of
+from basis import OP_ACCEPT, PROJECT_ROOT, anchor_key, anchor_of, is_upstream
 
-UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 
 # (combined+annotated input, deduped output) — one combined pool.
@@ -95,11 +98,23 @@ def pos_covers(established_pos, candidate_pos):
     return candidate_pos in POS_BROADENS.get(established_pos, ())
 
 
-def build_established_index(upstream, patches):
+def build_established_index(pool, patches):
     """(word_lower, shaw) -> list of (var, pos) established scopes, drawn from
-    upstream ReadLex and accepted patches. Keyed on word+shaw because a candidate
-    is only ever a duplicate of a same-spelling established entry; the var/pos
-    comparison is the lattice test done at filter time.
+    the POOL's own upstream ReadLex records and accepted patches (no separate
+    readlex.json load — core rides in the pool since combine). Keyed on
+    word+shaw because a candidate is only ever a duplicate of a same-spelling
+    established entry; the var/pos comparison is the lattice test done at filter
+    time.
+
+    A core record carrying a `mergers` or `variant` flag is NOT registered: the
+    dialect-model reinterpretation gave it var=RRP, but it is the merged
+    exception form (TrapBath) or a free-variation alternate (RRPVar), not the
+    canonical claim — registering it would wrongly turn an exception spelling
+    into the RRP wildcard that covers every dialect. (The old raw readlex.json
+    load registered their literal TrapBath/RRPVar vars, which covered nothing;
+    excluding them here keeps that behaviour.) A candidate exactly matching such
+    a record's full anchor was already merged into it at combine, so nothing is
+    lost.
 
     An ACCEPT sanctions its anchor; drops and flags establish nothing. The
     accepted scope is the anchor's (word, shaw, var, pos) with any intrinsic edit
@@ -110,8 +125,12 @@ def build_established_index(upstream, patches):
     def register(word, shaw, var, pos):
         index.setdefault((word.lower(), shaw), []).append((var, pos))
 
-    for entries in upstream.values():
+    for entries in pool.values():
         for entry in entries:
+            if not is_upstream(entry):
+                continue
+            if entry.get("mergers") or entry.get("variant"):
+                continue
             register(entry["Latn"], entry["Shaw"], entry.get("var", ""),
                      entry.get("pos", ""))
 
@@ -170,13 +189,15 @@ def anchored_keys(patches):
 def filter_supplement(supplement, established_index, exempt_keys, reasons,
                       removed_samples, kept_close_samples):
     """Return a copy of a supplement dict with duplicate candidates removed,
-    tallying reasons and collecting samples for the report. A candidate whose
-    natural key is in exempt_keys (a patch anchors to it) is always kept."""
+    tallying reasons and collecting samples for the report. An upstream ReadLex
+    record is always kept — it IS the established data and must never be dropped
+    (it would self-annihilate against its own scope in the index) — as is a
+    candidate whose natural key is in exempt_keys (a patch anchors to it)."""
     kept = {}
     for key, entries in supplement.items():
         kept_entries = []
         for entry in entries:
-            if anchor_of(entry) in exempt_keys:
+            if is_upstream(entry) or anchor_of(entry) in exempt_keys:
                 kept_entries.append(entry)
                 continue
             reason = duplicate_reason(entry, established_index)
@@ -218,8 +239,7 @@ def format_entry(entry):
             f"pos={entry.get('pos', '')} var={entry.get('var', '')}")
 
 
-def report(total, removed_by_reason, removed_samples, kept_close_samples,
-           dirty_vars):
+def report(total, removed_by_reason, removed_samples, kept_close_samples):
     removed = sum(removed_by_reason.values())
     print(f"\n=== duplicate filter report ===")
     print(f"Total candidates: {total:,}")
@@ -240,32 +260,17 @@ def report(total, removed_by_reason, removed_samples, kept_close_samples,
             print(f"  [{kind}] candidate {format_entry(candidate)} "
                   f"vs established var={est_var} pos={est_pos}")
 
-    if dirty_vars:
-        print(f"\nWARNING: non-canonical upstream var values seen (treated "
-              f"literally, NOT as the RRP wildcard):")
-        for var, count in sorted(dirty_vars.items()):
-            print(f"  {var!r}: {count:,}")
-
 
 def main():
-    upstream = load_json(UPSTREAM_PATH)
     patches = load_patches()
-    established_index = build_established_index(upstream, patches)
     exempt_keys = anchored_keys(patches)
-
-    dirty_vars = Counter()
-    canonical_vars = {VAR_WILDCARD, "GenAm", "TrapBath", "GenAus", "RSSB"}
-    for entries in upstream.values():
-        for entry in entries:
-            var = entry.get("var", "")
-            if var and var not in canonical_vars:
-                dirty_vars[var] += 1
 
     removed_by_reason = Counter()
     removed_samples = {r: [] for r in ("exact-var", "rrp-wildcard", "pos-broadening")}
     kept_close_samples = {kind: [] for kind in KEPT_CLOSE_KINDS}
 
     supplement = load_json(INPUT_PATH)
+    established_index = build_established_index(supplement, patches)
     total = sum(len(entries) for entries in supplement.values())
     filtered = filter_supplement(supplement, established_index, exempt_keys,
                                  removed_by_reason, removed_samples,
@@ -275,8 +280,7 @@ def main():
     print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}: "
           f"{sum(len(v) for v in filtered.values()):,} candidates kept")
 
-    report(total, removed_by_reason, removed_samples, kept_close_samples,
-           dirty_vars)
+    report(total, removed_by_reason, removed_samples, kept_close_samples)
 
 
 if __name__ == "__main__":

@@ -5,9 +5,11 @@ Apply the editorial patch store to the computed basis, producing data/readlex.js
 This replaces generate_merged_readlex.py. The model (see
 docs/editorial-overlay-design.md, "The patch record (settled model)"):
 
-  - The BASIS is the raw combination of all upstream sources — upstream ReadLex
-    (external/readlex/readlex.json) plus the wordnet and wiktionary supplement
-    candidates — computed on-demand. Every candidate, including the ~85K
+  - The BASIS is the combined supplement pool, computed on-demand. Upstream
+    ReadLex (external/readlex/readlex.json) rides IN the pool — collated at
+    combine time under the `readlex` source label, carried through the pruning
+    chain untouched — so the pool is the basis's single union point and every
+    upstream anchor appears exactly once. Every candidate, including the
     unreviewed supplemental ones, is a record in the basis. Nothing is frozen.
 
   - A PATCH (data/patches/patches.jsonl) is {anchor, op, changes, meta}:
@@ -51,7 +53,6 @@ from basis import (
     PATCH_NOOP,
     PATCH_ORPHAN,
     PROJECT_ROOT,
-    SUPPLEMENT_PATHS,
     anchor_key,
     anchor_of,
     build_basis,
@@ -210,7 +211,7 @@ def main():
 
     basis_index, basis_source = build_basis()
     print(f"Basis:    {len(basis_index):,} records "
-          f"(upstream + {len(SUPPLEMENT_PATHS)} supplements)")
+          f"(the combined pool; ReadLex core rides in it as upstream records)")
 
     patches = load_patches()
     print(f"Patches:  {len(patches):,}")

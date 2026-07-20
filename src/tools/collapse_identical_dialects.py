@@ -59,7 +59,7 @@ Usage:
 import json
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT, mark_original
+from basis import PROJECT_ROOT, is_upstream, mark_original
 from generate_wiktionary_supplement import KEEP_ACCENTS, UNTAGGED_VAR
 
 # (generated input, collapsed output) — one combined pool. The RRP reclassifier
@@ -219,9 +219,20 @@ def collapse_group(entries):
     record that DIVERGED from its parent and legitimately spells the same as a
     legacy sibling — pass through UNTOUCHED: the hierarchy already ruled it a real
     fact, and merging it onto a legacy var would erase that. Records disagreeing on
-    the mergers flag are left intact (a real within-accent difference)."""
+    the mergers flag are left intact (a real within-accent difference).
+
+    UPSTREAM ReadLex records take a separate branch (_collapse_onto_upstream):
+    core wins its spelling collision — a core record is the survivor and keeps
+    its payload, candidates fold onto it as source attestation, and no core
+    record is ever relabelled or merged away (its anchor must survive to the
+    basis exactly once)."""
     legacy = [e for e in entries if e.get("var", "") in COLLISION_VARS]
     passthrough = [e for e in entries if e.get("var", "") not in COLLISION_VARS]
+
+    upstream_recs = [e for e in legacy if is_upstream(e)]
+    if upstream_recs:
+        return _collapse_onto_upstream(legacy, upstream_recs, passthrough,
+                                       entries)
 
     legacy_vars = {entry.get("var", "") for entry in legacy}
     if len(legacy_vars) < 2:
@@ -246,6 +257,51 @@ def collapse_group(entries):
         if entry.get("var", "") != winning_var:
             relabel_onto(entry, merged)
     return [merged] + passthrough, "collapsed"
+
+
+def _collapse_onto_upstream(legacy, upstream_recs, passthrough, entries):
+    """The flat collapse for a same-spelling partition that contains upstream
+    ReadLex record(s): ReadLex is front-of-var-precedence, so a core record WINS
+    the collision and keeps its payload — the owner's "given readlex vs a
+    candidate, readlex wins".
+
+      - EVERY upstream record survives (none is ever relabelled or merged away:
+        each core anchor must reach the basis exactly once). With several
+        upstream records in the partition (core RRP + core GenAm spelling a word
+        identically), the highest-precedence one is the fold target and the rest
+        pass through verbatim.
+      - A CANDIDATE folds onto that core survivor — contributing only its source
+        labels (relabel_onto: source union + has_definition OR + orig_var
+        pre-image), the core payload untouched — when its mergers flag agrees
+        with the survivor's (the flat stage's usual guard), OR when it shares the
+        survivor partition's full anchor with a core record (same var — only
+        possible via a reclassifier promotion onto a core spelling, since combine
+        already merged born-identical anchors): a same-anchor twin MUST fold, or
+        the basis would carry a duplicate core anchor.
+      - A candidate whose mergers genuinely differ (and whose anchor is its own)
+        stays — a real within-accent difference, kept for review.
+
+    Returns (records, reason): "collapsed" when at least one candidate folded,
+    else "upstream-intact" (core present, nothing to fold — all records kept)."""
+    survivor = min(upstream_recs, key=var_rank)  # stable: first highest-precedence
+    upstream_vars = {e.get("var", "") for e in upstream_recs}
+    fold_ids = {id(e) for e in legacy
+                if not is_upstream(e)
+                and (mergers_of(e) == mergers_of(survivor)
+                     or e.get("var", "") in upstream_vars)}
+    if not fold_ids:
+        return entries, "upstream-intact"
+
+    merged = dict(survivor)
+    out = []
+    for e in legacy:
+        if e is survivor:
+            out.append(merged)
+        elif id(e) in fold_ids:
+            relabel_onto(e, merged)
+        else:
+            out.append(e)
+    return out + passthrough, "collapsed"
 
 
 def spell_sig(entry):
@@ -281,7 +337,10 @@ def hierarchy_relabel_group(entries, tallies, samples):
     Only the harvested accents are actively relabelled here. RRP (root), RSSB
     (outside the hierarchy) and GenAm (owned by the flat legacy collapse) pass
     THROUGH untouched — but their spellings ARE read, so a GenCan can compare against
-    GenAm and a GenAus against RRP.
+    GenAm and a GenAus against RRP. An UPSTREAM ReadLex record is never relabelled
+    regardless of its var (a core GenAus/SSB entry is sanctioned data whose anchor
+    must survive to the basis) — it passes through like a reference var, and its
+    spelling registers so it can serve as a fold target and parent witness.
 
     Processed PARENT-BEFORE-CHILD (by depth) so a child compares against a parent
     whose divergent spellings are already recorded; the fallback chain GenCan ->
@@ -293,15 +352,19 @@ def hierarchy_relabel_group(entries, tallies, samples):
         by_var[entry.get("var", "")].append(entry)
 
     # Signature -> the record carrying it, per var. Seeded with EVERY var the
-    # hierarchy stage does not relabel (RRP/RSSB/GenAm and anything unlisted) so
-    # those serve as parent references and flow on to the flat stage intact. The
-    # relabelled harvested accents add their divergent survivors as we go.
+    # hierarchy stage does not relabel (RRP/RSSB/GenAm and anything unlisted) and
+    # every upstream core record, so those serve as parent references and flow on
+    # to the flat stage intact. The relabelled harvested accents add their
+    # divergent survivors as we go.
     survivors = defaultdict(list)
     record_by_sig = defaultdict(dict)  # var -> {sig: record}
+    relabel_candidates = defaultdict(list)  # var -> harvest records to judge
     for var, recs in by_var.items():
-        if var not in HIERARCHY_COLLAPSE_VARS:
-            survivors[var].extend(recs)
-            for rec in recs:
+        for rec in recs:
+            if var in HIERARCHY_COLLAPSE_VARS and not is_upstream(rec):
+                relabel_candidates[var].append(rec)
+            else:
+                survivors[var].append(rec)
                 record_by_sig[var].setdefault(spell_sig(rec), rec)
 
     sig_by_var = {var: set(record_by_sig[var]) for var in record_by_sig}
@@ -315,10 +378,9 @@ def hierarchy_relabel_group(entries, tallies, samples):
             cur = PARENT[cur]
         return d
 
-    for var in sorted((v for v in by_var if v in HIERARCHY_COLLAPSE_VARS),
-                      key=lambda v: (depth(v), v)):
+    for var in sorted(relabel_candidates, key=lambda v: (depth(v), v)):
         parent_sigs = parent_shaw_sigs(var, sig_by_var)
-        for rec in by_var[var]:
+        for rec in relabel_candidates[var]:
             sig = spell_sig(rec)
             if sig in parent_sigs:
                 # Inherit: relabel onto the ancestor record carrying this signature.
@@ -427,6 +489,7 @@ def report(tallies, samples):
     print(f"Records merged away:          {tallies['records-merged']:,}")
     print(f"Left (single dialect):        {tallies['single-dialect']:,}")
     print(f"Left (mergers differ):        {tallies['mergers-differ']:,}")
+    print(f"Left (upstream intact):       {tallies['upstream-intact']:,}")
 
     print("\nSample hierarchy collapses (child inherits parent, dropped):")
     for latn, pos, child_var, parent_var, shaw in samples["hierarchy"]:

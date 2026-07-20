@@ -96,7 +96,7 @@ import json
 import subprocess
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT, load_upstream
+from basis import PROJECT_ROOT, is_upstream, load_upstream
 from ipa_to_shavian import contains_shavian
 import rrp_generator as G
 
@@ -257,14 +257,17 @@ def generate_group(entries, shave_map, tallies, samples, enable_shave=ENABLE_SHA
 
     Returns the list of record copies (count-preserving, Shaw untouched). A group
     WITH an RRP entry is passed through verbatim (out of D1 scope — its canonical
-    already exists)."""
+    already exists), as is an upstream ReadLex record (a sanctioned dictionary
+    entry needs no minted proposal; core is never decorated)."""
     has_rrp = any(e.get("var") == CANONICAL_VAR for e in entries)
     out = []
     for entry in entries:
         record = dict(entry)
-        if has_rrp or (not entry.get("ipa") and not enable_shave):
-            # no-RRP group with an RRP sibling, OR a no-ipa record while the
-            # shave/names path is disabled -> pass through untouched (IPA-only).
+        if (is_upstream(entry) or has_rrp
+                or (not entry.get("ipa") and not enable_shave)):
+            # upstream core record, a group with an RRP sibling, OR a no-ipa
+            # record while the shave/names path is disabled -> pass through
+            # untouched (IPA-only).
             out.append(record)
             continue
 
@@ -336,7 +339,10 @@ def gate_group(entries, established_rrp, tallies, samples):
     """Strip a merger/variant flag from any record whose canonical RRP counterpart
     is not high-confidence (D3). Records without a flag pass through untouched. The
     stripped flag's pre-image is preserved (merger_gate) so review sees the gate
-    acted and why — nothing is silently mutated."""
+    acted and why — nothing is silently mutated. An upstream ReadLex record's
+    flags (the reinterpreted TrapBath merger, the RRPVar variant marker) are
+    ReadLex's own data and are NEVER gate-stripped (basis.is_upstream: never
+    flag-mutate core)."""
     for record in entries:
         flag_kind = None
         if record.get("mergers"):
@@ -344,6 +350,9 @@ def gate_group(entries, established_rrp, tallies, samples):
         elif record.get("variant"):
             flag_kind = "variant"
         if flag_kind is None:
+            continue
+        if is_upstream(record):
+            tallies["flag-upstream-exempt"] += 1
             continue
 
         high, why = canonical_is_high_confidence(record, entries, established_rrp)
@@ -379,7 +388,7 @@ def no_ipa_words_needing_shave(groups):
         if any(e.get("var") == CANONICAL_VAR for e in entries):
             continue  # group already has a canonical — out of D1 scope
         for entry in entries:
-            if not entry.get("ipa"):
+            if not entry.get("ipa") and not is_upstream(entry):
                 words.add(entry["Latn"].lower())
     return sorted(words)
 
@@ -463,6 +472,8 @@ def report(gen_tallies, gen_samples, gate_tallies, gate_samples):
     for kind in ("mergers", "variant"):
         n = gate_tallies.get(f"flag-stripped-{kind}", 0)
         print(f"    {kind:22}: {n:,}")
+    print(f"Flags on upstream core (exempt, never stripped): "
+          f"{gate_tallies['flag-upstream-exempt']:,}")
 
     if gate_samples["stripped"]:
         print("\nSample stripped flags (word [pos] var: was -> now plain "

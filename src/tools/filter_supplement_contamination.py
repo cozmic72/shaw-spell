@@ -14,12 +14,13 @@ contamination test contains_non_shavian defines in ipa_to_shavian.py, reused
 here so the drop rule and the converter's own notion of "non-Shavian" cannot
 drift. Legit hyphen/apostrophe/space/naming-dot candidates are untouched.
 
-This runs ONLY on the supplement candidates, never on upstream ReadLex: the
+This judges ONLY the supplement candidates, never upstream ReadLex: the
 ring-point/word-joiner acronym markers, variation-selector ligatures, digits and
 hyphens in the shipped dictionary are intentional ReadLex conventions, not
-review candidates. A candidate a patch already anchors to has left the review
-surface and is exempt — dropping it would orphan the patch's anchor
-(apply_patches.py fails loud on that).
+review candidates — so the core records riding in the pool (basis.is_upstream)
+pass through verbatim, never dropped. A candidate a patch already anchors to has
+left the review surface and is exempt too — dropping it would orphan the patch's
+anchor (apply_patches.py fails loud on that).
 
 This is a pruning-chain stage between the identical-dialect collapse and the
 phrase filter over the source-combined pool: combined-collapsed -> HERE
@@ -40,7 +41,7 @@ Usage:
 import json
 from collections import Counter
 
-from basis import PROJECT_ROOT, anchor_of
+from basis import PROJECT_ROOT, anchor_of, is_upstream
 from filter_supplement_duplicates import anchored_keys, load_patches
 from ipa_to_shavian import contains_non_shavian
 
@@ -59,14 +60,16 @@ def load_json(path):
 def prune_supplement(supplement, exempt_keys, dropped_samples):
     """A copy of a supplement dict with contaminated candidates removed. A
     candidate whose `Shaw` contains a non-Shavian character is dropped unless a
-    patch anchors it (it has left the review surface). Returns (pruned,
-    dropped_count)."""
+    patch anchors it (it has left the review surface) or it is an upstream
+    ReadLex record (core's acronym/ligature conventions are intentional, and
+    core is never dropped). Returns (pruned, dropped_count)."""
     pruned = {}
     dropped = 0
     for key, entries in supplement.items():
         kept_entries = []
         for entry in entries:
-            if (contains_non_shavian(entry["Shaw"])
+            if (not is_upstream(entry)
+                    and contains_non_shavian(entry["Shaw"])
                     and anchor_of(entry) not in exempt_keys):
                 dropped += 1
                 if len(dropped_samples) < SAMPLE_LIMIT:

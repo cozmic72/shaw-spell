@@ -85,7 +85,7 @@ Usage:
 import json
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT, load_upstream
+from basis import PROJECT_ROOT, is_upstream, load_upstream
 
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-collapsed.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-varflagged.json"
@@ -149,9 +149,13 @@ def canonical_for_group(word_lower, pos, records, readlex_index):
 
     # No ReadLex base-RRP: the confidence-gated pool fallback. Collect the distinct
     # RRP-var spellings present in the group, and whether each is high-confidence.
+    # An upstream core record in the group is skipped: ReadLex's attestation was
+    # already consulted through readlex_index (rule 1 — built from the same
+    # upstream data), and a core exception form (a reinterpreted TrapBath/RRPVar
+    # carries var=RRP too) must not masquerade as a pool RRP specimen.
     rrp_spellings = defaultdict(bool)  # shaw -> any high-confidence witness seen
     for r in records:
-        if r.get("var") != CANONICAL_VAR:
+        if is_upstream(r) or r.get("var") != CANONICAL_VAR:
             continue
         shaw = r.get("Shaw", "")
         if r.get("rrp_tier") in HIGH_CONFIDENCE_TIERS:
@@ -182,7 +186,13 @@ def flag_group(word_lower, pos, records, readlex_index, tallies, samples):
     out = []
     for entry in records:
         record = dict(entry)
-        if canonical is None:
+        if is_upstream(entry):
+            # Core is never flagged: its variant marker (the reinterpreted
+            # RRPVar) is ReadLex's own data, and a core GenAm/RSSB exception
+            # diverging from the RRP canonical is a dialect fact, not a
+            # free-variation alternate. Pass through verbatim.
+            tallies["upstream"] += 1
+        elif canonical is None:
             tallies["no-canonical"] += 1
         elif record.get("Shaw", "") == canonical:
             tallies["is-canonical"] += 1
@@ -234,8 +244,10 @@ def flag_supplement(supplement, tallies, samples, upstream=None):
 def report(tallies, samples):
     print("\n=== variant flagging report ===")
     total = (tallies["flagged"] + tallies["is-canonical"] +
-             tallies["isolated"] + tallies["no-canonical"])
+             tallies["isolated"] + tallies["no-canonical"] +
+             tallies["upstream"])
     print(f"Records processed:        {total:,}")
+    print(f"  upstream (exempt):      {tallies['upstream']:,}")
     print(f"  variant flagged:        {tallies['flagged']:,}")
     print(f"    (also merger-flagged: {tallies['flagged-with-merger']:,})")
     print(f"  is the canonical:       {tallies['is-canonical']:,}")

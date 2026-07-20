@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 """
-Combine the per-source supplement candidates into ONE pool before pruning, so
-every downstream filter runs on the union rather than per-source in parallel.
+Combine upstream ReadLex core and the per-source supplement candidates into ONE
+pool before pruning, so every downstream filter runs on the union rather than
+per-source in parallel.
+
+ReadLex core is JUST DATA here — the best Shavian-spelling source there is — and
+it enters the pool as ordinary bucketed records like any other source, FIRST in
+precedence: on a same-anchor collision core wins content and a later source only
+adds its label. Core records are flagged by their `readlex` source label (the
+basis.is_upstream test, which doubles as the editor's not-new novelty marker) and
+ride the whole pruning chain untouched: every downstream stage may read them (the
+RRP-lane occupancy guard, established scopes, canonical attestations) but never
+drops, relabels, respells or flag-mutates one. Folding core in HERE is what lets
+reclassify_rrp's pool-only occupancy guard see core RRP lanes without any stage
+side-loading readlex.json.
 
 Historically each source (wordnet, wiktionary) was threaded through the whole
 pruning chain independently and only met at the basis. That let a cross-source
@@ -15,12 +27,14 @@ basis.anchor_of computes. Two records sharing all four fields are ONE record and
 their `source` labels union; two records sharing (word, pos, shaw) but differing
 in `var` are KEPT SEPARATE — the dialect prune adjudicates those downstream.
 
-Records gain a `source` LIST field here (they carry none upstream). Sources are
-iterated in canonical order; the first to attest an anchor keeps its record
-verbatim (wordnet wins on content, matching basis.build_basis's load order), and
-every later source that also attests the anchor only adds its label to the list.
+Records gain a `source` LIST field here (they carry none in their input files).
+Sources are iterated in canonical order; the first to attest an anchor keeps its
+record verbatim (readlex wins on content, then wordnet), and every later source
+that also attests the anchor only adds its label to the list.
 
-Inputs:  data/supplement-wordnet-reliable.json (wordnet uses reliable directly),
+Inputs:  external/readlex/readlex.json (upstream core, reinterpreted onto the
+         dialect model at load — basis.load_upstream),
+         data/supplement-wordnet-reliable.json (wordnet uses reliable directly),
          data/supplement-wiktionary-neardot.json (wiktionary after rescue +
          NEAR syllable-dot correction), and data/supplement-names.json (the
          curated proper-name slice).
@@ -34,11 +48,19 @@ Usage:
 import json
 from collections import Counter
 
-from basis import PROJECT_ROOT, anchor_of
+from basis import (PROJECT_ROOT, UPSTREAM_PATH, UPSTREAM_SOURCE, anchor_of,
+                   load_upstream)
 
 # Canonical source order: the first source to attest an anchor keeps its record
-# verbatim (wordnet wins on content), matching basis.build_basis's load order.
+# verbatim. ReadLex core is FIRST — the sanctioned dictionary wins content on
+# any same-anchor collision (owner: given readlex vs wordnet, readlex wins) —
+# then wordnet, matching the pre-fold load order among the supplements.
 SOURCES = [
+    # Upstream ReadLex core, collated into the pool as ordinary records. Its
+    # `readlex` label is the upstream flag (basis.is_upstream) every downstream
+    # stage consults: core records are never dropped, relabelled or flag-mutated,
+    # and they seed the RRP-lane occupancy guard by pure existence.
+    (UPSTREAM_SOURCE, UPSTREAM_PATH),
     ("wordnet", PROJECT_ROOT / "data" / "supplement-wordnet-reliable.json"),
     ("wiktionary", PROJECT_ROOT / "data" / "supplement-wiktionary-neardot.json"),
     # Curated proper-name slice (shave+CMUdict agreement, synthetic). Its own
@@ -61,6 +83,22 @@ OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-raw.json"
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def load_source(label, path):
+    """Load one source pool. The upstream ReadLex source is reinterpreted onto
+    the dialect model at this consumption seam (basis.load_upstream — TrapBath ->
+    RRP+mergers, RRPVar -> RRP+variant, the Gen Am typo), exactly the shape every
+    pipeline reader sees; supplement sources load verbatim."""
+    if label == UPSTREAM_SOURCE:
+        return load_upstream()
+    return load_json(path)
+
+
+def load_sources():
+    """Every source pool loaded in canonical order — the single load edge the
+    orchestrator (build_supplement.py) and the CLI main share."""
+    return [(label, load_source(label, path)) for label, path in SOURCES]
 
 
 def output_bucket_key(entry):
@@ -116,7 +154,7 @@ def report(tallies):
 
 def main():
     tallies = Counter()
-    sources_data = [(label, load_json(path)) for label, path in SOURCES]
+    sources_data = load_sources()
     buckets = build_combined(sources_data, tallies)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(buckets, f, ensure_ascii=False, indent=4)

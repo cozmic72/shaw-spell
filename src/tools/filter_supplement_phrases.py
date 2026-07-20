@@ -41,7 +41,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from basis import anchor_of
+from basis import anchor_of, is_upstream
 from detect_phrase_divergence import (
     MATCHES, PROJECT_ROOT, build_label_classifier, is_phrase_record,
 )
@@ -68,13 +68,15 @@ def prune_supplement(supplement, label_of, exempt_keys, dropped_samples,
                      kept_samples):
     """A copy of a supplement dict with `matches` phrases removed. Single-word
     candidates and divergent/unknown phrases are kept, as is any candidate a
-    patch anchors to. Collects samples and returns (pruned, dropped_count)."""
+    patch anchors to. An upstream ReadLex record passes through unjudged — a
+    core multi-word entry is sanctioned dictionary data, never phrase noise, and
+    core is never dropped. Collects samples and returns (pruned, dropped_count)."""
     pruned = {}
     dropped = 0
     for key, entries in supplement.items():
         kept_entries = []
         for entry in entries:
-            if not is_phrase_record(entry):
+            if is_upstream(entry) or not is_phrase_record(entry):
                 kept_entries.append(entry)
                 continue
             label = label_of(entry)

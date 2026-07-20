@@ -24,6 +24,21 @@ WHAT THIS STAGE DOES (and, deliberately, what it does NOT):
 
   merger-flagged records are NEVER relabelled — see below.
 
+⚠ RRP-LANE OCCUPANCY GUARD. A PASS / PASS_RESPELL is only APPLIED if the
+(word_lower, pos) group's RRP lane is free for the candidate's resulting
+spelling. The lane is seeded PURELY from the input pool's RRP-labelled records
+(born-RRP, var==RRP — which, once ReadLex core is collated into the pool at
+combine time, includes the pre-accepted core canonical spellings) and extended
+by each promotion this stage itself applies. A candidate
+whose resulting RRP spelling DIFFERS from an occupied lane spelling is NOT
+promoted — it stays in its source dialect entirely untouched (var, Shaw, no
+orig_*), recorded as rrp_outcome=SKIP_OCCUPIED. A candidate whose resulting
+spelling is IDENTICAL to an occupied one still relabels as before — the
+downstream collapse stage owns same-spelling dedup. When a group has no native
+RRP and several differently-spelt candidates pass, the winner is chosen by a
+deterministic tie-break — best tier first, then Shaw — and the rest stay in
+their source dialect.
+
 Every relabelled/respelled record is an UNREVIEWED REVIEW CANDIDATE — nothing
 is auto-accepted, nothing is written to the patch store (never-auto-accept).
 The stage also carries a small provenance triple onto every judged record so
@@ -85,7 +100,7 @@ Usage:
 import json
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT, mark_original
+from basis import PROJECT_ROOT, is_upstream, mark_original
 from rrp_classifier import judge_record
 
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
@@ -98,6 +113,17 @@ CANONICAL_VAR = "RRP"
 # relabelling — a merged form spelt differently from its non-merged RRP sibling
 # (see the module docstring's MERGER-FLAGGED section).
 MERGER_HELD_BACK = "SKIP_MERGER"
+
+# The rrp_outcome recorded for a passing candidate DENIED relabelling because
+# the (word, pos) RRP lane is already occupied by a DIFFERENT spelling (see the
+# module docstring's RRP-LANE OCCUPANCY GUARD section).
+LANE_HELD_BACK = "SKIP_OCCUPIED"
+
+# Judgment sentinel for an upstream ReadLex record in the pool: core IS the lane,
+# never a candidate. It is not judged, not relabelled, not respelled, and not
+# even decorated with rrp_* provenance — it passes through verbatim, while its
+# var==RRP spellings seed the occupancy lanes by pure existence.
+UPSTREAM_LANE = object()
 
 SAMPLE_LIMIT = 12
 
@@ -123,28 +149,87 @@ def cross_dialect_set(records):
     return {k for k, vars_ in seen.items() if len(vars_) >= 2}
 
 
-def reclassify_record(entry, ctx, tallies, samples):
+def promoted_shaw(entry, judgment):
+    """The Shaw a PASS / PASS_RESPELL candidate would occupy the RRP lane with."""
+    return judgment.respell if judgment.outcome == "PASS_RESPELL" else entry["Shaw"]
+
+
+def blocked_promotions(judged):
+    """Indexes into `judged` of PASS / PASS_RESPELL candidates whose promotion
+    the lane-occupancy guard DENIES: the (word_lower, pos) RRP lane already
+    holds a DIFFERENT spelling. Lanes are seeded PURELY from the input pool's
+    RRP-labelled records (which, once ReadLex core is collated into the pool at
+    combine time, include the pre-accepted core canonical spellings as well as
+    supplement-native RRP entries); within a group, promotable candidates claim
+    the lane in a deterministic order — best tier first, then Shaw — so the
+    winner of a lane-free group is byte-stable run-to-run (the patch model
+    requires it). An identically-spelt candidate is never blocked (downstream
+    collapse owns same-spelling dedup). RRP records already in the pool are not
+    guarded — they are the lane, not a promotion into it."""
+    lanes = defaultdict(set)
+    for entry, _ in judged:
+        if entry.get("var") == CANONICAL_VAR:
+            lanes[(entry["Latn"].lower(), entry.get("pos", ""))].add(entry["Shaw"])
+
+    groups = defaultdict(list)
+    for i, (entry, judgment) in enumerate(judged):
+        if (judgment is not None and judgment is not UPSTREAM_LANE
+                and judgment.outcome in ("PASS", "PASS_RESPELL")
+                and entry.get("var") != CANONICAL_VAR):
+            groups[(entry["Latn"].lower(), entry.get("pos", ""))].append(
+                (judgment.tier, promoted_shaw(entry, judgment), i))
+
+    blocked = set()
+    for key, candidates in groups.items():
+        occupied = lanes[key]
+        for _, shaw, i in sorted(candidates):
+            if occupied and shaw not in occupied:
+                blocked.add(i)
+            else:
+                occupied.add(shaw)
+    return blocked
+
+
+def reclassify_record(entry, judgment, lane_blocked, tallies, samples):
     """A copy of one candidate with the reclassifier's per-record verdict applied.
 
-    A merger-flagged record is held back untouched (it is spelt differently from
-    its RRP sibling — the downstream collapse owns it). Otherwise PASS /
+    A merger-flagged record (judgment None) is held back untouched (it is spelt
+    differently from its RRP sibling — the downstream collapse owns it), as is a
+    lane-blocked one (its resulting RRP spelling conflicts with the group's
+    occupied RRP lane — it stays in its source dialect). Otherwise PASS /
     PASS_RESPELL relabel var to RRP (and, for a respell, rewrite Shaw), recording
     the pre-transform value(s) via mark_original so the applicator can
     auto-re-anchor an editorial patch anchored to the old key. STAY and REVIEW
     leave the spelling and var untouched. Every judged record carries the
-    rrp_outcome / rrp_tier provenance; REVIEW additionally carries rrp_review."""
+    rrp_outcome / rrp_tier provenance; REVIEW additionally carries rrp_review.
+    An upstream ReadLex record (judgment UPSTREAM_LANE) passes through VERBATIM —
+    no relabel, no respell, not even rrp_* provenance: core is the pre-accepted
+    lane the guard protects, never a review candidate."""
     record = dict(entry)
 
-    if entry.get("mergers"):
+    if judgment is UPSTREAM_LANE:
+        tallies["upstream-lane"] += 1
+        return record
+
+    if judgment is None:
         # A merged form is spelt differently from its non-merged RRP sibling:
         # never canonicalize it here (that would both violate "don't collapse
         # differently-spelt forms" and erase the merger attestation). Held back —
-        # judged (so it carries the outcome), but its spelling/var are untouched.
+        # its spelling/var are untouched.
         record["rrp_outcome"] = MERGER_HELD_BACK
         tallies[MERGER_HELD_BACK] += 1
         return record
 
-    j = judge_record(entry, ctx)
+    j = judgment
+
+    if lane_blocked:
+        # The guard denied the promotion: the record stays in its source dialect
+        # entirely untouched (no relabel, no respell, no orig_*).
+        record["rrp_outcome"] = LANE_HELD_BACK
+        record["rrp_tier"] = j.tier
+        tallies[LANE_HELD_BACK] += 1
+        return record
+
     record["rrp_outcome"] = j.outcome
     record["rrp_tier"] = j.tier
     tallies[j.outcome] += 1
@@ -178,9 +263,17 @@ def reclassify_supplement(supplement, tallies, samples):
     records = [r for entries in supplement.values() for r in entries]
     ctx = {"cross_dialect": cross_dialect_set(records), "shave": {}}
 
+    # Judge first (upstream core and merger-flagged records are held back
+    # unjudged — core is the lane, a merged form stays in its dialect), then
+    # resolve RRP-lane occupancy across each (word, pos) group, then apply.
+    judged = [(r, UPSTREAM_LANE if is_upstream(r)
+               else None if r.get("mergers") else judge_record(r, ctx))
+              for r in records]
+    blocked = blocked_promotions(judged)
+
     reclassified = defaultdict(list)
-    for entry in records:
-        out = reclassify_record(entry, ctx, tallies, samples)
+    for i, (entry, judgment) in enumerate(judged):
+        out = reclassify_record(entry, judgment, i in blocked, tallies, samples)
         reclassified[output_bucket_key(out)].append(out)
 
     return {key: reclassified[key] for key in sorted(reclassified)}, len(records)
@@ -189,13 +282,16 @@ def reclassify_supplement(supplement, tallies, samples):
 def report(tallies, samples):
     print("\n=== RRP reclassification report ===")
     total = sum(tallies[o] for o in ("PASS", "PASS_RESPELL", "STAY", "REVIEW",
-                                     MERGER_HELD_BACK))
+                                     MERGER_HELD_BACK, LANE_HELD_BACK))
     print(f"Records judged:            {total:,}")
     print(f"  PASS (relabel RRP):      {tallies['PASS']:,}")
     print(f"  PASS_RESPELL (+respell): {tallies['PASS_RESPELL']:,}")
     print(f"  STAY (source dialect):   {tallies['STAY']:,}")
     print(f"  REVIEW (flagged):        {tallies['REVIEW']:,}")
     print(f"  SKIP (merger-flagged):   {tallies[MERGER_HELD_BACK]:,}")
+    print(f"  PASS blocked (RRP lane occupied): {tallies[LANE_HELD_BACK]:,}")
+    print(f"  upstream core (the lane; passed through verbatim): "
+          f"{tallies['upstream-lane']:,}")
     relabelled = tallies["PASS"] + tallies["PASS_RESPELL"]
     print(f"Relabelled to RRP:         {relabelled:,}")
     for src in ("RSSB", "GenAm", "RRP"):

@@ -55,7 +55,7 @@ Usage:
 import json
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT, load_upstream
+from basis import PROJECT_ROOT, is_upstream, load_upstream
 from dialect_mergers import MERGER_SWAPS, merger_of
 
 # (deduped input, classified output) — one combined pool.
@@ -156,14 +156,21 @@ def merger_for(entry, non_merged_index):
 
 def classify_supplement(supplement, tallies, samples, upstream=None):
     """A copy of a supplement dict with each record's `mergers` set. The field is
-    written only when non-empty (additive: absent == empty). `upstream` (the
-    reinterpreted ReadLex) is threaded in by the orchestrator; None loads it."""
+    written only when non-empty (additive: absent == empty). An upstream ReadLex
+    record in the pool passes through VERBATIM — its `mergers` (the reinterpreted
+    TrapBath flag) is ReadLex's own data and is neither stripped nor added to
+    (basis.is_upstream: never flag-mutate core). `upstream` (the reinterpreted
+    ReadLex) is threaded in by the orchestrator; None loads it."""
     non_merged_index = non_merged_spellings(supplement, upstream)
     classified = {}
     for key, entries in supplement.items():
         annotated = []
         for entry in entries:
             record = dict(entry)
+            if is_upstream(entry):
+                tallies["upstream"] += 1
+                annotated.append(record)
+                continue
             merger, sibling = merger_for(entry, non_merged_index)
             if merger is not None:
                 record["mergers"] = [merger]
@@ -186,6 +193,7 @@ def report(tallies, samples):
     for merger in MERGER_SWAPS:
         print(f"  {merger} tagged: {tallies[merger]:,}")
     print(f"  no merger:        {tallies['none']:,}")
+    print(f"  upstream (passed through verbatim): {tallies['upstream']:,}")
 
     for merger in MERGER_SWAPS:
         print(f"\nSample [{merger}]:")

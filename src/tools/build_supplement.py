@@ -24,13 +24,25 @@ already reads/writes; each pure function takes that dict (+ its threaded deps)
 and returns the next. File I/O is peeled to the edges of this module only.
 
 DEPENDENCY EDGES (loaded once, threaded as arguments):
-  - the three source pools (wordnet-reliable, wiktionary-neardot, names)   -> combine
+  - the source pools (ReadLex core FIRST — folded into the pool as ordinary
+    `upstream` records — then wordnet-reliable, wiktionary-neardot, names)  -> combine
   - WordNet YAML + Wiktionary JSONL definition key sets                    -> annotate
-  - RAW upstream ReadLex + patches (established index, exempt anchors)      -> dedup
-  - REINTERPRETED upstream ReadLex (load_upstream)                         -> classify, generate
+  - patches (exempt anchors); the dedup established index derives from the
+    POOL's own upstream records after combine — no separate readlex.json load -> dedup
+  - REINTERPRETED upstream ReadLex (load_upstream, reference index only)   -> classify, generate
   - the phrase label classifier (citation index over readlex + reliable)   -> phrases
   - shave (Roman->Shavian G2P for no-IPA names, non-deterministic)          -> generate
     ONLY when the shave/names path is enabled (see below) — OFF by default.
+
+READLEX CORE IN THE POOL: upstream ReadLex enters at combine as ordinary
+bucketed records, first in source precedence (core wins content on a same-anchor
+collision) and flagged by the `readlex` source label (basis.is_upstream). Every
+stage treats core uniformly as reference data — reclassify's pool-only RRP-lane
+occupancy guard sees core lanes by pure existence — and NO stage drops,
+relabels, respells or flag-mutates a core record, so every upstream anchor
+reaches the final pool exactly once. The basis reads the pool ALONE
+(basis.build_basis no longer unions readlex.json separately — core would ship
+twice).
 
 SHAVE/NAMES PATH (default OFF): generate_rrp's no-IPA proper-name path is an
 OWNER-UNDECIDED feature and is DISABLED by default, so the committed build is
@@ -63,7 +75,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from basis import PROJECT_ROOT, load_json, load_upstream
+from basis import PROJECT_ROOT, load_upstream
 
 import combine_supplements as combine_mod
 import annotate_definitions as annotate_mod
@@ -126,16 +138,13 @@ def build_supplement(shave_fn=None, enable_shave=None):
         print("generate_rrp: shave/names path ENABLED "
               "(SHAW_SPELL_ENABLE_SHAVE_NAMES)", file=sys.stderr)
     # --- LOAD EDGES (once) -------------------------------------------------
-    print("Loading source pools...", file=sys.stderr)
-    sources_data = [(label, load_json(path))
-                    for label, path in combine_mod.SOURCES]
-
-    print("Loading upstream ReadLex (raw + reinterpreted) and patches...",
+    print("Loading source pools (ReadLex core first, then supplements)...",
           file=sys.stderr)
-    raw_upstream = load_json(dedup_mod.UPSTREAM_PATH)
+    sources_data = combine_mod.load_sources()
+
+    print("Loading upstream ReadLex reference and patches...", file=sys.stderr)
     reinterpreted_upstream = load_upstream()
     patches = dedup_mod.load_patches()
-    established_index = dedup_mod.build_established_index(raw_upstream, patches)
     exempt_keys = dedup_mod.anchored_keys(patches)
 
     print("Building definition key sets (WordNet YAML + Wiktionary JSONL)...",
@@ -154,7 +163,9 @@ def build_supplement(shave_fn=None, enable_shave=None):
     supplement = annotate_mod.annotate(supplement, wn_keys, wikt_keys)
     yield "defs", supplement
 
-    # 3. duplicate filter
+    # 3. duplicate filter — the established index derives from the POOL's own
+    #    upstream records (core rides in it since combine; no side-load) + patches
+    established_index = dedup_mod.build_established_index(supplement, patches)
     supplement = dedup_mod.filter_supplement(
         supplement, established_index, exempt_keys,
         Counter(), {r: [] for r in ("exact-var", "rrp-wildcard", "pos-broadening")},

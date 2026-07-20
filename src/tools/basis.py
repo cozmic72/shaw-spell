@@ -9,10 +9,12 @@ editor daemon (src/editor/editord.py, which annotates the basis with each
 record's patch-state). Neither keeps its own copy — see
 docs/editorial-overlay-design.md.
 
-  - The basis is upstream ReadLex (external/readlex/readlex.json) plus the
-    wordnet and wiktionary supplement candidates. Every candidate, including
-    the unreviewed supplemental ones, is a record in the basis. Nothing is
-    frozen.
+  - The basis is the combined supplement pool — which, since the core fold-in,
+    CONTAINS upstream ReadLex (external/readlex/readlex.json) as ordinary
+    records: core is collated into the pool at combine time under the `readlex`
+    source label (see combine_supplements.SOURCES) and rides the whole pruning
+    chain untouched. Every candidate, including the unreviewed supplemental
+    ones, is a record in the basis. Nothing is frozen.
   - A patch's `anchor` is the natural key (word.lower(), pos, shaw, var) of the
     ONE basis record it reviews. Each dialect var is reviewed independently.
 
@@ -52,17 +54,20 @@ from dialect_mergers import MERGER_TRAP_BATH
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 
-# The supplement candidates that make up the basis alongside upstream ReadLex:
-# the phrase-filtered view of the SOURCE-COMBINED, merger-classified pool
-# (combine -> defs-annotated -> deduped -> classified -> collapsed ->
-# decontaminated -> filtered; see the supplement pruning chain). The per-source
-# wordnet and wiktionary pools
+# The ONE pool that makes up the basis: the phrase-filtered view of the
+# SOURCE-COMBINED, merger-classified pool (combine -> defs-annotated -> deduped
+# -> classified -> collapsed -> decontaminated -> filtered; see the supplement
+# pruning chain). Upstream ReadLex core and the per-source wordnet and
+# wiktionary pools
 # are unified up front (combine_supplements.py) so every prune runs on the union;
 # candidates an established entry already resolves to, identical-spelling dialect
 # variants (collapsed onto the highest-precedence var), candidates whose Shavian
 # carries a non-Shavian character (unmapped IPA passthrough), or sum-of-parts
 # phrase noise, are dropped upstream, so the basis — and thus the editor's review
-# surface — never sees them. Each record carries its `mergers` annotation, its
+# surface — never sees them. Core records ride the chain untouched (never
+# dropped, relabelled or flag-mutated; see is_upstream), so every upstream
+# anchor appears here exactly once — the basis's ONLY union point. Each record
+# carries its `mergers` annotation, its
 # `source` list (the origins that attested its anchor), and its `has_definition`
 # provenance boolean (whether any attesting source carries a definition).
 SUPPLEMENT_PATHS = [
@@ -92,9 +97,24 @@ UPSTREAM_VAR_TYPO = "Gen Am"
 UPSTREAM_VAR_TYPO_FIX = "GenAm"
 
 # Upstream ReadLex is the sanctioned dictionary; every record loaded from it
-# carries this origin. Supplement records instead carry their own `source` list
-# (the origins that attested the anchor), written by the combine + prune chain.
+# carries this origin. Combine collates core into the pool under this label
+# (first in source precedence, so core wins content on a same-anchor collision),
+# and it doubles as the not-new novelty marker: the editor's novelty facet
+# classifies a `readlex`-sourced row as known, never new-*. Supplement records
+# carry their own `source` list (the origins that attested the anchor), written
+# by the combine + prune chain.
 UPSTREAM_SOURCE = "readlex"
+
+
+def is_upstream(entry):
+    """Whether a pool/basis record is upstream ReadLex core: collated into the
+    combined pool at combine time under the `readlex` source label (see
+    combine_supplements.SOURCES). The single upstream test every pipeline stage
+    shares. Core records are pre-accepted reference data: a stage may READ them
+    (occupancy lanes, established scopes, canonical attestations) and may UNION
+    attestation onto them (source labels, has_definition), but must never drop,
+    relabel, respell, or flag-mutate one."""
+    return UPSTREAM_SOURCE in (entry.get("source") or ())
 
 # A GENERAL-PURPOSE informational field: a catch-all list of non-essential
 # metadata strings that rides end-to-end from a supplement source to the basis and
@@ -464,15 +484,6 @@ def resolve_patch(patch, basis_index, basis_source):
         effective_record(base_entry, patch["changes"], basis_source[key]))
 
 
-def entry_sources(path, entry):
-    """The origin labels a basis record attests. Upstream ReadLex records take the
-    single readlex label; a combined supplement record carries its own `source`
-    list (the origins that attested its anchor), read straight off the record."""
-    if path == UPSTREAM_PATH:
-        return [UPSTREAM_SOURCE]
-    return entry.get("source", [])
-
-
 def enrich_basis_frequency(index):
     """Put every basis record on the corpus frequency scale, in place — the SAME
     replace-all pass the production build applies to readlex.json (see
@@ -502,14 +513,16 @@ def build_basis(enrich_freq=False):
     """Traverse the basis once, returning both the record index and the origins
     of each anchor.
 
-      index   (word_lower, pos, shaw, var) -> the basis candidate. Upstream
-              ReadLex is seen first and wins over a supplement that attests the
-              same natural key.
+      index   (word_lower, pos, shaw, var) -> the basis candidate. The pool is
+              the single union point: upstream ReadLex core rides IN it (collated
+              at combine, first in source precedence, so a core record wins
+              content on a same-anchor collision) — it is NOT unioned in again
+              here, so every upstream anchor appears exactly once.
       source  same key -> ordered list of the origin labels that attested it,
-              deduped. Upstream ReadLex contributes the readlex label; a
-              supplement record contributes its own `source` list (the union of
-              origins the combine + collapse chain recorded for that anchor) —
-              the multi-source agreement signal, preserved for filtering.
+              deduped, read straight off each record's `source` list (the union
+              the combine + collapse chain recorded for that anchor). A core
+              record contributes the readlex label this way — the multi-source
+              agreement signal, preserved for filtering.
 
     With enrich_freq, every record is put on the corpus frequency scale so the
     editor's freq-desc sort triages the review pool by real frequency, uniformly
@@ -519,15 +532,14 @@ def build_basis(enrich_freq=False):
     """
     index = {}
     source = {}
-    for source_path in [UPSTREAM_PATH, *SUPPLEMENT_PATHS]:
-        data = (load_upstream() if source_path == UPSTREAM_PATH
-                else load_json(source_path))
+    for source_path in SUPPLEMENT_PATHS:
+        data = load_json(source_path)
         for entries in data.values():
             for entry in entries:
                 key = anchor_of(entry)
                 index.setdefault(key, entry)
                 sources = source.setdefault(key, [])
-                for label in entry_sources(source_path, entry):
+                for label in entry.get("source", []):
                     if label not in sources:
                         sources.append(label)
     if enrich_freq:

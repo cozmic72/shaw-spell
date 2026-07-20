@@ -1172,7 +1172,6 @@ body {
    It lives on its own row below the verdicts, a secondary action. */
 .act.clone { color: var(--state-authored); }
 .act.clone:hover { background: var(--state-authored); color: var(--paper); }
-.clone-bar { display: flex; margin-top: 14px; }
 
 
 /* ---- related entries — the context index below the focused card ---- */

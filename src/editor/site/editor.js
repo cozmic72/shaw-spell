@@ -1056,7 +1056,6 @@ function recordEditor(record, opts) {
         referenceLinks(record.word),
         fieldGrid(ctx, record, overridden),
         actionBar(ctx, record),
-        cloneBar(record),
     );
     return container;
 }
@@ -1082,16 +1081,13 @@ function renderDetail(record) {
 // this record, for the owner to adapt into a sibling — a dialect variant (change var),
 // a spelling variant (change shaw), a re-tag (change pos), whatever. It is a general
 // clone, so it takes no target: the owner edits the copy themselves before saving.
-function cloneBar(record) {
-    const bar = document.createElement("div");
-    bar.className = "clone-bar";
+function cloneButton(record) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "act clone";
     button.textContent = "Clone";
     button.addEventListener("click", () => openCloneModal(record));
-    bar.append(button);
-    return bar;
+    return button;
 }
 
 // The provenance mark for a field the owner overrode on accept: an `overridden`
@@ -2203,6 +2199,7 @@ function actionBar(ctx, record) {
         actionButton("accept", "Accept", acceptSelected),
         actionButton("drop", "Drop", dropSelected),
         actionButton("flag", "Flag", flagSelected),
+        cloneButton(record),
     );
     if (record.reviewed) {
         bar.append(actionButton("clear", "Clear", clearSelected));

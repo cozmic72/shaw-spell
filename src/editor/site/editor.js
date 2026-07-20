@@ -1721,6 +1721,12 @@ function sourceKey(record) {
 }
 
 function compareRelated(left, right) {
+    // Latin word first (case-insensitive), so a word's entries stay together and
+    // shaw-only siblings (estrogen/oestrogen, lat/lotte) don't interleave with them.
+    const leftWord = (left.word || "").toLowerCase();
+    const rightWord = (right.word || "").toLowerCase();
+    if (leftWord < rightWord) return -1;
+    if (leftWord > rightWord) return 1;
     if (left.pos < right.pos) return -1;
     if (left.pos > right.pos) return 1;
     if (left.var < right.var) return -1;

@@ -16,8 +16,8 @@ stage to stage, one read at the front and one write at the back.
 
 THE CHAIN (identical order + behaviour to the old .mk chain):
   combine  -> annotate_definitions -> filter_duplicates -> classify_mergers ->
-  reclassify_rrp -> generate_rrp -> collapse_dialects -> filter_contamination ->
-  filter_phrases -> data/supplement-combined-filtered.json
+  reclassify_rrp -> generate_rrp -> collapse_dialects -> flag_variants ->
+  filter_contamination -> filter_phrases -> data/supplement-combined-filtered.json
 
 Records are the bucketed `{word_pos_shaw: [record, ...]}` dict every stage
 already reads/writes; each pure function takes that dict (+ its threaded deps)
@@ -72,6 +72,7 @@ import classify_dialect_mergers as classify_mod
 import reclassify_rrp as reclassify_mod
 import generate_rrp as generate_mod
 import collapse_identical_dialects as collapse_mod
+import flag_variants as variant_mod
 import filter_supplement_contamination as contam_mod
 import filter_supplement_phrases as phrase_mod
 from detect_phrase_divergence import build_label_classifier
@@ -88,6 +89,7 @@ DUMP_NAMES = {
     "reclassified": "supplement-combined-reclassified.json",
     "generated": "supplement-combined-generated.json",
     "collapsed": "supplement-combined-collapsed.json",
+    "varflagged": "supplement-combined-varflagged.json",
     "decontaminated": "supplement-combined-decontaminated.json",
     "filtered": "supplement-combined-filtered.json",
 }
@@ -199,12 +201,28 @@ def build_supplement(shave_fn=None, enable_shave=None):
         supplement, Counter(), [])
     yield "collapsed", supplement
 
-    # 8. contamination prune
+    # 8. flag divergent-from-canonical records as `variant` (count-preserving:
+    #    only ADDS the boolean flag; never drops, splits, or re-buckets). Runs on
+    #    the collapsed, RRP-labelled pool so the canonical selection sees the
+    #    reclassifier's var=RRP + rrp_tier.
+    n_in = count(supplement)
+    supplement = variant_mod.flag_supplement(
+        supplement, Counter(), defaultdict(list),
+        upstream=reinterpreted_upstream)
+    n_out = count(supplement)
+    if n_out != n_in:
+        raise SystemExit(
+            f"flag_variants: record count changed ({n_in} -> {n_out}); this stage "
+            f"only ADDS the variant flag — it never drops or splits a record, so a "
+            f"count change is a bug")
+    yield "varflagged", supplement
+
+    # 9. contamination prune
     supplement, _dropped = contam_mod.prune_supplement(
         supplement, exempt_keys, [])
     yield "decontaminated", supplement
 
-    # 9. phrase prune
+    # 10. phrase prune
     supplement, _dropped = phrase_mod.prune_supplement(
         supplement, label_of, exempt_keys, [], [])
     yield "filtered", supplement

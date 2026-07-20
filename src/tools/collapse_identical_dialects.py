@@ -60,6 +60,7 @@ import json
 from collections import Counter, defaultdict
 
 from basis import PROJECT_ROOT, mark_original
+from generate_wiktionary_supplement import KEEP_ACCENTS, UNTAGGED_VAR
 
 # (generated input, collapsed output) — one combined pool. The RRP reclassifier
 # then the RRP generator run immediately upstream: the reclassifier canonicalizes
@@ -74,8 +75,83 @@ OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-collapsed.json"
 
 # Dialect precedence: lower rank wins. Any var not listed ranks below every
 # listed var (UNKNOWN_RANK), so it always loses an identical-spelling collision.
+# This governs ONLY the flat spelling-collision collapse among the three legacy
+# vars (see collapse_group). The multi-accent harvest vars are governed by the
+# dialect HIERARCHY below, not by this flat precedence.
 PRECEDENCE = {"RRP": 0, "RSSB": 1, "GenAm": 2}
 UNKNOWN_RANK = len(PRECEDENCE)
+
+# The three legacy vars the flat spelling-collision collapse operates on. A group
+# with more than one of these carrying an identical spelling merges to the
+# highest-precedence one (RRP > RSSB > GenAm), unioning sources — this preserves
+# the combined-pool multi-source union (e.g. wordnet GenAm + wiktionary RSSB of
+# the same spelling). The harvest accents are deliberately EXCLUDED so a harvest
+# accent that legitimately diverges from its hierarchy parent is never merged away
+# just because it happens to spell the same as a sibling legacy var.
+COLLISION_VARS = frozenset(PRECEDENCE)
+
+# ---------------------------------------------------------------------------
+# DIALECT HIERARCHY (owner-authoritative). A harvested-accent record is kept only
+# where its Shaw DIVERGES from its PARENT accent's Shaw within the same (word,pos)
+# group; if it spells the word the same as its parent, that is not a dialect fact
+# of its own — it inherits the parent — so the child record collapses (relabels)
+# onto the nearest present ancestor.
+#
+#     GenCan -> GenAm -> RRP        (Canada inherits American, which inherits RP)
+#     GenAus -> RRP
+#     NZ     -> RRP
+#     SthAfr -> RRP
+#     IrEng  -> RRP
+#     SSB    -> RRP                 (untagged "general British" bucket)
+#     GenAm -> RRP                  (parent EDGE only; see below)
+#
+# RRP is the root (no parent — always kept). RSSB is deliberately NOT in the
+# hierarchy: it is the reclassifier's "unresolved British" bucket, not a national
+# accent, so it keeps its flat-precedence handling unchanged.
+#
+# GenAm is BOTH the parent of GenCan AND a member of the legacy flat-collapse set
+# {RRP, RSSB, GenAm}. Its GenAm-vs-RRP collapse is the PRE-EXISTING behaviour of
+# the flat stage (collapse_group) and must stay there unchanged — moving it into
+# the hierarchy stage would reorder the flat stage's within-var duplicate merges
+# and change which orig_var pre-image a patch re-anchors against. So the hierarchy
+# stage READS GenAm's spellings (to judge GenCan) but never itself relabels a GenAm
+# record: GenAm appears in PARENT purely as an edge target, and is EXCLUDED from
+# HIERARCHY_COLLAPSE_VARS. The flat stage owns GenAm->RRP exactly as before.
+PARENT = {
+    "GenCan": "GenAm",
+    "GenAus": "RRP",
+    "NZ": "RRP",
+    "SthAfr": "RRP",
+    "IrEng": "RRP",
+    UNTAGGED_VAR: "RRP",
+    "GenAm": "RRP",  # edge only — GenAm is collapsed by the flat legacy stage
+}
+ROOT_VAR = "RRP"
+
+# The vars the HIERARCHY stage actively relabels: the truly-new harvested accents.
+# GenAm and RSSB are excluded — GenAm is owned by the flat legacy collapse (see
+# above), RSSB is outside the hierarchy. A var here that equals its parent's Shaw
+# is dropped/inherited; one that diverges is kept.
+HIERARCHY_COLLAPSE_VARS = frozenset(set(PARENT) - COLLISION_VARS)
+
+# Fail loud if a harvested accent exists that the hierarchy forgot to place: every
+# KEEP_ACCENT (bar RRP root and the legacy-owned GenAm) and the untagged bucket
+# MUST be collapsed by the hierarchy stage, or a divergent record of that accent
+# would silently escape collapse.
+_harvest_vars = {var for var, _sel, _ns in KEEP_ACCENTS
+                 if var != ROOT_VAR and var not in COLLISION_VARS}
+_harvest_vars.add(UNTAGGED_VAR)
+_missing = _harvest_vars - HIERARCHY_COLLAPSE_VARS
+if _missing:
+    raise SystemExit(
+        f"collapse_identical_dialects: harvested accents {sorted(_missing)} are "
+        f"not in HIERARCHY_COLLAPSE_VARS — their divergent records would escape "
+        f"the hierarchy collapse")
+# GenCan's parent GenAm must be resolvable as a parent EDGE even though GenAm is
+# not hierarchy-collapsed, or the GenCan-vs-GenAm comparison silently degrades.
+if PARENT.get("GenCan") not in PARENT and PARENT.get("GenCan") != ROOT_VAR:
+    raise SystemExit(
+        "collapse_identical_dialects: GenCan's parent edge is unresolvable")
 
 SAMPLE_LIMIT = 12
 
@@ -114,70 +190,215 @@ def union_sources(into, extra):
         into["has_definition"] = True
 
 
+def relabel_onto(loser, winner):
+    """Fold `loser` into the merged `winner` record in place: union its source
+    (and has_definition), then record the loser's pre-relabel var so a patch
+    anchored to the loser's old (word,pos,shaw,var) key auto-re-anchors onto the
+    winner rather than orphaning (see basis.mark_original / reanchor_index).
+    SET-ONCE means only the first loser's pre-image is kept per field; a rarer
+    multi-loser collision leaves the later ones to surface via the 'orphaned'
+    filter."""
+    union_sources(winner, loser)
+    mark_original(winner, "var", loser.get("var", ""))
+
+
 def collapse_group(entries):
     """The collapsed records for one same-(word,pos) set of identical-spelling
     records, and the tally reason.
 
-    Collapses iff 2+ distinct dialect vars carry the spelling and every record
-    agrees on the mergers flag: every record is relabelled to the winning
+    Flat LEGACY collapse only — the harvest accents are handled by the dialect
+    hierarchy before this runs (see hierarchy_relabel_group), so this stage sees
+    only spellings not already claimed by the hierarchy and collapses among the
+    legacy vars {RRP, RSSB, GenAm}.
+
+    Collapses iff 2+ distinct LEGACY vars carry the spelling and every record
+    agrees on the mergers flag: every legacy record is relabelled to the winning
     (highest-precedence) var, then records sharing that var merge into one whose
     payload is the winning-var record's (a relabelled record contributes only its
-    source). Records disagreeing on the mergers flag are left intact (a real
-    within-accent difference)."""
-    vars_present = {entry.get("var", "") for entry in entries}
-    if len(vars_present) < 2:
+    source). Any non-legacy (harvest-accent) records in the partition — a harvest
+    record that DIVERGED from its parent and legitimately spells the same as a
+    legacy sibling — pass through UNTOUCHED: the hierarchy already ruled it a real
+    fact, and merging it onto a legacy var would erase that. Records disagreeing on
+    the mergers flag are left intact (a real within-accent difference)."""
+    legacy = [e for e in entries if e.get("var", "") in COLLISION_VARS]
+    passthrough = [e for e in entries if e.get("var", "") not in COLLISION_VARS]
+
+    legacy_vars = {entry.get("var", "") for entry in legacy}
+    if len(legacy_vars) < 2:
         return entries, "single-dialect"
-    if len({mergers_of(entry) for entry in entries}) > 1:
+    if len({mergers_of(entry) for entry in legacy}) > 1:
         return entries, "mergers-differ"
 
-    winning_rank = min(var_rank(entry) for entry in entries)
-    winning_var = next(entry.get("var", "") for entry in entries
+    winning_rank = min(var_rank(entry) for entry in legacy)
+    winning_var = next(entry.get("var", "") for entry in legacy
                        if var_rank(entry) == winning_rank)
 
     # The already-winning-var records keep the payload (first-seen wins on a
     # within-var duplicate); the relabelled losers only feed their source in.
     merged = None
-    for entry in entries:
+    for entry in legacy:
         if entry.get("var", "") == winning_var:
             if merged is None:
                 merged = dict(entry)
             else:
                 union_sources(merged, entry)
+    for entry in legacy:
+        if entry.get("var", "") != winning_var:
+            relabel_onto(entry, merged)
+    return [merged] + passthrough, "collapsed"
+
+
+def spell_sig(entry):
+    """A record's (Shaw, mergers) identity within a (word,pos) group. The mergers
+    flag rides the signature so a child that carries a merger flag its parent lacks
+    counts as a divergent fact (consistent with the flat collapse's mergers guard),
+    not an inherited spelling."""
+    return (entry["Shaw"], mergers_of(entry))
+
+
+def parent_shaw_sigs(var, sig_by_var):
+    """The set of (Shaw, mergers) signatures the nearest PRESENT ancestor of `var`
+    carries in this group — the spellings `var` would inherit. Walks PARENT up the
+    chain, skipping absent ancestors (an absent parent contributes nothing; the
+    walk falls through to its own parent), until a present ancestor or the root.
+    Returns an empty set if no ancestor is present (then nothing to inherit → the
+    child is kept)."""
+    ancestor = PARENT.get(var)
+    while ancestor is not None:
+        if sig_by_var.get(ancestor):
+            return sig_by_var[ancestor]
+        ancestor = PARENT.get(ancestor)
+    return set()
+
+
+def hierarchy_relabel_group(entries, tallies, samples):
+    """Apply the dialect hierarchy to one (word,pos) group: drop each harvested-accent
+    record (a var in HIERARCHY_COLLAPSE_VARS) whose (Shaw,mergers) equals a signature
+    its nearest present ancestor carries — it inherits the parent, so relabel it onto
+    that ancestor's matching record (unioning source + preserving orig_var). Records
+    that DIVERGE from their parent stay. Returns the surviving records.
+
+    Only the harvested accents are actively relabelled here. RRP (root), RSSB
+    (outside the hierarchy) and GenAm (owned by the flat legacy collapse) pass
+    THROUGH untouched — but their spellings ARE read, so a GenCan can compare against
+    GenAm and a GenAus against RRP.
+
+    Processed PARENT-BEFORE-CHILD (by depth) so a child compares against a parent
+    whose divergent spellings are already recorded; the fallback chain GenCan ->
+    GenAm -> RRP is honoured by walking PARENT to the nearest present ancestor."""
+    # Records keyed by var; a var may carry several spellings (distinct Shaw, or a
+    # merger-flagged twin).
+    by_var = defaultdict(list)
     for entry in entries:
-        loser_var = entry.get("var", "")
-        if loser_var != winning_var:
-            union_sources(merged, entry)
-            # RELABEL provenance: the loser's key (word, pos, shaw, loser_var) is
-            # gone — it collapsed onto this winning-var record. Record the pre-
-            # relabel var so the applicator can AUTO-RE-ANCHOR any editorial patch
-            # anchored to that old key onto the merged record's current key, rather
-            # than orphaning the owner's verdict (see basis.mark_original /
-            # reanchor_index). SET-ONCE: with several losers only the first pre-image
-            # is kept (one field holds one old key); a rarer multi-loser collision
-            # leaves the later losers to surface via the 'orphaned' filter.
-            mark_original(merged, "var", loser_var)
-    return [merged], "collapsed"
+        by_var[entry.get("var", "")].append(entry)
+
+    # Signature -> the record carrying it, per var. Seeded with EVERY var the
+    # hierarchy stage does not relabel (RRP/RSSB/GenAm and anything unlisted) so
+    # those serve as parent references and flow on to the flat stage intact. The
+    # relabelled harvested accents add their divergent survivors as we go.
+    survivors = defaultdict(list)
+    record_by_sig = defaultdict(dict)  # var -> {sig: record}
+    for var, recs in by_var.items():
+        if var not in HIERARCHY_COLLAPSE_VARS:
+            survivors[var].extend(recs)
+            for rec in recs:
+                record_by_sig[var].setdefault(spell_sig(rec), rec)
+
+    sig_by_var = {var: set(record_by_sig[var]) for var in record_by_sig}
+
+    # Parent-before-child: order the collapsed vars by depth (distance to root) so
+    # every var is processed after its parent. Deterministic within a depth by name.
+    def depth(var):
+        d, cur = 0, var
+        while cur in PARENT:
+            d += 1
+            cur = PARENT[cur]
+        return d
+
+    for var in sorted((v for v in by_var if v in HIERARCHY_COLLAPSE_VARS),
+                      key=lambda v: (depth(v), v)):
+        parent_sigs = parent_shaw_sigs(var, sig_by_var)
+        for rec in by_var[var]:
+            sig = spell_sig(rec)
+            if sig in parent_sigs:
+                # Inherit: relabel onto the ancestor record carrying this signature.
+                target = _ancestor_record(var, sig, record_by_sig)
+                target_var = target.get("var", "")
+                relabel_onto(rec, target)
+                tallies["hierarchy-collapsed"] += 1
+                tallies[f"hierarchy-collapsed-{var}->{target_var}"] += 1
+                # "Intermediate" = collapsed onto a non-root parent it actually
+                # reached (GenCan -> GenAm), i.e. the target is not RRP. A GenCan
+                # that walked PAST an absent GenAm to RRP is a root collapse, not
+                # intermediate — the metric the brief asks for is the GenCan==GenAm
+                # case specifically.
+                if target_var != ROOT_VAR:
+                    tallies["hierarchy-collapsed-intermediate"] += 1
+                if len(samples["hierarchy"]) < SAMPLE_LIMIT:
+                    samples["hierarchy"].append((rec.get("Latn", ""), rec.get("pos", ""),
+                                                 var, target_var, rec["Shaw"]))
+            else:
+                # Diverges from parent: keep as its own accent fact.
+                survivors[var].append(rec)
+                record_by_sig[var].setdefault(sig, rec)
+                sig_by_var.setdefault(var, set()).add(sig)
+
+    return [rec for recs in survivors.values() for rec in recs]
+
+
+def _ancestor_record(var, sig, record_by_sig):
+    """The nearest present ancestor's record carrying `sig` — the record `var`'s
+    inheriting child relabels onto. Walks PARENT; fails loud if no ancestor carries
+    the signature (the caller only calls this when parent_shaw_sigs said one does)."""
+    ancestor = PARENT.get(var)
+    while ancestor is not None:
+        rec = record_by_sig.get(ancestor, {}).get(sig)
+        if rec is not None:
+            return rec
+        ancestor = PARENT.get(ancestor)
+    raise SystemExit(
+        f"collapse_identical_dialects: no ancestor record for {var} sig={sig} — "
+        f"parent_shaw_sigs and _ancestor_record disagree (hierarchy bug)")
 
 
 def collapse_supplement(supplement, tallies, samples):
-    """A copy of a supplement dict with identical-spelling dialect variants
-    collapsed onto the highest-precedence var. Records are regrouped by
-    (word.lower(), pos) and partitioned by spelling; each colliding partition is
-    relabelled to its highest-precedence var and merged."""
-    groups = defaultdict(lambda: defaultdict(list))
+    """A copy of a supplement dict with dialect variants collapsed down the dialect
+    hierarchy. Two composed stages per (word,pos) group:
+
+      1. HIERARCHY collapse (hierarchy_relabel_group): a harvest-accent record whose
+         spelling equals its nearest present ancestor's inherits that ancestor and
+         is relabelled away; a divergent one is kept. This is the multi-accent
+         harvest's dedup — it governs GenAus/GenCan/NZ/SthAfr/IrEng/SSB (NOT GenAm,
+         which the flat stage owns; the hierarchy only READS GenAm as GenCan's
+         parent).
+      2. FLAT legacy collapse (collapse_group): the surviving records are partitioned
+         by spelling and any spelling carried by 2+ legacy vars {RRP,RSSB,GenAm}
+         merges to the highest-precedence one, unioning sources (the combined-pool
+         multi-source union, and the pre-existing GenAm-vs-RRP collapse). Harvest
+         records pass through this stage untouched.
+
+    `samples` is a dict of sample lists ({"hierarchy": [...], "flat": [...]}); the
+    caller seeds it (see main)."""
+    groups = defaultdict(list)
     for entries in supplement.values():
         for entry in entries:
-            groups[(entry["Latn"].lower(), entry["pos"])][entry["Shaw"]].append(entry)
+            groups[(entry["Latn"].lower(), entry["pos"])].append(entry)
 
     collapsed = defaultdict(list)
-    for by_shaw in groups.values():
+    for group_entries in groups.values():
+        surviving = hierarchy_relabel_group(group_entries, tallies, samples)
+
+        by_shaw = defaultdict(list)
+        for entry in surviving:
+            by_shaw[entry["Shaw"]].append(entry)
+
         for shaw_entries in by_shaw.values():
             kept, reason = collapse_group(shaw_entries)
             if reason == "collapsed":
                 tallies["collapsed-groups"] += 1
                 tallies["records-merged"] += len(shaw_entries) - len(kept)
-                if len(samples) < SAMPLE_LIMIT:
-                    samples.append((shaw_entries, kept))
+                if len(samples["flat"]) < SAMPLE_LIMIT:
+                    samples["flat"].append((shaw_entries, kept))
             else:
                 tallies[reason] += len(shaw_entries)
             for entry in kept:
@@ -186,16 +407,34 @@ def collapse_supplement(supplement, tallies, samples):
     return {key: collapsed[key] for key in sorted(collapsed)}
 
 
-def report(tallies, samples):
-    print("\n=== identical-dialect collapse report ===")
-    print(f"Groups collapsed:          {tallies['collapsed-groups']:,}")
-    print(f"Records merged away:       {tallies['records-merged']:,}")
-    print(f"Left (single dialect):     {tallies['single-dialect']:,}")
-    print(f"Left (mergers differ):     {tallies['mergers-differ']:,}")
+def new_samples():
+    """The sample container collapse_supplement fills: one list per collapse stage."""
+    return {"hierarchy": [], "flat": []}
 
-    print("\nSample collapsed (identical spelling across dialects -> "
+
+def report(tallies, samples):
+    print("\n=== dialect collapse report ===")
+    print("--- hierarchy (harvest accent inherits parent) ---")
+    print(f"Records collapsed to parent:  {tallies['hierarchy-collapsed']:,}")
+    print(f"  of which intermediate (child -> non-root parent, e.g. GenCan->GenAm): "
+          f"{tallies['hierarchy-collapsed-intermediate']:,}")
+    for key in sorted(k for k in tallies if k.startswith("hierarchy-collapsed-")
+                      and "->" in k):
+        edge = key[len("hierarchy-collapsed-"):]
+        print(f"  {edge}: {tallies[key]:,}")
+    print("--- flat legacy collapse (identical spelling across RRP/RSSB/GenAm) ---")
+    print(f"Groups collapsed:             {tallies['collapsed-groups']:,}")
+    print(f"Records merged away:          {tallies['records-merged']:,}")
+    print(f"Left (single dialect):        {tallies['single-dialect']:,}")
+    print(f"Left (mergers differ):        {tallies['mergers-differ']:,}")
+
+    print("\nSample hierarchy collapses (child inherits parent, dropped):")
+    for latn, pos, child_var, parent_var, shaw in samples["hierarchy"]:
+        print(f"  {latn} [{pos}] {shaw}: {child_var} == {parent_var} -> dropped")
+
+    print("\nSample flat collapses (identical spelling across legacy dialects -> "
           "relabel to highest, union source):")
-    for shaw_entries, kept in samples:
+    for shaw_entries, kept in samples["flat"]:
         vars_seen = ", ".join(sorted(entry.get("var", "") for entry in shaw_entries))
         rep = kept[0]
         print(f"  {rep['Latn']} [{rep['pos']}] {rep['Shaw']}: "
@@ -205,7 +444,7 @@ def report(tallies, samples):
 
 def main():
     tallies = Counter()
-    samples = []
+    samples = new_samples()
 
     supplement = load_json(INPUT_PATH)
     collapsed = collapse_supplement(supplement, tallies, samples)

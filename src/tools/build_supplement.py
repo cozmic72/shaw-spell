@@ -196,9 +196,10 @@ def build_supplement(shave_fn=None, enable_shave=None):
             f"splits a record, so a count change is a bug")
     yield "generated", supplement
 
-    # 7. collapse identical-spelling dialects
+    # 7. collapse dialects down the hierarchy (harvest accents inherit their
+    #    parent where they don't diverge) + flat legacy identical-spelling collapse
     supplement = collapse_mod.collapse_supplement(
-        supplement, Counter(), [])
+        supplement, Counter(), collapse_mod.new_samples())
     yield "collapsed", supplement
 
     # 8. flag divergent-from-canonical records as `variant` (count-preserving:

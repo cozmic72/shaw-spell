@@ -700,6 +700,23 @@ body {
     border-left: 4px solid transparent;
     transition: border-color 0.15s;
 }
+/* The detail body is one column by default (editor, then related, then
+   definitions in source order — the stack). When the detail pane is wide
+   enough, split into two columns: editor + related on the LEFT, definitions on
+   the RIGHT, using the horizontal room instead of scrolling. The 760px cap is
+   lifted here so the two columns can actually spread. */
+.detail-cols { display: block; }
+@media (min-width: 1180px) {
+    .detail { max-width: none; }
+    .detail-cols {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+        gap: 34px;
+        align-items: start;
+    }
+    /* Definitions sits beside the editor, held at the top of the pane. */
+    .detail-right { position: sticky; top: 0; }
+}
 /* Review mode is the resting state: the card wears a live accent edge and a
    REVIEW cue, telling the editor that single-key verdicts are armed. Edit mode
    lifts the accent (the caret is in a field now) so the two modes are never

@@ -1141,7 +1141,19 @@ function renderDetail(record) {
     state.mainContext.editing = wasEditing;
     const definitions = definitionsSection();
     const related = relatedSection();
-    DETAIL.replaceChildren(editor, definitions, related);
+    // Two columns when there's room (CSS .detail-cols grid): editor + related on
+    // the LEFT, definitions on the RIGHT. On narrow screens the grid collapses to
+    // one column, so the source order (editor, definitions, related) is the stack.
+    const left = document.createElement("div");
+    left.className = "detail-left";
+    left.append(editor, related);
+    const right = document.createElement("div");
+    right.className = "detail-right";
+    right.append(definitions);
+    const cols = document.createElement("div");
+    cols.className = "detail-cols";
+    cols.append(left, right);
+    DETAIL.replaceChildren(cols);
     setDetailMode();
     loadDefinitions(record, definitions);
     loadRelated(record, related);

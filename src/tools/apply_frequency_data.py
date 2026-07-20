@@ -43,9 +43,44 @@ READLEX_PATH = PROJECT_ROOT / "data" / "readlex.json"
 CORPUS_PATH = PROJECT_ROOT / "external" / "frequency-words" / "content" / "2018" / "en" / "en_full.txt"
 FREQ_SOURCE_TAG = "opensubtitles-2018"
 
+# Contraction-fragment blocklist.
+#
+# The OpenSubtitles corpus was tokenised by splitting on the apostrophe, so every
+# contraction contributes an inflated fake "word": a bare STEM (isn't -> isn) plus
+# a leading-apostrophe TAIL (isn't -> 't, you're -> 're). These fragments carry
+# enormous counts ('s = 14.3M, 't = 9.6M, isn = 429K, ...) that our freq join
+# would otherwise hand to any record whose headword literally spells the fragment
+# (isn, ain, shan, the 's/'d pseudo-headwords, and 'em -> Em) — floating pure junk
+# to the top of the frequency-sorted review. We drop these tokens from the corpus
+# in-memory BEFORE the join so they contribute no frequency to any record.
+#
+# Only PURE non-words are listed. Real English words that merely collide with a
+# fragment are deliberately KEPT with their (over-counted) frequency:
+#   - don   (put on)          — dominant sense is don't -> don, but a real word
+#   - won   (past of win / KRW)
+#   - haven (harbour)
+#   - can, em                  — genuinely frequent / real, minor over-count only
+# `ain` is arguably a rare dialectal word, but per the owner its 166K count is the
+# isn't/ain't fragment share, not the word, so it is blocklisted.
+FRAGMENT_BLOCKLIST = frozenset({
+    # Leading-apostrophe clitic tails
+    "'s", "'t", "'m", "'re", "'ll", "'ve", "'d",
+    # Apostrophe-stripped contraction stems that are NOT real words
+    "isn", "ain", "doesn", "didn", "wasn", "wouldn", "couldn",
+    "hadn", "hasn", "weren", "aren", "shouldn", "mustn", "needn",
+    "shan", "mightn", "oughtn", "daren",
+})
+# The corpus stores tokens lowercase and the headword join lowercases too, so the
+# blocklist must be lowercase to match. Verified once at import.
+assert all(t == t.lower() for t in FRAGMENT_BLOCKLIST), "blocklist tokens must be lowercase"
+
 
 def load_corpus():
-    """Load the subtitle frequency list as {lowercase_word: count}."""
+    """Load the subtitle frequency list as {lowercase_word: count}.
+
+    Contraction-fragment tokens (see FRAGMENT_BLOCKLIST) are dropped so they
+    contribute no inflated frequency to the join.
+    """
     if not CORPUS_PATH.exists():
         sys.exit(
             f"Corpus not found at {CORPUS_PATH.relative_to(PROJECT_ROOT)}.\n"
@@ -60,6 +95,8 @@ def load_corpus():
             if len(parts) != 2:
                 continue
             word, count = parts
+            if word in FRAGMENT_BLOCKLIST:
+                continue
             corpus[word] = int(count)
     if not corpus:
         sys.exit(f"Corpus at {CORPUS_PATH.relative_to(PROJECT_ROOT)} is empty.")

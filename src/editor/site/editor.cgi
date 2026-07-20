@@ -148,7 +148,7 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="edited"><span>edited</span></label>
             <label class="chip"><input value="dropped"><span>dropped</span></label>
             <label class="chip"><input value="flagged"><span>flagged</span></label>
-            <label class="chip"><input value="authored"><span>authored</span></label>
+            <label class="chip"><input value="authored"><span>manual</span></label>
             <label class="chip"><input value="orphaned"><span>orphaned</span></label>
         </div>
         <!-- Novelty: orthogonal to Review (word newness, not review state). Pinned. -->

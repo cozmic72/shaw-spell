@@ -1891,7 +1891,7 @@ function relatedSource(record) {
 function relatedProvenance(record) {
     switch (record.patch_state) {
         case "authored":
-            return { state: "authored", glyph: "✎", label: "authored" };
+            return { state: "authored", glyph: "✎", label: "manual" };
         case "dropped":
             return { state: "dropped", glyph: "✕", label: "dropped" };
         case "flagged":
@@ -1923,8 +1923,13 @@ function setDetailMode() {
     DETAIL.classList.toggle("mode-review", !editing && state.selected >= 0);
 }
 
+// Display text per patch_state — the internal value stays as-is (CSS class,
+// filter value, daemon), only the human label differs. "authored" reads as
+// "manual" (a human hand-added it) since every entry is authored by someone.
+const STATE_LABELS = { authored: "manual" };
+
 function stateBadge(patchState) {
-    return cell(`state-badge ${patchState}`, patchState);
+    return cell(`state-badge ${patchState}`, STATE_LABELS[patchState] ?? patchState);
 }
 
 // The orphan sub-tag: on an `orphaned` row, a small badge naming the op + why it

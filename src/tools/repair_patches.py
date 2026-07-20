@@ -36,6 +36,27 @@ that no record's orig_* covers at all is REPORTED as "fully gone".
     follow it in memory. This script bakes only the safe, spelling-preserving
     var relabels; shaw moves stay in the recomputed-each-build regime.
 
+COLLISIONS — DEDUP THE DUPLICATES, SKIP THE CONFLICTS
+-----------------------------------------------------
+Re-anchoring can land a patch on a key another patch already holds (two repaired
+patches converging, a repaired patch meeting an un-repaired one, or a duplicate
+pair that already shared a key in the store). The store is one-patch-per-anchor,
+so each such key must resolve to ONE survivor. A collision is classified by the
+DECISION its occupants carry — op + changes + final word/pos (id and meta are NOT
+identity):
+
+  DUPLICATE  every occupant is the SAME decision (e.g. the same word accepted
+             twice, once per source, pre-dating the source merger). Nothing is
+             lost by keeping one, so the tool DEDUPS: keep a single survivor
+             (richest meta, then first-seen), drop the redundant others, and
+             re-anchor the survivor. SAFE.
+  CONFLICT   occupants carry DIFFERING decisions (differing op or changes). Not
+             auto-resolvable, so the whole group is SKIPPED — left byte-identical
+             for the owner to adjudicate in the editor.
+
+The fail-safe default is CONFLICT: anything not a proven single-decision duplicate
+is skipped, never deduped, so a distinct decision is never dropped.
+
 SAFETY (this rewrites the owner's editorial decisions — sacred)
 ---------------------------------------------------------------
   - DRY-RUN by default. It reports what it WOULD change and writes nothing.
@@ -43,10 +64,12 @@ SAFETY (this rewrites the owner's editorial decisions — sacred)
   - --write BACKS UP the store first (timestamped sibling copy) and prints the
     backup path, then writes atomically (temp + rename, via patchstore).
   - FAIL-LOUD: an internal inconsistency (a re-anchor target that does not
-    resolve, a shaw actually changing under a var re-anchor) aborts rather than
-    shipping a corrupted store. No decision is ever silently dropped.
-  - It ONLY moves anchors of safe var-relabel orphans; op / changes / id / meta
-    and every other patch are left byte-for-byte as loaded, in original order.
+    resolve, a shaw actually changing under a var re-anchor, or a same-decision
+    duplicate surviving planning) aborts rather than shipping a corrupted store.
+    No DISTINCT decision is ever dropped — only proven duplicates are deduped.
+  - It moves anchors of safe var-relabel orphans and drops proven-duplicate
+    patches; op / changes / id / meta of every surviving patch and every
+    untouched patch are left byte-for-byte as loaded, in original order.
   - Point it at a TEMP COPY via SHAW_SPELL_PATCH_STORE for development/testing.
     It must NEVER be run --write against the live store without the owner's
     explicit go — it is a tool left ready for the owner, not auto-run.
@@ -59,6 +82,7 @@ Usage:
         python3 src/tools/repair_patches.py [--write]   # against a temp copy
 """
 
+import json
 import shutil
 import sys
 from datetime import datetime, timezone
@@ -146,34 +170,96 @@ def plan_repairs(patches, basis_index):
     return repairs, shaw_changed, gone, untouched
 
 
+def _decision_of(patch, final_anchor):
+    """The identifying DECISION a patch carries, once landed on its final anchor:
+    (word_lower, pos, op, canonical(changes)). This is what makes two patches "the
+    same decision" for dedup — the natural-key axes that survive the re-anchor plus
+    the intrinsic edit. `id` (often a stale content hash) and `meta` (author / note /
+    origin) are deliberately EXCLUDED: they do not change what the patch decides.
+
+    word/pos are taken from the FINAL anchor (a repaired patch keeps its word/pos; a
+    var-relabel never touches them), so a repaired and an un-repaired patch landing on
+    one key are compared on equal footing."""
+    return (
+        final_anchor["word"].lower(),
+        final_anchor["pos"],
+        patch.get("op"),
+        json.dumps(patch.get("changes"), ensure_ascii=False, sort_keys=True),
+    )
+
+
+def _meta_richness(patch):
+    """A deterministic richness score for a patch's meta, used only to pick which of
+    two SAME-DECISION duplicates to keep. Prefer the one that carries a human note
+    (the informative annotation we must not lose), then the one with more meta
+    fields. Purely a tie-preference; never distinguishes decisions."""
+    meta = patch.get("meta") or {}
+    has_note = 1 if meta.get("note") else 0
+    return (has_note, len(meta))
+
+
 def find_collisions(patches, repairs):
-    """The repairs whose new anchor collides with ANOTHER patch's anchor in the
-    resulting store — a re-anchor that would leave two patches on one natural key,
-    breaking the store's one-patch-per-anchor identity (patchstore upserts by
-    anchor). Returns [(patch, new_anchor, other_id)].
+    """Every FINAL natural key that more than one patch would occupy once `repairs`
+    are applied, classified as a DUPLICATE (all occupants carry the same decision) or
+    a TRUE CONFLICT (occupants carry differing decisions). A re-anchor that lands two
+    patches on one key breaks the store's one-patch-per-anchor identity (patchstore
+    upserts by anchor), so every such key must resolve to exactly one survivor.
 
-    The colliding "other" is any patch (repaired or not) that ends up on the same
-    key, excluding the repaired patch itself. A collision is NOT auto-resolvable
-    (which verdict wins?), so the caller reports it and aborts the write rather than
-    silently merging or dropping a decision.
-    """
-    # The anchor each patch holds AFTER repairs are applied: a repaired patch takes
-    # its new anchor, every other keeps its own (authorship => no key).
-    repaired_by_index = {i: new_anchor for i, _p, new_anchor in repairs}
-    final_key_owners = {}
+    Returns (duplicates, conflicts) where each is a list of collision groups:
+
+      duplicates [{key, survivor_index, drop_indexes, occupants}]
+          all occupants are the SAME decision (op + changes + final word/pos). Safe
+          to DEDUP: keep `survivor_index`, drop `drop_indexes`; the survivor still
+          re-anchors normally. Covers BOTH the re-anchor-created duplicate (two
+          repaired patches, or a repaired + an un-repaired patch, landing on one key)
+          AND a pre-existing duplicate already sharing a key in the loaded store.
+      conflicts [{key, occupants}]
+          occupants carry DIFFERING decisions — not auto-resolvable (which verdict
+          wins?), so left untouched for editorial review.
+
+    Each occupant is (index, patch, final_anchor) where final_anchor is the anchor
+    the patch holds AFTER repairs (a repaired patch's new anchor; else its own).
+
+    Survivor rule (deterministic): among same-decision duplicates keep the one with
+    the richest meta (a human note, then most meta fields), breaking ties by FIRST
+    position in the store (lowest index). Stable and independent of the unreliable
+    `id`."""
+    repaired_anchor_by_index = {i: new_anchor for i, _p, new_anchor in repairs}
+
+    final_key_occupants = {}
     for i, patch in enumerate(patches):
-        anchor = repaired_by_index.get(i, patch["anchor"])
-        if anchor is None:
+        anchor = repaired_anchor_by_index.get(i, patch["anchor"])
+        if anchor is None:  # authorship — no natural key, never collides
             continue
-        final_key_owners.setdefault(anchor_key(anchor), []).append(patch["id"])
+        final_key_occupants.setdefault(anchor_key(anchor), []).append(
+            (i, patch, anchor))
 
-    collisions = []
-    for _i, patch, new_anchor in repairs:
-        owners = final_key_owners[anchor_key(new_anchor)]
-        other = [pid for pid in owners if pid != patch["id"]]
-        if other:
-            collisions.append((patch, new_anchor, other[0]))
-    return collisions
+    duplicates, conflicts = [], []
+    for key, occupants in final_key_occupants.items():
+        if len(occupants) < 2:
+            continue
+
+        decisions = {_decision_of(p, a) for _i, p, a in occupants}
+        if len(decisions) != 1:
+            # Differing decisions on one key — a genuine conflict. FAIL-SAFE default:
+            # anything not a proven single-decision duplicate is treated as a conflict
+            # (skipped), never deduped, so a distinct decision is never dropped.
+            conflicts.append({"key": key, "occupants": occupants})
+            continue
+
+        # Same decision throughout: dedup. Keep the richest-meta occupant, lowest
+        # index breaking ties; drop the rest.
+        survivor = max(occupants, key=lambda o: (_meta_richness(o[1]), -o[0]))
+        survivor_index = survivor[0]
+        drop_indexes = [i for i, _p, _a in occupants if i != survivor_index]
+        duplicates.append({
+            "key": key,
+            "survivor_index": survivor_index,
+            "drop_indexes": drop_indexes,
+            "occupants": occupants,
+        })
+
+    return duplicates, conflicts
 
 
 def rewrite_anchor(patch, new_anchor, basis_index):
@@ -259,50 +345,131 @@ def main():
     repairs, shaw_changed, gone, untouched = plan_repairs(patches, basis_index)
     report(store_path, len(patches), repairs, shaw_changed, gone, untouched)
 
-    # A re-anchor that lands on a key another patch already holds would leave two
-    # patches on one identity — surface it and refuse to write. Not auto-resolvable.
-    collisions = find_collisions(patches, repairs)
-    if collisions:
-        print("\nCOLLISION: re-anchor target already held by another patch — cannot "
-              "bake without losing a decision:", file=sys.stderr)
-        for patch, new_anchor, other_id in collisions:
-            print(f"  [{patch['id']}] -> {_anchor_str(new_anchor)}  "
-                  f"already held by [{other_id}]", file=sys.stderr)
+    # Classify every key two-or-more patches would share after the repairs into
+    # DUPLICATE (same decision → dedup, keep one) and TRUE CONFLICT (differing
+    # decisions → skip for editorial review). See find_collisions.
+    duplicates, conflicts = find_collisions(patches, repairs)
+    report_collisions(duplicates, conflicts)
+
+    rewritten, dropped_indexes, skipped_repair_ids = plan_write(
+        patches, repairs, duplicates, conflicts, basis_index)
+
+    n_reanchored = sum(
+        1 for i, _p, _a in repairs
+        if _p["id"] not in skipped_repair_ids and i not in dropped_indexes)
+    n_dropped = len(dropped_indexes)
+    n_conflict_skips = len(conflicts)
+
+    print("\nWRITE PLAN (what --write would do):")
+    print(f"  re-anchor (clean + duplicate survivors): {n_reanchored:,}")
+    print(f"  duplicate patches dropped (deduped):     {n_dropped:,}")
+    print(f"  true-conflict keys skipped (untouched):  {n_conflict_skips:,}")
+    print(f"  resulting store size:                    {len(rewritten):,} "
+          f"(was {len(patches):,})")
 
     if not args.write:
         print("\nDRY-RUN: nothing written. Re-run with --write to bake the "
-              f"{len(repairs):,} var-relabel re-anchor(s) into the store.")
+              "re-anchors and dedup the duplicate collisions.")
         return
 
-    # A collision is not auto-resolvable (which verdict wins?), so we SKIP the
-    # colliding repair — leaving that patch exactly as it was, for the owner to
-    # adjudicate in the editor — and re-anchor the rest. (Refusing the whole write
-    # would throw away the clean repairs for no gain; version control is the net.)
-    colliding_ids = {patch["id"] for patch, _a, _o in collisions}
-    writable = [(i, p, a) for (i, p, a) in repairs if p["id"] not in colliding_ids]
-    if collisions:
-        print(f"\nSkipping {len(collisions):,} colliding re-anchor(s) (left as-is for "
-              f"editorial review); re-anchoring the {len(writable):,} clean one(s).",
-              file=sys.stderr)
-
-    if not writable:
-        print("\n--write: no non-colliding var-relabel repairs to make; store left "
-              "byte-identical.")
+    if rewritten == patches:
+        print("\n--write: no changes to make; store left byte-identical.")
         return
-
-    # Build the rewritten patch list: writable repairs move only their anchor,
-    # everything else (incl. skipped collisions) stays exactly as loaded, in
-    # original order. rewrite_anchor fails loud on any inconsistency.
-    rewritten = list(patches)
-    for i, patch, new_anchor in writable:
-        rewritten[i] = rewrite_anchor(patch, new_anchor, basis_index)
 
     backup = backup_store(store_path)
     print(f"\nBacked up store -> {backup}")
     patchstore.write_patches(rewritten)
-    print(f"Rewrote {len(writable):,} anchor(s) in {store_path}")
-    print("Re-run apply_patches to confirm these decisions now resolve (0 orphans "
-          "for the repaired patches).")
+    print(f"Wrote {len(rewritten):,} patch(es) to {store_path} "
+          f"({n_reanchored:,} re-anchored, {n_dropped:,} deduped).")
+    print("Re-run apply_patches to confirm these decisions now resolve.")
+
+
+def report_collisions(duplicates, conflicts):
+    """Report the two collision classes distinctly: duplicate keys (deduped) and
+    true-conflict keys (skipped, listed for editorial review)."""
+    n_dup_dropped = sum(len(g["drop_indexes"]) for g in duplicates)
+    print(f"\n  duplicate-collision keys:{len(duplicates):,}  "
+          f"({n_dup_dropped:,} redundant patch(es) would be deduped, survivor re-anchored)")
+    print(f"  true-conflict keys:      {len(conflicts):,}  "
+          f"(differing decisions — SKIPPED, left for editorial review)")
+
+    if conflicts:
+        print("\nTRUE CONFLICTS (differing decisions on one key — left untouched):",
+              file=sys.stderr)
+        for group in conflicts:
+            word, pos, shaw, var = group["key"]
+            print(f"  key: word={word!r} pos={pos} shaw={shaw} var={var}",
+                  file=sys.stderr)
+            for _i, patch, _a in group["occupants"]:
+                print(f"    [{patch['id']}] op={patch.get('op')} "
+                      f"changes={json.dumps(patch.get('changes'), ensure_ascii=False)}",
+                      file=sys.stderr)
+
+
+def plan_write(patches, repairs, duplicates, conflicts, basis_index):
+    """Assemble the rewritten patch list for --write, without mutating `patches`.
+
+      - Every clean var-relabel repair moves ONLY its anchor (rewrite_anchor).
+      - Each DUPLICATE-collision group keeps its single survivor (re-anchored if the
+        survivor is itself a repair) and DROPS the redundant others.
+      - Each TRUE-CONFLICT group's repairs are SKIPPED (that patch left as loaded);
+        the whole group stays for editorial review.
+      - Everything else stays byte-identical, in original order.
+
+    Guarantees exactly one patch per final natural key (asserted). Returns
+    (rewritten, dropped_indexes, skipped_repair_ids)."""
+    # Indexes to DROP: the redundant members of every duplicate group.
+    dropped_indexes = set()
+    for group in duplicates:
+        dropped_indexes.update(group["drop_indexes"])
+
+    # Repair ids to SKIP re-anchoring: any repair whose patch sits on a conflict key
+    # (leave it exactly as loaded, orphaned, for the owner to adjudicate).
+    conflict_indexes = {i for g in conflicts for i, _p, _a in g["occupants"]}
+    skipped_repair_ids = {
+        p["id"] for i, p, _a in repairs if i in conflict_indexes}
+
+    # New anchor for each repair index that survives (not dropped, not conflict-skipped).
+    repair_anchor_by_index = {
+        i: a for i, p, a in repairs
+        if i not in dropped_indexes and p["id"] not in skipped_repair_ids
+        and i not in conflict_indexes}
+
+    rewritten = []
+    for i, patch in enumerate(patches):
+        if i in dropped_indexes:
+            continue  # redundant duplicate — dropped
+        if i in repair_anchor_by_index:
+            rewritten.append(rewrite_anchor(patch, repair_anchor_by_index[i], basis_index))
+        else:
+            rewritten.append(patch)
+
+    _assert_one_patch_per_anchor(rewritten)
+    return rewritten, dropped_indexes, skipped_repair_ids
+
+
+def _assert_one_patch_per_anchor(patches):
+    """Fail loud if the planned store would hold two patches on one natural key —
+    the invariant the whole dedup exists to preserve. Conflict keys are the sole
+    permitted exception (deliberately left for review); every other key must be
+    unique. Authorship patches (anchor null) are keyed by id, not anchor, so they do
+    not participate."""
+    seen = {}
+    for patch in patches:
+        anchor = patch["anchor"]
+        if anchor is None:
+            continue
+        key = anchor_key(anchor)
+        seen.setdefault(key, []).append(patch)
+    dupes = {k: v for k, v in seen.items() if len(v) > 1}
+    # A surviving multi-occupant key is only acceptable if it is a genuine conflict
+    # (its patches carry differing decisions); a duplicate slipping through is a bug.
+    for key, group in dupes.items():
+        decisions = {_decision_of(p, p["anchor"]) for p in group}
+        if len(decisions) == 1:
+            raise RuntimeError(
+                f"dedup invariant violated: {len(group)} identical patches remain on "
+                f"{key} after planning — {[p['id'] for p in group]}")
 
 
 if __name__ == "__main__":

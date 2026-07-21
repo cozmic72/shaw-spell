@@ -126,6 +126,10 @@ PAGE = """<!DOCTYPE html>
          of truth for the fields, their kinds and order; it harvests its metadata from
          the hidden .filter-meta block below at boot. -->
     <form class="filters" id="filters" autocomplete="off">
+        <!-- The inline combined free-text search (Latin OR Shaw, always regex +
+             case-insensitive). A bare toolbar box, populated by editor.js from the
+             data-inline search field — not a removable chip. -->
+        <div class="search-inline" id="searchInline"></div>
         <div class="chip-strip" id="chipStrip"></div>
         <div class="add-filter-wrap" id="addFilterWrap">
             <button type="button" class="add-filter" id="addFilter"
@@ -141,20 +145,26 @@ PAGE = """<!DOCTYPE html>
          field also lists its value→label pairs as .chip templates, so those labels stay
          authored here rather than duplicated in JS; a data-derived categorical field
          (pos/var/source) omits them and takes its values from the daemon facets
-         op. `data-pinned="true"` marks the always-shown fields (word + shaw search,
-         Review, Data, Novelty) — permanent chips that seed the strip and cannot be
-         removed; the rest are added on demand from the +Add filter menu. The block is
-         never rendered — editor.js harvests it into the registry.
+         op. `data-pinned="true"` marks the always-shown fields (the combined Search
+         box, Review, Data, Novelty) — permanent, seeding the strip and not removable;
+         the rest are added on demand from the +Add filter menu. `data-inline="true"`
+         marks a field rendered as a bare toolbar control (the Search box), not a chip
+         with a popover. `data-multi="true"` marks a MULTI-VALUED categorical facet
+         (source, attributes) whose picker offers the any/all mode toggle; scalar
+         facets omit it and show no toggle. The block is never rendered — editor.js
+         harvests it into the registry.
 
          The three pinned categoricals are ORTHOGONAL AXES: Review = process status
          (the review lifecycle), Data = data predicates (origin/nature of the record),
          Novelty = word-newness. OR within an axis, AND across axes — 'generated AND
          unreviewed' is Data:generated + Review:unreviewed. -->
     <div class="filter-meta" id="filterMeta" hidden>
-        <div data-field="word" data-kind="text" data-label="Word" data-pinned="true"
-             data-placeholder="latin substring"></div>
-        <div data-field="shaw" data-kind="text" data-label="Shaw" data-pinned="true"
-             data-placeholder="𐑖𐑷 substring" data-shavian="true"></div>
+        <!-- ONE combined free-text box (Latin OR Shaw). Always regex, always
+             case-insensitive — the daemon's `search` filter (SEARCH_FIELD). No
+             per-box toggles; it replaces the former separate word + shaw fields.
+             Inlined into the toolbar (data-inline), not a chip picker. -->
+        <div data-field="search" data-kind="text" data-label="Search" data-pinned="true"
+             data-inline="true" data-placeholder="latin or 𐑖𐑷 (regex)"></div>
         <!-- AXIS 1 — Review: the review-lifecycle verdicts (mutually exclusive; a
              record is in exactly one). authored/orphaned are origins, not verdicts —
              they live in Data as manual/orphaned (see editord _matches_review). -->
@@ -166,17 +176,15 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="flagged"><span>flagged</span></label>
         </div>
         <!-- AXIS 2 — Data: origin/nature predicates, NON-mutually-exclusive (a record
-             can be generated AND have a definition). Absorbs the former Status and
+             can be manual AND have a definition). Absorbs the former Status and
              Definition facets and Review's authored/orphaned (see editord
-             _matches_data). generated/supplement are CONTAINS tests on the source
-             list — a wiktionary+generated record is both — unlike the exact-combo
-             Source facet below. promoted = the reclassifier relabelled its var
-             (orig_var present). -->
+             _matches_data). generated + supplement are DROPPED here — redundant now
+             the Source facet is atomic (Source:generated, or Source-ALL wordnet+
+             wiktionary for supplement-agreement). promoted = the reclassifier
+             relabelled its var (orig_var present). -->
         <div data-field="data" data-kind="categorical" data-label="Data" data-pinned="true">
             <label class="chip"><input value="manual"><span>manual</span></label>
             <label class="chip"><input value="orphaned"><span>orphaned</span></label>
-            <label class="chip"><input value="generated"><span>generated</span></label>
-            <label class="chip"><input value="supplement"><span>supplement</span></label>
             <label class="chip"><input value="promoted"><span>promoted</span></label>
             <label class="chip"><input value="has-definition"><span>has definition</span></label>
             <label class="chip"><input value="no-definition"><span>no definition</span></label>
@@ -190,22 +198,25 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="new-pos"><span>new POS</span></label>
             <label class="chip"><input value="upstream"><span>upstream</span></label>
         </div>
-        <div data-field="source" data-kind="categorical" data-label="Source"></div>
+        <!-- Source: ATOMIC origins (readlex/wordnet/wiktionary/names/generated),
+             data-derived from the daemon facets op. Multi-valued (a record can be
+             attested by several), so its picker offers the any/all mode toggle:
+             ALL = multi-source agreement (the record's source-set ⊇ the selected). -->
+        <div data-field="source" data-kind="categorical" data-label="Source" data-multi="true"></div>
         <div data-field="pos" data-kind="categorical" data-label="POS"></div>
         <div data-field="var" data-kind="categorical" data-label="Var"></div>
         <div data-field="word_kind" data-kind="categorical" data-label="Words">
             <label class="chip"><input value="multi"><span>multi-word</span></label>
             <label class="chip"><input value="single"><span>single-word</span></label>
         </div>
-        <div data-field="mergers" data-kind="categorical" data-label="Mergers">
+        <!-- Attributes: the has-many union of the (flattened, on-disk) mergers list
+             + variant boolean — the same tag-set the detail editor edits as chips.
+             Merges the former Mergers + Variant facets. Multi-valued, so its picker
+             offers any/all: ALL = the record carries EVERY selected attribute. -->
+        <div data-field="attributes" data-kind="categorical" data-label="Attributes" data-multi="true">
             <label class="chip"><input value="trap-bath"><span>TRAP–BATH</span></label>
-            <label class="chip"><input value="cot-caught"><span>COT–CAUGHT</span></label>
-            <label class="chip"><input value="lot-palm"><span>LOT–PALM</span></label>
-            <label class="chip"><input value="(none)"><span>(none / canonical)</span></label>
-        </div>
-        <div data-field="variant" data-kind="categorical" data-label="Variant">
             <label class="chip"><input value="variant"><span>variant</span></label>
-            <label class="chip"><input value="canonical"><span>canonical</span></label>
+            <label class="chip"><input value="(none)"><span>(none / canonical)</span></label>
         </div>
         <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>
         <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"></div>

@@ -214,6 +214,31 @@ body {
     /* No clip: the popovers overlay below their anchors and must not be swallowed. */
     overflow: visible;
 }
+/* The inline combined Search box, leading the toolbar: one text field matching
+   Latin OR Shaw (always regex + case-insensitive, no toggles). */
+.search-inline { display: flex; align-items: center; flex: 0 0 auto; }
+.search-box { display: flex; align-items: stretch; }
+.search-field {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 7px 12px;
+    width: min(240px, 40vw);
+}
+.search-field::placeholder { color: var(--ink-soft); }
+.search-field:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+}
+.search-field.invalid {
+    border-color: var(--state-dropped);
+    outline-color: var(--state-dropped);
+}
+
 /* The chip strip flexes to take the row's slack so +Add and refresh sit at the
    trailing edge; it wraps its chips when they outrun the width. */
 .chip-strip {
@@ -424,26 +449,34 @@ body {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
     padding: 6px;
 }
-.facet-search {
-    width: 100%;
-    box-sizing: border-box;
-    min-height: 36px;
+/* The MATCH any/all radio pair on multi-valued facets (source, attributes), in the
+   space the free-text search bar vacated. ANY = one selected value matches; ALL =
+   the record carries every selected value (agreement). */
+.facet-mode {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 6px;
-    padding: 5px 8px;
-    font-family: var(--mono);
-    font-size: 13px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--rule);
+}
+.facet-mode-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.facet-mode-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
     color: var(--ink);
-    background: var(--paper);
-    border: 1px solid var(--rule);
-    border-radius: 2px;
+    cursor: pointer;
 }
-.facet-search:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: 0;
-    border-color: var(--accent);
-}
-/* All / None bulk toggles above the checklist — act on the search-visible rows so
-   inverting a big facet (POS, Source) is a couple of taps. */
+.facet-mode-opt input { margin: 0; }
+
+/* All / None bulk toggles above the checklist — act on the whole value list. */
 .facet-bulk {
     display: flex;
     gap: 6px;
@@ -725,23 +758,119 @@ body {
     border-left: 4px solid transparent;
     transition: border-color 0.15s;
 }
-/* The detail body is one column by default (editor, then related, then
-   definitions in source order — the stack). When the detail pane is wide
-   enough, split into two columns: editor + related on the LEFT, definitions on
-   the RIGHT, using the horizontal room instead of scrolling. The 760px cap is
-   lifted here so the two columns can actually spread. */
-.detail-cols { display: block; }
-@media (min-width: 1180px) {
-    .detail { max-width: none; }
-    .detail-cols {
+/* The redesign spreads the editor CHROME across the full width on top, with the
+   evidence pair (related + definitions) BELOW it. The cap is lifted so the chrome
+   and the evidence grid can use the horizontal room. */
+.detail { max-width: none; }
+
+/* The chrome: the five glance-fields stacked LEFT in one column, the priority
+   rail + attributes + metadata + action buttons in a RIGHT column/rail. One
+   column on narrow screens (glance stacks above the rail). */
+.detail-chrome {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px 34px;
+    margin-bottom: 26px;
+}
+@media (min-width: 900px) {
+    .detail-chrome {
+        grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
+        align-items: start;
+    }
+}
+
+/* The evidence pair below the chrome: related WIDER (the scan-to-decide table),
+   definitions beside it, all related rows visible. One column when narrow. */
+.evidence-cols { display: block; }
+@media (min-width: 900px) {
+    .evidence-cols {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
         gap: 34px;
         align-items: start;
     }
-    /* Definitions sits beside the editor, held at the top of the pane. */
-    .detail-right { position: sticky; top: 0; }
+    /* Kill the sections' own top margins/rules that assumed a vertical stack;
+       the grid supplies the separation. */
+    .evidence-cols > .related,
+    .evidence-cols > .definitions { margin-top: 0; }
 }
+
+/* ---- glance column: the five fields stacked, left-aligned ---- */
+.glance-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.glance-word { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px 14px; }
+.glance-word .latin {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+}
+/* POS (spelled out) + var share a row below the spelling fields, a bit larger. */
+.glance-posvar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 28px; }
+/* Size the var field's flex WRAP (.edit-field), not its inner .var-field input —
+   the wrap is the flex item inside .glance-posvar. */
+.glance-posvar > .edit-field:has(> .var-field) { flex: 0 1 130px; }
+.pos-glance { flex: 1 1 auto; min-width: 0; }
+.pos-glance-value { display: flex; flex-direction: column; gap: 2px; }
+.pos-glance-name { font-size: 17px; color: var(--ink); }
+.pos-glance-tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+}
+
+/* ---- rail column: priority rail, attributes, metadata, actions ---- */
+.rail-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* The priority rail: four FIXED slots (state / sources / freq / confidence). An
+   absent slot goes invisible IN PLACE (.empty) and the geometry does NOT change,
+   so the glance loop never re-scans. A 2×2 grid keeps every slot's position fixed. */
+.priority-rail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+}
+.rail-slot { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rail-slot.empty { visibility: hidden; }
+.rail-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.rail-slot-value {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 22px;
+}
+.rail-value { font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rail-confidence .rail-slot-value { color: var(--ink-soft); }
+
+/* Atomic source pills — one per attesting origin; two side by side = agreement. */
+.source-pills { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+.source-pill {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+}
+.source-pill.source-readlex { color: var(--accent); border-color: var(--accent); }
+
+/* The demoted (tier-3) metadata badges below the rail. Quiet; empty when the
+   record carries none. */
+.metadata-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+}
+.metadata-badges:empty { display: none; }
 /* Review mode is the resting state: the card wears a live accent edge and a
    REVIEW cue, telling the editor that single-key verdicts are armed. Edit mode
    lifts the accent (the caret is in a field now) so the two modes are never
@@ -794,27 +923,6 @@ body {
 }
 .act.create { color: var(--state-authored); }
 .act.create:hover { background: var(--state-authored); color: var(--paper); }
-
-.detail-word {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 10px 14px;
-    margin-bottom: 12px;
-    /* Indent the whole heading to the Shavian glyph inset so the Latin word (its
-       own line, below) sits directly above the Shavian spelling in the field. */
-    padding-left: var(--shaw-glyph-inset);
-}
-/* The Latin word takes its own full-width line at the heading's (indented) left
-   edge — the state badge, POS, mergers and confidence form the metadata strip
-   around it — so the roman spelling aligns with the Shavian glyphs below. */
-.detail-word .latin {
-    flex-basis: 100%;
-    font-size: 30px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-}
-.detail-word .pos { color: var(--ink-soft); font-size: 14px; cursor: help; }
 
 /* ---- bulk detail — the group summary the card shows at 2+ selected ---- */
 /* The count is the headline: a big tabular number, the class the reviewer is about
@@ -1081,30 +1189,10 @@ body {
     white-space: nowrap;
 }
 
-/* The read-only provenance facts (status/source/freq), folded into the heading
-   strip as compact label·value pairs — the table they replaced is gone. Quiet by
-   default; they sit inline with the badges so every fact is glanceable. */
-.detail-facts {
-    align-self: center;
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 14px;
-}
-.fact { display: inline-flex; align-items: baseline; gap: 5px; }
-.fact-label {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-}
-.fact-value { font-size: 13px; color: var(--ink); }
-
 /* A one-line recap beside the state badge naming every field the owner overrode
    on accept ("edited: shaw, mergers"). Rides the edited-state tone; empty (an
    accept-as-is or unreviewed row) renders nothing. */
 .edited-summary {
-    align-self: center;
     display: inline-flex;
     align-items: baseline;
     gap: 6px;
@@ -1122,17 +1210,7 @@ body {
     font-family: var(--mono);
 }
 
-.conf-badge {
-    align-self: center;
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--ink-soft);
-}
-.conf-badge .conf-value { font-size: 12px; }
-
-/* External look-ups, sitting just under the word. */
+/* External look-ups, sitting just under the chrome, full width. */
 .references {
     display: flex;
     flex-wrap: wrap;
@@ -1224,67 +1302,100 @@ body {
 }
 .edit-input.dirty { border-bottom-color: var(--state-edited); }
 
-/* Mergers edit as a set of toggle chips, not a scalar field: an outlined pill
-   that fills with the accent when active. Mirrors the facet-trigger's selected
-   state so "on" reads the same way across the editor. */
-.merger-toggles { display: flex; flex-wrap: wrap; gap: 10px; }
-.merger-toggle {
+/* ---- attributes: the has-many chips control (mergers + variant unified) ---- */
+/* One add/remove-chips surface next to var. Active attributes are removable chips;
+   "+ attribute" opens a small vocabulary popover. The hidden .merger-check /
+   .variant-check checkboxes back the chips (the flattened on-disk shape) and are
+   never shown. */
+.attributes-field { min-width: 0; }
+.attribute-flags { display: none; }
+.attribute-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.attribute-chip {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
-    padding: 0 16px;
-    font-size: 13px;
-    letter-spacing: 0.06em;
+    gap: 6px;
+    min-height: 32px;
+    padding: 2px 4px 2px 12px;
+    font-size: 12px;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--ink-soft);
-    background: var(--paper-raised);
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    cursor: pointer;
-    user-select: none;
-}
-.merger-toggle:hover { border-color: var(--ink-soft); }
-.merger-toggle.on {
     color: var(--paper);
     background: var(--accent);
-    border-color: var(--accent);
-}
-/* The checkbox is the state, not the affordance — the pill is what you click. */
-.merger-toggle .merger-check { position: absolute; opacity: 0; pointer-events: none; }
-.merger-toggle:focus-within {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-}
-
-/* variant edits as a single toggle chip, mirroring a merger toggle but tinted to
-   its own axis so "on" reads as the variant marker, not a merger. */
-.variant-toggles { display: flex; flex-wrap: wrap; gap: 10px; }
-.variant-toggle {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 16px;
-    font-size: 13px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    background: var(--paper-raised);
-    border: 1px solid var(--rule);
+    border: 1px solid var(--accent);
     border-radius: 3px;
-    cursor: pointer;
-    user-select: none;
 }
-.variant-toggle:hover { border-color: var(--ink-soft); }
-.variant-toggle.on {
-    color: var(--paper);
+/* variant rides its own tone, distinct from a merger. */
+.attribute-chip.attr-variant {
     background: var(--state-authored);
     border-color: var(--state-authored);
 }
-.variant-toggle .variant-check { position: absolute; opacity: 0; pointer-events: none; }
-.variant-toggle:focus-within {
-    outline: 2px solid var(--state-authored);
-    outline-offset: 1px;
+.attribute-chip-label { line-height: 1; }
+.attribute-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    font-size: 16px;
+    line-height: 1;
+    color: inherit;
+    background: none;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    opacity: 0.85;
 }
+.attribute-chip-remove:hover { opacity: 1; background: rgba(255, 255, 255, 0.2); }
+
+/* The "+ attribute" ghost button and its vocabulary popover. */
+.attribute-add-wrap { position: relative; display: inline-flex; }
+.attribute-add {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--paper-raised);
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+    cursor: pointer;
+}
+.attribute-add:hover { color: var(--ink); border-color: var(--ink-soft); }
+.attribute-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 30;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+.attribute-menu[hidden] { display: none; }
+.attribute-menu-item {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--ink);
+    background: none;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.attribute-menu-item:hover { background: var(--paper-raised); }
+
 /* The Shavian spelling is the dictionary's payload — the biggest thing on the card. */
 .shaw-field {
     font-family: var(--shaw);
@@ -1297,7 +1408,7 @@ body {
 }
 .ipa-field { font-size: 26px; font-style: italic; }
 
-.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .act {
     font-family: var(--mono);
     font-size: 13px;
@@ -1310,6 +1421,18 @@ body {
     cursor: pointer;
     background: none;
 }
+/* Icon action buttons: the inline SVG glyph plus a visible label (learnable). One
+   row, nothing hidden. The label shows on desktop; mobile goes icon-only (rule in
+   the @media block). */
+.act.act-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+}
+.act-glyph { width: 20px; height: 20px; flex: 0 0 auto; display: block; }
+.act-text { line-height: 1; }
 .act.accept { color: var(--state-edited); }
 .act.accept:hover { background: var(--state-edited); color: var(--paper); }
 .act.drop { color: var(--state-dropped); }
@@ -1320,8 +1443,7 @@ body {
 .act.unflag:hover, .act.undo:hover { background: var(--ink-soft); color: var(--paper); }
 .act.clear { color: var(--state-unreviewed); }
 .act.clear:hover { background: var(--state-unreviewed); color: var(--paper); }
-/* Clone wears the authored tone — it mints a new authored sibling, like New Entry.
-   It lives on its own row below the verdicts, a secondary action. */
+/* Clone wears the authored tone — it mints a new authored sibling, like New Entry. */
 .act.clone { color: var(--state-authored); }
 .act.clone:hover { background: var(--state-authored); color: var(--paper); }
 
@@ -1899,6 +2021,28 @@ kbd {
     .shaw-field { font-size: 46px; }
     .ipa-field { font-size: 22px; }
 
+    /* Mobile chrome: the glance fields stay LEFT-aligned; the priority rail becomes
+       a single horizontal strip (sources / freq / confidence) sitting BELOW the IPA
+       field — the rail-column follows the glance-column in source order, and the
+       action buttons are pulled OUT of it into the fixed bottom bar (rule below). */
+    .detail-chrome { gap: 18px; }
+    .priority-rail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px 20px;
+    }
+    .rail-slot { flex: 0 0 auto; }
+    /* Move the state badge to the END of its row (kill the ragged left edge): order
+       the state slot after sources/freq/confidence in the horizontal strip. */
+    .rail-state { order: 5; }
+
+    /* The word row keeps the state OFF its front; nothing to reorder there now. */
+
+    /* Supporting evidence stays collapsible; give the detail room so the fixed
+       bottom action bar never hides content (padding-bottom clears the bar +
+       iOS safe-area inset). */
+    .detail { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+
     /* Drop the confidence pips from the crowded ledger row on narrow screens;
        the detail card still shows confidence. State, word, shaw, var, freq, pos —
        six tracks (conf hidden). On a phone the fixed metadata columns starve
@@ -1923,10 +2067,28 @@ kbd {
        long-press or tap has a comfortable thumb target. */
     .ledger-row { height: 44px; }
 
-    /* Full-width, thumb-sized decision buttons — accept/drop/flag all reachable
-       by thumb; the cheatsheet trigger takes its own full-width row. */
-    .actions { gap: 10px; }
-    .act { flex: 1 1 auto; text-align: center; }
+    /* FIXED bottom icon action bar — every action reachable by thumb, no scroll-to-
+       act. The detail's action row pins to the bottom of the viewport over a paper
+       ground, with the iOS safe-area inset. Icon-only here (labels hidden) so all
+       actions fit one row; the buttons stretch to share the width evenly. */
+    .detail .actions {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 30;
+        gap: 8px;
+        flex-wrap: nowrap;
+        padding: 10px 14px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        background: var(--paper);
+        border-top: 1px solid var(--rule);
+        box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.14);
+    }
+    .detail .act { flex: 1 1 0; text-align: center; padding: 10px 8px; }
+    /* Icon-only on mobile — the label collapses, the glyph carries the action. */
+    .detail .act.act-icon .act-text { display: none; }
+    .detail .act.act-icon { gap: 0; padding: 10px 8px; }
 
     /* The REVIEW/EDITING pill would collide with the shorter card; tuck it in. */
     .detail.mode-review::after, .detail.mode-edit::after { top: 10px; right: 12px; }

@@ -244,6 +244,7 @@ function posCell(className, pos) {
 
 const FILTER_FORM = document.getElementById("filters");
 const CHIP_STRIP = document.getElementById("chipStrip");
+const SEARCH_INLINE = document.getElementById("searchInline");
 const ADD_FILTER = document.getElementById("addFilter");
 const ADD_FILTER_WRAP = document.getElementById("addFilterWrap");
 const FILTER_META = document.getElementById("filterMeta");
@@ -395,10 +396,12 @@ function newTextFlags() {
 }
 
 // Build one active-filter entry (unset) for a field, its value shaped for its kind.
+// A categorical entry carries a `mode` ("any"|"all") — how its checked values
+// combine — defaulting to "any" (the back-compatible OR).
 function blankEntry(field) {
     const spec = fieldSpec(field);
     if (spec.kind === "categorical") {
-        return { field, value: [] };
+        return { field, value: [], mode: "any" };
     }
     if (spec.kind === "text") {
         return { field, value: "", flags: newTextFlags() };
@@ -447,7 +450,18 @@ function filtersFromState() {
         const spec = fieldSpec(entry.field);
         if (spec.kind === "categorical") {
             if (entry.value.length) {
-                filters[entry.field] = [...entry.value];
+                // ANY stays a bare list (back-compat); ALL sends the explicit
+                // {values, mode} object the daemon reads as a superset test.
+                filters[entry.field] = entry.mode === "all"
+                    ? { values: [...entry.value], mode: "all" }
+                    : [...entry.value];
+            }
+        } else if (spec.field === "search") {
+            // The combined Search box is ALWAYS regex + case-insensitive (the
+            // daemon's `search` filter); no companion flags, no toggles.
+            const trimmed = entry.value.trim();
+            if (trimmed) {
+                filters.search = trimmed;
             }
         } else if (spec.kind === "text") {
             const trimmed = entry.value.trim();
@@ -481,8 +495,19 @@ function activeFiltersFromDict(filters) {
     for (const spec of FIELD_REGISTRY.values()) {
         const raw = filters[spec.field];
         if (spec.kind === "categorical") {
+            // Accept both the bare list (ANY) and the {values, mode} object (ALL).
             if (Array.isArray(raw) && raw.length) {
-                active.push({ field: spec.field, value: [...raw] });
+                active.push({ field: spec.field, value: [...raw], mode: "any" });
+            } else if (raw && Array.isArray(raw.values) && raw.values.length) {
+                active.push({
+                    field: spec.field,
+                    value: [...raw.values],
+                    mode: raw.mode === "all" ? "all" : "any",
+                });
+            }
+        } else if (spec.field === "search") {
+            if (typeof raw === "string" && raw.trim()) {
+                active.push({ field: spec.field, value: raw, flags: newTextFlags() });
             }
         } else if (spec.kind === "text") {
             if (typeof raw === "string" && raw.trim()) {
@@ -509,8 +534,10 @@ function activeFiltersFromDict(filters) {
 // currently-active text chips can be flagged; a removed field has no input to mark.
 function markInvalidRegex(invalidFields) {
     const invalid = new Set(invalidFields);
-    for (const input of CHIP_STRIP.querySelectorAll(".text-filter")) {
-        input.classList.toggle("invalid", invalid.has(input.dataset.field));
+    for (const root of [CHIP_STRIP, SEARCH_INLINE]) {
+        for (const input of root.querySelectorAll(".text-filter")) {
+            input.classList.toggle("invalid", invalid.has(input.dataset.field));
+        }
     }
 }
 
@@ -1092,42 +1119,184 @@ function recordEditor(record, opts) {
 
     const overridden = overriddenFields(record);
 
-    const word = cell("latin", record.word);
-    markOverridden(word, word, overridden.has("word"));
-    const pos = posCell("pos", record.pos);
-    markOverridden(pos, pos, overridden.has("pos"));
+    // Full-width chrome: the FIVE glance-fields stacked LEFT-ALIGNED down the left
+    // column (Latin word, Shavian, IPA, then POS + var), and on the right the
+    // priority rail (state / sources / freq / confidence, fixed slots), the
+    // attributes chips, demoted metadata, and the action buttons (the owner uses
+    // keyboard shortcuts on desktop, so the buttons ride the rail).
+    const chrome = document.createElement("div");
+    chrome.className = "detail-chrome";
 
-    const heading = document.createElement("div");
-    heading.className = "detail-word";
-    heading.append(
-        stateBadge(record.patch_state),
-        orphanKindBadge(record),
-        word,
-        pos,
-        mergerBadges(record.mergers),
-        variantBadge(record.variant),
-        definitionBadge(record.has_definition),
-        noveltyBadge(record.novelty),
-        origVarBadge(record.orig_var, record.var),
-        infoBadges(record[INFO_FIELD]),
-        detailFacts(record),
-        editedSummary(overridden),
-        confidenceBadge(record.confidence),
-    );
+    const glance = glanceColumn(ctx, record, overridden);
+    const rail = railColumn(ctx, record, overridden);
+    chrome.append(glance, rail);
+    container.append(chrome);
 
-    container.append(heading);
-    // On an orphaned record, spell out the reason + action right under the heading,
-    // where there is room — the ledger row shows only the coloured tag.
+    // On an orphaned record, spell out the reason + action right under the chrome,
+    // full width, where there is room — the ledger row shows only the coloured tag.
     const orphanNote = orphanReasonNote(record);
     if (orphanNote) {
         container.append(orphanNote);
     }
-    container.append(
-        referenceLinks(record.word),
-        fieldGrid(ctx, record, overridden),
+    container.append(referenceLinks(record.word));
+    return container;
+}
+
+// The LEFT column of the chrome: the five glance-fields stacked and left-aligned.
+// The Latin word (large, read-only heading), then the Shavian and IPA edit fields,
+// then POS (spelled out) + var (a bit larger) on their own line. No state badge on
+// the word — it moved to the rail to keep the left edge clean.
+function glanceColumn(ctx, record, overridden) {
+    const column = document.createElement("div");
+    column.className = "glance-column";
+
+    const word = cell("latin", record.word);
+    markOverridden(word, word, overridden.has("word"));
+    const wordLine = document.createElement("div");
+    wordLine.className = "glance-word";
+    wordLine.append(word, editedSummary(overridden));
+
+    const posVar = document.createElement("div");
+    posVar.className = "glance-posvar";
+    posVar.append(
+        posSpelledOut(record.pos, overridden.has("pos")),
+        editField(ctx, "var", "Dialect (var)", record.var, "var-field", overridden.has("var")),
+    );
+
+    column.append(
+        wordLine,
+        editField(ctx, "shaw", "Shavian", record.shaw, "shaw-field", overridden.has("shaw")),
+        editField(ctx, "ipa", "IPA", record.ipa, "ipa-field", overridden.has("ipa")),
+        posVar,
+    );
+    return column;
+}
+
+// POS spelled out (the CLAWS-tag expansion) as a read-only glance field: the
+// human description big, the raw tag beneath, the full expansion on hover. An
+// overridden POS carries the edited tag on its label.
+function posSpelledOut(pos, overridden) {
+    const wrap = document.createElement("div");
+    wrap.className = "edit-field pos-glance";
+    const caption = document.createElement("span");
+    caption.className = "edit-label";
+    caption.textContent = "POS";
+    const value = document.createElement("span");
+    value.className = "pos-glance-value";
+    value.title = posTitle(pos);
+    const expansion = document.createElement("span");
+    expansion.className = "pos-glance-name";
+    expansion.textContent = posExpansion(pos) || "—";
+    const tag = document.createElement("span");
+    tag.className = "pos-glance-tag";
+    tag.textContent = pos || "";
+    value.append(expansion, tag);
+    wrap.append(caption, value);
+    markOverridden(wrap, caption, overridden);
+    return wrap;
+}
+
+// The CLAWS-tag human description(s), joined for a compound tag; the bare tag when
+// it has no known expansion.
+function posExpansion(pos) {
+    if (!pos) {
+        return "";
+    }
+    return pos.split("+").map((part) => C5_TAGS[part] ?? part).join(" + ");
+}
+
+// The RIGHT column of the chrome: the priority rail (fixed-slot state/sources/freq/
+// confidence), the attributes chips, the demoted metadata badges, and the action
+// buttons.
+function railColumn(ctx, record, overridden) {
+    const column = document.createElement("div");
+    column.className = "rail-column";
+    column.append(
+        priorityRail(record),
+        attributesField(ctx, record, overridden),
+        metadataBadges(record, overridden),
         actionBar(ctx, record),
     );
-    return container;
+    return column;
+}
+
+// The priority rail: four FIXED slots — state, sources, freq, confidence — each
+// keeping its geometry so the glance loop never re-scans. An absent value's slot
+// goes invisible IN PLACE (visibility:hidden via .empty), and the others do NOT
+// reflow to fill it. Sources render as one atomic pill per attesting origin.
+function priorityRail(record) {
+    const rail = document.createElement("div");
+    rail.className = "priority-rail";
+
+    const state = railSlot("state");
+    state.append(stateBadge(record.patch_state), orphanKindBadge(record));
+
+    const sources = railSlot("sources");
+    if (record.source && record.source.length) {
+        sources.append(sourcePills(record.source));
+    } else {
+        sources.classList.add("empty");
+    }
+
+    const freq = railSlot("freq");
+    if (record.freq !== null && record.freq !== undefined) {
+        freq.append(cell("rail-value", String(record.freq)));
+    } else {
+        freq.classList.add("empty");
+    }
+
+    const conf = railSlot("confidence");
+    if (record.confidence !== null && record.confidence !== undefined) {
+        conf.append(confidenceMeter(record.confidence), cell("rail-value", String(record.confidence)));
+    } else {
+        conf.classList.add("empty");
+    }
+
+    rail.append(state, sources, freq, conf);
+    return rail;
+}
+
+// One labelled rail slot: a small uppercase caption over its value area. The label
+// stays even when the value is absent (the slot is hidden as a whole via .empty),
+// so the layout keeps its shape.
+const RAIL_SLOT_LABELS = { state: "state", sources: "sources", freq: "freq", confidence: "confidence" };
+
+function railSlot(kind) {
+    const slot = document.createElement("div");
+    slot.className = `rail-slot rail-${kind}`;
+    slot.append(cell("rail-label", RAIL_SLOT_LABELS[kind]));
+    const value = document.createElement("div");
+    value.className = "rail-slot-value";
+    slot.append(value);
+    // Children appended by the caller go into the value area.
+    slot.append = value.append.bind(value);
+    return slot;
+}
+
+// Atomic source pills — one per attesting origin (wordnet, wiktionary, …). Two
+// pills side by side ARE the agreement signal, matching the atomic Source facet.
+function sourcePills(sources) {
+    const wrap = document.createElement("span");
+    wrap.className = "source-pills";
+    for (const origin of sources) {
+        wrap.append(cell(`source-pill source-${origin}`, origin));
+    }
+    return wrap;
+}
+
+// The demoted (tier-3) metadata badges: novelty, was-GenAm, definition, info tags —
+// the lower-priority provenance the priority rail does not carry. Each keeps
+// "absence is the signal": an absent badge renders nothing.
+function metadataBadges(record, overridden) {
+    const wrap = document.createElement("div");
+    wrap.className = "metadata-badges";
+    wrap.append(
+        noveltyBadge(record.novelty),
+        definitionBadge(record.has_definition),
+        origVarBadge(record.orig_var, record.var),
+        infoBadges(record[INFO_FIELD]),
+    );
+    return wrap;
 }
 
 function renderDetail(record) {
@@ -1141,19 +1310,15 @@ function renderDetail(record) {
     state.mainContext.editing = wasEditing;
     const definitions = definitionsSection();
     const related = relatedSection();
-    // Two columns when there's room (CSS .detail-cols grid): editor + related on
-    // the LEFT, definitions on the RIGHT. On narrow screens the grid collapses to
-    // one column, so the source order (editor, definitions, related) is the stack.
-    const left = document.createElement("div");
-    left.className = "detail-left";
-    left.append(editor, related);
-    const right = document.createElement("div");
-    right.className = "detail-right";
-    right.append(definitions);
-    const cols = document.createElement("div");
-    cols.className = "detail-cols";
-    cols.append(left, right);
-    DETAIL.replaceChildren(cols);
+    // Full-width editor chrome on top; the evidence pair (related + definitions)
+    // BELOW it, side by side — related WIDER (the scan-to-decide table, all rows
+    // visible), definitions beside it. The CSS .evidence-cols grid gives related
+    // the larger track and collapses to one column on narrow screens (source order
+    // related, then definitions).
+    const evidence = document.createElement("div");
+    evidence.className = "evidence-cols";
+    evidence.append(related, definitions);
+    DETAIL.replaceChildren(editor, evidence);
     setDetailMode();
     loadDefinitions(record, definitions);
     loadRelated(record, related);
@@ -1164,12 +1329,7 @@ function renderDetail(record) {
 // a spelling variant (change shaw), a re-tag (change pos), whatever. It is a general
 // clone, so it takes no target: the owner edits the copy themselves before saving.
 function cloneButton(record) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "act clone";
-    button.textContent = "Clone";
-    button.addEventListener("click", () => openCloneModal(record));
-    return button;
+    return actionButton("clone", "Clone", () => openCloneModal(record));
 }
 
 // The provenance mark for a field the owner overrode on accept: an `overridden`
@@ -2143,29 +2303,10 @@ function orphanReasonNote(record) {
     return note;
 }
 
-// The record's active vowel mergers, as small badges beside the word. Empty (a
-// canonical record) shows nothing — the absence is the signal.
+// The merger label map — the related-row dialect column still renders compact
+// merger markers from it (the detail heading's merger badges are gone, replaced by
+// the attributes chips control).
 const MERGER_LABELS = new Map(MERGERS);
-
-function mergerBadges(mergers) {
-    const wrap = document.createElement("span");
-    wrap.className = "merger-badges";
-    for (const value of mergers || []) {
-        wrap.append(cell(`merger-badge ${value}`, MERGER_LABELS.get(value) ?? value));
-    }
-    return wrap;
-}
-
-// A record's within-accent variant marker, as a small badge beside the word.
-// Canonical (the flag absent) shows nothing — the absence is the signal.
-function variantBadge(variant) {
-    const wrap = document.createElement("span");
-    wrap.className = "variant-badges";
-    if (variant) {
-        wrap.append(cell("variant-badge", VARIANT_LABEL));
-    }
-    return wrap;
-}
 
 // A record's upstream-definition provenance, as a small "def" badge beside the
 // word. Shown only when the source(s) carry a definition; no-definition shows
@@ -2256,121 +2397,168 @@ function referenceLinks(word) {
     return row;
 }
 
-// The edit surface. shaw and ipa are the payload, each its own comfortable
-// full-width row. Dialect (var), mergers and variant are three INDEPENDENT
-// spelling properties grouped onto ONE row (they don't merge in the data — just
-// visually) so the whole card fits without pushing related entries off-screen.
-// status is absent: it is read-only (shown in the top matter) and moves only via
-// the verdict actions. word/pos are the anchor's Latin identity, shown read-only.
-function fieldGrid(ctx, record, overridden) {
-    const stack = document.createElement("div");
-    stack.className = "field-stack";
-    stack.append(
-        editField(ctx, "shaw", "Shavian", record.shaw, "shaw-field", overridden.has("shaw")),
-        editField(ctx, "ipa", "IPA", record.ipa, "ipa-field", overridden.has("ipa")),
-        variantRow(ctx, record, overridden),
-    );
-    return stack;
-}
+// The has-many ATTRIBUTES control: one add/remove-chips surface unifying the
+// former mergers toggle-row and variant toggle. Active attributes render as
+// removable chips ([trap-bath ×] …); "+ attribute" opens a vocabulary popover to
+// add one. The vocabulary is the mergers (MERGERS) plus the "variant" member.
+//
+// INTERNAL representation stays FLATTENED: a hidden `.merger-check` checkbox per
+// merger and one hidden `.variant-check` checkbox back the chips, so the existing
+// harvest (applyAdditiveFields) and dirty-check (mainEditIsDirty) read exactly the
+// same DOM they always did — the on-disk shape (mergers list + variant bool) and
+// the patch round-trip are byte-identical when unchanged. The chips are just a
+// display+edit skin over those checkboxes.
+const ATTRIBUTE_VARIANT = VARIANT_LABEL; // "variant"
+const ATTRIBUTES_VOCAB = [
+    ...MERGERS,
+    [ATTRIBUTE_VARIANT, VARIANT_LABEL],
+];
+const ATTRIBUTE_LABELS = new Map(ATTRIBUTES_VOCAB);
 
-// Dialect (var) + mergers + variant, laid on one flex row (wrapping only on very
-// narrow widths). Three separate controls, grouped for glanceability.
-function variantRow(ctx, record, overridden) {
-    const row = document.createElement("div");
-    row.className = "field-row";
-    row.append(
-        editField(ctx, "var", "Dialect (var)", record.var, "", overridden.has("var")),
-        mergersField(ctx, record.mergers, overridden.has("mergers")),
-        variantField(ctx, record.variant, overridden.has("variant")),
-    );
-    return row;
-}
-
-// The mergers are an additive set, not a scalar, so they edit as a row of toggle
-// chips rather than a text field. Each chip is a checkbox named "merger" carrying
-// its merger value; the harvest reads the checked ones. Toggling one enters edit
-// mode on the owning context, like focusing any other field.
-function mergersField(ctx, current, overridden) {
-    const active = new Set(current || []);
-    const wrap = document.createElement("div");
-    wrap.className = "edit-field mergers-field";
-
-    const caption = document.createElement("span");
-    caption.className = "edit-label";
-    caption.textContent = "Mergers";
-
-    const toggles = document.createElement("div");
-    toggles.className = "merger-toggles";
-    for (const [value, label] of MERGERS) {
-        toggles.append(mergerToggle(ctx, value, label, active.has(value)));
+function attributesField(ctx, record, overridden) {
+    const active = new Set(record.mergers || []);
+    if (record.variant) {
+        active.add(ATTRIBUTE_VARIANT);
     }
 
-    wrap.append(caption, toggles);
-    markOverridden(wrap, caption, overridden);
-    return wrap;
-}
-
-function mergerToggle(ctx, value, label, checked) {
-    const chip = document.createElement("label");
-    chip.className = "merger-toggle";
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.className = "merger-check";
-    input.value = value;
-    input.checked = checked;
-    input.addEventListener("change", () => {
-        chip.classList.toggle("on", input.checked);
-        enterEdit(ctx);
-        // Release the checkbox so the single-key verdicts fire again — a focused form
-        // control makes onGlobalKey treat A/X/F as typing and swallow them.
-        input.blur();
-    });
-    const caption = document.createElement("span");
-    caption.textContent = label;
-    chip.classList.toggle("on", checked);
-    chip.append(input, caption);
-    return chip;
-}
-
-// variant is an additive boolean, not a scalar, so it edits as a single toggle
-// chip mirroring a merger toggle. The checkbox is class "variant-check"; the
-// harvest reads whether it is checked. Toggling enters edit mode on the context.
-function variantField(ctx, current, overridden) {
     const wrap = document.createElement("div");
-    wrap.className = "edit-field variant-field";
+    wrap.className = "edit-field attributes-field";
 
     const caption = document.createElement("span");
     caption.className = "edit-label";
-    caption.textContent = "Variant";
+    caption.textContent = "Attributes";
 
-    const toggles = document.createElement("div");
-    toggles.className = "variant-toggles";
-    toggles.append(variantToggle(ctx, VARIANT_LABEL, Boolean(current)));
+    // The hidden flattened state: one checkbox per merger + one for variant. The
+    // chips toggle these; the harvest reads them (.merger-check / .variant-check).
+    const flags = document.createElement("div");
+    flags.className = "attribute-flags";
+    flags.hidden = true;
+    for (const [value] of MERGERS) {
+        flags.append(attributeFlagInput("merger-check", value, active.has(value)));
+    }
+    flags.append(attributeFlagInput("variant-check", "", active.has(ATTRIBUTE_VARIANT)));
 
-    wrap.append(caption, toggles);
-    markOverridden(wrap, caption, overridden);
+    const chips = document.createElement("div");
+    chips.className = "attribute-chips";
+
+    // Rebuild the chip row from the current hidden-flag state, plus the ghost
+    // "+ attribute" trigger. Called on every add/remove so the display tracks the
+    // flags without a full detail re-render (which would lose the edit context).
+    const setFlag = (value, on) => {
+        const box = attributeBox(flags, value);
+        box.checked = on;
+        enterEdit(ctx);
+        renderChips();
+    };
+    const renderChips = () => {
+        const nodes = [];
+        for (const [value] of MERGERS) {
+            if (attributeBox(flags, value).checked) {
+                nodes.push(attributeChip(value, () => setFlag(value, false)));
+            }
+        }
+        if (attributeBox(flags, ATTRIBUTE_VARIANT).checked) {
+            nodes.push(attributeChip(ATTRIBUTE_VARIANT, () => setFlag(ATTRIBUTE_VARIANT, false)));
+        }
+        nodes.push(attributeAddButton(flags, setFlag));
+        chips.replaceChildren(...nodes);
+    };
+    renderChips();
+
+    wrap.append(caption, flags, chips);
+    // An accept that changed either flattened field (mergers or variant) marks the
+    // unified attributes control as edited.
+    markOverridden(wrap, caption, overridden.has("mergers") || overridden.has("variant"));
     return wrap;
 }
 
-function variantToggle(ctx, label, checked) {
-    const chip = document.createElement("label");
-    chip.className = "variant-toggle";
+// A hidden flag checkbox backing an attribute. `.merger-check` carries the merger
+// value; `.variant-check` has no value (its presence is the variant flag). These
+// are exactly the inputs applyAdditiveFields / mainEditIsDirty read.
+function attributeFlagInput(className, value, checked) {
     const input = document.createElement("input");
     input.type = "checkbox";
-    input.className = "variant-check";
+    input.className = className;
+    if (className === "merger-check") {
+        input.value = value;
+    }
     input.checked = checked;
-    input.addEventListener("change", () => {
-        chip.classList.toggle("on", input.checked);
-        enterEdit(ctx);
-        // Release the checkbox so the single-key verdicts fire again — a focused form
-        // control makes onGlobalKey treat A/X/F as typing and swallow them.
-        input.blur();
-    });
-    const caption = document.createElement("span");
-    caption.textContent = label;
-    chip.classList.toggle("on", checked);
-    chip.append(input, caption);
+    return input;
+}
+
+// The backing checkbox for an attribute value: the merger checkbox with that value,
+// or the lone variant checkbox for the "variant" pseudo-member.
+function attributeBox(flags, value) {
+    if (value === ATTRIBUTE_VARIANT) {
+        return flags.querySelector(".variant-check");
+    }
+    return flags.querySelector(`.merger-check[value="${value}"]`);
+}
+
+// A removable attribute chip: the label plus an × that clears its flag. Click-only
+// (no focusable text field) so the single-key verdicts A/X/F stay armed.
+function attributeChip(value, onRemove) {
+    const chip = document.createElement("span");
+    chip.className = `attribute-chip attr-${value}`;
+    const label = document.createElement("span");
+    label.className = "attribute-chip-label";
+    label.textContent = ATTRIBUTE_LABELS.get(value) ?? value;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "attribute-chip-remove";
+    remove.setAttribute("aria-label", `Remove ${ATTRIBUTE_LABELS.get(value) ?? value}`);
+    remove.textContent = "×";
+    remove.addEventListener("click", onRemove);
+    chip.append(label, remove);
     return chip;
+}
+
+// The "+ attribute" ghost button and its vocabulary popover. Picking an inactive
+// value sets its flag (adds a chip); already-active values are omitted. The popover
+// closes on pick or on the next click elsewhere.
+function attributeAddButton(flags, setFlag) {
+    const wrap = document.createElement("span");
+    wrap.className = "attribute-add-wrap";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "attribute-add";
+    button.setAttribute("aria-haspopup", "true");
+    button.textContent = "+ attribute";
+
+    const menu = document.createElement("div");
+    menu.className = "attribute-menu";
+    menu.hidden = true;
+
+    const rebuildMenu = () => {
+        const items = [];
+        for (const [value, label] of ATTRIBUTES_VOCAB) {
+            if (attributeBox(flags, value).checked) {
+                continue;
+            }
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "attribute-menu-item";
+            item.textContent = label;
+            item.addEventListener("click", () => {
+                menu.hidden = true;
+                setFlag(value, true);
+            });
+            items.push(item);
+        }
+        menu.replaceChildren(...items);
+    };
+
+    button.addEventListener("click", () => {
+        const opening = menu.hidden;
+        closePopovers();
+        if (opening) {
+            rebuildMenu();
+            menu.hidden = false;
+        }
+    });
+
+    wrap.append(button, menu);
+    return wrap;
 }
 
 // The detail editor's field id prefix (its harvest is scoped by data-field, not id;
@@ -2421,32 +2609,6 @@ function editField(ctx, name, label, value, extraClass, overridden) {
     return wrap;
 }
 
-// The read-only provenance facts, folded into the top matter as compact
-// label·value pairs (no separate table). status is the record's review status,
-// shown read-only here — it is set by the verdict actions, never typed. A missing
-// fact is omitted rather than dashed, so the strip stays quiet.
-function detailFacts(record) {
-    const wrap = document.createElement("span");
-    wrap.className = "detail-facts";
-    if (record.status) {
-        wrap.append(fact("status", record.status));
-    }
-    if (record.source && record.source.length) {
-        wrap.append(fact("source", record.source.join(" + ")));
-    }
-    if (record.freq !== null && record.freq !== undefined) {
-        wrap.append(fact("freq", String(record.freq)));
-    }
-    return wrap;
-}
-
-function fact(label, value) {
-    const span = document.createElement("span");
-    span.className = "fact";
-    span.append(cell("fact-label", label), cell("fact-value", value));
-    return span;
-}
-
 // The verdict controls. Unflag/undo appear only when they apply, so the bar shows
 // exactly the moves available on this record. The keyboard is the fast path; the
 // buttons mirror it and give mobile real touch targets. Undo is a MAIN-flow move
@@ -2475,12 +2637,47 @@ function actionBar(ctx, record) {
     return bar;
 }
 
+// Inline SVG icon paths per action kind (CSP forbids external assets). Drawn in a
+// 24×24 viewBox with currentColor so each button's own colour flows through:
+//   accept = checkmark · drop = trash · clear = cross/x · flag = flag ·
+//   clone = duplicate/clone · undo = undo-arrow · unflag = flag-off.
+const ACTION_ICONS = {
+    accept: '<path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+    drop: '<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    clear: '<path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+    flag: '<path d="M6 21V4m0 0h11l-2 4 2 4H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    unflag: '<path d="M6 21V4m0 0h11l-2 4 2 4H6M3 3l18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    clone: '<path d="M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1zM5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    undo: '<path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+
+// An action button: an inline SVG icon plus a visible label. The icon IS the
+// button (compact, so all actions fit one row on both desktop + mobile); the label
+// stays for learnability on desktop and is hidden by CSS on mobile (icon-only).
+// title + aria-label keep it accessible in every mode. A kind with no icon (the
+// modal create/cancel) falls back to a text-only button.
 function actionButton(kind, label, handler) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `act ${kind}`;
-    button.textContent = label;
     button.addEventListener("click", handler);
+    const icon = ACTION_ICONS[kind];
+    if (icon) {
+        button.classList.add("act-icon");
+        button.title = label;
+        button.setAttribute("aria-label", label);
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("class", "act-glyph");
+        svg.setAttribute("aria-hidden", "true");
+        svg.innerHTML = icon;
+        const text = document.createElement("span");
+        text.className = "act-text";
+        text.textContent = label;
+        button.append(svg, text);
+    } else {
+        button.textContent = label;
+    }
     return button;
 }
 
@@ -2779,8 +2976,7 @@ function createVariantRow(ctx, record) {
     row.append(
         createField(ctx, "var", "Dialect (var)", record.var),
         createField(ctx, "pos", "POS", record.pos),
-        mergersField(ctx, record.mergers, false),
-        variantField(ctx, record.variant, false),
+        attributesField(ctx, record, new Set()),
     );
     return row;
 }
@@ -3767,7 +3963,11 @@ function sanitizeRestoredEntry(entry) {
         return entry;
     }
     const vocabulary = new Set(spec.entries.map((option) => option.value));
-    return { ...entry, value: entry.value.filter((value) => vocabulary.has(value)) };
+    return {
+        ...entry,
+        value: entry.value.filter((value) => vocabulary.has(value)),
+        mode: entry.mode === "all" ? "all" : "any",
+    };
 }
 
 // Off-canvas ledger drawer for narrow screens. On wide screens the list is always
@@ -3977,13 +4177,20 @@ function fieldSpecFromMeta(meta, derived) {
         const entries = field in derived
             ? derived[field].map((value) => ({ value, label: value }))
             : harvestVocab(meta);
-        return { field, kind, label, pinned, entries };
+        // Multi-valued facets (source, attributes) can carry several values per
+        // record, so their picker offers the any/all mode toggle; scalar facets
+        // (one relevant value per record) omit it — ALL there matches nothing.
+        const multi = meta.dataset.multi === "true";
+        return { field, kind, label, pinned, entries, multi };
     }
     if (kind === "text") {
         return {
             field, kind, label, pinned,
             placeholder: meta.dataset.placeholder || "",
             shavian: meta.dataset.shavian === "true",
+            // An inline text field (Search) renders as a bare toolbar box, not a
+            // removable chip with a popover.
+            inline: meta.dataset.inline === "true",
         };
     }
     return { field, kind, label, pinned };
@@ -4003,8 +4210,37 @@ function harvestVocab(meta) {
 // wholesale on any structural change (add/remove/restore); a value edit updates its
 // own chip label in place without a rebuild.
 function renderChipStrip() {
-    CHIP_STRIP.replaceChildren(...state.activeFilters.map(filterChip));
+    // Inline fields (the Search box) render into their own toolbar slot, not as a
+    // chip; everything else becomes a chip in activeFilters order.
+    const inline = state.activeFilters.filter((entry) => fieldSpec(entry.field).inline);
+    const chips = state.activeFilters.filter((entry) => !fieldSpec(entry.field).inline);
+    SEARCH_INLINE.replaceChildren(...inline.map(inlineSearchBox));
+    CHIP_STRIP.replaceChildren(...chips.map(filterChip));
     syncAddFilterEnabled();
+}
+
+// The inline Search box: a bare toolbar text input (Latin OR Shaw, always regex +
+// case-insensitive). Typing re-queries debounced; the box carries data-field so
+// markInvalidRegex can flag it red when the pattern fails to compile.
+function inlineSearchBox(entry) {
+    const spec = fieldSpec(entry.field);
+    const wrap = document.createElement("div");
+    wrap.className = "search-box";
+    const box = document.createElement("input");
+    box.type = "search";
+    box.className = "text-filter search-field";
+    box.dataset.field = spec.field;
+    box.placeholder = spec.placeholder;
+    box.value = entry.value;
+    box.spellcheck = false;
+    box.autocomplete = "off";
+    box.setAttribute("aria-label", "Search Latin or Shavian (regex, case-insensitive)");
+    box.addEventListener("input", () => {
+        entry.value = box.value;
+        requestFilterQueryDebounced();
+    });
+    wrap.append(box);
+    return wrap;
 }
 
 // Disable +Add when every registry field is already active — there is nothing left
@@ -4055,7 +4291,15 @@ function renderChipLabel(entry) {
     const spec = fieldSpec(entry.field);
     if (spec.kind === "categorical") {
         const labels = entry.value.map((value) => vocabLabel(spec, value));
-        return `${spec.label}: ${labels.length ? labels.join(", ") : "any"}`;
+        if (!labels.length) {
+            return `${spec.label}: any`;
+        }
+        // In ALL mode name it in the prefix so "Source all: wordnet, wiktionary"
+        // reads as agreement, distinct from the default ANY combine.
+        const prefix = spec.multi && entry.mode === "all"
+            ? `${spec.label} all`
+            : spec.label;
+        return `${prefix}: ${labels.join(", ")}`;
     }
     if (spec.kind === "text") {
         return `${spec.label}: ${entry.value.trim() || "…"}`;
@@ -4116,12 +4360,6 @@ function buildPicker(spec, entry) {
 function categoricalPicker(spec, entry) {
     const fragment = document.createDocumentFragment();
 
-    const search = document.createElement("input");
-    search.type = "text";
-    search.className = "facet-search";
-    search.placeholder = "filter…";
-    search.setAttribute("aria-label", `Filter ${spec.label} values`);
-
     const list = document.createElement("div");
     list.className = "facet-list";
     const picked = new Set(entry.value);
@@ -4135,21 +4373,15 @@ function categoricalPicker(spec, entry) {
         requestFilterQuery();
     };
     list.addEventListener("change", commit);
-    search.addEventListener("input", () => {
-        const needle = search.value.trim().toLowerCase();
-        for (const row of list.querySelectorAll(".chip")) {
-            row.hidden = !row.textContent.toLowerCase().includes(needle);
-        }
-    });
 
-    // All / None over the CURRENTLY-VISIBLE rows (the search narrows what they act on),
-    // so inverting a big facet is: search to a subset, All/None, tweak. Acting only on
-    // visible rows also lets "select all NN*" then hand-uncheck the odd one.
+    // The free-text search bar is gone (only the combined toolbar Search box has
+    // one now); the reclaimed space holds the any/all MATCH toggle on multi-valued
+    // facets. All / None act on the whole value list. These are two axes: which
+    // values are checked, and how they combine.
     const bulk = document.createElement("div");
     bulk.className = "facet-bulk";
-    const setVisible = (checked) => {
+    const setAll = (checked) => {
         for (const row of list.querySelectorAll(".chip")) {
-            if (row.hidden) continue;
             row.querySelector("input").checked = checked;
         }
         commit();
@@ -4158,16 +4390,57 @@ function categoricalPicker(spec, entry) {
     allBtn.type = "button";
     allBtn.className = "facet-bulk-btn";
     allBtn.textContent = "All";
-    allBtn.addEventListener("click", () => setVisible(true));
+    allBtn.addEventListener("click", () => setAll(true));
     const noneBtn = document.createElement("button");
     noneBtn.type = "button";
     noneBtn.className = "facet-bulk-btn";
     noneBtn.textContent = "None";
-    noneBtn.addEventListener("click", () => setVisible(false));
+    noneBtn.addEventListener("click", () => setAll(false));
     bulk.append(allBtn, noneBtn);
 
-    fragment.append(search, bulk, list);
+    fragment.append(bulk);
+    // The any/all radio pair — only on MULTI-VALUED facets (source, attributes),
+    // where a record can carry several values. Scalar facets show no toggle (ALL
+    // there matches nothing by construction).
+    if (spec.multi) {
+        fragment.append(modeToggle(spec, entry));
+    }
+    fragment.append(list);
     return fragment;
+}
+
+// The MATCH any/all radio pair for a multi-valued facet: ANY (a record matches one
+// of the checked values, the default OR) vs ALL (a record carries EVERY checked
+// value — set superset). Switching re-queries and refreshes the chip label.
+function modeToggle(spec, entry) {
+    const wrap = document.createElement("div");
+    wrap.className = "facet-mode";
+    const caption = document.createElement("span");
+    caption.className = "facet-mode-label";
+    caption.textContent = "Match";
+    wrap.append(caption);
+    const name = `mode-${spec.field}`;
+    for (const [mode, label] of [["any", "any"], ["all", "all"]]) {
+        const option = document.createElement("label");
+        option.className = "facet-mode-opt";
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = name;
+        input.value = mode;
+        input.checked = entry.mode === mode;
+        input.addEventListener("change", () => {
+            if (input.checked) {
+                entry.mode = mode;
+                refreshChipLabel(entry);
+                requestFilterQuery();
+            }
+        });
+        const text = document.createElement("span");
+        text.textContent = label;
+        option.append(input, text);
+        wrap.append(option);
+    }
+    return wrap;
 }
 
 function valueRow(field, value, label, checked) {
@@ -4316,7 +4589,10 @@ function togglePicker(panel, trigger) {
     }
     panel.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
-    const focusable = panel.querySelector("input, .facet-search");
+    // Focus a text/number input if the picker has one (text/numeric pickers) so a
+    // keyboard user types straight in; categorical pickers (checkboxes/radios) have
+    // none, so nothing is focused and the single-key verdicts stay armed.
+    const focusable = panel.querySelector('input[type="text"], input[type="number"]');
     if (focusable) {
         focusable.focus();
     }
@@ -4335,13 +4611,19 @@ function closePopovers() {
         addMenu.remove();
         ADD_FILTER.setAttribute("aria-expanded", "false");
     }
+    // The detail editor's "+ attribute" vocabulary popovers, kept in the DOM.
+    for (const menu of DETAIL.querySelectorAll(".attribute-menu:not([hidden])")) {
+        menu.hidden = true;
+    }
 }
 
 // Tap/click outside any open popover closes it (touch-friendly: no hover involved);
 // Esc closes it too. A click on a chip trigger or the +Add button toggles via its own
 // handler, so those are excluded here.
 document.addEventListener("pointerdown", (event) => {
-    if (!event.target.closest(".filter-chip") && !event.target.closest(".add-filter-wrap")) {
+    if (!event.target.closest(".filter-chip")
+        && !event.target.closest(".add-filter-wrap")
+        && !event.target.closest(".attribute-add-wrap")) {
         closePopovers();
     }
 });

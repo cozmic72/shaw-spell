@@ -193,15 +193,36 @@ class State:
         self.view = load_view()
 
 
-# The two free-text filters that match a substring (default) or a regex against a
-# single record field. Each carries optional "<field>_regex" / "<field>_ci"
-# companion booleans in the filters dict rather than being its own filter key.
+# The two per-field free-text filters that match a substring (default) or a regex
+# against a SINGLE record field. Each carries optional "<field>_regex" / "<field>_ci"
+# companion booleans in the filters dict rather than being its own filter key. These
+# remain for backward compatibility (saved sessions, direct protocol use); the editor
+# UI now sends the combined `search` filter below instead.
 SUBSTRING_FIELDS = ("word", "shaw")
 
 # word is case-insensitive by default (its historical behaviour); shaw is case-
 # sensitive by default (Shavian has no case). The _ci companion flag forces
 # case-insensitive regardless.
 SUBSTRING_DEFAULT_CI = {"word": True, "shaw": False}
+
+# The combined free-text filter the editor toolbar sends: ALWAYS a regex, ALWAYS
+# case-insensitive, matched against the Latin word OR the Shavian spelling. One box,
+# no per-box toggles — a record passes when the pattern hits EITHER field. Reported
+# under the name "search" in invalid_regex when the pattern fails to compile.
+SEARCH_FIELD = "search"
+SEARCH_FIELDS = ("word", "shaw")
+
+
+def _search_predicate(value):
+    """Resolve the combined `search` value to a (predicate, valid) pair: an
+    always-IGNORECASE regex matched against word OR shaw. `valid` is False when the
+    pattern fails to compile (the predicate then matches nothing, never raising)."""
+    try:
+        pattern = re.compile(value, re.IGNORECASE)
+    except re.error:
+        return (lambda record: False), False
+    return (lambda record: pattern.search(record["word"]) is not None
+            or pattern.search(record["shaw"]) is not None), True
 
 
 def _substring_predicate(field, value, filters):
@@ -238,7 +259,12 @@ class QueryFilters:
         for key, value in filters.items():
             if value in (None, "", []):
                 continue
-            if key in SUBSTRING_FIELDS:
+            if key == SEARCH_FIELD:
+                predicate, valid = _search_predicate(value)
+                self._substring_predicates[key] = predicate
+                if not valid:
+                    self.invalid_regex.append(key)
+            elif key in SUBSTRING_FIELDS:
                 predicate, valid = _substring_predicate(key, value, filters)
                 self._substring_predicates[key] = predicate
                 if not valid:
@@ -249,9 +275,16 @@ class QueryFilters:
                 self._other[key] = value
 
 
-# The categorical facets are multi-select: the request carries a LIST of values
-# per facet (source, pos, var, review, data, word_kind, novelty, mergers,
-# variant), and a record matches the facet if its value is ANY of them (OR).
+# The categorical facets are multi-select: the request carries either a bare LIST
+# of values per facet (source, pos, var, review, data, word_kind, novelty, mergers,
+# variant, attributes) — matched ANY (OR) for backward compatibility — or a
+# {"values": [...], "mode": "any"|"all"} object making the combining rule explicit.
+# ANY = the record matches at least one selected value (OR, the default and the
+# only meaningful mode on a SCALAR facet — one relevant value per record). ALL =
+# the record matches EVERY selected value, meaningful only on a MULTI-VALUED facet
+# (source, attributes) where a record can carry several: source ALL = the record's
+# source-set is a SUPERSET of the selected atomic sources (agreement); ALL on a
+# scalar facet with >1 value matches nothing by construction.
 # Facets still AND across each other. The substring (word/shaw) and numeric
 # (confidence_min/max) filters stay scalar. An empty list is no constraint.
 #
@@ -261,6 +294,38 @@ class QueryFilters:
 #   novelty — word-newness against upstream ReadLex (axis 3)
 # OR within an axis, AND across axes: 'generated AND unreviewed' is
 # data=[generated] + review=[unreviewed].
+FILTER_MODE_ANY = "any"
+FILTER_MODE_ALL = "all"
+FILTER_MODES = (FILTER_MODE_ANY, FILTER_MODE_ALL)
+
+
+def _categorical_values_mode(key, value):
+    """Normalise a categorical filter value to (values, mode). A bare list stays
+    ANY (back-compat); a {"values", "mode"} object carries an explicit mode. Fails
+    loud on a malformed shape or an unknown mode — never silently coerces."""
+    if isinstance(value, list):
+        return value, FILTER_MODE_ANY
+    if isinstance(value, dict):
+        values = value.get("values")
+        if not isinstance(values, list):
+            raise ValueError(
+                f"{key} filter object wants a values list, got {values!r}")
+        mode = value.get("mode", FILTER_MODE_ANY)
+        if mode not in FILTER_MODES:
+            raise ValueError(
+                f"{key} filter mode wants {'/'.join(FILTER_MODES)}, got {mode!r}")
+        return values, mode
+    raise ValueError(f"{key} filter wants a list or {{values, mode}}, got {value!r}")
+
+
+def _combine(values, mode, predicate):
+    """Combine a per-value predicate under the facet's mode: ANY = at least one
+    value matches (OR), ALL = every value matches (AND)."""
+    if mode == FILTER_MODE_ALL:
+        return all(predicate(v) for v in values)
+    return any(predicate(v) for v in values)
+
+
 def matches(record, query, established):
     """Whether an annotated record passes every supplied filter. Absent filters
     do not constrain; a present filter that the record fails excludes it. `query`
@@ -276,41 +341,45 @@ def matches(record, query, established):
     return True
 
 
-# A categorical facet matches if ANY selected value matches (OR within the facet).
-# The equality facets test membership; the custom matchers are asked per value.
-# word/shaw are handled by QueryFilters' pre-compiled predicates, not here.
+# A categorical facet matches under its mode (ANY = one selected value matches;
+# ALL = every selected value matches). The numeric facets stay scalar. word/shaw
+# are handled by QueryFilters' pre-compiled predicates, not here.
 def _field_matches(record, key, value, established):
-    if key in ("pos", "var"):
-        if not isinstance(value, list):
-            raise ValueError(f"{key} filter wants a list, got {value!r}")
-        return record.get(key) in value
-    if key == "source":
-        # source is a LIST (the origins that attested the anchor). The facet
-        # matches by EQUALITY on the exact source-set: a record passes only if
-        # its canonical source key (origins sorted-and-joined) is among the
-        # selected combos, so selecting "wiktionary" catches wiktionary-alone
-        # anchors but NOT "wordnet+wiktionary" ones.
-        if not isinstance(value, list):
-            raise ValueError(f"source filter wants a list, got {value!r}")
-        return _source_key(record) in value
-    if key == "mergers":
-        return any(_matches_merger(record, v) for v in value)
-    if key == "variant":
-        return any(_matches_variant(record, v) for v in value)
-    if key == "review":
-        return any(_matches_review(record, v) for v in value)
-    if key == "data":
-        return any(_matches_data(record, v) for v in value)
-    if key == "word_kind":
-        return any(_matches_word_kind(record, v) for v in value)
-    if key == "novelty":
-        return any(_matches_novelty(record, v, established) for v in value)
     if key == "confidence_min":
         conf = record.get("confidence")
         return conf is not None and conf >= value
     if key == "confidence_max":
         conf = record.get("confidence")
         return conf is not None and conf <= value
+    values, mode = _categorical_values_mode(key, value)
+    if key in ("pos", "var"):
+        # Scalar facets carry one relevant value per record: ANY = the record's
+        # value is one of those selected; ALL with >1 value matches nothing.
+        return _combine(values, mode, lambda v: record.get(key) == v)
+    if key == "source":
+        # source is a LIST (the atomic origins that attested the anchor). A record
+        # matches a selected atomic source when that origin is in its source-set;
+        # ANY = the sets intersect, ALL = the record's set is a SUPERSET of the
+        # selected origins (multi-source agreement). This replaces the former
+        # exact-combo equality: selecting "wiktionary" now catches every anchor
+        # carrying wiktionary, alone or in a combo.
+        origins = set(record.get("source", ()))
+        return _combine(values, mode, lambda v: v in origins)
+    if key == "attributes":
+        return _combine(values, mode, lambda v: _matches_attribute(record, v))
+    if key == "mergers":
+        return _combine(values, mode, lambda v: _matches_merger(record, v))
+    if key == "variant":
+        return _combine(values, mode, lambda v: _matches_variant(record, v))
+    if key == "review":
+        return _combine(values, mode, lambda v: _matches_review(record, v))
+    if key == "data":
+        return _combine(values, mode, lambda v: _matches_data(record, v))
+    if key == "word_kind":
+        return _combine(values, mode, lambda v: _matches_word_kind(record, v))
+    if key == "novelty":
+        return _combine(values, mode,
+                        lambda v: _matches_novelty(record, v, established))
     raise ValueError(f"unknown filter: {key}")
 
 
@@ -404,13 +473,6 @@ def _matches_word_kind(record, value):
     raise ValueError(f"word_kind filter wants multi/single, got {value!r}")
 
 
-# The canonical source key of a record: its origins sorted and "+"-joined into a
-# single combo string (e.g. "wordnet+wiktionary"). Sorting makes it order-
-# independent, so the source facet's values and its equality filter agree.
-def _source_key(record):
-    return "+".join(sorted(record.get("source", ())))
-
-
 # AXIS 3 — novelty classifies a supplement record by its relationship to the
 # upstream ReadLex corpus for its word — a genuinely new word, a new spelling of
 # a known word, or a new POS of a known word+shaw. It is measured against
@@ -479,6 +541,38 @@ def _matches_variant(record, value):
     if value == VARIANT_HAS:
         return is_variant
     return not is_variant
+
+
+# The attributes facet is the has-many union of the (flattened, on-disk) mergers
+# list + the variant boolean: a record's attribute-set is its mergers plus the
+# pseudo-member "variant" when variant is true. It mirrors the editor's unified
+# attributes chips control, and merges the former Mergers + Variant facets into
+# one filter. Its vocabulary is the merger names plus "variant"; "(none)" is the
+# canonical partition (empty attribute-set), which no real value can express (an
+# empty list is absence, not a value). A chip outside the vocabulary fails loud.
+ATTRIBUTE_VARIANT = VARIANT_HAS  # "variant"
+ATTRIBUTE_NONE = MERGER_NONE     # "(none)"
+ATTRIBUTE_FILTER_VALUES = frozenset(MERGER_SWAPS) | {ATTRIBUTE_VARIANT, ATTRIBUTE_NONE}
+
+
+def _record_attributes(record):
+    """A record's attribute-set: its mergers plus "variant" when the variant flag
+    is set. The has-many view the editor edits as chips and the facet filters on."""
+    attributes = set(record.get("mergers") or [])
+    if record.get("variant"):
+        attributes.add(ATTRIBUTE_VARIANT)
+    return attributes
+
+
+def _matches_attribute(record, value):
+    if value not in ATTRIBUTE_FILTER_VALUES:
+        raise ValueError(
+            f"attributes filter wants "
+            f"{'/'.join(sorted(ATTRIBUTE_FILTER_VALUES))}, got {value!r}")
+    attributes = _record_attributes(record)
+    if value == ATTRIBUTE_NONE:
+        return not attributes
+    return value in attributes
 
 
 def filter_records(records, query, established):
@@ -619,18 +713,20 @@ def _distinct_values(view, field):
     takes the view lock (like by_word) since it iterates the shared index while a
     concurrent write may mutate it.
 
-    `source` is list-valued (the origins that attested each anchor), so its facet
-    values are the exact source-set COMBOS present in the data — the canonical
-    "+"-joined keys (wordnet, wiktionary, wordnet+wiktionary, ...) — matching the
-    equality semantics of the source filter (_field_matches)."""
+    `source` is list-valued (the origins that attested each anchor). Its facet
+    values are now the ATOMIC origins present across the data (readlex, wordnet,
+    wiktionary, names, generated, ...), NOT the "+"-joined combos — matching the
+    set-membership semantics of the source filter (_field_matches): selecting an
+    atomic origin catches every anchor carrying it, and multi-source agreement is
+    that origin-set in ALL mode."""
     with view._lock:
         values = set()
         for group in view.by_anchor_index.values():
             for record in group:
                 if field == "source":
-                    key = _source_key(record)
-                    if key:
-                        values.add(key)
+                    for origin in record.get("source", ()):
+                        if origin:
+                            values.add(origin)
                 elif record[field]:
                     values.add(record[field])
     return sorted(values)

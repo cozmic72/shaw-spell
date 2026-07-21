@@ -1710,7 +1710,7 @@ body {
    its label) sits LAST, two cells the header spans. */
 .related-head, .related-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) 42px 48px minmax(0, 1.5fr) 108px 22px 88px;
+    grid-template-columns: minmax(0, 0.9fr) 42px 60px minmax(0, 1.9fr) 108px 22px 88px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 10px;
@@ -2307,7 +2307,7 @@ kbd {
        pos track collapses to 0 and its header + cell hide. Seven tracks (pos = 0),
        state (badge + label) last. */
     .related-head, .related-row {
-        grid-template-columns: minmax(0, 1.3fr) 0 minmax(52px, 0.8fr) minmax(0, 1.2fr) 66px 20px 76px;
+        grid-template-columns: minmax(0, 0.9fr) 0 56px minmax(0, 1.6fr) 66px 20px 76px;
         gap: 6px 10px;
     }
     .related-pos { display: none; }

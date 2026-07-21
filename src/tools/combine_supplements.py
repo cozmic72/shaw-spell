@@ -66,8 +66,10 @@ SOURCES = [
     # Curated proper-name slice (shave+CMUdict agreement, synthetic). Its own
     # `names` label keeps the name flood filterable in the review surface. These
     # are wiktionary-dropped names, but the label reflects what they are (names).
-    # Records carry synthetic/tier/shaw_source through to the basis.
-    ("names", PROJECT_ROOT / "data" / "supplement-names.json"),
+    # Records carry synthetic/tier/shaw_source through to the basis. Read via
+    # the CMUdict IPA-fill pass (fill_names_ipa.py): supplement-names.json plus
+    # round-trip-confirmed `ipa`/`ipa_source` where CMU knows the name.
+    ("names", PROJECT_ROOT / "data" / "supplement-names-ipa.json"),
     # Shave-generated slice: net-new WordNet words with a gloss+POS but no IPA
     # (dropped into supplement-wordnet-speculative), attested in the frequency
     # corpus, spelled by shave (Roman->Shavian G2P). Its own `generated` label

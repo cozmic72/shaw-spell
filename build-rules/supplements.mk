@@ -92,6 +92,18 @@ data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py 
 	@echo "Correcting NEAR syllable-dot collapses..."
 	$(RUN) python3 $(SRC_TOOLS)/fix_near_syllable_dots.py
 
+# Pass 0.7 — CMUdict IPA fill (names only). The names slice has Shaw but no
+# IPA; for names CMUdict knows, ARPABET is mapped to house IPA (real stress)
+# and filled ONLY where the derived IPA forward-converts back to the record's
+# existing Shaw (independent round-trip confirmation — this is the dictionary,
+# unconfirmed IPA is left absent for the owner-gated neural fill). Filled
+# records carry ipa_source="cmu". Deterministic (no shave), so ordinary
+# mtime-triggered prerequisites are safe. Combine reads this instead of
+# supplement-names.json. See src/tools/fill_names_ipa.py.
+data/supplement-names-ipa.json: $(SRC_TOOLS)/fill_names_ipa.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-names.json external/cmudict/cmudict.dict
+	@echo "Filling names IPA from CMUdict..."
+	$(RUN) python3 $(SRC_TOOLS)/fill_names_ipa.py
+
 # Supplement preprocessing — ONE in-memory pipeline, ONE recipe, ONE output.
 #
 # build_supplement.py is the orchestrator: it LOADS the source pools + upstream +
@@ -139,7 +151,7 @@ data/supplement-combined-filtered.json: $(SUPPLEMENT_STEP_MODULES) \
 		data/supplement-wordnet-reliable.json \
 		data/supplement-wiktionary-neardot.json \
 		data/supplement-wiktionary-reliable.json \
-		data/supplement-names.json \
+		data/supplement-names-ipa.json \
 		data/supplement-generated.json \
 		external/readlex/readlex.json \
 		$(WORDNET_YAML) $(WIKTIONARY_JSONL) \

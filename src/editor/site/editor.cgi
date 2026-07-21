@@ -18,10 +18,17 @@ import json
 import os
 import socket
 import sys
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import authstore  # noqa: E402 — sibling module, path set above
 
 DAEMON_SOCKET = os.environ.get("SHAW_SPELL_EDITOR_SOCKET",
                                "/run/shaw-spell/editord.sock")
 DAEMON_TIMEOUT_SEC = 10.0
+
+SESSION_COOKIE = "shaw-spell-session"
+MAX_AUTH_BODY_BYTES = 4096
 
 
 class DaemonError(Exception):
@@ -52,19 +59,118 @@ def daemon_request(request):
     return raw
 
 
-def read_post_body():
+def read_post_body(limit=None):
     length = int(os.environ.get("CONTENT_LENGTH") or 0)
     if length <= 0:
         raise DaemonError("empty request body")
+    if limit is not None and length > limit:
+        raise DaemonError("request body too large")
     return sys.stdin.buffer.read(length).decode("utf-8")
 
 
+# ---- auth (the security boundary) ----
+
+def parse_cookies(header):
+    cookies = {}
+    for pair in (header or "").split(";"):
+        pair = pair.strip()
+        if "=" not in pair:
+            continue
+        key, value = pair.split("=", 1)
+        key = key.strip()
+        if key:
+            cookies[key] = value.strip()
+    return cookies
+
+
+def session_token():
+    return parse_cookies(os.environ.get("HTTP_COOKIE", "")).get(SESSION_COOKIE)
+
+
+def resolve_user():
+    """The verified (user_id, handle) for the request's session cookie, or None.
+    Fails CLOSED: any error resolving the session denies (returns None), never
+    default-allows."""
+    try:
+        return authstore.user_for_session(session_token())
+    except Exception:  # noqa: BLE001 — deny on any auth-store failure
+        return None
+
+
+def set_cookie_header(value, expires_epoch):
+    fmt = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(expires_epoch))
+    return (f"Set-Cookie: {SESSION_COOKIE}={value}; Path=/; HttpOnly; Secure; "
+            f"SameSite=Lax; Expires={fmt}\r\n")
+
+
+def write_json(status, body, extra_headers=""):
+    sys.stdout.write(f"Status: {status}\r\n")
+    sys.stdout.write(extra_headers)
+    sys.stdout.write("Content-Type: application/json; charset=utf-8\r\n\r\n")
+    sys.stdout.write(json.dumps(body, ensure_ascii=False))
+
+
+def read_auth_body():
+    body = read_post_body(limit=MAX_AUTH_BODY_BYTES)
+    try:
+        parsed = json.loads(body)
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def handle_login():
+    body = read_auth_body()
+    handle = body.get("handle")
+    password = body.get("password")
+    if not isinstance(handle, str) or not isinstance(password, str):
+        write_json("401 Unauthorized", {"error": "invalid credentials"})
+        return
+    user_id = None
+    try:
+        user_id = authstore.authenticate(handle, password)
+    except Exception:  # noqa: BLE001 — fail closed on store error
+        user_id = None
+    if user_id is None:
+        write_json("401 Unauthorized", {"error": "invalid credentials"})
+        return
+    token = authstore.create_session(user_id)
+    verified = authstore.handle_for_user(user_id)
+    write_json("200 OK", {"handle": verified},
+               set_cookie_header(token, time.time() + authstore.SESSION_TTL_SECONDS))
+
+
+def handle_logout():
+    authstore.delete_session(session_token())
+    write_json("200 OK", {"ok": True}, set_cookie_header("", 0))
+
+
+def handle_me():
+    user = resolve_user()
+    if user is None:
+        write_json("401 Unauthorized", {"error": "not signed in"})
+        return
+    write_json("200 OK", {"handle": user[1]})
+
+
 def serve_api():
+    """Proxy a daemon op — GATED. A logged-out caller is refused (401); a
+    logged-in caller's asserted author is OVERWRITTEN with the verified handle
+    before the request reaches editord (the unforgeable-author boundary)."""
+    user = resolve_user()
+    if user is None:
+        write_json("401 Unauthorized", {"error": "not signed in"})
+        return
+    handle = user[1]
     body = read_post_body()
     try:
         request = json.loads(body)
     except json.JSONDecodeError as exc:
         raise DaemonError(f"bad request json: {exc}") from exc
+    # The trust boundary: the verified handle REPLACES any client-asserted
+    # author, unconditionally. meta.author becomes unforgeable.
+    if isinstance(request, dict):
+        request["author"] = handle
     raw_response = daemon_request(request)
     sys.stdout.write("Content-Type: application/json; charset=utf-8\r\n\r\n")
     sys.stdout.write(raw_response)
@@ -84,10 +190,86 @@ def asset_version(name):
 
 
 def serve_page():
+    """GATED. Logged-out callers get the standalone login page (the editor
+    HTML/JS is NOT shipped to them — front gate); logged-in callers get the
+    editor."""
+    if resolve_user() is None:
+        sys.stdout.write("Content-Type: text/html; charset=utf-8\r\n\r\n")
+        sys.stdout.write(LOGIN_PAGE)
+        return
     sys.stdout.write("Content-Type: text/html; charset=utf-8\r\n\r\n")
     page = PAGE.replace("{css_v}", asset_version("editor.css")) \
                .replace("{js_v}", asset_version("editor.js"))
     sys.stdout.write(page)
+
+
+LOGIN_PAGE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shaw-Spell — Sign in</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #14171c; color: #e8eaed;
+               display: flex; min-height: 100vh; margin: 0; align-items: center;
+               justify-content: center; }
+        .card { background: #1e232b; padding: 2rem 2.25rem; border-radius: 10px;
+                width: min(22rem, 90vw); box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+        h1 { font-size: 1.15rem; margin: 0 0 1.25rem; }
+        label { display: block; font-size: .8rem; margin: .75rem 0 .25rem; opacity: .8; }
+        input { width: 100%; box-sizing: border-box; padding: .55rem .65rem;
+                border: 1px solid #3a4150; border-radius: 6px; background: #12151a;
+                color: #e8eaed; font-size: 1rem; }
+        button { margin-top: 1.25rem; width: 100%; padding: .6rem; border: 0;
+                 border-radius: 6px; background: #4f7cff; color: #fff; font-size: 1rem;
+                 cursor: pointer; }
+        button:disabled { opacity: .6; cursor: default; }
+        .err { color: #ff8080; font-size: .85rem; margin-top: .9rem; min-height: 1.1em; }
+    </style>
+</head>
+<body>
+    <form class="card" id="loginForm" autocomplete="on">
+        <h1>Editorial Workbench — sign in</h1>
+        <label for="handle">Username</label>
+        <input id="handle" name="handle" autocomplete="username"
+               autocapitalize="off" spellcheck="false" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password"
+               autocomplete="current-password" required>
+        <button type="submit" id="submit">Sign in</button>
+        <div class="err" id="err" role="alert"></div>
+    </form>
+    <script>
+    (function () {
+        var form = document.getElementById("loginForm");
+        var btn = document.getElementById("submit");
+        var err = document.getElementById("err");
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            err.textContent = "";
+            btn.disabled = true;
+            try {
+                var resp = await fetch(location.pathname + "?api=login", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        handle: document.getElementById("handle").value,
+                        password: document.getElementById("password").value,
+                    }),
+                });
+                if (resp.ok) { location.reload(); return; }
+                err.textContent = "Invalid credentials.";
+            } catch (ex) {
+                err.textContent = "Sign-in failed. Try again.";
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    })();
+    </script>
+</body>
+</html>"""
 
 
 PAGE = """<!DOCTYPE html>
@@ -117,6 +299,8 @@ PAGE = """<!DOCTYPE html>
                 title="Author a brand-new dictionary entry">+ New entry</button>
         <button type="button" class="help-toggle" id="helpToggle"
                 aria-controls="cheatsheet" title="Keyboard shortcuts (?)">? keys</button>
+        <button type="button" class="logout" id="logout"
+                title="Sign out"><span id="whoami"></span> Sign out</button>
         <div class="tally" id="tally" aria-live="polite"></div>
     </header>
 
@@ -267,10 +451,29 @@ PAGE = """<!DOCTYPE html>
 </html>"""
 
 
+def parse_query(query):
+    params = {}
+    for pair in query.split("&"):
+        if "=" in pair:
+            key, value = pair.split("=", 1)
+            params[key] = value
+        elif pair:
+            params[pair] = ""
+    return params
+
+
 def main():
     query = os.environ.get("QUERY_STRING", "")
     method = os.environ.get("REQUEST_METHOD", "GET")
-    if method == "POST" or "api" in query:
+    api = parse_query(query).get("api")
+
+    if api == "login":
+        handle_login()
+    elif api == "logout":
+        handle_logout()
+    elif api == "me":
+        handle_me()
+    elif method == "POST" or "api" in query:
         serve_api()
     else:
         serve_page()

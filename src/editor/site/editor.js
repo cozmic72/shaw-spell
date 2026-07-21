@@ -358,14 +358,56 @@ const session = {
 async function callDaemon(request) {
     const response = await fetch(location.pathname, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
     });
+    if (response.status === 401) {
+        // Session lost mid-session — the server refused the op. Fail loud and
+        // send the user back to the front gate.
+        location.reload();
+        throw new Error("session expired — signing in again");
+    }
     const payload = await response.json();
     if (payload.error) {
         throw new Error(payload.error);
     }
     return payload;
+}
+
+// The verified handle, resolved from ?api=me at boot. AUTHOR (the client-side
+// const) is advisory only — the CGI overrides meta.author with the session
+// handle server-side — but the display uses this so the masthead shows who is
+// signed in.
+async function initAuth() {
+    const whoami = document.getElementById("whoami");
+    const logout = document.getElementById("logout");
+    try {
+        const resp = await fetch(location.pathname + "?api=me", {
+            credentials: "include",
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            if (whoami && data.handle) {
+                whoami.textContent = data.handle;
+            }
+        }
+    } catch (error) {
+        // The front gate already guarantees a session for this page; a failed
+        // me() only costs the handle label, so don't block boot on it.
+    }
+    if (logout) {
+        logout.addEventListener("click", async () => {
+            try {
+                await fetch(location.pathname + "?api=logout", {
+                    method: "POST",
+                    credentials: "include",
+                });
+            } finally {
+                location.reload();
+            }
+        });
+    }
 }
 
 // ---- filter field registry ----
@@ -4701,6 +4743,7 @@ function restoreSession(stored) {
 // old pre-chips session — else start with no chips and a plain first query in the
 // review order (highest confidence first).
 async function boot() {
+    await initAuth();
     buildCheatsheet();
     collapseFiltersOnNarrow();
     await buildFieldRegistry();

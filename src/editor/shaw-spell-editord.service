@@ -26,11 +26,13 @@ TimeoutStartSec=60s
 
 # Unlike suggestd, editord WRITES the patch store, so the deploy tree is not
 # read-only: data/patches/patches.jsonl must be writable by the service user.
+# The auth CGI (editor.cgi) runs as the same www-data account and writes the
+# sessions table, so data/auth must be writable too.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/shaw-spell/data/patches
+ReadWritePaths=/opt/shaw-spell/data/patches /opt/shaw-spell/data/auth
 
 [Install]
 WantedBy=multi-user.target

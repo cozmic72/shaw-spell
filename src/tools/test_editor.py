@@ -26,7 +26,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from http.server import HTTPServer, CGIHTTPRequestHandler
+from http.server import ThreadingHTTPServer, CGIHTTPRequestHandler
 
 
 DAEMON_START_TIMEOUT_SEC = 120
@@ -139,7 +139,9 @@ def main():
     print("  WARNING: this is an unauthenticated WRITE endpoint (auth is Phase 2)")
     print("Press Ctrl+C to stop")
 
-    server = HTTPServer(('0.0.0.0', port), RootCGIHTTPRequestHandler)
+    # Threaded so a phone's parallel asset fetches don't serialize on the LAN's
+    # first (uncached) load. HTTP/1.0 kept — CGI streams without Content-Length.
+    server = ThreadingHTTPServer(('0.0.0.0', port), RootCGIHTTPRequestHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

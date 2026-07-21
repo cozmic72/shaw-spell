@@ -39,6 +39,16 @@ RRP and several differently-spelt candidates pass, the winner is chosen by a
 deterministic tie-break — best tier first, then Shaw — and the rest stay in
 their source dialect.
 
+⚠ SOURCE-VAR PROMOTION RULE (the owner's dialect-promotion rule). Passing is
+necessary but not sufficient: WHICH source vars may promote is gated too.
+RSSB always promotes (within-British). GenAm and the other national accents
+promote ONLY when a pre-existing RRP record spells the same word with the same
+Shaw in another pos — otherwise they are NOT promoted and keep their source
+var (SKIP_NONBRITISH). See PROMOTABLE_VARS / may_promote for the full
+rationale. At most one candidate promotes onto a given (word, pos, Shaw)
+anchor (national_overpromotions): a held twin folds onto the promoted record
+downstream instead of minting a duplicate RRP anchor.
+
 Every relabelled/respelled record is an UNREVIEWED REVIEW CANDIDATE — nothing
 is auto-accepted, nothing is written to the patch store (never-auto-accept).
 The stage also carries a small provenance triple onto every judged record so
@@ -119,16 +129,23 @@ MERGER_HELD_BACK = "SKIP_MERGER"
 # module docstring's RRP-LANE OCCUPANCY GUARD section).
 LANE_HELD_BACK = "SKIP_OCCUPIED"
 
-# Only a WITHIN-BRITISH source var is promoted to RRP. RSSB is rhotic-restored
-# unconfirmed British, so canonicalizing it to RRP is a same-accent move that
-# cannot smuggle in a foreign vowel. GenAm (and the harvested national accents
-# GenAus/GenCan/NZ/SthAfr/IrEng) are DIFFERENT accents: the classifier judges a
-# spelling's structural RRP-plausibility against the record's OWN ipa, but that
-# ipa is the source accent's — so a faithful transcription of a GenAm vowel
-# (e.g. oddball /ˈɑːdˌbɒl/ -> 𐑭𐑛𐑚𐑪𐑤, "ahdball" to a British ear) PASSes and gets
-# wrongly stamped RRP. Until the classifier judges plausibility against an RP
-# pronunciation of the WORD (the pronunciation-anchored fix), only RSSB promotes;
-# a passing non-British candidate is held back (SKIP_NONBRITISH) in its source var.
+# WHICH source vars may promote to RRP (the owner's dialect-promotion rule).
+# RSSB is rhotic-restored unconfirmed British, so canonicalizing it to RRP is a
+# same-accent move that cannot smuggle in a foreign vowel — it ALWAYS may
+# promote. GenAm and the harvested national accents (GenAus/GenCan/NZ/SthAfr/
+# IrEng) are DIFFERENT accents: the classifier judges a spelling's structural
+# RRP-plausibility against the record's OWN ipa, but that ipa is the source
+# accent's — so a faithful transcription of a GenAm vowel (e.g. oddball
+# /ˈɑːdˌbɒl/ -> 𐑭𐑛𐑚𐑪𐑤, "ahdball" to a British ear) PASSes structurally yet is no
+# RP spelling. So a national-accent candidate promotes ONLY when a pre-existing
+# RRP record already spells the SAME word with the SAME resulting Shaw in
+# ANOTHER pos (rrp_sibling_pos_index / may_promote): RP itself vouches for the
+# spelling, so extending it to this pos invents nothing. With no such sibling
+# the candidate is NOT promoted — it keeps its source var, recorded as
+# SKIP_NONBRITISH. (A same-pos same-Shaw RRP twin is deliberately NOT a voucher:
+# promoting onto it would mint a duplicate RRP anchor — the downstream collapse
+# stage instead FOLDS that candidate onto the existing RRP record, which is the
+# same-spelling promotion path for the same-pos case.)
 PROMOTABLE_VARS = {"RSSB", CANONICAL_VAR}
 NONBRITISH_HELD_BACK = "SKIP_NONBRITISH"
 
@@ -167,7 +184,71 @@ def promoted_shaw(entry, judgment):
     return judgment.respell if judgment.outcome == "PASS_RESPELL" else entry["Shaw"]
 
 
-def blocked_promotions(judged):
+def rrp_sibling_pos_index(records):
+    """(word_lower, Shaw) -> set of pos carried by the INPUT pool's RRP-labelled
+    records (upstream core and born-RRP supplement records alike) — the
+    pre-existing RRP spellings that can vouch for a national-accent candidate
+    (see PROMOTABLE_VARS). Seeded purely from the input pool, never extended by
+    this stage's own promotions: a promotion cannot vouch for another."""
+    idx = defaultdict(set)
+    for r in records:
+        if r.get("var") == CANONICAL_VAR:
+            idx[(r["Latn"].lower(), r["Shaw"])].add(r.get("pos", ""))
+    return idx
+
+
+def may_promote(entry, judgment, rrp_siblings):
+    """Whether a PASS / PASS_RESPELL candidate's SOURCE var is allowed to promote
+    to RRP. A within-British source (PROMOTABLE_VARS) always may. A national-
+    accent source may only when a pre-existing RRP record spells the same word
+    with the same resulting Shaw in ANOTHER pos — and none occupies THIS pos
+    with that Shaw (then the collapse-stage fold owns the merge; promoting here
+    would duplicate the anchor). See PROMOTABLE_VARS for the rationale."""
+    if entry.get("var", "") in PROMOTABLE_VARS:
+        return True
+    poses = rrp_siblings.get(
+        (entry["Latn"].lower(), promoted_shaw(entry, judgment)), ())
+    return bool(poses) and entry.get("pos", "") not in poses
+
+
+def national_overpromotions(judged, eligible):
+    """Indexes to DROP from the eligible set so at most ONE candidate promotes
+    onto any (word_lower, pos, resulting Shaw) anchor. Two eligible candidates
+    landing on the same anchor would mint DUPLICATE RRP records: the downstream
+    collapse folds a source-var record onto an identically-spelt RRP twin, but
+    never merges two same-var RRP records. So within an anchor cell the
+    within-British candidates win — if any RSSB candidate claims the anchor,
+    every national-accent candidate is dropped (it keeps its source var and the
+    collapse stage folds it onto the promoted twin, source-unioned — exactly
+    the behaviour before the sibling rule existed). A cell holding only
+    national candidates promotes exactly one — best tier, then var, then input
+    order (byte-stable) — and the rest fold downstream. Within-British
+    candidates are never dropped here (RSSB promotion is unchanged baseline
+    behaviour; a same-pos born-RRP anchor already disqualified the national in
+    may_promote)."""
+    brit_anchors = set()
+    cells = defaultdict(list)
+    for i in sorted(eligible):
+        entry, j = judged[i]
+        var = entry.get("var", "")
+        if var == CANONICAL_VAR:
+            continue
+        anchor = (entry["Latn"].lower(), entry.get("pos", ""),
+                  promoted_shaw(entry, j))
+        if var in PROMOTABLE_VARS:
+            brit_anchors.add(anchor)
+        else:
+            cells[anchor].append((j.tier, var, i))
+
+    drop = set()
+    for anchor, cands in cells.items():
+        keep = 0 if anchor in brit_anchors else 1
+        for _, _, i in sorted(cands)[keep:]:
+            drop.add(i)
+    return drop
+
+
+def blocked_promotions(judged, promotable):
     """Indexes into `judged` of PASS / PASS_RESPELL candidates whose promotion
     the lane-occupancy guard DENIES: the (word_lower, pos) RRP lane already
     holds a DIFFERENT spelling. Lanes are seeded PURELY from the input pool's
@@ -178,17 +259,20 @@ def blocked_promotions(judged):
     winner of a lane-free group is byte-stable run-to-run (the patch model
     requires it). An identically-spelt candidate is never blocked (downstream
     collapse owns same-spelling dedup). RRP records already in the pool are not
-    guarded — they are the lane, not a promotion into it."""
+    guarded — they are the lane, not a promotion into it. Only candidates in
+    `promotable` (the source-var rule's yes-set, see may_promote) participate:
+    a candidate whose source var may not promote can never occupy the lane, so
+    it neither claims a spelling nor is counted blocked — it must not phantom-
+    block a genuinely promotable sibling."""
     lanes = defaultdict(set)
     for entry, _ in judged:
         if entry.get("var") == CANONICAL_VAR:
             lanes[(entry["Latn"].lower(), entry.get("pos", ""))].add(entry["Shaw"])
 
     groups = defaultdict(list)
-    for i, (entry, judgment) in enumerate(judged):
-        if (judgment is not None and judgment is not UPSTREAM_LANE
-                and judgment.outcome in ("PASS", "PASS_RESPELL")
-                and entry.get("var") != CANONICAL_VAR):
+    for i in sorted(promotable):
+        entry, judgment = judged[i]
+        if entry.get("var") != CANONICAL_VAR:
             groups[(entry["Latn"].lower(), entry.get("pos", ""))].append(
                 (judgment.tier, promoted_shaw(entry, judgment), i))
 
@@ -203,11 +287,14 @@ def blocked_promotions(judged):
     return blocked
 
 
-def reclassify_record(entry, judgment, lane_blocked, tallies, samples):
+def reclassify_record(entry, judgment, lane_blocked, promotable, tallies,
+                      samples):
     """A copy of one candidate with the reclassifier's per-record verdict applied.
 
     A merger-flagged record (judgment None) is held back untouched (it is spelt
-    differently from its RRP sibling — the downstream collapse owns it), as is a
+    differently from its RRP sibling — the downstream collapse owns it), as are
+    one the source-var rule refuses (`promotable` False — a national-accent
+    candidate with no same-spelling RRP sibling in another pos) and a
     lane-blocked one (its resulting RRP spelling conflicts with the group's
     occupied RRP lane — it stays in its source dialect). Otherwise PASS /
     PASS_RESPELL relabel var to RRP (and, for a respell, rewrite Shaw), recording
@@ -235,24 +322,23 @@ def reclassify_record(entry, judgment, lane_blocked, tallies, samples):
 
     j = judgment
 
+    # The source-var rule refused the promotion (a national-accent candidate
+    # with no same-spelling RRP sibling in another pos — see PROMOTABLE_VARS /
+    # may_promote): NOT promoted, the record keeps its source var. Recorded so
+    # the editor can still surface "the rules judged this a valid RRP SHAPE".
+    if j.outcome in ("PASS", "PASS_RESPELL") and not promotable:
+        record["rrp_outcome"] = NONBRITISH_HELD_BACK
+        record["rrp_tier"] = j.tier
+        tallies[NONBRITISH_HELD_BACK] += 1
+        tallies[f"held-nonbritish-{record.get('var', '')}"] += 1
+        return record
+
     if lane_blocked:
         # The guard denied the promotion: the record stays in its source dialect
         # entirely untouched (no relabel, no respell, no orig_*).
         record["rrp_outcome"] = LANE_HELD_BACK
         record["rrp_tier"] = j.tier
         tallies[LANE_HELD_BACK] += 1
-        return record
-
-    # A candidate the rules would PASS but whose SOURCE var is not within-British
-    # is held back in its source var — a faithful transcription of a foreign
-    # accent's vowels is not an RP spelling (see PROMOTABLE_VARS). Recorded so the
-    # editor can still surface "the rules judged this a valid RRP SHAPE" for review.
-    if (j.outcome in ("PASS", "PASS_RESPELL")
-            and record.get("var", "") not in PROMOTABLE_VARS):
-        record["rrp_outcome"] = NONBRITISH_HELD_BACK
-        record["rrp_tier"] = j.tier
-        tallies[NONBRITISH_HELD_BACK] += 1
-        tallies[f"held-nonbritish-{record.get('var', '')}"] += 1
         return record
 
     record["rrp_outcome"] = j.outcome
@@ -290,15 +376,23 @@ def reclassify_supplement(supplement, tallies, samples):
 
     # Judge first (upstream core and merger-flagged records are held back
     # unjudged — core is the lane, a merged form stays in its dialect), then
-    # resolve RRP-lane occupancy across each (word, pos) group, then apply.
+    # apply the source-var promotion rule (may_promote), then resolve RRP-lane
+    # occupancy across each (word, pos) group among the promotable, then apply.
     judged = [(r, UPSTREAM_LANE if is_upstream(r)
                else None if r.get("mergers") else judge_record(r, ctx))
               for r in records]
-    blocked = blocked_promotions(judged)
+    rrp_siblings = rrp_sibling_pos_index(records)
+    eligible = {i for i, (entry, j) in enumerate(judged)
+                if j is not None and j is not UPSTREAM_LANE
+                and j.outcome in ("PASS", "PASS_RESPELL")
+                and may_promote(entry, j, rrp_siblings)}
+    promotable = eligible - national_overpromotions(judged, eligible)
+    blocked = blocked_promotions(judged, promotable)
 
     reclassified = defaultdict(list)
     for i, (entry, judgment) in enumerate(judged):
-        out = reclassify_record(entry, judgment, i in blocked, tallies, samples)
+        out = reclassify_record(entry, judgment, i in blocked, i in promotable,
+                                tallies, samples)
         reclassified[output_bucket_key(out)].append(out)
 
     return {key: reclassified[key] for key in sorted(reclassified)}, len(records)
@@ -316,8 +410,8 @@ def report(tallies, samples):
     print(f"  REVIEW (flagged):        {tallies['REVIEW']:,}")
     print(f"  SKIP (merger-flagged):   {tallies[MERGER_HELD_BACK]:,}")
     print(f"  PASS blocked (RRP lane occupied): {tallies[LANE_HELD_BACK]:,}")
-    print(f"  PASS held (non-British source, not promoted): "
-          f"{tallies[NONBRITISH_HELD_BACK]:,}")
+    print(f"  PASS not promoted (national accent, no same-spelling RRP sibling "
+          f"in another pos): {tallies[NONBRITISH_HELD_BACK]:,}")
     for src in ("GenAm", "GenAus", "GenCan", "NZ", "SthAfr", "IrEng"):
         n = tallies.get(f"held-nonbritish-{src}", 0)
         if n:
@@ -326,9 +420,11 @@ def report(tallies, samples):
           f"{tallies['upstream-lane']:,}")
     relabelled = tallies["PASS"] + tallies["PASS_RESPELL"]
     print(f"Relabelled to RRP:         {relabelled:,}")
-    for src in ("RSSB", "GenAm", "RRP"):
+    for src in ("RSSB", "GenAm", "GenAus", "GenCan", "NZ", "SthAfr", "IrEng",
+                "RRP"):
         n = tallies.get(f"relabelled-from-{src}", 0)
-        print(f"    from {src:5}:            {n:,}")
+        if n or src in ("RSSB", "GenAm", "RRP"):
+            print(f"    from {src:6}:           {n:,}")
 
     for outcome in ("PASS", "PASS_RESPELL"):
         if not samples[outcome]:

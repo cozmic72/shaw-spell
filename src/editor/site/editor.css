@@ -1879,7 +1879,7 @@ body {
     display: inline-flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 4px 10px;
+    gap: 6px 22px;
 }
 .related-group-word {
     font-weight: 600;

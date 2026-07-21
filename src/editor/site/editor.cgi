@@ -97,9 +97,19 @@ def resolve_user():
         return None
 
 
+def request_is_https():
+    """True behind TLS. Secure cookies are dropped by the browser over plain
+    HTTP, so we only set Secure when the connection actually is HTTPS — on
+    directly (HTTPS=on) or via a TLS-terminating proxy (X-Forwarded-Proto)."""
+    if os.environ.get("HTTPS", "").lower() in ("on", "1", "true"):
+        return True
+    return os.environ.get("HTTP_X_FORWARDED_PROTO", "").lower() == "https"
+
+
 def set_cookie_header(value, expires_epoch):
     fmt = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(expires_epoch))
-    return (f"Set-Cookie: {SESSION_COOKIE}={value}; Path=/; HttpOnly; Secure; "
+    secure = " Secure;" if request_is_https() else ""
+    return (f"Set-Cookie: {SESSION_COOKIE}={value}; Path=/; HttpOnly;{secure} "
             f"SameSite=Lax; Expires={fmt}\r\n")
 
 

@@ -136,6 +136,30 @@ def create_user(handle, password, path=None):
         conn.close()
 
 
+def drop_user(handle, path=None):
+    """Delete a user (sessions cascade). Returns True if a row was removed."""
+    conn = _connect(path)
+    try:
+        cur = conn.execute("DELETE FROM users WHERE handle = ?", (handle,))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def set_password(handle, password, path=None):
+    """Reset an existing user's password. Raises if the handle is unknown."""
+    conn = _connect(path)
+    try:
+        cur = conn.execute("UPDATE users SET password_hash = ? WHERE handle = ?",
+                           (_hash_password(password), handle))
+        conn.commit()
+        if cur.rowcount == 0:
+            raise AuthError(f"no such user: {handle}")
+    finally:
+        conn.close()
+
+
 def authenticate(handle, password, path=None):
     """Return the user_id on a correct handle+password, else None. Bad handle
     and bad password are indistinguishable — same 401 AND same time cost (the
@@ -271,27 +295,62 @@ def _cli(argv):
     import getpass
 
     migrate()
+    # --password-stdin (anywhere in argv): read the password from stdin's first
+    # line instead of getpass — pipe it from a password manager without paste
+    # mangling. Strips a single trailing newline only.
+    stdin_pw = "--password-stdin" in argv
+    argv = [a for a in argv if a != "--password-stdin"]
+
     if not argv:
-        sys.stderr.write("usage: authstore.py --create-user <handle> | "
-                         "--list-users | --delete-sessions <handle>\n")
+        sys.stderr.write(
+            "usage: authstore.py --create-user <handle> | --drop-user <handle> | "
+            "--set-password <handle> | --list-users | --delete-sessions <handle>\n"
+            "  add --password-stdin to read the password from stdin (no prompt)\n")
         return 2
+
+    def read_password(handle):
+        if stdin_pw:
+            pw = sys.stdin.readline().rstrip("\n")
+            if not pw:
+                sys.stderr.write("password must not be empty\n"); return None
+            return pw
+        pw1 = getpass.getpass(f"Password for {handle}: ")
+        pw2 = getpass.getpass("Confirm password: ")
+        if pw1 != pw2:
+            sys.stderr.write("passwords do not match\n"); return None
+        if not pw1:
+            sys.stderr.write("password must not be empty\n"); return None
+        return pw1
 
     cmd = argv[0]
     if cmd == "--create-user":
         if len(argv) != 2:
             sys.stderr.write("usage: authstore.py --create-user <handle>\n")
             return 2
-        handle = argv[1]
-        pw1 = getpass.getpass(f"Password for {handle}: ")
-        pw2 = getpass.getpass("Confirm password: ")
-        if pw1 != pw2:
-            sys.stderr.write("passwords do not match\n")
+        pw = read_password(argv[1])
+        if pw is None:
             return 1
-        if not pw1:
-            sys.stderr.write("password must not be empty\n")
+        user_id = create_user(argv[1], pw)
+        sys.stdout.write(f"created user {argv[1]} (id {user_id})\n")
+        return 0
+
+    if cmd == "--drop-user":
+        if len(argv) != 2:
+            sys.stderr.write("usage: authstore.py --drop-user <handle>\n")
+            return 2
+        if drop_user(argv[1]):
+            sys.stdout.write(f"dropped user {argv[1]}\n"); return 0
+        sys.stderr.write(f"no such user: {argv[1]}\n"); return 1
+
+    if cmd == "--set-password":
+        if len(argv) != 2:
+            sys.stderr.write("usage: authstore.py --set-password <handle>\n")
+            return 2
+        pw = read_password(argv[1])
+        if pw is None:
             return 1
-        user_id = create_user(handle, pw1)
-        sys.stdout.write(f"created user {handle} (id {user_id})\n")
+        set_password(argv[1], pw)
+        sys.stdout.write(f"password updated for {argv[1]}\n")
         return 0
 
     if cmd == "--list-users":

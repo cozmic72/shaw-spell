@@ -310,7 +310,15 @@ def _cli(argv):
 
     def read_password(handle):
         if stdin_pw:
-            pw = sys.stdin.readline().rstrip("\n")
+            # Strip a single trailing newline (LF or CRLF) only — a bare \n rstrip
+            # would leave the \r of a CRLF baked into the password.
+            line = sys.stdin.readline()
+            if line.endswith("\r\n"):
+                pw = line[:-2]
+            elif line.endswith("\n"):
+                pw = line[:-1]
+            else:
+                pw = line
             if not pw:
                 sys.stderr.write("password must not be empty\n"); return None
             return pw

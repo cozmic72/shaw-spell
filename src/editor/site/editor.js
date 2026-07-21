@@ -4129,11 +4129,12 @@ function categoricalPicker(spec, entry) {
         list.append(valueRow(spec.field, value, label, picked.has(value)));
     }
 
-    list.addEventListener("change", () => {
+    const commit = () => {
         entry.value = [...list.querySelectorAll("input:checked")].map((box) => box.value);
         refreshChipLabel(entry);
         requestFilterQuery();
-    });
+    };
+    list.addEventListener("change", commit);
     search.addEventListener("input", () => {
         const needle = search.value.trim().toLowerCase();
         for (const row of list.querySelectorAll(".chip")) {
@@ -4141,7 +4142,31 @@ function categoricalPicker(spec, entry) {
         }
     });
 
-    fragment.append(search, list);
+    // All / None over the CURRENTLY-VISIBLE rows (the search narrows what they act on),
+    // so inverting a big facet is: search to a subset, All/None, tweak. Acting only on
+    // visible rows also lets "select all NN*" then hand-uncheck the odd one.
+    const bulk = document.createElement("div");
+    bulk.className = "facet-bulk";
+    const setVisible = (checked) => {
+        for (const row of list.querySelectorAll(".chip")) {
+            if (row.hidden) continue;
+            row.querySelector("input").checked = checked;
+        }
+        commit();
+    };
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = "facet-bulk-btn";
+    allBtn.textContent = "All";
+    allBtn.addEventListener("click", () => setVisible(true));
+    const noneBtn = document.createElement("button");
+    noneBtn.type = "button";
+    noneBtn.className = "facet-bulk-btn";
+    noneBtn.textContent = "None";
+    noneBtn.addEventListener("click", () => setVisible(false));
+    bulk.append(allBtn, noneBtn);
+
+    fragment.append(search, bulk, list);
     return fragment;
 }
 

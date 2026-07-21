@@ -23,7 +23,9 @@ from typing import Dict, Set, List
 from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
-from dialect_display import BRITISH_VARS, AMERICAN_VARS
+from dialect_display import (
+    spellcheck_vars, is_american, US_GAP_FALLBACK_VARS,
+)
 
 
 # Affix flag definitions
@@ -70,27 +72,50 @@ def extract_readlex_words(readlex_data: Dict, target_dialect: str) -> Set[str]:
         Set of lowercase Latin words from Readlex
     """
     words = set()
+    dialect = target_dialect.lower()
 
-    # Every var of the dialect's accent family (RSSB, the national accents and
-    # legacy SSB/GB via BRITISH_VARS/AMERICAN_VARS). trap-bath is a `mergers`
-    # flag on an RRP record now, so those forms come in under RRP.
-    if target_dialect.lower() == 'gb':
-        target_variants = BRITISH_VARS
-    else:
-        target_variants = AMERICAN_VARS
+    # Vars that may become a HEADWORD in THIS dictionary. Foreign national
+    # accents (AU/CA/NZ/ZA/IE) are deliberately excluded — they are their own
+    # dialect and never pollute gb/us (see dialect_display.spellcheck_vars).
+    # trap-bath is a `mergers` flag on an RRP record now, so those forms come
+    # in under RRP (British).
+    target_variants = spellcheck_vars(dialect)
+
+    # US-gap fallback (us dict only): a lemma with NO native GenAm form falls
+    # back to its British Latin form so a US typist isn't flagged for the only
+    # spelling that exists. Collect British candidates per lemma; admit after
+    # the native pass only for lemmas America has nothing native for.
+    lemma_has_american: Dict[str, bool] = defaultdict(bool)
+    gap_candidates: List = []  # (lemma, latn) British forms eligible for fallback
 
     for key, entries in readlex_data.items():
+        lemma = key.split('_', 1)[0].lower()
         # Normalize: supplement entries may be single dicts
         if isinstance(entries, dict):
             entries = [entries]
         for entry in entries:
             latn = entry.get('Latn', '').strip()
             var = entry.get('var', '')
+            if not latn:
+                continue
 
-            # Include words that match the target dialect or have no variant specified
-            if latn and (not var or var in target_variants):
+            if dialect == 'us' and is_american(var):
+                lemma_has_american[lemma] = True
+
+            if not var or var in target_variants:
                 # Add the word in lowercase (Hunspell is case-insensitive for base words)
                 words.add(latn.lower())
+            elif dialect == 'us' and var in US_GAP_FALLBACK_VARS:
+                gap_candidates.append((lemma, latn.lower()))
+
+    if dialect == 'us':
+        gap_admitted = 0
+        for lemma, latn in gap_candidates:
+            if not lemma_has_american[lemma] and latn not in words:
+                words.add(latn)
+                gap_admitted += 1
+        print(f"US-gap fallback: {gap_admitted} British Latin form(s) admitted "
+              f"(words with no native GenAm form)")
 
     print(f"Extracted {len(words)} unique Latin words from Readlex for {target_dialect.upper()}")
     return words

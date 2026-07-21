@@ -33,7 +33,9 @@ from pathlib import Path
 from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
-from dialect_display import BRITISH_VARS, AMERICAN_VARS
+from dialect_display import (
+    spellcheck_vars, is_american, US_GAP_FALLBACK_VARS,
+)
 
 
 # ---- Confusion rules ----
@@ -283,14 +285,37 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff,
     takes_plural_poss = defaultdict(bool)
     namer_dot = '·'
 
-    # Accept every var of the dictionary's accent family (RSSB, the national
-    # accents and legacy SSB/GB all included via BRITISH_VARS/AMERICAN_VARS).
+    # Vars that may become a HEADWORD in THIS dictionary. Foreign national
+    # accents (AU/CA/NZ/ZA/IE) are deliberately excluded — they are their own
+    # dialect and never pollute gb/us (see dialect_display.spellcheck_vars).
     # trap-bath is no longer a var — it rides as a `mergers` flag on an RRP
-    # record, which BRITISH_VARS already admits, so the merged forms still ship.
-    if dialect == 'gb':
-        target_variants = set(BRITISH_VARS)
-    else:
-        target_variants = set(AMERICAN_VARS)
+    # record, which the British set admits, so the merged forms still ship.
+    target_variants = spellcheck_vars(dialect)
+
+    def record_noun_flags(shaw, pos):
+        """Accumulate the per-shaw noun morphology flags for one sense."""
+        if is_proper_noun(pos):
+            has_proper_sense[shaw] = True
+            takes_singular_poss[shaw] = True
+            takes_plural[shaw] = True
+        else:
+            has_common_sense[shaw] = True
+            # Singular common nouns (NN1) take possessive + plural.
+            # Pluralia tantum (NN2) take only the trailing-' plural possessive.
+            # NN0 (number-neutral) and other N* tags we leave alone for now.
+            if pos == 'NN1':
+                takes_singular_poss[shaw] = True
+                takes_plural[shaw] = True
+            elif pos == 'NN2':
+                takes_plural_poss[shaw] = True
+
+    # US-gap fallback bookkeeping (us dict only): a lemma with NO native GenAm
+    # form falls back to its British form so a US typist isn't flagged for the
+    # only spelling that exists. We collect British-family candidates per lemma
+    # and, after the native pass, admit them only for lemmas America has nothing
+    # native for. (No SSB is fabricated — the existing British form is reused.)
+    lemma_has_american = defaultdict(bool)
+    gap_candidates = []  # (lemma, shaw, pos) British forms eligible for fallback
 
     for key, entries in readlex_data.items():
         lemma = extract_lemma_from_key(key)
@@ -299,7 +324,18 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff,
             if not shaw:
                 continue
             var = entry.get('var', '')
-            if var and var not in target_variants:
+
+            if dialect == 'us' and is_american(var):
+                lemma_has_american[lemma] = True
+
+            native = var in target_variants if var else True
+            if not native:
+                # Not in this dictionary's family. For us, a British-family form
+                # is a fallback candidate; otherwise fall back to the WordNet
+                # spelling gate (or drop).
+                if dialect == 'us' and var in US_GAP_FALLBACK_VARS:
+                    gap_candidates.append((lemma, shaw, entry.get('pos', '')))
+                    continue
                 if lemma and wordnet_cache:
                     if not should_include_word(lemma, dialect, wordnet_cache):
                         continue
@@ -308,21 +344,18 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff,
             elif not var and lemma and wordnet_cache:
                 if not should_include_word(lemma, dialect, wordnet_cache):
                     continue
-            pos = entry.get('pos', '')
-            if is_proper_noun(pos):
-                has_proper_sense[shaw] = True
-                takes_singular_poss[shaw] = True
-                takes_plural[shaw] = True
-            else:
-                has_common_sense[shaw] = True
-                # Singular common nouns (NN1) take possessive + plural.
-                # Pluralia tantum (NN2) take only the trailing-' plural possessive.
-                # NN0 (number-neutral) and other N* tags we leave alone for now.
-                if pos == 'NN1':
-                    takes_singular_poss[shaw] = True
-                    takes_plural[shaw] = True
-                elif pos == 'NN2':
-                    takes_plural_poss[shaw] = True
+
+            record_noun_flags(shaw, entry.get('pos', ''))
+
+    # Admit the US-gap fallbacks: British forms for lemmas with no GenAm form.
+    if dialect == 'us':
+        gap_admitted = 0
+        for lemma, shaw, pos in gap_candidates:
+            if not lemma_has_american[lemma]:
+                record_noun_flags(shaw, pos)
+                gap_admitted += 1
+        print(f"  US-gap fallback: {gap_admitted} British form(s) admitted "
+              f"(words with no native GenAm form)")
 
     shavian_words = set()
     for shaw in set(has_proper_sense) | set(has_common_sense):

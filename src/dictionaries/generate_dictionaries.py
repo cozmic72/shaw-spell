@@ -522,19 +522,19 @@ def process_readlex_with_lemmas(readlex_data):
 
 
 def variant_to_label(var_code):
-    """Convert a var code to a reader-friendly label (RP, General American, the
-    national accents, …). Delegates to the shared dialect_display model so the
-    dictionaries, spell-checker and any other product label a var identically."""
+    """Convert a var code to its user-facing presentation dialect tag (GB / US /
+    AU / …). Delegates to the shared dialect_display model so the dictionaries,
+    spell-checker and any other product label a var identically."""
     return var_label(var_code)
 
 
 def form_variant_label(form, lemma_has_rrp):
-    """The reader-friendly dialect/variation label for one form, or "" when the
-    form needs no label. Combines the var's friendly accent name with its
-    variations (mergers / variant flag), and applies the owner's RSSB rule:
-    an RSSB form is presented as "a variant of British" (label "Southern British
-    variant") when an RRP form of the same word exists, but as THE British form
-    ("Southern British") when it is the word's only British attestation.
+    """The user-facing dialect/variation label for one form, or "" when the form
+    needs no label. Combines the var's presentation tag (GB / US / AU / …) with
+    its variations (mergers / variant flag), and applies the owner's RSSB rule:
+    an RSSB form is presented as a British variant (label "GB variant") when an
+    RRP form of the same word exists, but as THE British form ("GB") when it is
+    the word's only British attestation.
     """
     var = form.get('var', '')
     role = rssb_role(var, lemma_has_rrp)

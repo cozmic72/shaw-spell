@@ -1,8 +1,16 @@
 """Presentation model for the dialect `var` codes and the additive
-variations fields (`mergers`, `variant`) — the SINGLE source of truth every
-downstream PRODUCT (the XML dictionaries, the Hunspell spell-check wordlists,
-anything that shows a var to a reader) shares so a var's friendly label and its
-dialect family can never drift between consumers.
+variations fields (`mergers`, `variant`).
+
+TWO LAYERS (owner's model):
+
+  * UNDER THE HOOD the data + the editor keep the full-fidelity internal vars —
+    RRP, RSSB, SSB, GenAm, GenAus, GenCan, NZ, SthAfr, IrEng. Nothing here
+    rewrites them; this module never touches stored data.
+
+  * TO THE USER the shipped products (the web + Apple reference dictionaries)
+    collapse each internal var to a familiar PRESENTATION DIALECT tag — the
+    reader sees GB / US / AU / NZ / ZA / IE, never an internal code like "RSSB"
+    or a coinage like "Southern British". See presentation_dialect().
 
 The canonical var set the harvest + pipeline emit (see
 generate_wiktionary_supplement.KEEP_ACCENTS): RRP is the canonical British base;
@@ -15,30 +23,63 @@ trap-bath is NO LONGER a var: ReadLex's upstream `var:"TrapBath"` is reinterpret
 to `var:"RRP"` + `mergers:["trap-bath"]` (basis.reinterpret_upstream). A record's
 variations therefore live in `mergers` (a list) and `variant` (a bool), never in
 `var`.
+
+LABELS follow the project's established short-code convention (dialect tag is
+lowercase gb/us; wordnet_dialect.py: US / GB / CA / AU). We prefer those concise
+codes over spelled-out coinages so a var reads the same everywhere it surfaces.
+
+SPELL-CHECK vs REFERENCE-DICTIONARY are two different products with two different
+inclusion rules:
+  * The reference dictionary shows every accent, each collapsed to its
+    presentation tag (foreign accents surface as labelled variants, never as the
+    plain headword).
+  * The two shipped spell-check dictionaries are gb + us. Foreign national
+    accents (AU/CA/NZ/ZA/IE) are their OWN dialect and NEVER become a gb or us
+    headword. The gb dict ships British forms (RRP + RSSB/SSB, trap-bath riding
+    under RRP); the us dict ships American forms (GenAm), plus the GB form as a
+    marked alternative for any word America has no native form of (the US-gap
+    fallback — see spellcheck_vars / US_GAP_FALLBACK_VARS).
 """
 
-# var code -> user-friendly label shown to a reader. British base and its
-# national siblings read as accents of English; the merger/variant flags are
-# NOT vars and are labelled separately (see merger_label / VARIANT_LABEL).
-VAR_LABELS = {
-    "RRP":    "RP",                 # Received Pronunciation — the British base
-    "RSSB":   "Southern British",   # rhotic-restored unconfirmed British
-    "SSB":    "Southern British",   # legacy Standard Southern British
-    "GenAm":  "General American",
-    "GenAus": "Australian",
-    "GenCan": "Canadian",
-    "NZ":     "New Zealand",
-    "SthAfr": "South African",
-    "IrEng":  "Irish",
-    "GB":     "British",            # legacy spelling-dialect tag
+# ---------------------------------------------------------------------------
+# PRESENTATION LAYER: internal var -> user-facing dialect tag.
+# ---------------------------------------------------------------------------
+# The tag a reader sees in the shipped dictionaries. Every British var collapses
+# to GB; the American family to US; each foreign national accent to its familiar
+# region code. Codes match the project convention (gb/us dialect tags, wordnet
+# AU/CA). ZA (South Africa) and IE (Ireland) are the standard ISO-style codes in
+# the same short style.
+PRESENTATION_DIALECT = {
+    "RRP":    "GB",     # Received Pronunciation — British base
+    "RSSB":   "GB",     # rhotic-restored unconfirmed Southern British
+    "SSB":    "GB",     # legacy Standard Southern British
+    "GenAm":  "US",     # General American
+    "GenCan": "CA",     # Canadian — its own tag
+    "GenAus": "AU",     # Australian
+    "NZ":     "NZ",     # New Zealand
+    "SthAfr": "SA",     # South African
+    "IrEng":  "IE",     # Irish
+    "GB":     "GB",     # legacy spelling-dialect tag
 }
 
-# The two ACCENT FAMILIES, keyed off each var's normalisation pathway in the
-# harvest (wiktionary_rp = non-rhotic British family; wiktionary_gam = rhotic
-# American family). Drives home-vs-alt selection in the dictionaries and
-# dialect inclusion in the spell-checker.
-BRITISH_VARS = {"RRP", "RSSB", "SSB", "GenAus", "SthAfr", "NZ", "GB"}
-AMERICAN_VARS = {"GenAm", "GenCan", "IrEng"}
+
+def presentation_dialect(var_code):
+    """The user-facing dialect tag for an internal var (GB / US / AU / …), or the
+    bare var code if unmapped (fail-visible). Empty var -> "" (the ReadLex core is
+    RP; callers treat an unlabelled form as the home dialect)."""
+    if not var_code:
+        return ""
+    return PRESENTATION_DIALECT.get(var_code, var_code)
+
+
+# ACCENT FAMILIES for the REFERENCE DICTIONARY's home-vs-alt selection. The
+# British base and its Southern-British siblings are the British family; GenAm is
+# the American family. The foreign national accents are their OWN dialect
+# (FOREIGN_VARS) — they belong to NEITHER family, so they never display as the
+# plain home headword and never ship as a gb/us spell-check headword.
+BRITISH_VARS = {"RRP", "RSSB", "SSB", "GB"}
+AMERICAN_VARS = {"GenAm"}
+FOREIGN_VARS = {"GenAus", "GenCan", "NZ", "SthAfr", "IrEng"}
 
 # The British base var. RSSB is "a variant OF British" only when an RRP form for
 # the same word also exists; when RSSB is the SOLE form it IS the British form
@@ -58,23 +99,49 @@ VARIANT_LABEL = "variant"
 
 
 def var_label(var_code):
-    """The friendly label for a var code, or the code itself if unmapped
-    (fail-visible: an unknown var shows as its bare code rather than being
-    silently blanked)."""
-    if not var_code:
-        return ""
-    return VAR_LABELS.get(var_code, var_code)
+    """The user-facing dialect tag for a var code (presentation layer). Alias of
+    presentation_dialect for call sites that read as "the label for this var"."""
+    return presentation_dialect(var_code)
 
 
 def is_british(var_code):
-    """Whether a var belongs to the British (non-rhotic) accent family. An
-    empty/absent var is British (the ReadLex core is RP)."""
+    """Whether a var belongs to the British accent family. An empty/absent var is
+    British (the ReadLex core is RP)."""
     return not var_code or var_code in BRITISH_VARS
 
 
 def is_american(var_code):
-    """Whether a var belongs to the American (rhotic) accent family."""
+    """Whether a var belongs to the American accent family."""
     return var_code in AMERICAN_VARS
+
+
+def is_foreign(var_code):
+    """Whether a var is a foreign national accent (AU/CA/NZ/ZA/IE) — its OWN
+    dialect, belonging to neither the British nor the American family."""
+    return var_code in FOREIGN_VARS
+
+
+def spellcheck_vars(dialect):
+    """The var set that may become a HEADWORD in a shipped spell-check dictionary.
+
+    dialect is 'gb' or 'us'. gb = the British family; us = the American family.
+    Foreign national accents are DELIBERATELY excluded from both — they are their
+    own dialect and must never pollute the gb/us wordlists. The us dict's coverage
+    of British-only words is handled separately as a marked alternative
+    (US_GAP_FALLBACK_VARS), NOT by admitting British vars as us headwords.
+    """
+    if dialect == 'gb':
+        return set(BRITISH_VARS)
+    if dialect == 'us':
+        return set(AMERICAN_VARS)
+    raise ValueError(f"unknown spell-check dialect: {dialect!r}")
+
+
+# The us dict falls back to the British form for any word America has no native
+# (GenAm) form of, displayed as an alternative. We do NOT fabricate an SSB entry
+# — we reuse the existing GB form and mark it. These are the vars whose forms are
+# eligible for that fallback.
+US_GAP_FALLBACK_VARS = set(BRITISH_VARS)
 
 
 def merger_label(merger_code):
@@ -98,7 +165,9 @@ def rssb_role(var_code, word_has_rrp):
     its word (no RRP entry), in which case it stands as THE British form.
 
     Returns "variant" (present as a British variant) or "sole" (present as the
-    British form). Non-RSSB vars return None — the rule is RSSB-specific.
+    British form). Non-RSSB vars return None — the rule is RSSB-specific. Note
+    the user-facing LABEL in both cases is the presentation tag "GB" (with the
+    variant marking applied by the caller); this only decides variant-vs-sole.
     """
     if var_code not in ("RSSB", "SSB"):
         return None

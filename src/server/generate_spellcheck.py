@@ -32,6 +32,9 @@ import argparse
 from pathlib import Path
 from collections import defaultdict
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+from dialect_display import BRITISH_VARS, AMERICAN_VARS
+
 
 # ---- Confusion rules ----
 # Applied in priority order. Each rule has `substitutes`, a list of
@@ -280,10 +283,14 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff,
     takes_plural_poss = defaultdict(bool)
     namer_dot = '·'
 
+    # Accept every var of the dictionary's accent family (RSSB, the national
+    # accents and legacy SSB/GB all included via BRITISH_VARS/AMERICAN_VARS).
+    # trap-bath is no longer a var — it rides as a `mergers` flag on an RRP
+    # record, which BRITISH_VARS already admits, so the merged forms still ship.
     if dialect == 'gb':
-        target_variants = {'RRP', 'GB', 'RSSB', 'TrapBath', 'RRPVar', 'RRPvar', 'SSB', 'GenAus'}
+        target_variants = set(BRITISH_VARS)
     else:
-        target_variants = {'GenAm', 'RSSB', 'GenAus'}
+        target_variants = set(AMERICAN_VARS)
 
     for key, entries in readlex_data.items():
         lemma = extract_lemma_from_key(key)

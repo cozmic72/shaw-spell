@@ -21,6 +21,12 @@ from pathlib import Path
 from html import escape
 from collections import defaultdict
 from build_definition_caches import POS_TO_ENGLISH, POS_TO_SHAVIAN
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+from dialect_display import (
+    var_label, is_british, is_american, variations_label, rssb_role,
+    BRITISH_BASE_VAR,
+)
 # Dialect detection now uses comprehensive cache only
 
 
@@ -516,13 +522,33 @@ def process_readlex_with_lemmas(readlex_data):
 
 
 def variant_to_label(var_code):
-    """Convert variant codes to readable labels."""
-    variant_map = {
-        'RRP': 'RP',  # Received Pronunciation (British)
-        'GenAm': 'Gen-Am',
-        'GB': 'GB'
-    }
-    return variant_map.get(var_code, var_code)
+    """Convert a var code to a reader-friendly label (RP, General American, the
+    national accents, …). Delegates to the shared dialect_display model so the
+    dictionaries, spell-checker and any other product label a var identically."""
+    return var_label(var_code)
+
+
+def form_variant_label(form, lemma_has_rrp):
+    """The reader-friendly dialect/variation label for one form, or "" when the
+    form needs no label. Combines the var's friendly accent name with its
+    variations (mergers / variant flag), and applies the owner's RSSB rule:
+    an RSSB form is presented as "a variant of British" (label "Southern British
+    variant") when an RRP form of the same word exists, but as THE British form
+    ("Southern British") when it is the word's only British attestation.
+    """
+    var = form.get('var', '')
+    role = rssb_role(var, lemma_has_rrp)
+    if role == 'variant':
+        base = var_label(var) + ' variant'
+    elif role == 'sole':
+        base = var_label(var)
+    else:
+        base = var_label(var)
+
+    extra = variations_label(form.get('mergers'), form.get('variant'))
+    if base and extra:
+        return f'{base}, {extra}'
+    return base or extra
 
 
 def build_shavian_lookup(readlex_data):
@@ -1105,6 +1131,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 'pos': pos,
                 'ipa': ipa,
                 'var': var,
+                'mergers': entry.get('mergers', []),
+                'variant': entry.get('variant', False),
                 'spelling_variant': detected_variant,
                 'is_lemma': is_lemma_form,
                 'is_preferred': (var == preferred_var)
@@ -1454,6 +1482,14 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
                     show_variants = len(unique_variants) > 1
 
+                    # Whether ANY form of this lemma carries the British base var
+                    # (RRP). Drives the owner's rule for presenting RSSB: an RSSB
+                    # form is "a variant of British" when an RRP form for the word
+                    # exists, but stands as THE British form when it is the only
+                    # British attestation (see rssb_role).
+                    lemma_has_rrp = any(form['var'] == BRITISH_BASE_VAR
+                                        for form in lemma_data['forms'])
+
                     # Determine home dialect spelling for this dictionary
                     home_dialect = 'GB' if preferred_var == 'RRP' else 'US'
 
@@ -1497,15 +1533,19 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 # Use spelling variant to determine home vs alt
                                 is_home = (spelling_var == home_dialect)
                             else:
-                                # Fall back to pronunciation variant (var field)
+                                # Fall back to pronunciation variant (var field):
+                                # a form is HOME when its var belongs to this
+                                # dictionary's accent family. British family (RRP,
+                                # RSSB, the southern-hemisphere accents, legacy SSB)
+                                # is home in the GB dict; American family (GenAm,
+                                # Canadian, Irish) is home in the US dict. trap-bath
+                                # is a `mergers` flag on an RRP record, so those
+                                # forms are British-home (shown as "also").
                                 var = form.get('var')
                                 if dialect == 'us':
-                                    # For US: GenAm and TrapBath are both home forms (TRAP is standard in GenAm)
-                                    is_home = (var in ('GenAm', 'TrapBath', None))
+                                    is_home = is_american(var) or not var
                                 else:
-                                    # For GB: only RRP is home (BATH vowel is standard RP);
-                                    # TrapBath is alt (shown as "also")
-                                    is_home = (var in ('RRP', None))
+                                    is_home = is_british(var)
 
                             if is_home:
                                 home_forms.append(form)
@@ -1588,18 +1628,13 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             # Check for additional pronunciations in home_forms (e.g., due /djuː/ and /duː/)
                             for additional_form in home_forms[1:]:
                                 if additional_form['ipa'] != home_form['ipa']:
-                                    # Different pronunciation - show it
-                                    variant_label = additional_form.get('var')
-                                    if variant_label == 'GenAm':
-                                        variant_label = 'US'
-                                    elif variant_label == 'RRP':
-                                        variant_label = 'GB'
-                                    elif variant_label == 'TrapBath':
-                                        # TrapBath is an accepted alternative, not a dialect — show as "also"
-                                        variant_label = None
-
-                                    if variant_label and variant_label != home_dialect:
-                                        f.write(f' <span class="variant">({escape(home_display_text)}, {variant_label} /{additional_form["ipa"]}/)</span>')
+                                    # Different pronunciation - show it with its friendly
+                                    # dialect/variation label (broad-A merger, national
+                                    # accent, RSSB-variant …). No distinguishing label →
+                                    # a plain "also".
+                                    variant_label = form_variant_label(additional_form, lemma_has_rrp)
+                                    if variant_label:
+                                        f.write(f' <span class="variant">({escape(home_display_text)}, {escape(variant_label)} /{additional_form["ipa"]}/)</span>')
                                     else:
                                         f.write(f' <span class="variant">(also /{additional_form["ipa"]}/)</span>')
 
@@ -1637,7 +1672,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 variants_text = ', '.join(additional_home_forms)
                                 f.write(f' <span class="variant">(also: {escape(variants_text)})</span>')
 
-                            # Check for alternate forms
+                            # Check for alternate forms (a form of the OTHER accent
+                            # family, e.g. GenAm in the GB dictionary)
                             if alt_forms:
                                 alt_form = alt_forms[0]
 
@@ -1648,25 +1684,17 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 else:
                                     alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
 
-                                # Determine the label for this alt form
-                                alt_var = alt_form.get('var')
-                                is_trap_bath = (alt_var == 'TrapBath')
+                                # The friendly accent/variation label for this alt form
+                                # (General American, broad A, an RSSB variant …), falling
+                                # back to the coarse home/alt dialect name.
+                                alt_label = form_variant_label(alt_form, lemma_has_rrp) or alt_dialect
 
-                                # Check if pronunciation is the same
                                 if home_form['ipa'] == alt_form['ipa']:
-                                    if is_trap_bath:
-                                        # Same pronunciation TrapBath — no need to show
-                                        pass
-                                    else:
-                                        # Same pronunciation - just show alternate spelling (colour vs color)
-                                        f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect})</span>')
+                                    # Same pronunciation - just show alternate spelling (colour vs color)
+                                    f.write(f' <span class="variant">({escape(alt_display_text)}, {escape(alt_label)})</span>')
                                 else:
-                                    if is_trap_bath:
-                                        # TrapBath variant — show as "also" without dialect label
-                                        f.write(f' <span class="variant">(also /{alt_form["ipa"]}/)</span>')
-                                    else:
-                                        # Different pronunciation - show alternate with its IPA
-                                        f.write(f' <span class="variant">({escape(alt_display_text)}, {alt_dialect} /{alt_form["ipa"]}/)</span>')
+                                    # Different pronunciation - show alternate with its IPA
+                                    f.write(f' <span class="variant">({escape(alt_display_text)}, {escape(alt_label)} /{alt_form["ipa"]}/)</span>')
 
                         elif alt_forms:
                             # Only alt form available
@@ -1689,8 +1717,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                     form_label_text = translate_grammar_term(form_label_text, shavian_lookup)
                                 f.write(f' <span class="form-label">{escape(form_label_text)}</span>')
 
-                            if alt_form.get('var') != 'TrapBath':
-                                f.write(f' <span class="variant">({alt_dialect})</span>')
+                            only_alt_label = form_variant_label(alt_form, lemma_has_rrp) or alt_dialect
+                            f.write(f' <span class="variant">({escape(only_alt_label)})</span>')
 
                         f.write('</div>\n')
 

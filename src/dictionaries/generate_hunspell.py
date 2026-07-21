@@ -22,6 +22,9 @@ from pathlib import Path
 from typing import Dict, Set, List
 from collections import defaultdict
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+from dialect_display import BRITISH_VARS, AMERICAN_VARS
+
 
 # Affix flag definitions
 # We keep these minimal since we have explicit irregular forms
@@ -68,15 +71,13 @@ def extract_readlex_words(readlex_data: Dict, target_dialect: str) -> Set[str]:
     """
     words = set()
 
-    # Map dialect codes — include all variants for maximum acceptance
-    # RSSB = Rhotic Standard Southern British (supplement)
-    # RRPVar/RRPvar = variant RP pronunciations; SSB = Standard Southern British
-    # GenAm = General American (supplement)
-    # GenAus = General Australian (included in both for maximum acceptance)
+    # Every var of the dialect's accent family (RSSB, the national accents and
+    # legacy SSB/GB via BRITISH_VARS/AMERICAN_VARS). trap-bath is a `mergers`
+    # flag on an RRP record now, so those forms come in under RRP.
     if target_dialect.lower() == 'gb':
-        target_variants = ['RRP', 'GB', 'RSSB', 'TrapBath', 'RRPVar', 'RRPvar', 'SSB', 'GenAus']
+        target_variants = BRITISH_VARS
     else:
-        target_variants = ['GenAm', 'RSSB', 'GenAus']
+        target_variants = AMERICAN_VARS
 
     for key, entries in readlex_data.items():
         # Normalize: supplement entries may be single dicts

@@ -1710,7 +1710,7 @@ body {
    its label) sits LAST, two cells the header spans. */
 .related-head, .related-row {
     display: grid;
-    grid-template-columns: minmax(0, 0.9fr) 42px 60px minmax(0, 1.9fr) 108px 22px 88px;
+    grid-template-columns: minmax(0, 1.2fr) 42px 56px minmax(0, 1.6fr) 108px 22px 88px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 10px;

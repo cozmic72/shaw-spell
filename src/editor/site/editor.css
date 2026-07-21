@@ -1710,7 +1710,7 @@ body {
    its label) sits LAST, two cells the header spans. */
 .related-head, .related-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) 42px 56px minmax(0, 1.6fr) 108px 22px 88px;
+    grid-template-columns: minmax(0, 1.5fr) 36px 52px minmax(0, 1.8fr) 92px 20px 74px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 10px;
@@ -1739,7 +1739,6 @@ body {
     font-size: inherit;
     justify-self: stretch;
 }
-.related-head .related-shaw,
 .related-head .related-source { justify-content: flex-end; }
 /* Leaf rows nest UNDER their spelling node: a left indent lands the first column
    just right of the node summary's label (past the chevron) so nothing (state cell
@@ -1821,11 +1820,10 @@ body {
 .related-shaw {
     font-family: var(--shaw);
     font-size: 20px;
-    /* Fill the track and right-align the glyphs (not justify-self:end, which would
-       shrink-wrap to content width and defeat the ellipsis) so a long spelling clips
-       to its column instead of bleeding into source. min-width:0 lets it shrink. */
+    /* Left-aligned: the Shavian starts under the SHAW header and reads L-to-R.
+       min-width:0 + ellipsis clips a long spelling to its column. */
     min-width: 0;
-    text-align: right;
+    text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

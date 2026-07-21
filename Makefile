@@ -12,6 +12,7 @@ include build-rules/icons.mk
 include build-rules/dictionaries.mk
 include build-rules/spellcheck.mk
 include build-rules/site.mk
+include build-rules/editor.mk
 
 # Notarization configuration
 # Set these in .signing-config or pass on the command line

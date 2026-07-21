@@ -1180,8 +1180,13 @@ def _commit_repo_root():
 
     Committing is only meaningful for the real store under the repo. A test that
     redirects SHAW_SPELL_PATCH_STORE to a temp file has no repo to commit to, so we
-    refuse loudly rather than commit against whatever cwd git happens to find."""
+    refuse loudly rather than commit against whatever cwd git happens to find.
+
+    A tarball deploy is not a checkout either: PROJECT_ROOT has no .git, so commit
+    is unsupported there and the button disables cleanly."""
     if _store_path().resolve() != PATCHES_PATH.resolve():
+        return None
+    if not (PROJECT_ROOT / ".git").exists():
         return None
     return PROJECT_ROOT
 

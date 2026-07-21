@@ -46,6 +46,8 @@ BUILD_DMG_FILE := $(BUILD_DMG)/Shaw-Spell-$(VERSION).dmg
 BUILD_SITE := $(BUILD_ROOT)/site
 BUILD_SITE_DATA := $(BUILD_ROOT)/site-data
 
+BUILD_EDITOR := $(BUILD_ROOT)/editor
+
 BUILD_ICONS := $(BUILD_ROOT)/icons
 
 # All build directories that need to be created
@@ -66,6 +68,7 @@ SRC_INSTALLER := src/installer
 SRC_UNINSTALLER := src/uninstaller
 SRC_SITE := src/site
 SRC_SITE_DAEMON := src/site-daemon
+SRC_EDITOR := src/editor
 SRC_TOOLS := src/tools
 SRC_FONTS := src/fonts
 SRC_IMAGES := src/images

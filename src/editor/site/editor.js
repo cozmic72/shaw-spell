@@ -1159,8 +1159,14 @@ function glanceColumn(ctx, record, overridden) {
 
     const word = cell("latin", record.word);
     markOverridden(word, word, overridden.has("word"));
+    // The word wears its verdict as a colour-coded box (state hue border) instead of
+    // a separate STATE pill — so state is glanceable right on the word. The state name
+    // is on title/aria-label since the pill text is gone.
     const wordGroup = document.createElement("div");
-    wordGroup.className = "glance-word";
+    wordGroup.className = `glance-word state-box ${record.patch_state}`;
+    const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
+    wordGroup.title = `state: ${stateName}`;
+    wordGroup.setAttribute("aria-label", `${record.word} — state: ${stateName}`);
     wordGroup.append(word, editedSummary(overridden));
 
     const posVar = document.createElement("div");
@@ -1240,8 +1246,15 @@ function priorityRail(record) {
     const rail = document.createElement("div");
     rail.className = "priority-rail";
 
+    // The plain state pill is gone — state now boxes the Latin word. This slot keeps
+    // only the orphan sub-tag (op + why), and hides when the record is not orphaned.
     const state = railSlot("state");
-    state.append(stateBadge(record.patch_state), orphanKindBadge(record));
+    const orphanKind = orphanKindBadge(record);
+    if (orphanKind.childElementCount) {
+        state.append(orphanKind);
+    } else {
+        state.classList.add("empty");
+    }
 
     const sources = railSlot("sources");
     if (record.source && record.source.length) {
@@ -2266,10 +2279,6 @@ function setDetailMode() {
 // filter value, daemon), only the human label differs. "authored" reads as
 // "manual" (a human hand-added it) since every entry is authored by someone.
 const STATE_LABELS = { authored: "manual" };
-
-function stateBadge(patchState) {
-    return cell(`state-badge ${patchState}`, STATE_LABELS[patchState] ?? patchState);
-}
 
 // The orphan sub-tag: on an `orphaned` row, a small badge naming the op + why it
 // orphaned (accept-orphan vs the URGENT drop-resurfaced), from overlay.orphan_kind.

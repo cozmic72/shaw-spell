@@ -797,36 +797,58 @@ body {
 
 /* ---- glance column: identity row (word | POS+var) then Shavian/IPA below ---- */
 .glance-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-/* The identity row: the big Latin word on the LEFT, the POS + var group to its
-   RIGHT. Wraps (POS/var drop under the word) on a narrow/mobile width. Baseline-
-   aligned so the word and the POS code sit on the same line. */
+/* The identity row: the big Latin word on the LEFT, the POS + var group snug to the
+   TOP-RIGHT (content-sized, not a wide box). Wraps (POS/var drop under the word) on a
+   narrow/mobile width. The word's baseline sits near the BOTTOM of the row (align-items:
+   end) so it does not float high; the POS/var group tops-align to the same row top. */
 .glance-identity {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 10px 28px;
+    align-items: end;
+    justify-content: space-between;
+    gap: 10px 24px;
     min-width: 0;
 }
-.glance-word { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px 14px; }
+/* The state box around the Latin word: a left-edge accent + full border in the
+   record's state hue (reusing the ledger's --state-* vars), keyed by .state-* class.
+   A quiet tinted ground keeps it legible without a garish fill. */
+.glance-word {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    padding: 6px 12px 6px 10px;
+    border: 1px solid var(--state-edge, var(--rule));
+    border-left-width: 4px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--state-edge, var(--rule)) 7%, transparent);
+}
+.glance-word.unreviewed { --state-edge: var(--state-unreviewed); }
+.glance-word.edited { --state-edge: var(--state-edited); }
+.glance-word.dropped { --state-edge: var(--state-dropped); }
+.glance-word.flagged { --state-edge: var(--state-flagged); }
+.glance-word.authored { --state-edge: var(--state-authored); }
+.glance-word.orphaned { --state-edge: var(--state-orphaned); }
 .glance-word .latin {
     font-size: 34px;
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.1;
 }
-/* POS (code prominent) + var, to the right of the word. */
+/* POS (code prominent) + var, snug together, content-sized, at the top-right. */
 .glance-posvar {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
-    gap: 16px 28px;
-    flex: 1 1 auto;
+    gap: 6px 16px;
+    flex: 0 0 auto;
     min-width: 0;
 }
-/* Size the var field's flex WRAP (.edit-field), not its inner .var-field input —
-   the wrap is the flex item inside .glance-posvar. */
-.glance-posvar > .edit-field:has(> .var-field) { flex: 0 1 130px; }
-.pos-glance { flex: 1 1 auto; min-width: 0; }
+/* Size the var field to its CONTENT (GenAm/TrapBath are the widest) — no fixed 130px
+   box; RRP must not get a wide box. */
+.glance-posvar > .edit-field:has(> .var-field) { flex: 0 0 auto; }
+.glance-posvar .var-field { width: 11ch; min-width: 0; }
+.pos-glance { flex: 0 0 auto; min-width: 0; }
 .pos-glance-value { display: flex; flex-direction: column; gap: 2px; }
 /* The CLAWS CODE (e.g. NN1) is the prominent text; the spelled-out English sits
    under it, smaller, and may wrap/truncate. */
@@ -841,7 +863,7 @@ body {
 .pos-glance-name {
     font-size: 12px;
     color: var(--ink-soft);
-    max-width: 22ch;
+    max-width: 16ch;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -991,25 +1013,6 @@ body {
     color: var(--ink-soft);
 }
 .bulk-traits dd { font-size: 15px; color: var(--ink); word-break: break-word; }
-
-/* The verdict state, stamped in the heading so the card reads its own status at
-   a glance — the same non-colour stamp shape the ledger uses. */
-.state-badge {
-    align-self: center;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border: 1px solid currentColor;
-    border-radius: 2px;
-    white-space: nowrap;
-}
-.state-badge.unreviewed { color: var(--state-unreviewed); }
-.state-badge.edited { color: var(--state-edited); }
-.state-badge.dropped { color: var(--state-dropped); }
-.state-badge.flagged { color: var(--state-flagged); }
-.state-badge.authored { color: var(--state-authored); }
-.state-badge.orphaned { color: var(--state-orphaned); }
 
 /* The orphan sub-tag, beside the state badge in the DETAIL heading (no longer in the
    ledger row — it overflowed the narrow state column onto the word). Names the op + why
@@ -2009,6 +2012,20 @@ kbd {
        field — the rail-column follows the glance-column in source order, and the
        action buttons are pulled OUT of it into the fixed bottom bar (rule below). */
     .detail-chrome { gap: 18px; }
+    /* Mobile: POS + var stack top-right ABOVE the word row (not wedged between the
+       word and Shavian) — reverse the identity order so posvar leads, the word
+       follows, then Shavian/IPA continue directly under the word. */
+    .glance-identity {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .glance-posvar {
+        order: -1;
+        align-items: flex-start;
+        justify-content: flex-end;
+        align-self: flex-end;
+    }
+    .glance-word { align-self: flex-start; }
     .priority-rail {
         display: flex;
         flex-wrap: wrap;

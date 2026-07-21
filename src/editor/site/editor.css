@@ -795,8 +795,18 @@ body {
     .evidence-cols > .definitions { margin-top: 0; }
 }
 
-/* ---- glance column: the five fields stacked, left-aligned ---- */
+/* ---- glance column: identity row (word | POS+var) then Shavian/IPA below ---- */
 .glance-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+/* The identity row: the big Latin word on the LEFT, the POS + var group to its
+   RIGHT. Wraps (POS/var drop under the word) on a narrow/mobile width. Baseline-
+   aligned so the word and the POS code sit on the same line. */
+.glance-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 28px;
+    min-width: 0;
+}
 .glance-word { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px 14px; }
 .glance-word .latin {
     font-size: 34px;
@@ -804,19 +814,37 @@ body {
     letter-spacing: -0.01em;
     line-height: 1.1;
 }
-/* POS (spelled out) + var share a row below the spelling fields, a bit larger. */
-.glance-posvar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 28px; }
+/* POS (code prominent) + var, to the right of the word. */
+.glance-posvar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px 28px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
 /* Size the var field's flex WRAP (.edit-field), not its inner .var-field input —
    the wrap is the flex item inside .glance-posvar. */
 .glance-posvar > .edit-field:has(> .var-field) { flex: 0 1 130px; }
 .pos-glance { flex: 1 1 auto; min-width: 0; }
 .pos-glance-value { display: flex; flex-direction: column; gap: 2px; }
-.pos-glance-name { font-size: 17px; color: var(--ink); }
+/* The CLAWS CODE (e.g. NN1) is the prominent text; the spelled-out English sits
+   under it, smaller, and may wrap/truncate. */
 .pos-glance-tag {
     font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    color: var(--ink);
+}
+.pos-glance-name {
     font-size: 12px;
-    letter-spacing: 0.06em;
     color: var(--ink-soft);
+    max-width: 22ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ---- rail column: priority rail, attributes, metadata, actions ---- */
@@ -1302,99 +1330,54 @@ body {
 }
 .edit-input.dirty { border-bottom-color: var(--state-edited); }
 
-/* ---- attributes: the has-many chips control (mergers + variant unified) ---- */
-/* One add/remove-chips surface next to var. Active attributes are removable chips;
-   "+ attribute" opens a small vocabulary popover. The hidden .merger-check /
-   .variant-check checkboxes back the chips (the flattened on-disk shape) and are
-   never shown. */
-.attributes-field { min-width: 0; }
-.attribute-flags { display: none; }
-.attribute-chips {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-}
-.attribute-chip {
+/* ---- variations: always-visible toggle buttons (mergers + "other" unified) ---- */
+/* A row of toggle-button pills under the "Variations" label — every merger plus the
+   "other" (free-variation) marker, always visible. Each pill toggles on/off; the
+   hidden .merger-check / .variant-check checkbox inside it is the flattened on-disk
+   state (mergers list + variant bool), never shown. Mirrors the pre-redesign merger
+   toggle-row + variant toggle, merged into one group. */
+.variations-field { min-width: 0; }
+.variation-toggles { display: flex; flex-wrap: wrap; gap: 10px; }
+.variation-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    min-height: 32px;
-    padding: 2px 4px 2px 12px;
-    font-size: 12px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--paper);
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 3px;
-}
-/* variant rides its own tone, distinct from a merger. */
-.attribute-chip.attr-variant {
-    background: var(--state-authored);
-    border-color: var(--state-authored);
-}
-.attribute-chip-label { line-height: 1; }
-.attribute-chip-remove {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    font-size: 16px;
-    line-height: 1;
-    color: inherit;
-    background: none;
-    border: none;
-    border-radius: 2px;
-    cursor: pointer;
-    opacity: 0.85;
-}
-.attribute-chip-remove:hover { opacity: 1; background: rgba(255, 255, 255, 0.2); }
-
-/* The "+ attribute" ghost button and its vocabulary popover. */
-.attribute-add-wrap { position: relative; display: inline-flex; }
-.attribute-add {
-    display: inline-flex;
-    align-items: center;
-    min-height: 32px;
-    padding: 0 12px;
-    font-size: 12px;
-    letter-spacing: 0.05em;
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 13px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink-soft);
     background: var(--paper-raised);
-    border: 1px dashed var(--rule);
-    border-radius: 3px;
-    cursor: pointer;
-}
-.attribute-add:hover { color: var(--ink); border-color: var(--ink-soft); }
-.attribute-menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    z-index: 30;
-    min-width: 160px;
-    display: flex;
-    flex-direction: column;
-    padding: 6px;
-    background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: 4px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-}
-.attribute-menu[hidden] { display: none; }
-.attribute-menu-item {
-    text-align: left;
-    padding: 8px 10px;
-    font-size: 13px;
-    color: var(--ink);
-    background: none;
-    border: none;
     border-radius: 3px;
     cursor: pointer;
+    user-select: none;
 }
-.attribute-menu-item:hover { background: var(--paper-raised); }
+.variation-toggle:hover { border-color: var(--ink-soft); }
+.variation-toggle.on {
+    color: var(--paper);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+/* The "other" toggle rides its own tone, distinct from a merger. */
+.variation-toggle.variation-other.on {
+    background: var(--state-authored);
+    border-color: var(--state-authored);
+}
+/* The checkbox is the state, not the affordance — the pill is what you click. */
+.variation-toggle .merger-check,
+.variation-toggle .variant-check {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.variation-toggle:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.variation-toggle.variation-other:focus-within {
+    outline-color: var(--state-authored);
+}
 
 /* The Shavian spelling is the dictionary's payload — the biggest thing on the card. */
 .shaw-field {
@@ -1421,18 +1404,18 @@ body {
     cursor: pointer;
     background: none;
 }
-/* Icon action buttons: the inline SVG glyph plus a visible label (learnable). One
-   row, nothing hidden. The label shows on desktop; mobile goes icon-only (rule in
-   the @media block). */
+/* Icon-only action buttons: the inline SVG glyph IS the button — no text label, so
+   every action fits one compact row on both desktop and mobile. A square-ish tap
+   target; the title/aria-label carry the name (hover tooltip + accessible name). */
 .act.act-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 8px 16px;
+    gap: 0;
+    padding: 10px;
+    min-width: 44px;
 }
 .act-glyph { width: 20px; height: 20px; flex: 0 0 auto; display: block; }
-.act-text { line-height: 1; }
 .act.accept { color: var(--state-edited); }
 .act.accept:hover { background: var(--state-edited); color: var(--paper); }
 .act.drop { color: var(--state-dropped); }
@@ -2085,10 +2068,10 @@ kbd {
         border-top: 1px solid var(--rule);
         box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.14);
     }
+    /* Buttons are icon-only everywhere; on mobile they stretch to share the fixed
+       bottom bar's width evenly. */
     .detail .act { flex: 1 1 0; text-align: center; padding: 10px 8px; }
-    /* Icon-only on mobile — the label collapses, the glyph carries the action. */
-    .detail .act.act-icon .act-text { display: none; }
-    .detail .act.act-icon { gap: 0; padding: 10px 8px; }
+    .detail .act.act-icon { gap: 0; padding: 10px 8px; min-width: 0; }
 
     /* The REVIEW/EDITING pill would collide with the shorter card; tuck it in. */
     .detail.mode-review::after, .detail.mode-edit::after { top: 10px; right: 12px; }

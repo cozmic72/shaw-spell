@@ -94,6 +94,12 @@ const MERGERS = [
 // reviewer toggles it on the detail card and it round-trips in the patch.
 const VARIANT_LABEL = "variant";
 
+// The DISPLAY label for the free-variation member (the one backed by the `variant`
+// boolean). Shown in the Variations toggle group and the related-row marker as
+// "other"; the on-disk field name (`variant`) and the daemon facet value key stay
+// unchanged — this is a label change only.
+const VARIATION_OTHER_LABEL = "other";
+
 // The upstream-definition provenance marker: the source(s) that produced this
 // candidate carry a definition for it (read-only; a provenance fact, not editable).
 // Shown as a quiet "def" pill beside the word; absent == no upstream definition.
@@ -1142,19 +1148,20 @@ function recordEditor(record, opts) {
     return container;
 }
 
-// The LEFT column of the chrome: the five glance-fields stacked and left-aligned.
-// The Latin word (large, read-only heading), then the Shavian and IPA edit fields,
-// then POS (spelled out) + var (a bit larger) on their own line. No state badge on
-// the word — it moved to the rail to keep the left edge clean.
+// The LEFT column of the chrome: the glance-fields left-aligned. The IDENTITY row
+// leads — the big Latin word on the left with POS (code prominent) + var to its
+// RIGHT — then the Shavian and IPA edit fields stack beneath the word. No state
+// badge on the word: it moved to the rail to keep the left edge clean. On a narrow
+// screen the POS + var group wraps under the word (identity row is flex-wrap).
 function glanceColumn(ctx, record, overridden) {
     const column = document.createElement("div");
     column.className = "glance-column";
 
     const word = cell("latin", record.word);
     markOverridden(word, word, overridden.has("word"));
-    const wordLine = document.createElement("div");
-    wordLine.className = "glance-word";
-    wordLine.append(word, editedSummary(overridden));
+    const wordGroup = document.createElement("div");
+    wordGroup.className = "glance-word";
+    wordGroup.append(word, editedSummary(overridden));
 
     const posVar = document.createElement("div");
     posVar.className = "glance-posvar";
@@ -1163,17 +1170,22 @@ function glanceColumn(ctx, record, overridden) {
         editField(ctx, "var", "Dialect (var)", record.var, "var-field", overridden.has("var")),
     );
 
+    // Identity row: [ big Latin word | POS + var ], side by side (wrapping on narrow).
+    const identity = document.createElement("div");
+    identity.className = "glance-identity";
+    identity.append(wordGroup, posVar);
+
     column.append(
-        wordLine,
+        identity,
         editField(ctx, "shaw", "Shavian", record.shaw, "shaw-field", overridden.has("shaw")),
         editField(ctx, "ipa", "IPA", record.ipa, "ipa-field", overridden.has("ipa")),
-        posVar,
     );
     return column;
 }
 
-// POS spelled out (the CLAWS-tag expansion) as a read-only glance field: the
-// human description big, the raw tag beneath, the full expansion on hover. An
+// POS as a read-only glance field: the CLAWS CODE (e.g. NN1) is the prominent,
+// big text; the spelled-out English ("singular common noun") sits beneath it,
+// smaller (and may wrap/truncate). The full expansion is also the hover title. An
 // overridden POS carries the edited tag on its label.
 function posSpelledOut(pos, overridden) {
     const wrap = document.createElement("div");
@@ -1184,13 +1196,13 @@ function posSpelledOut(pos, overridden) {
     const value = document.createElement("span");
     value.className = "pos-glance-value";
     value.title = posTitle(pos);
-    const expansion = document.createElement("span");
-    expansion.className = "pos-glance-name";
-    expansion.textContent = posExpansion(pos) || "—";
     const tag = document.createElement("span");
     tag.className = "pos-glance-tag";
-    tag.textContent = pos || "";
-    value.append(expansion, tag);
+    tag.textContent = pos || "—";
+    const expansion = document.createElement("span");
+    expansion.className = "pos-glance-name";
+    expansion.textContent = posExpansion(pos) || "";
+    value.append(tag, expansion);
     wrap.append(caption, value);
     markOverridden(wrap, caption, overridden);
     return wrap;
@@ -2191,7 +2203,7 @@ function relatedDialect(record) {
     wrap.className = "related-dialect";
     wrap.append(varCell(record.var));
     if (record.variant) {
-        wrap.append(cell("related-variant", VARIANT_LABEL));
+        wrap.append(cell("related-variant", VARIATION_OTHER_LABEL));
     }
     for (const value of record.mergers || []) {
         wrap.append(cell("related-merger", MERGER_LABELS.get(value) ?? value));
@@ -2397,23 +2409,21 @@ function referenceLinks(word) {
     return row;
 }
 
-// The has-many ATTRIBUTES control: one add/remove-chips surface unifying the
-// former mergers toggle-row and variant toggle. Active attributes render as
-// removable chips ([trap-bath ×] …); "+ attribute" opens a vocabulary popover to
-// add one. The vocabulary is the mergers (MERGERS) plus the "variant" member.
+// The VARIATIONS control: a row of always-visible TOGGLE BUTTONS unifying the
+// mergers and the free-variation ("other") marker under one labelled group. Each
+// button toggles its member on/off (like the pre-redesign merger toggle-row + the
+// variant toggle, merged into one "Variations" group). The vocabulary is the
+// mergers (MERGERS, keeping their display labels) plus the "other" member (backed
+// by the variant boolean, relabelled from "variant").
 //
-// INTERNAL representation stays FLATTENED: a hidden `.merger-check` checkbox per
-// merger and one hidden `.variant-check` checkbox back the chips, so the existing
-// harvest (applyAdditiveFields) and dirty-check (mainEditIsDirty) read exactly the
-// same DOM they always did — the on-disk shape (mergers list + variant bool) and
-// the patch round-trip are byte-identical when unchanged. The chips are just a
-// display+edit skin over those checkboxes.
-const ATTRIBUTE_VARIANT = VARIANT_LABEL; // "variant"
-const ATTRIBUTES_VOCAB = [
-    ...MERGERS,
-    [ATTRIBUTE_VARIANT, VARIANT_LABEL],
-];
-const ATTRIBUTE_LABELS = new Map(ATTRIBUTES_VOCAB);
+// INTERNAL representation stays FLATTENED: each toggle owns a `.merger-check`
+// checkbox (mergers) or the lone `.variant-check` checkbox ("other"), so the
+// existing harvest (applyAdditiveFields) and dirty-check (mainEditIsDirty) read
+// exactly the same DOM they always did — the on-disk shape (mergers list + variant
+// bool) and the patch round-trip are byte-identical when unchanged. The buttons are
+// just a display+edit skin over those checkboxes. This is a DISPLAY/LABEL change
+// only: nothing on disk is renamed.
+const ATTRIBUTE_VARIANT = VARIANT_LABEL; // on-disk "variant"; displayed "other"
 
 function attributesField(ctx, record, overridden) {
     const active = new Set(record.mergers || []);
@@ -2422,60 +2432,40 @@ function attributesField(ctx, record, overridden) {
     }
 
     const wrap = document.createElement("div");
-    wrap.className = "edit-field attributes-field";
+    wrap.className = "edit-field variations-field";
 
     const caption = document.createElement("span");
     caption.className = "edit-label";
-    caption.textContent = "Attributes";
+    caption.textContent = "Variations";
 
-    // The hidden flattened state: one checkbox per merger + one for variant. The
-    // chips toggle these; the harvest reads them (.merger-check / .variant-check).
-    const flags = document.createElement("div");
-    flags.className = "attribute-flags";
-    flags.hidden = true;
-    for (const [value] of MERGERS) {
-        flags.append(attributeFlagInput("merger-check", value, active.has(value)));
+    const toggles = document.createElement("div");
+    toggles.className = "variation-toggles";
+    // All the mergers, then the "other" (variant) member — always visible, mirroring
+    // the pre-redesign toggle row (which showed every merger + the variant toggle).
+    for (const [value, label] of MERGERS) {
+        toggles.append(variationToggle(ctx, "merger-check", value, label, active.has(value)));
     }
-    flags.append(attributeFlagInput("variant-check", "", active.has(ATTRIBUTE_VARIANT)));
+    toggles.append(variationToggle(
+        ctx, "variant-check", "", VARIATION_OTHER_LABEL, active.has(ATTRIBUTE_VARIANT)));
 
-    const chips = document.createElement("div");
-    chips.className = "attribute-chips";
-
-    // Rebuild the chip row from the current hidden-flag state, plus the ghost
-    // "+ attribute" trigger. Called on every add/remove so the display tracks the
-    // flags without a full detail re-render (which would lose the edit context).
-    const setFlag = (value, on) => {
-        const box = attributeBox(flags, value);
-        box.checked = on;
-        enterEdit(ctx);
-        renderChips();
-    };
-    const renderChips = () => {
-        const nodes = [];
-        for (const [value] of MERGERS) {
-            if (attributeBox(flags, value).checked) {
-                nodes.push(attributeChip(value, () => setFlag(value, false)));
-            }
-        }
-        if (attributeBox(flags, ATTRIBUTE_VARIANT).checked) {
-            nodes.push(attributeChip(ATTRIBUTE_VARIANT, () => setFlag(ATTRIBUTE_VARIANT, false)));
-        }
-        nodes.push(attributeAddButton(flags, setFlag));
-        chips.replaceChildren(...nodes);
-    };
-    renderChips();
-
-    wrap.append(caption, flags, chips);
+    wrap.append(caption, toggles);
     // An accept that changed either flattened field (mergers or variant) marks the
-    // unified attributes control as edited.
+    // Variations control as edited.
     markOverridden(wrap, caption, overridden.has("mergers") || overridden.has("variant"));
     return wrap;
 }
 
-// A hidden flag checkbox backing an attribute. `.merger-check` carries the merger
-// value; `.variant-check` has no value (its presence is the variant flag). These
-// are exactly the inputs applyAdditiveFields / mainEditIsDirty read.
-function attributeFlagInput(className, value, checked) {
+// One VARIATIONS toggle button. It hosts the flattened backing checkbox — a
+// `.merger-check` carrying its merger value, or the lone `.variant-check` (no
+// value; its presence is the "other"/variant flag) — exactly the inputs
+// applyAdditiveFields / mainEditIsDirty read. The pill IS the affordance; the
+// checkbox is the hidden state. Toggling enters edit mode on the owning context.
+function variationToggle(ctx, className, value, label, checked) {
+    const chip = document.createElement("label");
+    chip.className = "variation-toggle";
+    if (className === "variant-check") {
+        chip.classList.add("variation-other");
+    }
     const input = document.createElement("input");
     input.type = "checkbox";
     input.className = className;
@@ -2483,82 +2473,18 @@ function attributeFlagInput(className, value, checked) {
         input.value = value;
     }
     input.checked = checked;
-    return input;
-}
-
-// The backing checkbox for an attribute value: the merger checkbox with that value,
-// or the lone variant checkbox for the "variant" pseudo-member.
-function attributeBox(flags, value) {
-    if (value === ATTRIBUTE_VARIANT) {
-        return flags.querySelector(".variant-check");
-    }
-    return flags.querySelector(`.merger-check[value="${value}"]`);
-}
-
-// A removable attribute chip: the label plus an × that clears its flag. Click-only
-// (no focusable text field) so the single-key verdicts A/X/F stay armed.
-function attributeChip(value, onRemove) {
-    const chip = document.createElement("span");
-    chip.className = `attribute-chip attr-${value}`;
-    const label = document.createElement("span");
-    label.className = "attribute-chip-label";
-    label.textContent = ATTRIBUTE_LABELS.get(value) ?? value;
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "attribute-chip-remove";
-    remove.setAttribute("aria-label", `Remove ${ATTRIBUTE_LABELS.get(value) ?? value}`);
-    remove.textContent = "×";
-    remove.addEventListener("click", onRemove);
-    chip.append(label, remove);
-    return chip;
-}
-
-// The "+ attribute" ghost button and its vocabulary popover. Picking an inactive
-// value sets its flag (adds a chip); already-active values are omitted. The popover
-// closes on pick or on the next click elsewhere.
-function attributeAddButton(flags, setFlag) {
-    const wrap = document.createElement("span");
-    wrap.className = "attribute-add-wrap";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "attribute-add";
-    button.setAttribute("aria-haspopup", "true");
-    button.textContent = "+ attribute";
-
-    const menu = document.createElement("div");
-    menu.className = "attribute-menu";
-    menu.hidden = true;
-
-    const rebuildMenu = () => {
-        const items = [];
-        for (const [value, label] of ATTRIBUTES_VOCAB) {
-            if (attributeBox(flags, value).checked) {
-                continue;
-            }
-            const item = document.createElement("button");
-            item.type = "button";
-            item.className = "attribute-menu-item";
-            item.textContent = label;
-            item.addEventListener("click", () => {
-                menu.hidden = true;
-                setFlag(value, true);
-            });
-            items.push(item);
-        }
-        menu.replaceChildren(...items);
-    };
-
-    button.addEventListener("click", () => {
-        const opening = menu.hidden;
-        closePopovers();
-        if (opening) {
-            rebuildMenu();
-            menu.hidden = false;
-        }
+    input.addEventListener("change", () => {
+        chip.classList.toggle("on", input.checked);
+        enterEdit(ctx);
+        // Release the checkbox so the single-key verdicts fire again — a focused form
+        // control makes onGlobalKey treat A/X/F as typing and swallow them.
+        input.blur();
     });
-
-    wrap.append(button, menu);
-    return wrap;
+    const text = document.createElement("span");
+    text.textContent = label;
+    chip.classList.toggle("on", checked);
+    chip.append(input, text);
+    return chip;
 }
 
 // The detail editor's field id prefix (its harvest is scoped by data-field, not id;
@@ -2618,15 +2544,16 @@ function actionBar(ctx, record) {
     const bar = document.createElement("div");
     bar.className = "actions";
 
+    // Clear is a PERMANENT slot in the action row (not gated on record.reviewed):
+    // the owner wants it always present. clearSelected() itself no-ops on an
+    // unreviewed row (no patch to clear), so an always-visible Clear is safe.
     bar.append(
         actionButton("accept", "Accept", acceptSelected),
         actionButton("drop", "Drop", dropSelected),
         actionButton("flag", "Flag", flagSelected),
+        actionButton("clear", "Clear", clearSelected),
         cloneButton(record),
     );
-    if (record.reviewed) {
-        bar.append(actionButton("clear", "Clear", clearSelected));
-    }
     if (record.patch_state === "flagged") {
         bar.append(actionButton("unflag", "Unflag", unflagSelected));
     }
@@ -2651,11 +2578,10 @@ const ACTION_ICONS = {
     undo: '<path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
 };
 
-// An action button: an inline SVG icon plus a visible label. The icon IS the
-// button (compact, so all actions fit one row on both desktop + mobile); the label
-// stays for learnability on desktop and is hidden by CSS on mobile (icon-only).
-// title + aria-label keep it accessible in every mode. A kind with no icon (the
-// modal create/cancel) falls back to a text-only button.
+// An action button: ICON-ONLY. The inline SVG glyph IS the button — no visible
+// text label, so every action fits one compact row on both desktop and mobile. The
+// label survives only as the title (hover tooltip) and aria-label (accessible
+// name). A kind with no icon (the modal create/cancel) falls back to a text button.
 function actionButton(kind, label, handler) {
     const button = document.createElement("button");
     button.type = "button";
@@ -2671,10 +2597,7 @@ function actionButton(kind, label, handler) {
         svg.setAttribute("class", "act-glyph");
         svg.setAttribute("aria-hidden", "true");
         svg.innerHTML = icon;
-        const text = document.createElement("span");
-        text.className = "act-text";
-        text.textContent = label;
-        button.append(svg, text);
+        button.append(svg);
     } else {
         button.textContent = label;
     }
@@ -4611,10 +4534,6 @@ function closePopovers() {
         addMenu.remove();
         ADD_FILTER.setAttribute("aria-expanded", "false");
     }
-    // The detail editor's "+ attribute" vocabulary popovers, kept in the DOM.
-    for (const menu of DETAIL.querySelectorAll(".attribute-menu:not([hidden])")) {
-        menu.hidden = true;
-    }
 }
 
 // Tap/click outside any open popover closes it (touch-friendly: no hover involved);
@@ -4622,8 +4541,7 @@ function closePopovers() {
 // handler, so those are excluded here.
 document.addEventListener("pointerdown", (event) => {
     if (!event.target.closest(".filter-chip")
-        && !event.target.closest(".add-filter-wrap")
-        && !event.target.closest(".attribute-add-wrap")) {
+        && !event.target.closest(".add-filter-wrap")) {
         closePopovers();
     }
 });

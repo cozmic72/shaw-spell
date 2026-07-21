@@ -209,13 +209,15 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="multi"><span>multi-word</span></label>
             <label class="chip"><input value="single"><span>single-word</span></label>
         </div>
-        <!-- Attributes: the has-many union of the (flattened, on-disk) mergers list
-             + variant boolean — the same tag-set the detail editor edits as chips.
-             Merges the former Mergers + Variant facets. Multi-valued, so its picker
-             offers any/all: ALL = the record carries EVERY selected attribute. -->
-        <div data-field="attributes" data-kind="categorical" data-label="Attributes" data-multi="true">
+        <!-- Variations: the has-many union of the (flattened, on-disk) mergers list
+             + variant boolean — the same tag-set the detail editor edits as toggle
+             buttons. Merges the former Mergers + Variant facets. Multi-valued, so its
+             picker offers any/all: ALL = the record carries EVERY selected variation.
+             The "other" chip's VALUE stays "variant" (the daemon facet + saved
+             sessions key off it); only its label reads "other". -->
+        <div data-field="attributes" data-kind="categorical" data-label="Variations" data-multi="true">
             <label class="chip"><input value="trap-bath"><span>TRAP–BATH</span></label>
-            <label class="chip"><input value="variant"><span>variant</span></label>
+            <label class="chip"><input value="variant"><span>other</span></label>
             <label class="chip"><input value="(none)"><span>(none / canonical)</span></label>
         </div>
         <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>

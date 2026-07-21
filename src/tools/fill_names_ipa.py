@@ -15,7 +15,12 @@ Selection is deterministic: pronunciations are tried in CMU dict order, each
 fanned over its ARPABET->house ambiguity sites preferred-first (candidate_ipas),
 and the FIRST candidate whose Shaw matches wins. No match (or no CMU entry)
 means the record keeps no `ipa` — nothing is invented. Filled records carry
-`ipa_source: "cmu"` (mirroring the shaw_source provenance pattern).
+`ipa_source: "cmu"` (mirroring the shaw_source provenance pattern) and a
+numeric `confidence` on the pipeline's 0-99 empirical-accuracy scale (the
+score_confidence convention, mirroring fill_generated_ipa) — see
+CONF_DIRECT/CONF_MERGER below. Unfilled records get no confidence (names
+records carry none upstream, and this stage never touches records it does
+not fill).
 
 It sits as an additive pre-combine pass on the names pool, mirroring where
 rescued/neardot sit for wiktionary:
@@ -67,6 +72,23 @@ R_FUSIONS = {
 PRIMARY_STRESS, SECONDARY_STRESS = "1", "2"
 STRESS_MARKS = {PRIMARY_STRESS: "ˈ", SECONDARY_STRESS: "ˌ"}
 MAX_CANDIDATES = 64
+
+# Round-trip tier -> confidence (0-99 empirical-accuracy scale, same
+# convention as ipa_to_shavian.score_confidence and fill_generated_ipa):
+#   DIRECT — the matching candidate was a pronunciation's FIRST (every
+#     ambiguity site took its preferred house reading). Corresponds to the
+#     names import's "high-agree" tier, measured ~99.8% correct; capped at
+#     the shared confident band (fill_generated's CONF_CONFIDENT=96) so both
+#     fills' confident records band together in the editor, and because the
+#     round-trip cannot rule out every same-Shaw stress ambiguity.
+#   MERGER — the match needed a non-preferred reading at >=1 site (the
+#     merger-vowel substitutions of _vowel_alternatives/_fused_alternatives).
+#     Corresponds to the "high-agree-merger-tolerant" tier, measured ~82.9%
+#     correct; set to 75 — deliberately BELOW the measured accuracy so it
+#     lands in the 30-79 needs-review range and the editor surfaces it
+#     (the same choice fill_generated_ipa makes for its marginal band).
+CONF_DIRECT = 96
+CONF_MERGER = 75
 
 # Legal English syllable onsets (house IPA phonemes), for placing stress marks
 # at the syllable boundary: a stress mark goes before the LONGEST legal onset
@@ -238,7 +260,8 @@ def load_cmudict(path):
 
 
 def fill_record(record, cmu, stats):
-    """Fill `ipa` on one record iff a CMU pronunciation round-trips to its Shaw."""
+    """Fill `ipa` + tiered `confidence` on one record iff a CMU
+    pronunciation round-trips to its Shaw."""
     if "ipa" in record:
         stats["already_has_ipa"] += 1
         return
@@ -247,11 +270,13 @@ def fill_record(record, cmu, stats):
         stats["skipped_no_cmu"] += 1
         return
     for phones in prons:
-        for ipa in candidate_ipas(phones):
+        for candidate_index, ipa in enumerate(candidate_ipas(phones)):
             if ipa_to_shavian(ipa) == record["Shaw"]:
+                direct = candidate_index == 0
                 record["ipa"] = ipa
                 record["ipa_source"] = "cmu"
-                stats["filled"] += 1
+                record["confidence"] = CONF_DIRECT if direct else CONF_MERGER
+                stats["filled_direct" if direct else "filled_merger"] += 1
                 return
     stats["skipped_shaw_mismatch"] += 1
 
@@ -264,7 +289,10 @@ def fill_supplement(supplement, cmu, stats):
 
 def report(stats):
     print("\n=== CMUdict names IPA fill report ===")
-    print(f"Filled (round-trip confirmed):   {stats['filled']:,}")
+    print(f"Filled (direct round-trip, conf {CONF_DIRECT}):     "
+          f"{stats['filled_direct']:,}")
+    print(f"Filled (merger-substituted, conf {CONF_MERGER}):    "
+          f"{stats['filled_merger']:,}")
     print(f"Skipped (no CMU entry):          {stats['skipped_no_cmu']:,}")
     print(f"Skipped (no pron matches Shaw):  {stats['skipped_shaw_mismatch']:,}")
     if stats["already_has_ipa"]:

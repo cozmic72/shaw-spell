@@ -175,12 +175,13 @@ PROMOTABLE_VARS = {"RSSB", CANONICAL_VAR}
 NONBRITISH_HELD_BACK = "SKIP_NONBRITISH"
 
 # MODEL-JUDGE GATE flag (see the module docstring's MODEL-JUDGE section).
-# DEFAULT OFF: flag-off behaviour is byte-identical to the source-var rule
-# above and the judge model is never loaded (no torch import). Enable per-call
-# via reclassify_supplement(..., enable_model_judge=True); a None value
-# resolves SHAW_SPELL_MODEL_JUDGE from the environment (1/true/yes/on =
-# enabled), else this constant — the SHAW_SPELL_ENABLE_SHAVE_NAMES pattern.
-ENABLE_MODEL_JUDGE = False
+# DEFAULT ON (owner 2026-07-21): be conservative with promotions — every
+# candidate the classifier would promote to RRP (RSSB included) must pass the
+# Latin-only RP-IPA judge, or it stays in its source var as a review candidate.
+# The owner prefers to scrutinise held-back promotions in place (as RSSB/GenAm)
+# rather than have them promoted before review. Set SHAW_SPELL_MODEL_JUDGE=0
+# (or pass enable_model_judge=False) to restore the pure source-var rule.
+ENABLE_MODEL_JUDGE = True
 MODEL_JUDGE_ENV = "SHAW_SPELL_MODEL_JUDGE"
 
 # The frozen Latin-only G2P the judge runs (data/g2p-judge-model). This is the
@@ -524,8 +525,13 @@ def reclassify_supplement(supplement, tallies, samples, enable_model_judge=None)
     Off, the source-var rule (may_promote) applies unchanged and the judge
     model is never loaded."""
     if enable_model_judge is None:
-        env = os.environ.get(MODEL_JUDGE_ENV, "")
-        enable_model_judge = env.strip().lower() in ("1", "true", "yes", "on")
+        # None resolves the env var if SET (1/true/yes/on = on, else off), else
+        # falls back to the ENABLE_MODEL_JUDGE constant (the committed default).
+        env = os.environ.get(MODEL_JUDGE_ENV)
+        if env is not None:
+            enable_model_judge = env.strip().lower() in ("1", "true", "yes", "on")
+        else:
+            enable_model_judge = ENABLE_MODEL_JUDGE
 
     records = [r for entries in supplement.values() for r in entries]
     ctx = {"cross_dialect": cross_dialect_set(records), "shave": {}}

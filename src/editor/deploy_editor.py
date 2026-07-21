@@ -14,12 +14,17 @@ each piece into place). Three destinations + writable state:
     authstore.py                    sits BESIDE the cgi (the cgi adds its own dir
                                     to sys.path) — inside the docroot, not above it.
 
-  build/editor/editor-daemon/       -> /opt/shaw-spell (PROJECT_ROOT). editord's
-    editor/*.py                     module graph is flat across two sibling dirs
-    tools/*.py                      exactly as in the repo (editord adds HERE and
-    shaw-spell-editord.service      HERE.parent/tools to sys.path), so basis.py's
-                                    parent.parent.parent lands on /opt/shaw-spell
-                                    and every data/ path resolves there.
+  build/editor/editor-daemon/       -> /opt/shaw-spell (PROJECT_ROOT). The src/
+    src/editor/*.py                 level is preserved from the repo ON PURPOSE:
+    src/tools/*.py                  basis.py computes PROJECT_ROOT as
+    shaw-spell-editord.service      parent.parent.parent, so tools/basis.py must
+                                    sit THREE dirs below PROJECT_ROOT — i.e. at
+                                    src/tools/, exactly as in the repo. Flatten
+                                    the src/ level and PROJECT_ROOT lands on /opt
+                                    instead of /opt/shaw-spell and every basis
+                                    path 404s. editord adds HERE + HERE.parent/
+                                    tools to sys.path, so editor/ and tools/ are
+                                    siblings under src/.
 
   build/editor/basis/               -> /opt/shaw-spell (paths preserved). The
     external/readlex/readlex.json   ~317MB read-only basis the daemon reads. Staged
@@ -47,7 +52,7 @@ import sys
 from pathlib import Path
 
 # editord's own module graph, split by source dir. The daemon runs from
-# editor-daemon/editor/ and imports the tools modules from editor-daemon/tools/,
+# editor-daemon/src/editor/ and imports the tools from editor-daemon/src/tools/,
 # exactly as editord.py's sys.path (HERE, HERE.parent/tools) prescribes.
 EDITOR_MODULES = [
     'editord.py',
@@ -147,11 +152,13 @@ def deploy(version, output_dir='build/editor'):
     print(f"  ✓ fonts/{FONT}")
 
     # --- daemon tree (-> /opt/shaw-spell) ---
+    # The src/ level is preserved: basis.py's PROJECT_ROOT = parent.parent.parent,
+    # so src/tools/basis.py must sit three dirs below /opt/shaw-spell. See docstring.
     print()
     print("Copying editor daemon...")
     daemon_output = output_path / 'editor-daemon'
-    daemon_editor = daemon_output / 'editor'
-    daemon_tools = daemon_output / 'tools'
+    daemon_editor = daemon_output / 'src' / 'editor'
+    daemon_tools = daemon_output / 'src' / 'tools'
     daemon_editor.mkdir(parents=True, exist_ok=True)
     daemon_tools.mkdir(parents=True, exist_ok=True)
 
@@ -161,7 +168,7 @@ def deploy(version, output_dir='build/editor'):
             print(f"Error: daemon module missing: {src}")
             return 1
         shutil.copy2(src, daemon_editor / name)
-        print(f"  ✓ editor-daemon/editor/{name}")
+        print(f"  ✓ editor-daemon/src/editor/{name}")
 
     for name in TOOLS_MODULES:
         src = tools_src / name
@@ -169,7 +176,7 @@ def deploy(version, output_dir='build/editor'):
             print(f"Error: tools module missing: {src}")
             return 1
         shutil.copy2(src, daemon_tools / name)
-        print(f"  ✓ editor-daemon/tools/{name}")
+        print(f"  ✓ editor-daemon/src/tools/{name}")
 
     service = editor_src / 'shaw-spell-editord.service'
     shutil.copy2(service, daemon_output / service.name)

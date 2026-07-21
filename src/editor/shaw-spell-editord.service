@@ -20,7 +20,9 @@ RuntimeDirectoryMode=0755
 Environment=SHAW_SPELL_PATCH_STORE=/var/lib/shaw-spell/patches/patches.jsonl
 Environment=SHAW_SPELL_DEFINITION_PATCH_STORE=/var/lib/shaw-spell/patches/definition-patches.jsonl
 
-ExecStart=/usr/bin/python3 /opt/shaw-spell/editor/editord.py \
+# The src/ level is preserved so basis.py's PROJECT_ROOT (parent.parent.parent
+# of src/tools/basis.py) resolves to /opt/shaw-spell, not /opt.
+ExecStart=/usr/bin/python3 /opt/shaw-spell/src/editor/editord.py \
     --socket /run/shaw-spell/editord.sock
 
 Restart=on-failure

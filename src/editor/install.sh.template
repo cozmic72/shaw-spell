@@ -39,7 +39,7 @@ die() { echo "install.sh: $*" >&2; exit 1; }
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Confirm the tree we expect to copy is actually here before touching anything.
-for d in "editor-daemon/editor" "editor-daemon/tools" "fonts" "basis"; do
+for d in "editor-daemon/src/editor" "editor-daemon/src/tools" "fonts" "basis"; do
     [ -d "$HERE/$d" ] || die "expected dir missing from tarball: $d (run from the extracted editor/ root)"
 done
 for f in "editor.cgi" "index.cgi" "authstore.py" "editor.js" "editor.css" \
@@ -72,10 +72,14 @@ install -m 644 "$HERE/editor.css"   "$WWW_ROOT/editor.css"
 install -m 644 "$HERE"/fonts/*      "$WWW_ROOT/fonts/"
 
 # --- daemon (code only) ---
-echo "==> Daemon -> $OPT_ROOT"
-rm -rf "$OPT_ROOT/editor" "$OPT_ROOT/tools"
-cp -R "$HERE/editor-daemon/editor" "$OPT_ROOT/editor"
-cp -R "$HERE/editor-daemon/tools"  "$OPT_ROOT/tools"
+# The src/ level is preserved from the repo: basis.py's PROJECT_ROOT =
+# parent.parent.parent, so src/tools/basis.py must sit three dirs below
+# $OPT_ROOT or every basis path resolves under /opt instead of $OPT_ROOT.
+echo "==> Daemon -> $OPT_ROOT/src"
+rm -rf "$OPT_ROOT/src/editor" "$OPT_ROOT/src/tools"
+mkdir -p "$OPT_ROOT/src"
+cp -R "$HERE/editor-daemon/src/editor" "$OPT_ROOT/src/editor"
+cp -R "$HERE/editor-daemon/src/tools"  "$OPT_ROOT/src/tools"
 install -m 644 "$HERE/editor-daemon/shaw-spell-editord.service" \
               /etc/systemd/system/shaw-spell-editord.service
 
@@ -101,7 +105,7 @@ cat <<SUMMARY
 ============================================================
 Installed:
   web tier   -> $WWW_ROOT (editor.cgi, index.cgi, authstore.py, js/css/fonts)
-  daemon     -> $OPT_ROOT/{editor,tools} + /etc/systemd/system/shaw-spell-editord.service
+  daemon     -> $OPT_ROOT/src/{editor,tools} + /etc/systemd/system/shaw-spell-editord.service
   basis data -> $OPT_ROOT/{external,data}  (from the tarball)
   state dirs -> $VAR_LIB/{auth,patches} (owned by $SERVICE_USER; existing data preserved)
 

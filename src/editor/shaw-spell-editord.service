@@ -14,6 +14,12 @@ Group=www-data
 RuntimeDirectory=shaw-spell
 RuntimeDirectoryMode=0755
 
+# Mutable state lives under /var/lib (NOT /opt code): the daemon writes both
+# patch stores there. The auth DB lives under /var/lib too, but only the CGI
+# (via Apache SetEnv SHAW_SPELL_AUTH_DB) touches it — not this daemon.
+Environment=SHAW_SPELL_PATCH_STORE=/var/lib/shaw-spell/patches/patches.jsonl
+Environment=SHAW_SPELL_DEFINITION_PATCH_STORE=/var/lib/shaw-spell/patches/definition-patches.jsonl
+
 ExecStart=/usr/bin/python3 /opt/shaw-spell/editor/editord.py \
     --socket /run/shaw-spell/editord.sock
 
@@ -24,15 +30,14 @@ RestartSec=2s
 # it slack before systemd declares the service failed to start.
 TimeoutStartSec=60s
 
-# Unlike suggestd, editord WRITES the patch store, so the deploy tree is not
-# read-only: data/patches/patches.jsonl must be writable by the service user.
-# The auth CGI (editor.cgi) runs as the same www-data account and writes the
-# sessions table, so data/auth must be writable too.
+# Unlike suggestd, editord WRITES the patch stores, so it needs one writable
+# path: /var/lib/shaw-spell (the /opt code tree and the docroot stay read-only).
+# The auth DB lives under the same tree; the CGI (same www-data account) writes it.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/shaw-spell/data/patches /opt/shaw-spell/data/auth
+ReadWritePaths=/var/lib/shaw-spell
 
 [Install]
 WantedBy=multi-user.target

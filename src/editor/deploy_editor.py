@@ -3,18 +3,16 @@
 Deploy script for the Shaw-Spell editorial editor.
 
 Stages the editor into build/editor/, mirroring src/site/deploy_site.py. The
-tree splits into two install targets (see build-rules/editor.mk for the ops
-steps):
+tarball ships CODE only, plus install.sh (the server-side installer that copies
+each piece into place). Three destinations + writable state:
 
-  build/editor/                     -> Apache docroot /var/www/shaw-spell/editor
+  build/editor/                     -> web tier /var/www/shaw-spell/editor
     editor.cgi, index.cgi (755)     the CGI (index.cgi is a copy so DirectoryIndex
                                     resolves /editor/), the browser UI, and the
     editor.js, editor.css           Shavian webfont under fonts/ so editor.css's
     fonts/BernieSansBetaVF.woff2    relative url('fonts/...') resolves.
-  build/editor/authstore.py         -> /var/www/shaw-spell/authstore.py — one
-                                    level ABOVE the docroot, because editor.cgi
-                                    imports it via sys.path=dirname(dirname(cgi)).
-                                    Not web-served.
+    authstore.py                    sits BESIDE the cgi (the cgi adds its own dir
+                                    to sys.path) — inside the docroot, not above it.
 
   build/editor/editor-daemon/       -> /opt/shaw-spell (PROJECT_ROOT). editord's
     editor/*.py                     module graph is flat across two sibling dirs
@@ -23,11 +21,17 @@ steps):
                                     parent.parent.parent lands on /opt/shaw-spell
                                     and every data/ path resolves there.
 
-The tarball ships CODE only. The daemon's read-only basis inputs
-(external/readlex/readlex.json, data/supplement-combined-filtered.json,
-data/definitions-shavian-{gb,us}.json, and the optional frequency corpus) plus
-the runtime-writable data/patches/ and data/auth/ are synced by ops under
-/opt/shaw-spell — they are NOT baked in. Empty writable seed dirs are staged.
+  build/editor/install.sh (755)     the server-side installer: copies the web
+                                    tier + daemon into place, creates the writable
+                                    state under /var/lib/shaw-spell, and prints the
+                                    manual steps (basis rsync, Apache SetEnv, seed user).
+
+Writable state (auth DB + patch stores) lives under /var/lib/shaw-spell, owned
+by the service user — created by install.sh, NOT staged here. The daemon's
+read-only basis inputs (external/readlex/readlex.json,
+data/supplement-combined-filtered.json, data/definitions-shavian-{gb,us}.json,
+optional frequency corpus) are rsynced by the owner under /opt/shaw-spell — NOT
+baked in.
 
 Usage:
     python deploy_editor.py [--version VERSION]
@@ -105,11 +109,12 @@ def deploy(version, output_dir='build/editor'):
     os.chmod(index_cgi, 0o755)
     print(f"  ✓ index.cgi (copy of editor.cgi, executable)")
 
-    # authstore lives ONE level above the docroot: editor.cgi imports it via
-    # sys.path = dirname(dirname(__file__)). Staged at build/editor/authstore.py
-    # -> extracts to /var/www/shaw-spell/authstore.py.
+    # authstore.py sits BESIDE the cgi in the editor dir (the cgi adds its own
+    # dir to sys.path). It stays inside /var/www/shaw-spell/editor/, not in the
+    # shared site docroot. The user DB is a separate concern — mutable state
+    # under /var/lib/shaw-spell, pointed to by SHAW_SPELL_AUTH_DB (see deploy notes).
     shutil.copy2(editor_src / 'authstore.py', output_path / 'authstore.py')
-    print(f"  ✓ authstore.py (docroot parent — CGI import target)")
+    print(f"  ✓ authstore.py (beside the cgi)")
 
     # --- Shavian webfont ---
     print()
@@ -152,12 +157,17 @@ def deploy(version, output_dir='build/editor'):
     shutil.copy2(service, daemon_output / service.name)
     print(f"  ✓ editor-daemon/{service.name}")
 
-    # --- writable seed dirs (empty; ops makes them www-data-writable) ---
+    # --- server-side installer at the tarball root (owner runs sudo ./install.sh) ---
+    # Writable state under /var/lib is created by the installer, not staged here.
     print()
-    print("Staging writable seed dirs...")
-    for rel in ('data/patches', 'data/auth'):
-        (output_path / 'editor-daemon' / rel).mkdir(parents=True, exist_ok=True)
-        print(f"  ✓ editor-daemon/{rel}/ (empty, runtime-writable)")
+    install_src = editor_src / 'install.sh.template'
+    if not install_src.exists():
+        print(f"Error: installer template missing: {install_src}")
+        return 1
+    install_dest = output_path / 'install.sh'
+    shutil.copy2(install_src, install_dest)
+    os.chmod(install_dest, 0o755)
+    print(f"  ✓ install.sh (executable)")
 
     # Version marker (mirrors deploy_site.py).
     version_file = output_path / '.version'
@@ -167,11 +177,9 @@ def deploy(version, output_dir='build/editor'):
     print(f"  ✓ Version {version} written to {version_file.name}")
 
     print()
-    print("✅ Editor staged.")
-    print("   NOTE: the daemon's read-only basis inputs (external/readlex/,")
-    print("   data/supplement-combined-filtered.json, data/definitions-shavian-*.json,")
-    print("   optional frequency corpus) are synced by ops under /opt/shaw-spell,")
-    print("   NOT bundled here. See editor-tarball deploy notes.")
+    print("✅ Editor staged. Tarball root carries install.sh (sudo ./install.sh on")
+    print("   the server). The read-only basis inputs are rsynced separately under")
+    print("   /opt/shaw-spell; writable state is created under /var/lib/shaw-spell.")
     return 0
 
 

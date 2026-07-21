@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+#
+# Server-side installer for the Shaw-Spell editorial editor.
+#
+# Run from an extracted editor tarball as root:  sudo ./install.sh
+# It copies CODE into place (idempotent — safe to re-run to upgrade) and
+# PRESERVES mutable state (users.sqlite, the patch stores). It does NOT sync the
+# ~350MB read-only basis data (owner rsyncs that separately) and does NOT edit
+# Apache config or seed users — it prints the exact commands for those instead.
+#
+# Layout:
+#   WWW_ROOT/editor   web tier  (editor.cgi, index.cgi, authstore.py, js/css/fonts)
+#   OPT_ROOT          daemon    (editor/, tools/) + basis data (rsynced by owner)
+#   VAR_LIB           writable  (auth/users.sqlite + patches/*.jsonl), SERVICE_USER-owned
+#
+# Override any path by exporting the env var before running, e.g.
+#   sudo WWW_ROOT=/srv/www/shaw-spell/editor ./install.sh
+
+set -euo pipefail
+
+WWW_ROOT="${WWW_ROOT:-/var/www/shaw-spell/editor}"
+OPT_ROOT="${OPT_ROOT:-/opt/shaw-spell}"
+VAR_LIB="${VAR_LIB:-/var/lib/shaw-spell}"
+SERVICE_USER="${SERVICE_USER:-www-data}"
+AUTH_DB="${VAR_LIB}/auth/users.sqlite"
+
+usage() {
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+}
+[ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ] && usage
+
+die() { echo "install.sh: $*" >&2; exit 1; }
+
+[ "$(id -u)" -eq 0 ] || die "must run as root (use sudo)"
+
+# The extracted tarball root — resolve relative to this script so it works from
+# any CWD.
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+# Confirm the tree we expect to copy is actually here before touching anything.
+for d in "editor-daemon/editor" "editor-daemon/tools" "fonts"; do
+    [ -d "$HERE/$d" ] || die "expected dir missing from tarball: $d (run from the extracted editor/ root)"
+done
+for f in "editor.cgi" "index.cgi" "authstore.py" "editor.js" "editor.css" \
+         "editor-daemon/shaw-spell-editord.service"; do
+    [ -f "$HERE/$f" ] || die "expected file missing from tarball: $f"
+done
+
+echo "==> Installing Shaw-Spell editor"
+echo "    web:      $WWW_ROOT"
+echo "    daemon:   $OPT_ROOT"
+echo "    state:    $VAR_LIB  (owner: $SERVICE_USER)"
+echo
+
+# --- dirs ---
+mkdir -p "$WWW_ROOT" "$WWW_ROOT/fonts" \
+         "$OPT_ROOT" \
+         "$VAR_LIB/auth" "$VAR_LIB/patches"
+
+# --- web tier (code only) ---
+echo "==> Web tier -> $WWW_ROOT"
+install -m 755 "$HERE/editor.cgi"   "$WWW_ROOT/editor.cgi"
+install -m 755 "$HERE/index.cgi"    "$WWW_ROOT/index.cgi"
+install -m 644 "$HERE/authstore.py" "$WWW_ROOT/authstore.py"
+install -m 644 "$HERE/editor.js"    "$WWW_ROOT/editor.js"
+install -m 644 "$HERE/editor.css"   "$WWW_ROOT/editor.css"
+install -m 644 "$HERE"/fonts/*      "$WWW_ROOT/fonts/"
+
+# --- daemon (code only) ---
+echo "==> Daemon -> $OPT_ROOT"
+rm -rf "$OPT_ROOT/editor" "$OPT_ROOT/tools"
+cp -R "$HERE/editor-daemon/editor" "$OPT_ROOT/editor"
+cp -R "$HERE/editor-daemon/tools"  "$OPT_ROOT/tools"
+install -m 644 "$HERE/editor-daemon/shaw-spell-editord.service" \
+              /etc/systemd/system/shaw-spell-editord.service
+
+# --- writable state: create, chown, but NEVER overwrite existing data ---
+echo "==> Writable state -> $VAR_LIB (preserving any existing data)"
+chown -R "$SERVICE_USER":"$SERVICE_USER" "$VAR_LIB"
+
+# --- basis-data presence check (owner rsyncs this separately; the daemon will
+#     not start without it, so warn loudly rather than proceed silently) ---
+BASIS_OK=1
+for rel in "external/readlex/readlex.json" \
+           "data/supplement-combined-filtered.json" \
+           "data/definitions-shavian-gb.json" \
+           "data/definitions-shavian-us.json"; do
+    if [ ! -f "$OPT_ROOT/$rel" ]; then
+        echo "    !! MISSING basis input: $OPT_ROOT/$rel" >&2
+        BASIS_OK=0
+    fi
+done
+
+# --- systemd ---
+echo "==> systemd daemon-reload + enable"
+systemctl daemon-reload
+if [ "$BASIS_OK" -eq 1 ]; then
+    systemctl enable --now shaw-spell-editord
+else
+    systemctl enable shaw-spell-editord
+    echo "    (NOT started: basis data missing — start it after rsyncing, below)"
+fi
+
+# --- summary + remaining manual steps ---
+cat <<SUMMARY
+
+============================================================
+Installed:
+  web tier   -> $WWW_ROOT (editor.cgi, index.cgi, authstore.py, js/css/fonts)
+  daemon     -> $OPT_ROOT/{editor,tools} + /etc/systemd/system/shaw-spell-editord.service
+  state dirs -> $VAR_LIB/{auth,patches} (owned by $SERVICE_USER; existing data preserved)
+
+Remaining MANUAL steps (this script cannot safely do these):
+
+1. Sync the ~350MB read-only basis data under $OPT_ROOT, preserving paths:
+     $OPT_ROOT/external/readlex/readlex.json
+     $OPT_ROOT/data/supplement-combined-filtered.json
+     $OPT_ROOT/data/definitions-shavian-gb.json
+     $OPT_ROOT/data/definitions-shavian-us.json
+     $OPT_ROOT/external/frequency-words/.../en_full.txt   (optional — freq sort)
+   Then:  sudo systemctl start shaw-spell-editord
+
+2. Point the CGI at the auth DB via Apache (paste into the editor <Directory>):
+     <Directory $WWW_ROOT>
+       SetEnv SHAW_SPELL_AUTH_DB $AUTH_DB
+     </Directory>
+   Then:  sudo systemctl reload apache2   (or: apachectl graceful)
+   (+ExecCGI, .cgi handler, DirectoryIndex index.cgi, TLS are already configured.)
+
+3. Seed the first editor account (writes $AUTH_DB):
+     sudo -u $SERVICE_USER SHAW_SPELL_AUTH_DB=$AUTH_DB \\
+          python3 $WWW_ROOT/authstore.py --create-user HANDLE
+============================================================
+SUMMARY
+
+[ "$BASIS_OK" -eq 1 ] || echo "WARNING: basis data missing — daemon enabled but NOT started (see step 1)." >&2
+echo "Done."

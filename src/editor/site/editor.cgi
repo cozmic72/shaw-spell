@@ -20,8 +20,14 @@ import socket
 import sys
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import authstore  # noqa: E402 — sibling module, path set above
+# Find authstore whether it sits BESIDE this cgi (deploy: everything editor-web
+# in one dir) or one level up (dev tree: src/editor/site/editor.cgi + src/editor/
+# authstore.py). Deploy keeps authstore inside the editor docroot, not in the
+# shared site root.
+_here = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(_here))
+sys.path.insert(0, _here)
+import authstore  # noqa: E402 — path set above
 
 DAEMON_SOCKET = os.environ.get("SHAW_SPELL_EDITOR_SOCKET",
                                "/run/shaw-spell/editord.sock")

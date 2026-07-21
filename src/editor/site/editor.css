@@ -2314,10 +2314,11 @@ kbd {
        get real min widths so they never crush to one letter. Tracks:
        word · pos(0) · var · shaw · source(0) · badge · label(0). */
     .related-head, .related-row {
-        grid-template-columns: minmax(84px, 1fr) 0 48px minmax(96px, 1.4fr) 0 18px 0;
-        gap: 6px 8px;
+        grid-template-columns: minmax(72px, 1fr) auto auto minmax(84px, 1.3fr) 0 18px 0;
+        gap: 6px 10px;
     }
-    .related-pos,
+    /* Drop SOURCE + the state LABEL on a phone; keep word/pos/var/shaw + the state
+       badge. POS and VAR are auto (content-sized) so AVQ+VM0 / GenAus fit. */
     .related-source,
     .related-label { display: none; }
     .related-head .related-head-state { grid-column: auto; }

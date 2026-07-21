@@ -1710,7 +1710,10 @@ body {
    its label) sits LAST, two cells the header spans. */
 .related-head, .related-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.5fr) 36px 52px minmax(0, 1.8fr) 92px 20px 74px;
+    /* word + shaw are the point — real min widths so they hold and never truncate
+       first; the metadata columns (pos/var/source/state) stay as tight as their
+       content and concede space. */
+    grid-template-columns: minmax(140px, 2fr) 34px 50px minmax(150px, 2.4fr) 72px 18px 64px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 10px;

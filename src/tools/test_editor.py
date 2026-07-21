@@ -37,7 +37,10 @@ class RootCGIHTTPRequestHandler(CGIHTTPRequestHandler):
     """CGI handler that serves .cgi scripts from the document root."""
 
     def is_cgi(self):
-        if self.path.endswith('.cgi'):
+        # / serves editor.cgi directly (no directory-listing hop).
+        if self.path.split('?', 1)[0] in ('/', ''):
+            self.path = '/editor.cgi'
+        if self.path.split('?', 1)[0].endswith('.cgi'):
             self.cgi_info = '', self.path.lstrip('/')
             return True
         return False

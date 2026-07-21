@@ -26,10 +26,19 @@ EDITOR_WEB_SRCS = $(SRC_EDITOR)/site/editor.cgi \
                   $(SRC_EDITOR)/site/editor.js \
                   $(SRC_EDITOR)/site/editor.css
 
+# The ~317MB read-only basis the tarball ships (the payload — the server
+# rebuilds nothing). Restage when any of these change. The freq corpus is
+# optional (deploy_editor skips-with-notice if absent), so it's not a prereq.
+EDITOR_BASIS_SRCS = external/readlex/readlex.json \
+                    data/supplement-combined-filtered.json \
+                    data/definitions-shavian-gb.json \
+                    data/definitions-shavian-us.json
+
 # Stage the editor into build/editor (index.cgi is the representative target,
 # mirroring site's $(BUILD_SITE)/index.cgi).
 $(BUILD_EDITOR)/index.cgi: $(EDITOR_WEB_SRCS) \
                            $(EDITOR_DAEMON_SRCS) \
+                           $(EDITOR_BASIS_SRCS) \
                            $(SRC_EDITOR)/deploy_editor.py \
                            $(SRC_EDITOR)/install.sh.template \
                            $(SRC_FONTS)/BernieSansBetaVF.woff2 \

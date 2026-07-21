@@ -21,17 +21,21 @@ each piece into place). Three destinations + writable state:
                                     parent.parent.parent lands on /opt/shaw-spell
                                     and every data/ path resolves there.
 
+  build/editor/basis/               -> /opt/shaw-spell (paths preserved). The
+    external/readlex/readlex.json   ~317MB read-only basis the daemon reads. Staged
+    data/supplement-...json         under basis/ mirroring the repo tree so
+    data/definitions-shavian-*.json install.sh copies it straight into $OPT_ROOT and
+    external/frequency-words/...     every PROJECT_ROOT-relative path resolves. This
+                                    IS the payload — the tarball ships the expensive
+                                    artifacts so the server needs no rebuild.
+
   build/editor/install.sh (755)     the server-side installer: copies the web
-                                    tier + daemon into place, creates the writable
-                                    state under /var/lib/shaw-spell, and prints the
-                                    manual steps (basis rsync, Apache SetEnv, seed user).
+                                    tier + daemon + basis into place, creates the
+                                    writable state under /var/lib/shaw-spell, and
+                                    prints the manual steps (Apache SetEnv, seed user).
 
 Writable state (auth DB + patch stores) lives under /var/lib/shaw-spell, owned
-by the service user — created by install.sh, NOT staged here. The daemon's
-read-only basis inputs (external/readlex/readlex.json,
-data/supplement-combined-filtered.json, data/definitions-shavian-{gb,us}.json,
-optional frequency corpus) are rsynced by the owner under /opt/shaw-spell — NOT
-baked in.
+by the service user — created by install.sh, NOT staged here.
 
 Usage:
     python deploy_editor.py [--version VERSION]
@@ -63,6 +67,20 @@ TOOLS_MODULES = [
 WEB_FILES = ['editor.cgi', 'editor.js', 'editor.css']
 
 FONT = 'BernieSansBetaVF.woff2'
+
+# The read-only basis the daemon reads, repo-relative. Staged under basis/ with
+# paths preserved so install.sh drops them straight into $OPT_ROOT. The first
+# four are required (daemon won't start without them); the freq corpus is
+# optional — basis.py soft-fails to freq-0 when it's absent.
+BASIS_REQUIRED = [
+    'external/readlex/readlex.json',
+    'data/supplement-combined-filtered.json',
+    'data/definitions-shavian-gb.json',
+    'data/definitions-shavian-us.json',
+]
+BASIS_OPTIONAL = [
+    'external/frequency-words/content/2018/en/en_full.txt',
+]
 
 
 def deploy(version, output_dir='build/editor'):
@@ -157,6 +175,33 @@ def deploy(version, output_dir='build/editor'):
     shutil.copy2(service, daemon_output / service.name)
     print(f"  ✓ editor-daemon/{service.name}")
 
+    # --- read-only basis (-> /opt/shaw-spell, paths preserved) ---
+    # THE payload: the ~317MB of expensive artifacts, so the server rebuilds
+    # nothing. Staged under basis/<repo-relative-path>; install.sh copies the
+    # tree into $OPT_ROOT. Required inputs fail the build if missing; the freq
+    # corpus is skipped-with-notice (basis.py soft-fails to freq-0).
+    print()
+    print("Copying read-only basis...")
+    basis_output = output_path / 'basis'
+    for rel in BASIS_REQUIRED:
+        src = project_root / rel
+        if not src.exists():
+            print(f"Error: required basis input missing: {src}")
+            return 1
+        dest = basis_output / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        print(f"  ✓ basis/{rel}  ({src.stat().st_size >> 20} MB)")
+    for rel in BASIS_OPTIONAL:
+        src = project_root / rel
+        if not src.exists():
+            print(f"  – basis/{rel} absent — skipped (freq sort disabled)")
+            continue
+        dest = basis_output / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        print(f"  ✓ basis/{rel}  ({src.stat().st_size >> 20} MB)")
+
     # --- server-side installer at the tarball root (owner runs sudo ./install.sh) ---
     # Writable state under /var/lib is created by the installer, not staged here.
     print()
@@ -178,8 +223,8 @@ def deploy(version, output_dir='build/editor'):
 
     print()
     print("✅ Editor staged. Tarball root carries install.sh (sudo ./install.sh on")
-    print("   the server). The read-only basis inputs are rsynced separately under")
-    print("   /opt/shaw-spell; writable state is created under /var/lib/shaw-spell.")
+    print("   the server) plus the full basis under basis/ — the server rebuilds")
+    print("   nothing. Writable state is created under /var/lib/shaw-spell.")
     return 0
 
 

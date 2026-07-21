@@ -3,14 +3,14 @@
 # Server-side installer for the Shaw-Spell editorial editor.
 #
 # Run from an extracted editor tarball as root:  sudo ./install.sh
-# It copies CODE into place (idempotent — safe to re-run to upgrade) and
-# PRESERVES mutable state (users.sqlite, the patch stores). It does NOT sync the
-# ~350MB read-only basis data (owner rsyncs that separately) and does NOT edit
-# Apache config or seed users — it prints the exact commands for those instead.
+# It copies CODE + the ~317MB read-only basis into place (idempotent — safe to
+# re-run to upgrade) and PRESERVES mutable state (users.sqlite, the patch
+# stores). It does NOT edit Apache config or seed users — it prints the exact
+# commands for those instead.
 #
 # Layout:
 #   WWW_ROOT/editor   web tier  (editor.cgi, index.cgi, authstore.py, js/css/fonts)
-#   OPT_ROOT          daemon    (editor/, tools/) + basis data (rsynced by owner)
+#   OPT_ROOT          daemon    (editor/, tools/) + basis data (from this tarball)
 #   VAR_LIB           writable  (auth/users.sqlite + patches/*.jsonl), SERVICE_USER-owned
 #
 # Override any path by exporting the env var before running, e.g.
@@ -39,11 +39,15 @@ die() { echo "install.sh: $*" >&2; exit 1; }
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Confirm the tree we expect to copy is actually here before touching anything.
-for d in "editor-daemon/editor" "editor-daemon/tools" "fonts"; do
+for d in "editor-daemon/editor" "editor-daemon/tools" "fonts" "basis"; do
     [ -d "$HERE/$d" ] || die "expected dir missing from tarball: $d (run from the extracted editor/ root)"
 done
 for f in "editor.cgi" "index.cgi" "authstore.py" "editor.js" "editor.css" \
-         "editor-daemon/shaw-spell-editord.service"; do
+         "editor-daemon/shaw-spell-editord.service" \
+         "basis/external/readlex/readlex.json" \
+         "basis/data/supplement-combined-filtered.json" \
+         "basis/data/definitions-shavian-gb.json" \
+         "basis/data/definitions-shavian-us.json"; do
     [ -f "$HERE/$f" ] || die "expected file missing from tarball: $f"
 done
 
@@ -79,28 +83,17 @@ install -m 644 "$HERE/editor-daemon/shaw-spell-editord.service" \
 echo "==> Writable state -> $VAR_LIB (preserving any existing data)"
 chown -R "$SERVICE_USER":"$SERVICE_USER" "$VAR_LIB"
 
-# --- basis-data presence check (owner rsyncs this separately; the daemon will
-#     not start without it, so warn loudly rather than proceed silently) ---
-BASIS_OK=1
-for rel in "external/readlex/readlex.json" \
-           "data/supplement-combined-filtered.json" \
-           "data/definitions-shavian-gb.json" \
-           "data/definitions-shavian-us.json"; do
-    if [ ! -f "$OPT_ROOT/$rel" ]; then
-        echo "    !! MISSING basis input: $OPT_ROOT/$rel" >&2
-        BASIS_OK=0
-    fi
-done
+# --- read-only basis (from this tarball, paths preserved) ---
+# The basis/ tree mirrors the repo layout, so copying its contents into
+# $OPT_ROOT lands every file where the daemon's PROJECT_ROOT-relative paths
+# expect it. cp -R merges into $OPT_ROOT alongside the daemon code.
+echo "==> Basis data -> $OPT_ROOT"
+cp -R "$HERE/basis/." "$OPT_ROOT/"
 
 # --- systemd ---
 echo "==> systemd daemon-reload + enable"
 systemctl daemon-reload
-if [ "$BASIS_OK" -eq 1 ]; then
-    systemctl enable --now shaw-spell-editord
-else
-    systemctl enable shaw-spell-editord
-    echo "    (NOT started: basis data missing — start it after rsyncing, below)"
-fi
+systemctl enable --now shaw-spell-editord
 
 # --- summary + remaining manual steps ---
 cat <<SUMMARY
@@ -109,30 +102,23 @@ cat <<SUMMARY
 Installed:
   web tier   -> $WWW_ROOT (editor.cgi, index.cgi, authstore.py, js/css/fonts)
   daemon     -> $OPT_ROOT/{editor,tools} + /etc/systemd/system/shaw-spell-editord.service
+  basis data -> $OPT_ROOT/{external,data}  (from the tarball)
   state dirs -> $VAR_LIB/{auth,patches} (owned by $SERVICE_USER; existing data preserved)
 
-Remaining MANUAL steps (this script cannot safely do these):
+The daemon is enabled and running. Remaining MANUAL steps (this script
+cannot safely do these):
 
-1. Sync the ~350MB read-only basis data under $OPT_ROOT, preserving paths:
-     $OPT_ROOT/external/readlex/readlex.json
-     $OPT_ROOT/data/supplement-combined-filtered.json
-     $OPT_ROOT/data/definitions-shavian-gb.json
-     $OPT_ROOT/data/definitions-shavian-us.json
-     $OPT_ROOT/external/frequency-words/.../en_full.txt   (optional — freq sort)
-   Then:  sudo systemctl start shaw-spell-editord
-
-2. Point the CGI at the auth DB via Apache (paste into the editor <Directory>):
+1. Point the CGI at the auth DB via Apache (paste into the editor <Directory>):
      <Directory $WWW_ROOT>
        SetEnv SHAW_SPELL_AUTH_DB $AUTH_DB
      </Directory>
    Then:  sudo systemctl reload apache2   (or: apachectl graceful)
    (+ExecCGI, .cgi handler, DirectoryIndex index.cgi, TLS are already configured.)
 
-3. Seed the first editor account (writes $AUTH_DB):
+2. Seed the first editor account (writes $AUTH_DB):
      sudo -u $SERVICE_USER SHAW_SPELL_AUTH_DB=$AUTH_DB \\
           python3 $WWW_ROOT/authstore.py --create-user HANDLE
 ============================================================
 SUMMARY
 
-[ "$BASIS_OK" -eq 1 ] || echo "WARNING: basis data missing — daemon enabled but NOT started (see step 1)." >&2
 echo "Done."

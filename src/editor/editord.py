@@ -82,13 +82,17 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # transliteration. Fails loud if no correction holds that anchor.
 
     Request:   {"op": "patch", "anchor": {"word","pos","shaw","var"} | null,
-                "record": {...} | null, "author": "…", "replaces"?: "p_…"}
+                "record": {...} | null, "author": "…", "replaces"?: "p_…",
+                "dirty"?: bool}
     Response:  {"result": "appended"|"replaced", "id": "p_…",
                 "records": [...]}   # the anchor re-annotated after the write
                 # The client sends the COMPLETE wanted `record`; the daemon
                 # diffs its intrinsic fields against the live basis and persists a
                 # minimal-diff patch {anchor, op, changes} (accept, or drop when
-                # record is null). anchor null (record supplied) = authorship.
+                # record is null). `dirty` marks a bare edit-on-navigate: the patch
+                # op is "edit" (DIRTY — not reviewed, not shipped) instead of
+                # "accept"; only an explicit Accept (dirty omitted) reviews/ships.
+                # anchor null (record supplied) = authorship.
                 # anchor null + replaces = re-decide an AUTHORED entry: edits that
                 # authorship patch in place (anchor stays null), never an anchored
                 # patch (which would orphan the decision — see _reauthor).
@@ -151,16 +155,17 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
-from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_FLAG,  # noqa: E402
-                   PROJECT_ROOT, UPSTREAM_SOURCE, anchor_key)
+from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_EDIT,  # noqa: E402
+                   OP_FLAG, PROJECT_ROOT, UPSTREAM_SOURCE, anchor_key)
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (AUTHORED_STATUS, NOVELTY_NEW_POS,           # noqa: E402
                      NOVELTY_NEW_SPELLING, NOVELTY_NEW_WORD, ORPHANED_STATUS,
                      PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
-                     PATCH_STATE_DROPPED, PATCH_STATE_EDITED, PATCH_STATE_FLAGGED,
-                     PATCH_STATE_ORPHANED, PATCH_STATE_UNREVIEWED, load_view)
+                     PATCH_STATE_DIRTY, PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
+                     PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
+                     PATCH_STATE_UNREVIEWED, load_view)
 from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
     replace_authored_patch, upsert_patch)
@@ -391,7 +396,7 @@ def _field_matches(record, key, value, established):
 # fails loud.
 REVIEW_FILTER_VALUES = (
     PATCH_STATE_UNREVIEWED, PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED,
-    PATCH_STATE_DROPPED, PATCH_STATE_FLAGGED)
+    PATCH_STATE_DIRTY, PATCH_STATE_DROPPED, PATCH_STATE_FLAGGED)
 
 
 def _matches_review(record, value):
@@ -959,18 +964,25 @@ def handle_patch(state, request):
             patch = make_patch(anchor, OP_DROP, {}, meta)
         else:
             changes = _compute_changes(record, basis)
-            patch = make_patch(anchor, OP_ACCEPT, changes, meta)
+            # A bare edit persisted on navigate (autoSaveMainEdit) sends
+            # dirty=true -> op="edit" (DIRTY: edited, not reviewed, not shipped).
+            # Explicit Accept omits it -> op="accept" (reviewed, shipped, carrying
+            # any accumulated edits). Acceptance is the ONLY thing that reviews.
+            op = OP_EDIT if request.get("dirty") else OP_ACCEPT
+            patch = make_patch(anchor, op, changes, meta)
         key = anchor_key(anchor)
 
     # Enforce the one-canonical-per-(word,pos,var) invariant on any canonical
-    # accept (authorship or anchored). A drop, or an accept carrying a
-    # merger/variant flag, is exempt (see _canonical_conflict). Nothing is
-    # written if a different-shaw canonical already exists.
-    conflict = _canonical_conflict(state, record)
-    if conflict is not None:
-        return {"error": f"a canonical {record.get('var', '')} entry already exists "
-                f"for {record['word']}/{record['pos']} ({conflict}) — "
-                "flag one as a variant/merger first"}
+    # accept (authorship or anchored). A drop, a DIRTY edit (op="edit" ships
+    # nothing, so cannot create a canonical clash), or an accept carrying a
+    # merger/variant flag, is exempt (see _canonical_conflict). Nothing is written
+    # if a different-shaw canonical already exists.
+    if patch["op"] != OP_EDIT:
+        conflict = _canonical_conflict(state, record)
+        if conflict is not None:
+            return {"error": f"a canonical {record.get('var', '')} entry already exists "
+                    f"for {record['word']}/{record['pos']} ({conflict}) — "
+                    "flag one as a variant/merger first"}
 
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)

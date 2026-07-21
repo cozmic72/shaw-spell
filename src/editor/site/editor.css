@@ -23,6 +23,11 @@
     --state-dropped: #a24632;
     --state-flagged: #b07d1a;
     --state-authored: #6b52a8;
+    /* Colour keys on ACCEPTANCE, not editedness. accepted (an explicit sanction,
+       edits or none) reads GREEN like edited; dirty (edited, not yet accepted)
+       reads ORANGE like flagged — "needs attention, not resolved". */
+    --state-accepted: var(--state-edited);
+    --state-dirty: var(--state-flagged);
     /* Orphaned is not one state but two, keyed off orphan_kind so the reasons triage
        apart at a glance. Neither reuses another state's hue (was: == dropped, a
        collision — an orphan looked like a plain drop). resurfaced-drop is the URGENT
@@ -648,7 +653,9 @@ body {
     background: var(--row-edge, transparent);
 }
 .ledger-row.state-unreviewed { --row-edge: transparent; }
+.ledger-row.state-accepted { --row-edge: var(--state-accepted); }
 .ledger-row.state-edited { --row-edge: var(--state-edited); }
+.ledger-row.state-dirty { --row-edge: var(--state-dirty); }
 .ledger-row.state-dropped { --row-edge: var(--state-dropped); }
 .ledger-row.state-flagged { --row-edge: var(--state-flagged); }
 .ledger-row.state-authored { --row-edge: var(--state-authored); }
@@ -738,9 +745,33 @@ body {
     white-space: nowrap;
 }
 .stamp.unreviewed { color: var(--state-unreviewed); }
-.stamp.accepted { color: var(--state-edited); }
+.stamp.accepted { color: var(--state-accepted); }
 .stamp.edited { color: var(--state-edited); }
+.stamp.dirty { color: var(--state-dirty); }
 .stamp.dropped { color: var(--state-dropped); }
+
+/* The detail rail's small state pill — restates the exact state WORD (colour alone
+   can't tell accepted from edited, or dirty from flagged). Unobtrusive: small,
+   uppercase, tinted by the record's state hue. */
+.state-pill {
+    display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 7px;
+    border-radius: 999px;
+    color: var(--state-pill-hue, var(--state-unreviewed));
+    border: 1px solid var(--state-pill-hue, var(--state-unreviewed));
+    background: color-mix(in srgb, var(--state-pill-hue, var(--state-unreviewed)) 8%, transparent);
+}
+.state-pill.unreviewed { --state-pill-hue: var(--state-unreviewed); }
+.state-pill.accepted { --state-pill-hue: var(--state-accepted); }
+.state-pill.edited { --state-pill-hue: var(--state-edited); }
+.state-pill.dirty { --state-pill-hue: var(--state-dirty); }
+.state-pill.dropped { --state-pill-hue: var(--state-dropped); }
+.state-pill.flagged { --state-pill-hue: var(--state-flagged); }
+.state-pill.authored { --state-pill-hue: var(--state-authored); }
+.state-pill.orphaned { --state-pill-hue: var(--state-orphaned); }
 .stamp.flagged { color: var(--state-flagged); }
 .stamp.authored { color: var(--state-authored); }
 .stamp.orphaned { color: var(--state-orphaned); }
@@ -824,7 +855,9 @@ body {
     background: color-mix(in srgb, var(--state-edge, var(--rule)) 7%, transparent);
 }
 .glance-word.unreviewed { --state-edge: var(--state-unreviewed); }
+.glance-word.accepted { --state-edge: var(--state-accepted); }
 .glance-word.edited { --state-edge: var(--state-edited); }
+.glance-word.dirty { --state-edge: var(--state-dirty); }
 .glance-word.dropped { --state-edge: var(--state-dropped); }
 .glance-word.flagged { --state-edge: var(--state-flagged); }
 .glance-word.authored { --state-edge: var(--state-authored); }
@@ -1705,8 +1738,9 @@ body {
     white-space: nowrap;
 }
 .related-badge.unreviewed { color: var(--state-unreviewed); }
-.related-badge.accepted { color: var(--state-edited); }
+.related-badge.accepted { color: var(--state-accepted); }
 .related-badge.edited { color: var(--state-edited); }
+.related-badge.dirty { color: var(--state-dirty); }
 .related-badge.dropped { color: var(--state-dropped); }
 .related-badge.flagged { color: var(--state-flagged); }
 .related-badge.authored { color: var(--state-authored); }

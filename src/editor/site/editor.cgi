@@ -172,6 +172,7 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
             <label class="chip"><input value="accepted"><span>accepted</span></label>
             <label class="chip"><input value="edited"><span>edited</span></label>
+            <label class="chip"><input value="dirty"><span>dirty</span></label>
             <label class="chip"><input value="dropped"><span>dropped</span></label>
             <label class="chip"><input value="flagged"><span>flagged</span></label>
         </div>

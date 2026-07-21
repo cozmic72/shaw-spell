@@ -1246,14 +1246,15 @@ function priorityRail(record) {
     const rail = document.createElement("div");
     rail.className = "priority-rail";
 
-    // The plain state pill is gone — state now boxes the Latin word. This slot keeps
-    // only the orphan sub-tag (op + why), and hides when the record is not orphaned.
+    // The word-box carries state by COLOUR; this rail slot restates the exact state
+    // WORD as a small, unobtrusive pill (so accepted/edited/dirty/flagged read apart
+    // — colour alone can't). An orphaned record also gets its sub-tag (op + why).
     const state = railSlot("state");
+    const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
+    state.append(cell(`state-pill ${record.patch_state}`, stateName));
     const orphanKind = orphanKindBadge(record);
     if (orphanKind.childElementCount) {
         state.append(orphanKind);
-    } else {
-        state.classList.add("empty");
     }
 
     const sources = railSlot("sources");
@@ -3014,7 +3015,9 @@ async function saveSelected() {
     if (!requireShaw(record)) {
         return;
     }
-    await single(() => writePatch(anchorOf(selected), record, "saved", selected));
+    // Saving persists the edit but does NOT accept it — a save is DIRTY, exactly
+    // like auto-save on leave. Only the explicit Accept verdict reviews/ships.
+    await single(() => writePatch(anchorOf(selected), record, "saved", selected, { dirty: true }));
 }
 
 // Set while a single-record verdict runs (see single()); auto-save skips while it is
@@ -3056,6 +3059,7 @@ function autoSaveMainEdit() {
             await writePatch(anchorOf(selected), record, "saved", selected, {
                 step: false,
                 refocus: false,
+                dirty: true,
             });
         } catch (error) {
             showToast(error.message, true);
@@ -3141,11 +3145,15 @@ async function dropOne(selected, options = {}) {
 // re-annotates the row in place. `step`/`toast` are on for a single verdict and off
 // per record in a bulk run (the run does one summary toast, no stepping). Returns
 // the daemon result; throws on failure so the bulk loop can fail loud per record.
-async function writePatch(anchor, record, verb, selected, { step = true, toast = true, refocus = true } = {}) {
+async function writePatch(anchor, record, verb, selected, { step = true, toast = true, refocus = true, dirty = false } = {}) {
     const priorReviewed = selected ? selected.reviewed : false;
+    // A bare edit persisted on navigate is DIRTY (op="edit" server-side): the
+    // daemon records it but does NOT review or ship it. Only an explicit Accept
+    // (dirty omitted) writes op="accept". An authored edit-on-navigate stays
+    // authorship (re-authored in place), so dirty applies to anchored writes only.
     const request = isAuthored(selected)
         ? { op: "patch", anchor: null, record, author: AUTHOR, replaces: selected.patch_id }
-        : { op: "patch", anchor, record, author: AUTHOR };
+        : { op: "patch", anchor, record, author: AUTHOR, dirty };
     const result = await callDaemon(request);
     pushUndo(anchor, priorReviewed);
     countDecision();

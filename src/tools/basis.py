@@ -174,6 +174,10 @@ ORIG_FIELDS = {"var": "orig_var", "shaw": "orig_shaw", "ipa": "orig_ipa"}
 OP_ACCEPT = "accept"
 OP_DROP = "drop"
 OP_FLAG = "flag"
+# An edit persisted on navigate but not yet accepted — DIRTY. It carries the
+# field changes (so they are not lost) but is reviewed=False and ships nothing;
+# pressing Accept rewrites it as OP_ACCEPT. No legacy patch is op="edit".
+OP_EDIT = "edit"
 
 # The intrinsic, human-editable fields — the ONLY keys a patch's `changes` may
 # carry. Everything else (source, confidence, freq, status) is DERIVED at apply:
@@ -368,6 +372,18 @@ def is_flag_patch(patch):
     return patch.get("op") == OP_FLAG
 
 
+def is_dirty_patch(patch):
+    """Whether a patch is DIRTY — an EDIT persisted on navigate but not yet
+    accepted. An op="edit" patch carries the field changes so they are not lost,
+    but the record is NOT reviewed (acceptance is explicit) and its changes do NOT
+    ship: reviewed=False in the overlay, a production no-op in the applicator.
+    Pressing Accept rewrites it as op="accept", promoting it to edited/accepted.
+    No legacy patch carries op="edit" (they are accept/drop/flag/None), so
+    migration is a no-op. Shared by the overlay's state derivation and the
+    applicator."""
+    return patch.get("op") == OP_EDIT
+
+
 def record_to_output(record):
     """The canonical dictionary entry (Latn/Shaw/...) for a resolved `record`
     (word/shaw/...). The single UI-shape → canonical mapping shared by the
@@ -465,6 +481,15 @@ def resolve_patch(patch, basis_index, basis_source):
     # or an authored one — in both cases nothing reaches production, so this test
     # precedes the authored/anchored split.
     if is_flag_patch(patch):
+        return PATCH_NOOP
+
+    # A DIRTY patch (op="edit", edited but not yet accepted) is not shippable: its
+    # edits are persisted in the store but withheld from production until Accept
+    # rewrites it as op="accept", so the record ships in its unpatched form — a
+    # no-op, exactly like a flag. Legacy patches are never op="edit", so they ship
+    # as before. The test precedes the authored/anchored split: an authored dirty
+    # edit (were one ever minted) is equally unshippable.
+    if is_dirty_patch(patch):
         return PATCH_NOOP
 
     if patch["anchor"] is None:

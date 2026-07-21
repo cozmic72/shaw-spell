@@ -23,6 +23,9 @@ moves), a `reviewed` flag (a patch exists — the primary filter partition), and
     unreviewed  no patch resolves to this anchor
     accepted    an accept with no edits (changes empty) — sanctioned as-is
     edited      an accept carrying intrinsic edits (accept-with-edits / respell)
+    dirty       an EDIT persisted on navigate but not yet accepted (op == "edit")
+                — reviewed=False; its edits are shown but do NOT ship, until an
+                explicit Accept rewrites it as an accept (see is_dirty_patch)
     dropped     a drop (op == "drop")
     flagged     a flag "looked at, no verdict yet" (see is_flag_patch)
     authored    a standalone record no basis anchor attests (anchor is null)
@@ -69,13 +72,14 @@ decision for the owner; the overlay only surfaces the problem.
 
 import threading
 
-from basis import (INFO_FIELD, OP_ACCEPT, OP_DROP, ORIG_FIELDS, UPSTREAM_SOURCE,
-                   anchor_key, build_basis, effective_record, is_flag_patch,
-                   output_to_record)
+from basis import (INFO_FIELD, OP_ACCEPT, OP_DROP, OP_EDIT, ORIG_FIELDS,
+                   UPSTREAM_SOURCE, anchor_key, build_basis, effective_record,
+                   is_dirty_patch, is_flag_patch, output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
 PATCH_STATE_ACCEPTED = "accepted"
 PATCH_STATE_EDITED = "edited"
+PATCH_STATE_DIRTY = "dirty"
 PATCH_STATE_DROPPED = "dropped"
 PATCH_STATE_FLAGGED = "flagged"
 PATCH_STATE_AUTHORED = "authored"
@@ -194,8 +198,10 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
 def annotate_basis_record(candidate, source, patch, established):
     """One annotated row for a basis candidate under its overlaid patch.
 
-    Unpatched: displays the source record, unreviewed. Accepted: displays the
-    basis record with the patch's intrinsic `changes` laid over it, sanctioned
+    Unpatched: displays the source record, unreviewed. Dirty (op="edit"): displays
+    the basis record with the edits laid over it, NOT reviewed — a bare edit
+    persisted on navigate, awaiting explicit Accept. Accepted (op="accept"):
+    displays the basis record with the intrinsic `changes` laid over it, sanctioned
     (state `accepted` when `changes` is empty, `edited` when it carries edits).
     Dropped: displays the source record, flagged dropped. Flag: displays the
     source record, reviewed-but-undecided."""
@@ -210,6 +216,13 @@ def annotate_basis_record(candidate, source, patch, established):
         shown, reviewed, state = output_to_record(candidate), True, PATCH_STATE_FLAGGED
     elif patch["op"] == OP_DROP:
         shown, reviewed, state = output_to_record(candidate), True, PATCH_STATE_DROPPED
+    elif is_dirty_patch(patch):
+        # DIRTY (op="edit"): edits persisted on navigate but NOT yet accepted. The
+        # edits are shown, but the record is NOT reviewed — acceptance is explicit.
+        # Pressing Accept rewrites it as op="accept", promoting it below. No legacy
+        # patch is op="edit", so migration never lands here.
+        shown = effective_record(candidate, patch["changes"], source)
+        reviewed, state = False, PATCH_STATE_DIRTY
     else:
         changes = patch["changes"]
         shown = effective_record(candidate, changes, source)

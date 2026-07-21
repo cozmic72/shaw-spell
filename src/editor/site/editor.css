@@ -829,17 +829,23 @@ body {
 /* ---- glance column: identity row (word | POS+var) then Shavian/IPA below ---- */
 .glance-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 /* The identity row: the big Latin word on the LEFT, the POS + var group snug to the
-   TOP-RIGHT (content-sized, not a wide box). Wraps (POS/var drop under the word) on a
-   narrow/mobile width. The word's baseline sits near the BOTTOM of the row (align-items:
-   end) so it does not float high; the POS/var group tops-align to the same row top. */
+   TOP-RIGHT (content-sized, not a wide box). On desktop the row does NOT wrap — POS/var
+   stay to the RIGHT of the word down to genuinely narrow widths; the word group shrinks
+   (and truncates) rather than shoving POS/var underneath it. (The mobile block below
+   switches to a column and ducks POS/var UP, above the word — never below.) The word's
+   baseline sits near the BOTTOM of the row (align-items: end); the POS/var group
+   bottom-aligns to it. */
 .glance-identity {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: end;
     justify-content: space-between;
     gap: 10px 24px;
     min-width: 0;
 }
+/* The word group must be free to shrink so it never forces POS/var to wrap under it;
+   its contents ellipsis inside the state box instead. */
+.glance-identity > .glance-word { flex: 0 1 auto; min-width: 0; }
 /* The state box around the Latin word: a left-edge accent + full border in the
    record's state hue (reusing the ledger's --state-* vars), keyed by .state-* class.
    A quiet tinted ground keeps it legible without a garish fill. */
@@ -867,6 +873,10 @@ body {
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 /* POS (code prominent) + var, snug together, content-sized, at the top-right. */
 .glance-posvar {
@@ -1373,14 +1383,17 @@ body {
    state (mergers list + variant bool), never shown. Mirrors the pre-redesign merger
    toggle-row + variant toggle, merged into one group. */
 .variations-field { min-width: 0; }
-.variation-toggles { display: flex; flex-wrap: wrap; gap: 10px; }
+.variation-toggles { display: flex; flex-wrap: wrap; gap: 7px; }
+/* Secondary controls: kept small (tight padding, smaller type) so they read as
+   subordinate to the glance fields, not primary. Still a comfortable tap target on
+   touch — the mobile block below restores a taller (40px) min-height. */
 .variation-toggle {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
-    padding: 0 16px;
-    font-size: 13px;
-    letter-spacing: 0.06em;
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--ink-soft);
     background: var(--paper-raised);
@@ -2060,6 +2073,8 @@ kbd {
         align-self: flex-end;
     }
     .glance-word { align-self: flex-start; }
+    /* The variation tiles stay small but regain a full touch target on a phone. */
+    .variation-toggle { min-height: 40px; padding: 0 13px; }
     .priority-rail {
         display: flex;
         flex-wrap: wrap;

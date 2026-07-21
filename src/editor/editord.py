@@ -211,23 +211,27 @@ SUBSTRING_FIELDS = ("word", "shaw")
 SUBSTRING_DEFAULT_CI = {"word": True, "shaw": False}
 
 # The combined free-text filter the editor toolbar sends: ALWAYS a regex, ALWAYS
-# case-insensitive, matched against the Latin word OR the Shavian spelling. One box,
-# no per-box toggles — a record passes when the pattern hits EITHER field. Reported
-# under the name "search" in invalid_regex when the pattern fails to compile.
+# case-insensitive, matched against the Latin word OR the Shavian spelling OR the
+# IPA. One box, no per-box toggles — a record passes when the pattern hits ANY of the
+# three fields. Reported under the name "search" in invalid_regex when the pattern
+# fails to compile.
 SEARCH_FIELD = "search"
-SEARCH_FIELDS = ("word", "shaw")
+SEARCH_FIELDS = ("word", "shaw", "ipa")
 
 
 def _search_predicate(value):
     """Resolve the combined `search` value to a (predicate, valid) pair: an
-    always-IGNORECASE regex matched against word OR shaw. `valid` is False when the
-    pattern fails to compile (the predicate then matches nothing, never raising)."""
+    always-IGNORECASE regex matched against word OR shaw OR ipa. `valid` is False
+    when the pattern fails to compile (the predicate then matches nothing, never
+    raising). `ipa` is optional on a record, so a missing one reads as empty rather
+    than raising."""
     try:
         pattern = re.compile(value, re.IGNORECASE)
     except re.error:
         return (lambda record: False), False
     return (lambda record: pattern.search(record["word"]) is not None
-            or pattern.search(record["shaw"]) is not None), True
+            or pattern.search(record["shaw"]) is not None
+            or pattern.search(record.get("ipa") or "") is not None), True
 
 
 def _substring_predicate(field, value, filters):

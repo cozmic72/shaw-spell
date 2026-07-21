@@ -1975,29 +1975,141 @@ function renderRelated(section, records, focusedAnchor) {
     syncRelatedSortIndicators(section);
 }
 
-// The <ul> of related rows in the current sort order. Split out so a header sort
+// The tree of related rows in the current sort order. Split out so a header sort
 // click can rebuild just the list against the records stashed on the section.
+//
+// A flat sibling list hides the key fact — that several entries share ONE spelling
+// — so it is folded into a TWO-level tree: each distinct (roman word + Shavian
+// spelling) is one collapsible node. The node HEADER summarises what's inside — the
+// distinct POS tags and distinct VAR tags rolled up, plus the leaf count — so the
+// shared spelling reads at a glance. EXPANDING a node reveals the full flat table
+// (every pos × var × source row) for that spelling; there is no deeper nesting. The
+// node holding the focused entry is the default selection: it auto-expands and its
+// focused leaf wears the selected-row highlight. Sorting orders the nodes (by their
+// first leaf) and the leaves within them (see sortedRelated); it never flattens.
 function relatedListEl(records, focusedAnchor) {
     const list = document.createElement("ul");
     list.className = "related-list";
-    for (const record of sortedRelated(records, focusedAnchor)) {
-        list.append(relatedRow(record, focusedAnchor));
+    const sorted = sortedRelated(records, focusedAnchor);
+    for (const shawGroup of groupRelated(sorted, focusedAnchor)) {
+        list.append(shawNode(shawGroup, focusedAnchor));
     }
     return list;
 }
 
+// Fold the (already sorted) leaf records into roman-word + Shavian-spelling nodes.
+// Node order follows the incoming leaf order (the active sort): a node appears where
+// its first leaf falls, so sorting the leaves sorts the nodes too. Each node collects
+// its leaves plus the distinct POS and VAR tags they carry (order of first appearance),
+// for the summarised header.
+function groupRelated(sortedRecords, focusedAnchor) {
+    const nodes = [];
+    const index = new Map();
+    for (const record of sortedRecords) {
+        const key = `${(record.word || "").toLowerCase()}\0${record.shaw}`;
+        let node = index.get(key);
+        if (!node) {
+            node = {
+                key, word: record.word, shaw: record.shaw,
+                leaves: [], poses: [], vars: [], here: false,
+            };
+            index.set(key, node);
+            nodes.push(node);
+        }
+        node.leaves.push(record);
+        if (record.pos && !node.poses.includes(record.pos)) {
+            node.poses.push(record.pos);
+        }
+        if (record.var && !node.vars.includes(record.var)) {
+            node.vars.push(record.var);
+        }
+        if (sameAnchor(record.anchor, focusedAnchor)) {
+            node.here = true;
+        }
+    }
+    return nodes;
+}
+
+// A spelling node: a summarising header (disclosure + word + Shavian glyphs +
+// rolled-up POS/VAR tags + leaf count) plus, when expanded, the flat table of every
+// leaf for that spelling. Auto-expanded when it holds the focused entry so the owner
+// lands on the current record in context; other nodes collapse to one glance line.
+function shawNode(node, focusedAnchor) {
+    const li = document.createElement("li");
+    li.className = "related-group related-shaw-group";
+    const details = groupDetails(node.here);
+    details.append(shawSummary(node), shawLeaves(node, focusedAnchor));
+    li.append(details);
+    return li;
+}
+
+// The node's summarising header: word, Shavian spelling, the distinct POS tags and
+// VAR tags rolled up from its leaves (so a glance shows what the spelling covers),
+// and the " · N" leaf count. A focused node is tinted to tie it to the detail card.
+function shawSummary(node) {
+    const summary = document.createElement("summary");
+    summary.className = "related-node-summary";
+    if (node.here) {
+        summary.classList.add("on-path");
+    }
+    const chevron = document.createElement("span");
+    chevron.className = "related-chevron chevron";
+    chevron.setAttribute("aria-hidden", "true");
+
+    const label = document.createElement("span");
+    label.className = "related-node-label";
+    label.append(cell("related-group-word", node.word));
+    const shaw = cell("related-group-shaw", node.shaw);
+    label.append(shaw);
+    const poses = document.createElement("span");
+    poses.className = "related-group-pos";
+    for (const tag of node.poses) {
+        poses.append(posCell("related-group-pos-tag", tag));
+    }
+    label.append(poses);
+    const vars = document.createElement("span");
+    vars.className = "related-group-vars";
+    for (const value of node.vars) {
+        vars.append(cell("related-group-var-tag", value));
+    }
+    label.append(vars);
+
+    const count = cell("related-node-count", `${node.leaves.length}`);
+    summary.append(chevron, label, count);
+    return summary;
+}
+
+// The expanded node body: the flat related-row table, scoped to this spelling's
+// leaves. Each leaf is clickable → modal (except the focused one, inert above).
+function shawLeaves(node, focusedAnchor) {
+    const body = document.createElement("ul");
+    body.className = "related-subtree related-leaves";
+    for (const record of node.leaves) {
+        body.append(relatedRow(record, focusedAnchor));
+    }
+    return body;
+}
+
+// A tree node's <details> shell — native disclosure, open per the caller's default.
+function groupDetails(open) {
+    const details = document.createElement("details");
+    details.className = "related-node";
+    details.open = open;
+    return details;
+}
+
 // The related table's sortable header, mirroring the ledger's sort-head row: one
-// clickable header per column (state / word / pos / var / shaw / source) whose
+// clickable header per column (word / pos / var / shaw / source / state) whose
 // click sets state.relatedSort and re-orders the list client-side. The state
-// header spans the badge + label tracks (one logical column), so the six headers
-// line up over the row cells they name.
+// header (last) spans the badge + label tracks (one logical column), so the six
+// headers line up over the row cells they name.
 const RELATED_COLUMNS = [
-    ["state", "state", "related-head-state"],
     ["word", "word", "related-word"],
     ["pos", "pos", "related-pos"],
     ["var", "var", "related-dialect"],
     ["shaw", "shaw", "related-shaw"],
     ["source", "source", "related-source"],
+    ["state", "state", "related-head-state"],
 ];
 
 function relatedTableHead() {
@@ -2166,16 +2278,16 @@ function relatedRow(record, focusedAnchor) {
     const badge = cell(`related-badge ${provenance.state}`, provenance.glyph);
     badge.title = provenance.label;
     row.append(
-        badge,
-        cell("related-label", here ? "you are here" : provenance.label),
         cell("related-word", record.word),
         posCell("related-pos", record.pos),
         relatedDialect(record),
         cell("related-shaw", record.shaw),
         relatedSource(record),
+        badge,
+        cell("related-label", provenance.label),
     );
-    // A sibling row opens in a modal for in-place review; the "you are here" row is
-    // already the detail card above, so it is inert (no modal, no cursor move).
+    // A sibling row opens in a modal for in-place review; the focused row is already
+    // the detail card above (it wears the selected-row highlight), so it is inert.
     if (!here) {
         row.classList.add("clickable");
         row.addEventListener("click", () => openRelatedModal(record));

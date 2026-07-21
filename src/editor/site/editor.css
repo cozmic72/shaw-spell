@@ -1676,21 +1676,21 @@ body {
 .related-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
 .related-list { list-style: none; }
 /* The related list is a real table: the header and every row share ONE fixed
-   column template so state/word/pos/var/shaw/source line up vertically down the
+   column template so word/pos/var/shaw/source/state line up vertically down the
    list (the former per-row max-content/auto tracks sized independently and never
-   aligned). Seven tracks — the badge and its state label are two cells that read
-   as the one "state" column the header spans. word + shaw take the flexible space
-   (they are what's being reviewed); the metadata tracks are fixed/narrow. */
+   aligned). Seven tracks — word + shaw take the flexible space (they are what's
+   being reviewed); the metadata tracks are fixed/narrow; the state column (badge +
+   its label) sits LAST, two cells the header spans. */
 .related-head, .related-row {
     display: grid;
-    grid-template-columns: 22px 88px minmax(0, 1.4fr) 42px 48px minmax(0, 1.5fr) 108px;
+    grid-template-columns: minmax(0, 1.4fr) 42px 48px minmax(0, 1.5fr) 108px 22px 88px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 10px;
 }
 /* The sortable header row, styled like the ledger head (uppercase, tracked, quiet)
    and reusing the .sort-head button look + ▲/▼ carets. The state header spans the
-   badge + label tracks so it sits over the one logical "state" column. */
+   badge + label tracks (last two) so it sits over the one logical "state" column. */
 .related-head {
     align-items: center;
     height: 26px;
@@ -1714,19 +1714,24 @@ body {
 }
 .related-head .related-shaw,
 .related-head .related-source { justify-content: flex-end; }
+/* Leaf rows nest UNDER their spelling node: a left indent lands the first column
+   just right of the node summary's label (past the chevron) so nothing (state cell
+   included) juts left of the disclosure. The shared grid keeps the columns aligned
+   across all leaves. */
 .related-row {
     align-items: baseline;
-    padding: 8px 10px;
+    padding: 8px 10px 8px 30px;
     border-bottom: 1px solid var(--rule);
     border-left: 3px solid transparent;
 }
 .related-row:last-child { border-bottom: none; }
 /* A sibling row opens in a modal for in-place review — hint it is a target. The
-   "you are here" row is the detail card above, so it carries no affordance. */
+   focused row is the detail card above, so it carries no affordance. */
 .related-row.clickable { cursor: pointer; }
 .related-row.clickable:hover { background: var(--paper-raised); }
-/* "You are here" — the focused entry, edged with the same accent the detail card
-   wears, so the eye ties the row to the card above it. */
+/* The focused entry is the DEFAULT-SELECTED row: it wears the editor's active-row
+   highlight (raised paper + accent edge, mirroring .ledger-row.active), tying it to
+   the detail card above. The selection IS "you are here" — no separate label. */
 .related-row.here {
     background: var(--paper-raised);
     border-left-color: var(--accent);
@@ -1764,7 +1769,6 @@ body {
     text-transform: uppercase;
     color: var(--ink-soft);
 }
-.related-row.here .related-label { color: var(--accent); font-weight: 700; }
 .related-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .related-pos { color: var(--ink-soft); font-size: 11px; cursor: help; }
 /* The dialect track: the var, followed by variant/merger markers when present.
@@ -1799,6 +1803,91 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* ---- related-entries TREE — roman + shaw spelling node → flat rows ---- */
+/* The flat sibling list hides that several entries share ONE spelling, so it is
+   folded into a two-level disclosure tree: each (roman word + Shavian spelling) is
+   one node whose header (<summary>) SUMMARISES what's inside — the word, the glyphs,
+   the rolled-up POS + VAR tags, and the leaf count. Expanding reveals the full flat
+   table (the leaf rows) for that spelling; there is no deeper nesting. Leaf rows
+   carry a fixed left indent (see .related-row) so they nest under their node, the
+   chevron leading the eye down to the aligned leaf columns. */
+.related-node { border: none; }
+.related-node > .related-subtree { list-style: none; }
+.related-list .related-group { list-style: none; }
+
+.related-node-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--rule);
+    list-style: none;
+    user-select: none;
+}
+.related-node-summary::-webkit-details-marker { display: none; }
+.related-node-summary:hover { background: var(--paper-raised); }
+
+/* The disclosure chevron reuses the project chevron; it rotates when its own
+   <details> is open. */
+.related-chevron {
+    flex: none;
+    align-self: center;
+    transition: transform 0.12s ease;
+}
+.related-node[open] > .related-node-summary > .related-chevron { transform: rotate(90deg); }
+
+/* The summarising label lays the word, glyphs, and rolled-up POS/VAR tags out on
+   one line so the shared spelling and what it covers read at a glance. */
+.related-node-label {
+    min-width: 0;
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+}
+.related-group-word {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.related-group-shaw {
+    font-family: var(--shaw);
+    font-size: 18px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.related-group-pos, .related-group-vars { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.related-group-pos-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    cursor: help;
+}
+.related-group-var-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+}
+/* The " · N" leaf count, pushed to the right of the header so the glance picks up
+   how much a node hides without expanding it. */
+.related-node-count {
+    margin-left: auto;
+    flex: none;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+}
+.related-node-count::before { content: "· "; }
+/* The focused node's header is tinted to tie it to the detail card above. */
+.related-node-summary.on-path { color: var(--accent); }
+.related-node-summary.on-path .related-group-pos-tag,
+.related-node-summary.on-path .related-group-var-tag,
+.related-node-summary.on-path .related-node-count { color: var(--accent); }
 
 kbd {
     font-family: var(--mono);
@@ -1975,6 +2064,47 @@ kbd {
 }
 .create-dismiss:hover { color: var(--ink); }
 
+/* ---- edit-mode modal (a related entry opened for review) ---- */
+/* The related/clone edit modal hosts the SAME record editor as the wide detail pane —
+   the glance identity + priority rail chrome. That chrome was laid out for the wide
+   pane (two side-by-side columns at >=900px viewport). The modal is a NARROW card in a
+   wide viewport, so the viewport-keyed grid fired anyway and the two columns collided.
+   These rules reflow the chrome for the constrained card: a single stacked column,
+   identity above a horizontal rail, so nothing overlaps and the word stays visible.
+   Scoped to .create-card so the main detail pane is untouched. Create-mode uses the
+   .field-stack form (already narrow-friendly) — only the chrome-hosting card widens. */
+.create-card:has(.detail-chrome) { max-width: min(920px, 92vw); }
+
+/* One stacked column regardless of viewport width — override the >=900px two-column
+   grid, which has no room inside the card. */
+.create-card .detail-chrome {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+}
+
+/* Identity stacks: the big word on its own row (POS + var wrap beneath), so the word
+   is never squeezed to an empty ellipsis the way the side-by-side row did. */
+.create-card .glance-identity {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+.create-card .glance-word { align-self: flex-start; max-width: 100%; }
+/* The word may wrap to a second line rather than ellipsing away — in the card there is
+   vertical room, and a vanished word is the worse failure. */
+.create-card .glance-word .latin { white-space: normal; overflow: visible; }
+.create-card .glance-posvar { justify-content: flex-start; }
+
+/* The rail becomes a horizontal wrapping strip below the identity/fields (like the
+   mobile treatment), not a 2-column grid crammed into half the card. */
+.create-card .priority-rail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 22px;
+}
+.create-card .rail-slot { flex: 0 0 auto; }
+.create-card .rail-slot.empty { display: none; }
+
 /* ---- mobile: one big detail card, ledger tucked into a drawer ---- */
 @media (max-width: 860px) {
     /* The detail card fills the screen; the ledger is a full-height panel that
@@ -2144,12 +2274,13 @@ kbd {
 
     .pacing { gap: 20px; padding: 8px 18px; }
 
-    /* Related table: drop the POS column and let word take the slack so the badge,
-       label, word, var, Shavian and source fit a phone width without overflow. The
+    /* Related table: drop the POS column and let word take the slack so the word,
+       var, Shavian, source, badge and label fit a phone width without overflow. The
        header and rows keep sharing ONE template so the columns stay aligned; the
-       pos track collapses to 0 and its header + cell hide. Seven tracks (pos = 0). */
+       pos track collapses to 0 and its header + cell hide. Seven tracks (pos = 0),
+       state (badge + label) last. */
     .related-head, .related-row {
-        grid-template-columns: 20px 76px minmax(0, 1.3fr) 0 minmax(52px, 0.8fr) minmax(0, 1.2fr) 66px;
+        grid-template-columns: minmax(0, 1.3fr) 0 minmax(52px, 0.8fr) minmax(0, 1.2fr) 66px 20px 76px;
         gap: 6px 10px;
     }
     .related-pos { display: none; }

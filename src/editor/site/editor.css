@@ -1739,7 +1739,14 @@ body {
     font-size: inherit;
     justify-self: stretch;
 }
-.related-head .related-source { justify-content: flex-end; }
+/* Header buttons that borrow a row-cell class must not inherit that cell's flex
+   layout — the dialect cell is an inline-flex/baseline group, which lifts the VAR
+   header out of line with the other (block) headers. Force them plain + left. */
+.related-head .related-dialect {
+    display: block;
+    text-align: left;
+    align-self: center;
+}
 /* Leaf rows nest UNDER their spelling node: a left indent lands the first column
    just right of the node summary's label (past the chevron) so nothing (state cell
    included) juts left of the disclosure. The shared grid keeps the columns aligned
@@ -1768,11 +1775,10 @@ body {
     line-height: 1;
 }
 .related-source {
-    /* Fill + right-align (not justify-self:end, which shrink-wraps and defeats the
-       ellipsis) so a long "wordnet+wiktionary" clips to its track rather than
-       bleeding left under the shaw column. */
+    /* Left-aligned like every other column; ellipsis clips a long
+       "wordnet+wiktionary" to its track. */
     min-width: 0;
-    text-align: right;
+    text-align: left;
     font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 0.02em;

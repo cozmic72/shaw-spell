@@ -15,20 +15,33 @@ copied IPA runs through the SAME deterministic normalize/convert path as a norma
 ReadLex entry (normalize_ipa + ipa_to_shavian — rule-based, NOT the ML normalizer
 and NOT the shave tool), so this stage is fully deterministic and cheap.
 
-This is an ADDITIVE post-pass. It starts from the committed reliable set and
-appends rescued NP0 records, writing an augmented copy — the reliable input is
-left untouched. It sits at the head of the pruning chain:
+This is an ADDITIVE post-pass. It starts from the committed reliable set PLUS
+the committed speculative set (the untagged-accent lane — see below) and
+appends rescued NP0 records, writing an augmented copy — both inputs are left
+untouched. It sits at the head of the pruning chain:
 
-    reliable -> HERE (rescued) -> deduped -> classified -> collapsed -> filtered
-    -> basis
+    reliable + speculative -> HERE (rescued) -> deduped -> classified ->
+    collapsed -> filtered -> basis
 
 so a rescued name flows through duplicate-filtering, merger classification, the
 identical-dialect collapse, and phrase pruning exactly like any other candidate.
 
-Inputs:  data/supplement-wiktionary-reliable.json  (the STARTING dict, augmented
-         in place), external/readlex/readlex.json  (donors),
-         external/wiktionary/kaikki.org-dictionary-English.jsonl  (streamed for
-         IPA-less `name` spellings).
+UNTAGGED (SPECULATIVE) LANE. The wiktionary generator writes sounds with NO
+accent tag to -speculative.json as the unconfirmed-British bucket. These are
+ordinary candidates — the generator's design intends the RRP reclassifier to
+canonicalize the ones the Guide's rules permit — so they are folded into the
+chain HERE, at its head, and get the same downstream treatment as every other
+wiktionary record (including the NEAR syllable-dot correction, whose kaikki
+re-match indexes untagged sounds under UNTAGGED_VAR). The committed speculative
+file predates the untagged bucket's relabel to RSSB and still says var "SSB";
+folding maps that legacy label onto UNTAGGED_VAR and FAILS LOUD on any other
+var. They enter as unreviewed candidates; the editor is the sieve.
+
+Inputs:  data/supplement-wiktionary-reliable.json  and
+         data/supplement-wiktionary-speculative.json  (the STARTING dicts,
+         merged then augmented in place), external/readlex/readlex.json
+         (donors), external/wiktionary/kaikki.org-dictionary-English.jsonl
+         (streamed for IPA-less `name` spellings).
 Outputs: data/supplement-wiktionary-rescued.json  — the reliable set plus the
          rescued NP0 records. The Pass-1 dedup reads this next for wiktionary;
          WordNet keeps reading -reliable.json.
@@ -43,11 +56,17 @@ from collections import Counter
 from pathlib import Path
 
 from basis import PROJECT_ROOT
+from generate_wiktionary_supplement import UNTAGGED_VAR
 from ipa_to_shavian import ipa_to_shavian, normalize_ipa, score_confidence
 
 RELIABLE_INPUT = PROJECT_ROOT / "data" / "supplement-wiktionary-reliable.json"
+SPECULATIVE_INPUT = PROJECT_ROOT / "data" / "supplement-wiktionary-speculative.json"
 RESCUED_OUTPUT = PROJECT_ROOT / "data" / "supplement-wiktionary-rescued.json"
 READLEX_JSON = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
+
+# The var the committed (pre-relabel) speculative file carries; folded records
+# are mapped onto UNTAGGED_VAR ("RSSB"). Any other var in that file is a bug.
+LEGACY_UNTAGGED_VAR = "SSB"
 WIKTIONARY_JSONL = (PROJECT_ROOT / "external" / "wiktionary"
                     / "kaikki.org-dictionary-English.jsonl")
 
@@ -73,6 +92,27 @@ def load_json(path):
 def make_key(word, pos, shaw):
     """The ReadLex-format `word_POS_shaw` key a supplement file buckets under."""
     return f"{word}_{pos}_{shaw}"
+
+
+def fold_untagged(augmented, speculative, stats):
+    """Fold the untagged-accent (speculative) records into the working dict,
+    relabelling the legacy "SSB" var onto UNTAGGED_VAR. FAILS LOUD on any var
+    that is neither the legacy label nor UNTAGGED_VAR itself — the speculative
+    file holds only the untagged bucket, anything else is upstream breakage."""
+    for key, entries in speculative.items():
+        bucket = augmented.setdefault(key, [])
+        for entry in entries:
+            var = entry.get("var")
+            if var == LEGACY_UNTAGGED_VAR:
+                entry = dict(entry, var=UNTAGGED_VAR)
+            elif var != UNTAGGED_VAR:
+                raise ValueError(
+                    f"speculative record {key!r} carries var {var!r}; expected "
+                    f"the untagged bucket ({LEGACY_UNTAGGED_VAR!r} legacy or "
+                    f"{UNTAGGED_VAR!r})")
+            if entry not in bucket:
+                bucket.append(entry)
+                stats["untagged_folded"] += 1
 
 
 def build_readlex_donor_index(readlex_path):
@@ -188,6 +228,8 @@ def rescue_names(pending_names, donors, augmented, stats):
 
 def report(stats):
     print("\n=== proper-noun homograph rescue report ===")
+    print(f"Untagged (speculative) records folded in as "
+          f"{UNTAGGED_VAR}: {stats['untagged_folded']:,}")
     print(f"Pending IPA-less names:  {stats['pending']:,}")
     print(f"Rescued (donor found):   {stats['rescued']:,}")
     print(f"Unrescued (no donor):    {stats['unrescued']:,}")
@@ -198,12 +240,13 @@ def main():
         print(f"ERROR: kaikki dump not found: {WIKTIONARY_JSONL}", file=sys.stderr)
         sys.exit(1)
 
+    stats = Counter()
     augmented = load_json(RELIABLE_INPUT)
+    fold_untagged(augmented, load_json(SPECULATIVE_INPUT), stats)
     donors = build_readlex_donor_index(READLEX_JSON)
     covered = covered_name_spellings(augmented)
     pending_names = collect_pending_names(WIKTIONARY_JSONL, covered)
 
-    stats = Counter()
     stats["pending"] = len(pending_names)
     rescue_names(pending_names, donors, augmented, stats)
 

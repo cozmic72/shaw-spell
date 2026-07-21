@@ -102,12 +102,14 @@ COLLISION_VARS = frozenset(PRECEDENCE)
 #     NZ     -> RRP
 #     SthAfr -> RRP
 #     IrEng  -> RRP
-#     SSB    -> RRP                 (untagged "general British" bucket)
 #     GenAm -> RRP                  (parent EDGE only; see below)
 #
 # RRP is the root (no parent — always kept). RSSB is deliberately NOT in the
 # hierarchy: it is the reclassifier's "unresolved British" bucket, not a national
-# accent, so it keeps its flat-precedence handling unchanged.
+# accent, so it keeps its flat-precedence handling unchanged. The wiktionary
+# UNTAGGED bucket lands on RSSB too (generate_wiktionary_supplement.UNTAGGED_VAR
+# — untagged sounds are exactly "unconfirmed British"), so it is owned by the
+# flat legacy collapse, not by this hierarchy.
 #
 # GenAm is BOTH the parent of GenCan AND a member of the legacy flat-collapse set
 # {RRP, RSSB, GenAm}. Its GenAm-vs-RRP collapse is the PRE-EXISTING behaviour of
@@ -123,7 +125,6 @@ PARENT = {
     "NZ": "RRP",
     "SthAfr": "RRP",
     "IrEng": "RRP",
-    UNTAGGED_VAR: "RRP",
     "GenAm": "RRP",  # edge only — GenAm is collapsed by the flat legacy stage
 }
 ROOT_VAR = "RRP"
@@ -137,10 +138,12 @@ HIERARCHY_COLLAPSE_VARS = frozenset(set(PARENT) - COLLISION_VARS)
 # Fail loud if a harvested accent exists that the hierarchy forgot to place: every
 # KEEP_ACCENT (bar RRP root and the legacy-owned GenAm) and the untagged bucket
 # MUST be collapsed by the hierarchy stage, or a divergent record of that accent
-# would silently escape collapse.
+# would silently escape collapse. The untagged bucket is exempt only when it lands
+# on a COLLISION var (RSSB) — then the flat legacy collapse owns it instead.
 _harvest_vars = {var for var, _sel, _ns in KEEP_ACCENTS
                  if var != ROOT_VAR and var not in COLLISION_VARS}
-_harvest_vars.add(UNTAGGED_VAR)
+if UNTAGGED_VAR not in COLLISION_VARS:
+    _harvest_vars.add(UNTAGGED_VAR)
 _missing = _harvest_vars - HIERARCHY_COLLAPSE_VARS
 if _missing:
     raise SystemExit(
@@ -338,7 +341,7 @@ def hierarchy_relabel_group(entries, tallies, samples):
     (outside the hierarchy) and GenAm (owned by the flat legacy collapse) pass
     THROUGH untouched — but their spellings ARE read, so a GenCan can compare against
     GenAm and a GenAus against RRP. An UPSTREAM ReadLex record is never relabelled
-    regardless of its var (a core GenAus/SSB entry is sanctioned data whose anchor
+    regardless of its var (a core GenAus entry is sanctioned data whose anchor
     must survive to the basis) — it passes through like a reference var, and its
     spelling registers so it can serve as a fold target and parent witness.
 
@@ -430,9 +433,9 @@ def collapse_supplement(supplement, tallies, samples):
       1. HIERARCHY collapse (hierarchy_relabel_group): a harvest-accent record whose
          spelling equals its nearest present ancestor's inherits that ancestor and
          is relabelled away; a divergent one is kept. This is the multi-accent
-         harvest's dedup — it governs GenAus/GenCan/NZ/SthAfr/IrEng/SSB (NOT GenAm,
+         harvest's dedup — it governs GenAus/GenCan/NZ/SthAfr/IrEng (NOT GenAm,
          which the flat stage owns; the hierarchy only READS GenAm as GenCan's
-         parent).
+         parent. The untagged bucket is RSSB, also flat-stage-owned).
       2. FLAT legacy collapse (collapse_group): the surviving records are partitioned
          by spelling and any spelling carried by 2+ legacy vars {RRP,RSSB,GenAm}
          merges to the highest-precedence one, unioning sources (the combined-pool

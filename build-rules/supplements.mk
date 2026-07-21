@@ -69,12 +69,15 @@ rescore-full: data/supplement-wordnet-reliable.json data/supplement-wiktionary-r
 # Supplement candidate pruning (chained passes)
 ###########################################
 
-# Pass 0 — proper-noun homograph rescue (wiktionary only). Many kaikki `name`
-# entries have no IPA and were dropped by the generator; each is rescued by
-# copying a same-spelling ReadLex homograph's IPA and tagged `copied-homograph`
-# for review. Additive: the reliable set plus the rescued NP0 records. Pass 1
-# reads this for wiktionary. See src/tools/rescue_proper_nouns.py.
-data/supplement-wiktionary-rescued.json: $(SRC_TOOLS)/rescue_proper_nouns.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wiktionary-reliable.json $(WIKTIONARY_JSONL) $(READLEX_JSON)
+# Pass 0 — untagged-lane fold + proper-noun homograph rescue (wiktionary only).
+# Folds the speculative (untagged-accent) records into the chain as RSSB
+# unconfirmed-British candidates — the speculative file is an INPUT lane, not a
+# reject bin. Then: many kaikki `name` entries have no IPA and were dropped by
+# the generator; each is rescued by copying a same-spelling ReadLex homograph's
+# IPA and tagged `copied-homograph` for review. Additive: reliable + speculative
+# plus the rescued NP0 records. Pass 1 reads this for wiktionary. See
+# src/tools/rescue_proper_nouns.py.
+data/supplement-wiktionary-rescued.json: $(SRC_TOOLS)/rescue_proper_nouns.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json $(WIKTIONARY_JSONL) $(READLEX_JSON)
 	@echo "Rescuing IPA-less proper nouns via ReadLex homographs..."
 	$(RUN) python3 $(SRC_TOOLS)/rescue_proper_nouns.py
 
@@ -85,7 +88,7 @@ data/supplement-wiktionary-rescued.json: $(SRC_TOOLS)/rescue_proper_nouns.py $(S
 # confidence and tagged `near-dot-fixed` for the owner to adjudicate (ReadLex is
 # editorially inconsistent here). Genuine NEAR (here/weird) and patch-anchored
 # records are left untouched. See src/tools/fix_near_syllable_dots.py.
-data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py $(SRC_TOOLS)/ipa_to_shavian.py data/supplement-wiktionary-rescued.json $(WIKTIONARY_JSONL) data/patches/patches.jsonl
+data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-rescued.json $(WIKTIONARY_JSONL) data/patches/patches.jsonl
 	@echo "Correcting NEAR syllable-dot collapses..."
 	$(RUN) python3 $(SRC_TOOLS)/fix_near_syllable_dots.py
 

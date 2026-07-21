@@ -5,7 +5,9 @@ ReadLex-format JSON supplement files.
 
 Two output files:
   - data/supplement-wiktionary-reliable.json: entries with dialect-labelled IPA
-  - data/supplement-wiktionary-speculative.json: entries with IPA but no dialect label
+  - data/supplement-wiktionary-speculative.json: entries with IPA but no dialect
+    label (var RSSB, the unconfirmed-British bucket). Consumed by
+    rescue_proper_nouns.py, which folds them into the live pruning chain.
 
 Usage:
     python3 src/tools/generate_wiktionary_supplement.py
@@ -132,9 +134,13 @@ def _compute_ml_shaw(word: str, ipa: str, norm_source: str,
 # than one keep-accent (e.g. ['General-American','Received-Pronunciation']) emits
 # ONE record per accent (phase 2's hierarchy collapse dedups the identical ones).
 # Any sub-national / finer geography that is NOT a keep-accent DROPS the sound.
-# A sound with no accent tag at all becomes SSB (the honest "general/unconfirmed
-# British" bucket; the RRP reclassifier promotes it to RRP downstream if it likes
-# it) — NOT the old default-guess RP.
+# A sound with no accent tag at all becomes RSSB — the pipeline's existing
+# "unconfirmed British" bucket (SSB run through the non-rhotic normalisation's
+# R-restoration, exactly what these records are). RSSB is the var the flat
+# dialect collapse, the merger classifier and the RRP reclassifier all already
+# process, so the untagged lane flows downstream and the reclassifier
+# canonicalizes to RRP the records the Guide's rules permit — NOT the old
+# default-guess RP, and NOT a terminal bucket.
 #
 # `norm_source` selects the IPA-normalisation pathway in ipa_to_shavian:
 #   "wiktionary_rp"  — non-rhotic: R-restoration + SSB monophthong conventions
@@ -158,7 +164,10 @@ KEEP_ACCENTS: list[tuple[str, set[str], str]] = [
 ]
 
 # The untagged / accent-less bucket. Non-rhotic British normalisation.
-UNTAGGED_VAR = "SSB"
+# "RSSB" (SSB made rhotic) is the pipeline's unconfirmed-British var: choosing it
+# merges same-anchor attestations with wordnet's RSSB records at combine time and
+# puts the untagged lane in front of every stage that already handles RSSB.
+UNTAGGED_VAR = "RSSB"
 UNTAGGED_NORM_SOURCE = "wiktionary_rp"
 
 # var -> the normalize_ipa source the generator used for it. The single source of
@@ -377,9 +386,12 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
             key = make_key(word, pos, shaw)
             stats[f"var_{var}"] += 1
 
-            # Untagged (SSB) records carry no explicit accent tag → speculative,
-            # preserving the old "unlabelled → speculative" split. Accent-tagged
-            # records → reliable.
+            # Untagged (RSSB) records carry no explicit accent tag → the
+            # speculative FILE, preserving the "unlabelled kept separate" split
+            # for diagnostics. NOT a terminal bucket: rescue_proper_nouns folds
+            # the speculative file into the live chain (rescued -> neardot ->
+            # combine), so these are ordinary review candidates downstream.
+            # Accent-tagged records → reliable.
             if var == UNTAGGED_VAR:
                 stats["speculative_entries"] += 1
                 target = speculative

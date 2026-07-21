@@ -1713,7 +1713,7 @@ body {
     /* word + shaw are the point — real min widths so they hold and never truncate
        first; the metadata columns (pos/var/source/state) stay as tight as their
        content and concede space. */
-    grid-template-columns: minmax(140px, 2fr) 34px 50px minmax(150px, 2.4fr) 72px 18px 64px;
+    grid-template-columns: minmax(90px, 2fr) 34px 50px minmax(90px, 2.4fr) 56px 18px 52px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 10px;

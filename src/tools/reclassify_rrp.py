@@ -49,6 +49,27 @@ rationale. At most one candidate promotes onto a given (word, pos, Shaw)
 anchor (national_overpromotions): a held twin folds onto the promoted record
 downstream instead of minting a duplicate RRP anchor.
 
+⚠ MODEL-JUDGE GATE (feature-flagged, DEFAULT OFF — SHAW_SPELL_MODEL_JUDGE).
+The source-var rule trusts the source LABEL, but RSSB labels are not
+trustworthy: the untagged-Wiktionary lane restored no-accent-tag records as
+SSB→RSSB, so thousands of American pronunciations sit under the RSSB label
+(~2,572 with GOAT oʊ where RP has əʊ, ~4,674 rhotic — e.g. Abaco /ˈæbækoʊ/).
+Promoting those RSSB→RRP launders American pronunciations into RP. When the
+flag is ON, the frozen Latin-only neural G2P (data/g2p-judge-model/) judges
+every would-be promotion from EVERY source var — RSSB included — REPLACING the
+source-var rule (may_promote): the model predicts the word's RP-IPA from the
+Latin spelling ALONE (never the candidate's own Shaw, which would just echo a
+mislabelled form), the prediction is forward-converted through ipa_to_shavian,
+and the candidate promotes only if its resulting RRP spelling MATCHES the
+model's. Shaw-level disagreement is the calibrated judge signal (99.2% recall /
+98.2% precision at rejecting divergent-American while passing RP-identical and
+trap-bath forms — see model_judge_holds). A judge-rejected candidate stays in
+its source var, recorded rrp_outcome=SKIP_JUDGE_REJECT; one the model cannot
+judge (charset-OOV, unconvertible prediction) is held as SKIP_JUDGE_OOV. The
+anchor-dedup (national_overpromotions) and lane-occupancy guards still apply
+after the judge. Flag OFF (the default) is byte-identical to the pre-judge
+behaviour and never loads the model.
+
 Every relabelled/respelled record is an UNREVIEWED REVIEW CANDIDATE — nothing
 is auto-accepted, nothing is written to the patch store (never-auto-accept).
 The stage also carries a small provenance triple onto every judged record so
@@ -90,7 +111,9 @@ this stage is byte-deterministic run-to-run on identical input. shave is NOT
 consulted (in the classifier it is only a tier-A/B witness); dropping it costs
 only that nuance and buys the determinism the patch model requires — a
 non-deterministic respell would orphan the owner's accept/flag patches on every
-rebuild (shave-nondeterminism).
+rebuild (shave-nondeterminism). The model judge preserves this: greedy CPU
+decode over a sorted, fixed-batch input is byte-identical run-to-run (verified
+in the model's phase-1 evaluation), and flag-off it is not even loaded.
 
 PIPELINE PLACEMENT: reclassify runs on the merger-classified, source-combined
 pool, canonicalizing every non-merger candidate the rules allow while leaving
@@ -108,6 +131,8 @@ Usage:
 """
 
 import json
+import os
+import sys
 from collections import Counter, defaultdict
 
 from basis import PROJECT_ROOT, is_upstream, mark_original
@@ -148,6 +173,37 @@ LANE_HELD_BACK = "SKIP_OCCUPIED"
 # same-spelling promotion path for the same-pos case.)
 PROMOTABLE_VARS = {"RSSB", CANONICAL_VAR}
 NONBRITISH_HELD_BACK = "SKIP_NONBRITISH"
+
+# MODEL-JUDGE GATE flag (see the module docstring's MODEL-JUDGE section).
+# DEFAULT OFF: flag-off behaviour is byte-identical to the source-var rule
+# above and the judge model is never loaded (no torch import). Enable per-call
+# via reclassify_supplement(..., enable_model_judge=True); a None value
+# resolves SHAW_SPELL_MODEL_JUDGE from the environment (1/true/yes/on =
+# enabled), else this constant — the SHAW_SPELL_ENABLE_SHAVE_NAMES pattern.
+ENABLE_MODEL_JUDGE = False
+MODEL_JUDGE_ENV = "SHAW_SPELL_MODEL_JUDGE"
+
+# The frozen Latin-only G2P the judge runs (data/g2p-judge-model). This is the
+# LATIN-ONLY sibling of the Latin+Shavian fill model in data/g2p-model: the
+# judge must never see the candidate's own Shaw, or it echoes the very
+# (possibly mislabelled) pronunciation it is meant to check — enforced by a
+# fail-fast meta check in model_judge_holds.
+JUDGE_MODEL_DIR = PROJECT_ROOT / "data" / "g2p-judge-model"
+
+# The rrp_outcome for a passing candidate the model judge HOLDS: the model's
+# own RP prediction spells the word differently (JUDGE_HELD_BACK — the
+# calibrated reject-American signal), or the candidate could not be judged at
+# all (JUDGE_UNJUDGED — word outside the model's training charset, or a
+# prediction ipa_to_shavian refuses). Both stay in their source var; neither
+# is dropped.
+JUDGE_HELD_BACK = "SKIP_JUDGE_REJECT"
+JUDGE_UNJUDGED = "SKIP_JUDGE_OOV"
+
+# Model input hygiene — the training-corpus charset (same as
+# fill_generated_ipa; not imported from there because that module imports
+# torch at top level, which flag-off builds must never pay for).
+JUDGE_LATN_ALLOWED = set("abcdefghijklmnopqrstuvwxyz'-")
+SHAW_BLOCK = (0x10450, 0x1047F)
 
 # Judgment sentinel for an upstream ReadLex record in the pool: core IS the lane,
 # never a candidate. It is not judged, not relabelled, not respelled, and not
@@ -209,6 +265,91 @@ def may_promote(entry, judgment, rrp_siblings):
     poses = rrp_siblings.get(
         (entry["Latn"].lower(), promoted_shaw(entry, judgment)), ())
     return bool(poses) and entry.get("pos", "") not in poses
+
+
+def shaw_clean(shaw):
+    """Strip the naming dot and anything outside the Shavian block (mirrors
+    fill_generated_ipa.shaw_clean — see JUDGE_LATN_ALLOWED for why it is not
+    imported)."""
+    return "".join(c for c in shaw if SHAW_BLOCK[0] <= ord(c) <= SHAW_BLOCK[1])
+
+
+def judge_shaw_predictions(words):
+    """word -> the model's RP prediction rendered in Shavian (None where
+    ipa_to_shavian refuses the predicted IPA — an unjudgeable word).
+
+    Lazily imports the model stack: torch loads ONLY here, so a flag-off build
+    never pays for (or depends on) it. Deterministic: `words` must arrive
+    sorted so batch composition is fixed, and greedy CPU decode is
+    byte-identical run-to-run (verified in the model's phase-1 evaluation)."""
+    from g2p_common import load_model, predict_batch
+    from ipa_to_shavian import ipa_to_shavian
+
+    model, src_vocab, tgt_vocab, meta = load_model(JUDGE_MODEL_DIR)
+    if meta.get("with_shaw"):
+        raise SystemExit(
+            f"reclassify_rrp: {JUDGE_MODEL_DIR} is not the Latin-only model "
+            f"(meta.with_shaw is true) — judging with the candidate's own Shaw "
+            f"as input would echo the mislabelled pronunciation it must catch")
+
+    items = [{"latn": w, "shaw": None} for w in words]
+    predicted_ipa = predict_batch(model, src_vocab, tgt_vocab, items,
+                                  with_shaw=False, device="cpu")
+    predictions = {}
+    for word, ipa in zip(words, predicted_ipa):
+        try:
+            predictions[word] = shaw_clean(ipa_to_shavian(ipa))
+        except Exception:
+            # The converter refusing the model's prediction means there is no
+            # spelling to compare against — the word is unjudgeable (held as
+            # JUDGE_UNJUDGED by the caller, never silently promoted).
+            predictions[word] = None
+    return predictions
+
+
+def model_judge_holds(judged, passing):
+    """index -> JUDGE_* outcome for passing candidates the model judge HOLDS
+    BACK from promotion; indexes absent from the result are judge-approved.
+
+    THE JUDGE (flag-on replacement for may_promote): the Latin-only G2P
+    predicts the word's RP-IPA from the Latin spelling alone; the prediction is
+    forward-converted to Shavian and compared with the candidate's RESULTING
+    RRP spelling (promoted_shaw — the thing that would enter the RRP lane).
+    Disagreement -> JUDGE_HELD_BACK. Shaw-level disagreement is the calibrated
+    operating point (phase-1 judge evaluation, judge_eval.py): 99.2% recall /
+    98.2% precision at flagging divergent-American, only 4.9% of RP-identical
+    forms wrongly flagged, and trap-bath forms ACCEPTED — strictly better than
+    any likelihood-delta threshold (delta < -0.1 matches its recall at 27.9%
+    false flags), and threshold-free, so there is no tunable to drift.
+
+    A candidate outside the model's competence — Latin outside the training
+    charset (digits, diacritics, spaces: multiword), an empty cleaned Shaw, or
+    a prediction the converter refuses — is held as JUDGE_UNJUDGED, never
+    promoted unchecked: an unjudged promotion would reopen exactly the
+    mislabelled-source hole the judge exists to close.
+
+    Born-RRP candidates (var == RRP) are NOT judged: their relabel is a no-op,
+    not a promotion — this stage gates entry INTO the RRP lane only."""
+    candidates = {}
+    for i in sorted(passing):
+        entry, judgment = judged[i]
+        if entry.get("var", "") == CANONICAL_VAR:
+            continue
+        candidates[i] = (entry["Latn"].lower(),
+                         shaw_clean(promoted_shaw(entry, judgment)))
+
+    judgeable = sorted({latn for latn, shaw in candidates.values()
+                        if shaw and set(latn) <= JUDGE_LATN_ALLOWED})
+    predictions = judge_shaw_predictions(judgeable)
+
+    holds = {}
+    for i, (latn, shaw) in candidates.items():
+        predicted = predictions.get(latn)
+        if predicted is None:
+            holds[i] = JUDGE_UNJUDGED
+        elif predicted != shaw:
+            holds[i] = JUDGE_HELD_BACK
+    return holds
 
 
 def national_overpromotions(judged, eligible):
@@ -287,14 +428,15 @@ def blocked_promotions(judged, promotable):
     return blocked
 
 
-def reclassify_record(entry, judgment, lane_blocked, promotable, tallies,
+def reclassify_record(entry, judgment, lane_blocked, held, tallies,
                       samples):
     """A copy of one candidate with the reclassifier's per-record verdict applied.
 
     A merger-flagged record (judgment None) is held back untouched (it is spelt
     differently from its RRP sibling — the downstream collapse owns it), as are
-    one the source-var rule refuses (`promotable` False — a national-accent
-    candidate with no same-spelling RRP sibling in another pos) and a
+    one the promotion gate refuses (`held` = the outcome to stamp: the
+    source-var rule's SKIP_NONBRITISH, or — flag on — the model judge's
+    SKIP_JUDGE_* verdicts) and a
     lane-blocked one (its resulting RRP spelling conflicts with the group's
     occupied RRP lane — it stays in its source dialect). Otherwise PASS /
     PASS_RESPELL relabel var to RRP (and, for a respell, rewrite Shaw), recording
@@ -322,15 +464,19 @@ def reclassify_record(entry, judgment, lane_blocked, promotable, tallies,
 
     j = judgment
 
-    # The source-var rule refused the promotion (a national-accent candidate
-    # with no same-spelling RRP sibling in another pos — see PROMOTABLE_VARS /
-    # may_promote): NOT promoted, the record keeps its source var. Recorded so
-    # the editor can still surface "the rules judged this a valid RRP SHAPE".
-    if j.outcome in ("PASS", "PASS_RESPELL") and not promotable:
-        record["rrp_outcome"] = NONBRITISH_HELD_BACK
+    # The promotion gate refused the candidate: NOT promoted, the record keeps
+    # its source var. Flag off, `held` is the source-var rule's verdict (a
+    # national-accent candidate with no same-spelling RRP sibling in another
+    # pos — see PROMOTABLE_VARS / may_promote); flag on, the model judge's
+    # (see model_judge_holds). Recorded so the editor can still surface "the
+    # rules judged this a valid RRP SHAPE".
+    if j.outcome in ("PASS", "PASS_RESPELL") and held:
+        record["rrp_outcome"] = held
         record["rrp_tier"] = j.tier
-        tallies[NONBRITISH_HELD_BACK] += 1
-        tallies[f"held-nonbritish-{record.get('var', '')}"] += 1
+        tallies[held] += 1
+        held_kind = ("held-nonbritish" if held == NONBRITISH_HELD_BACK
+                     else "held-judge")
+        tallies[f"{held_kind}-{record.get('var', '')}"] += 1
         return record
 
     if lane_blocked:
@@ -366,32 +512,57 @@ def reclassify_record(entry, judgment, lane_blocked, promotable, tallies,
     return record
 
 
-def reclassify_supplement(supplement, tallies, samples):
+def reclassify_supplement(supplement, tallies, samples, enable_model_judge=None):
     """A copy of the supplement dict with every candidate reclassified. Records
     are re-bucketed by (word, pos, shaw) because a PASS_RESPELL changes the shaw
     the bucket key encodes. Nothing is dropped: every input record appears once
-    in the output (this stage judges + relabels, it never collapses)."""
+    in the output (this stage judges + relabels, it never collapses).
+
+    `enable_model_judge` gates the MODEL-JUDGE promotion gate (module
+    docstring) and DEFAULTS OFF: None resolves SHAW_SPELL_MODEL_JUDGE from the
+    environment (1/true/yes/on = enabled), else ENABLE_MODEL_JUDGE (False).
+    Off, the source-var rule (may_promote) applies unchanged and the judge
+    model is never loaded."""
+    if enable_model_judge is None:
+        env = os.environ.get(MODEL_JUDGE_ENV, "")
+        enable_model_judge = env.strip().lower() in ("1", "true", "yes", "on")
+
     records = [r for entries in supplement.values() for r in entries]
     ctx = {"cross_dialect": cross_dialect_set(records), "shave": {}}
 
     # Judge first (upstream core and merger-flagged records are held back
     # unjudged — core is the lane, a merged form stays in its dialect), then
-    # apply the source-var promotion rule (may_promote), then resolve RRP-lane
-    # occupancy across each (word, pos) group among the promotable, then apply.
+    # apply the promotion gate (the source-var rule, or — flag on — the model
+    # judge), then resolve RRP-lane occupancy across each (word, pos) group
+    # among the promotable, then apply.
     judged = [(r, UPSTREAM_LANE if is_upstream(r)
                else None if r.get("mergers") else judge_record(r, ctx))
               for r in records]
-    rrp_siblings = rrp_sibling_pos_index(records)
-    eligible = {i for i, (entry, j) in enumerate(judged)
-                if j is not None and j is not UPSTREAM_LANE
-                and j.outcome in ("PASS", "PASS_RESPELL")
-                and may_promote(entry, j, rrp_siblings)}
+    passing = {i for i, (entry, j) in enumerate(judged)
+               if j is not None and j is not UPSTREAM_LANE
+               and j.outcome in ("PASS", "PASS_RESPELL")}
+    if enable_model_judge:
+        print("reclassify_rrp: MODEL-JUDGE promotion gate ENABLED "
+              f"({MODEL_JUDGE_ENV})", file=sys.stderr)
+        judge_held = model_judge_holds(judged, passing)
+        eligible = passing - judge_held.keys()
+    else:
+        judge_held = {}
+        rrp_siblings = rrp_sibling_pos_index(records)
+        eligible = {i for i in passing
+                    if may_promote(*judged[i], rrp_siblings)}
     promotable = eligible - national_overpromotions(judged, eligible)
     blocked = blocked_promotions(judged, promotable)
 
     reclassified = defaultdict(list)
     for i, (entry, judgment) in enumerate(judged):
-        out = reclassify_record(entry, judgment, i in blocked, i in promotable,
+        # The outcome stamped on a passing-but-refused candidate: the model
+        # judge's verdict where it held the record, else the source-var rule's
+        # SKIP_NONBRITISH (which also covers an anchor-dedup drop — a national
+        # candidate losing the at-most-one-per-anchor tie-break, in either mode).
+        held = (None if i in promotable
+                else judge_held.get(i, NONBRITISH_HELD_BACK))
+        out = reclassify_record(entry, judgment, i in blocked, held,
                                 tallies, samples)
         reclassified[output_bucket_key(out)].append(out)
 
@@ -402,7 +573,8 @@ def report(tallies, samples):
     print("\n=== RRP reclassification report ===")
     total = sum(tallies[o] for o in ("PASS", "PASS_RESPELL", "STAY", "REVIEW",
                                      MERGER_HELD_BACK, LANE_HELD_BACK,
-                                     NONBRITISH_HELD_BACK))
+                                     NONBRITISH_HELD_BACK, JUDGE_HELD_BACK,
+                                     JUDGE_UNJUDGED))
     print(f"Records judged:            {total:,}")
     print(f"  PASS (relabel RRP):      {tallies['PASS']:,}")
     print(f"  PASS_RESPELL (+respell): {tallies['PASS_RESPELL']:,}")
@@ -416,6 +588,17 @@ def report(tallies, samples):
         n = tallies.get(f"held-nonbritish-{src}", 0)
         if n:
             print(f"      {src:7}: {n:,}")
+    if tallies[JUDGE_HELD_BACK] or tallies[JUDGE_UNJUDGED]:
+        # Flag-on only: the model-judge gate's holds (zero when the flag is
+        # off, so the flag-off report stays byte-identical).
+        print(f"  PASS held (model judge rejected):  {tallies[JUDGE_HELD_BACK]:,}")
+        print(f"  PASS held (model judge could not judge): "
+              f"{tallies[JUDGE_UNJUDGED]:,}")
+        for src in ("RSSB", "GenAm", "GenAus", "GenCan", "NZ", "SthAfr",
+                    "IrEng"):
+            n = tallies.get(f"held-judge-{src}", 0)
+            if n:
+                print(f"      {src:7}: {n:,}")
     print(f"  upstream core (the lane; passed through verbatim): "
           f"{tallies['upstream-lane']:,}")
     relabelled = tallies["PASS"] + tallies["PASS_RESPELL"]

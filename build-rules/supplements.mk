@@ -160,14 +160,21 @@ SUPPLEMENT_STEP_MODULES := \
 	$(SRC_TOOLS)/ipa_to_shavian.py \
 	$(SRC_TOOLS)/detect_phrase_divergence.py \
 	$(SRC_TOOLS)/generate_wordnet_supplement.py \
-	$(SRC_TOOLS)/generate_wiktionary_supplement.py
+	$(SRC_TOOLS)/generate_wiktionary_supplement.py \
+	$(SRC_TOOLS)/g2p_common.py
 
+# data/g2p-judge-model (the LATIN-ONLY sibling of data/g2p-model) backs
+# reclassify_rrp's feature-flagged MODEL-JUDGE promotion gate. The gate is OFF
+# by default (SHAW_SPELL_MODEL_JUDGE=1 enables it) and the model is loaded
+# lazily only when it is on, but the artifacts are unconditional prerequisites
+# so a flag-on build rebuilds when the frozen model changes.
 data/supplement-combined-filtered.json: $(SUPPLEMENT_STEP_MODULES) \
 		data/supplement-wordnet-reliable.json \
 		data/supplement-wiktionary-neardot.json \
 		data/supplement-wiktionary-reliable.json \
 		data/supplement-names-ipa.json \
 		data/supplement-generated-ipa.json \
+		data/g2p-judge-model/model.pt data/g2p-judge-model/meta.json \
 		external/readlex/readlex.json \
 		$(WORDNET_YAML) $(WIKTIONARY_JSONL) \
 		data/patches/patches.jsonl

@@ -53,6 +53,14 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     # Strip IPA slashes/brackets
     ipa = ipa.strip("/[] ")
 
+    # -ium suffix: fuse i.əm / i+əm → iəm (word-final, +opt plural s/z) so the
+    # iə → 𐑾 rule fires and gives the RP fused ending 𐑾𐑥 (valium 𐑝𐑨𐑤𐑾𐑥), not the
+    # two-syllable 𐑦𐑩𐑥. ReadLex is unanimous here (155 fused, 0 split). Must run
+    # BEFORE the happier rule below so that rule's + boundary is never planted on
+    # -ium; scoped to iəm only (not word-final -iə happier, not iəʊ radio, not
+    # iən Ian) — the ...(?=[szZ]?(?: |$)) guard anchors it at a word boundary.
+    ipa = re.sub(r'i[.+]?əm(?=[szZ]?(?: |$))', 'iəm', ipa)
+
     # Route the [iɪ].ə syllable break through the affix boundary (+) so
     # ipa_to_shavian keeps it two syllables (𐑦𐑼) instead of collapsing it to
     # NEAR (𐑽) — e.g. happier /hæp.i.ə/ → 𐑣𐑨𐑐𐑦𐑼, not 𐑣𐑨𐑐𐑽. Genuine NEAR

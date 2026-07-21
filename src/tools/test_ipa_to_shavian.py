@@ -264,6 +264,51 @@ class Bug8GenAmStressedFleece(unittest.TestCase):
         self.assertEqual(norm_gam("liəR", "lear"), "𐑤𐑽")
 
 
+class Bug9IumSuffixFused(unittest.TestCase):
+    """The -ium suffix fuses to the RP ending 𐑾𐑥 (valium 𐑝𐑨𐑤𐑾𐑥), not the
+    two-syllable 𐑦𐑩𐑥. ReadLex is unanimous: 155 fused, 0 split. Regression:
+    the happier fix (i.ə → i+ə) over-fired on i.əm/i+əm, whose + boundary
+    blocked the iə → 𐑾 fusion. Scoped to iəm ONLY (not -iə, iəʊ, iən)."""
+
+    def test_valium_all_boundary_forms(self):
+        # Baked + form (wiktionary), dot form, and plain form all fuse.
+        self.assertEqual(norm_rp("ˈvæli+əm", "valium"), "𐑝𐑨𐑤𐑾𐑥")
+        self.assertEqual(norm_rp("ˈvæli.əm", "valium"), "𐑝𐑨𐑤𐑾𐑥")
+        self.assertEqual(norm_rp("ˈvæliəm", "valium"), "𐑝𐑨𐑤𐑾𐑥")
+
+    def test_sodium_medium(self):
+        self.assertEqual(norm_rp("ˈsəʊdi.əm", "sodium"), "𐑕𐑴𐑛𐑾𐑥")
+        self.assertEqual(norm_rp("ˈmiːdi.əm", "medium"), "𐑥𐑰𐑛𐑾𐑥")
+
+    def test_byzantium_baked_plus(self):
+        self.assertEqual(norm_rp("baɪˈzænti+əm", "byzantium"), "𐑚𐑲𐑟𐑨𐑯𐑑𐑾𐑥")
+
+    def test_plural_iums_fuses(self):
+        self.assertEqual(norm_rp("ˈmiːdi.əmz", "mediums"), "𐑥𐑰𐑛𐑾𐑥𐑟")
+
+    # --- CRITICAL guards: neighbouring iə contexts must be UNTOUCHED ---
+
+    def test_happier_word_final_ia_unchanged(self):
+        # Word-FINAL -iə (not followed by m): stays two-syllable 𐑦𐑼.
+        self.assertEqual(norm_rp("ˈhæp.i.ə", "happier"), "𐑣𐑨𐑐𐑦𐑼")
+
+    def test_radio_iau_unchanged(self):
+        # iəʊ (different vowel after i): weak-i + GOAT, untouched.
+        self.assertEqual(norm_rp("ˈreɪdi.əʊ", "radio"), "𐑮𐑱𐑛𐑦𐑴")
+
+    def test_belgium_no_ia_sequence_unchanged(self):
+        # -gium: i palatalised into dʒ, no iə vowel sequence → not our case.
+        self.assertEqual(norm_rp("ˈbɛldʒəm", "belgium"), "𐑚𐑧𐑤𐑡𐑩𐑥")
+
+    def test_nasturtium_no_ia_sequence_unchanged(self):
+        # -tium: i palatalised into ʃ, no iə vowel sequence → not our case.
+        self.assertEqual(norm_rp("nəˈstɜːʃəm", "nasturtium"), "𐑯𐑩𐑕𐑑𐑻𐑖𐑩𐑥")
+
+    def test_ian_iən_unchanged(self):
+        # iən (not iəm): out of scope, left exactly as-is.
+        self.assertEqual(ipa_to_shavian("ˈiən"), "𐑾𐑯")
+
+
 class Determinism(unittest.TestCase):
     """The converter is pure: same input → same output."""
 

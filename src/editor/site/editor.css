@@ -2308,16 +2308,19 @@ kbd {
 
     .pacing { gap: 20px; padding: 8px 18px; }
 
-    /* Related table: drop the POS column and let word take the slack so the word,
-       var, Shavian, source, badge and label fit a phone width without overflow. The
-       header and rows keep sharing ONE template so the columns stay aligned; the
-       pos track collapses to 0 and its header + cell hide. Seven tracks (pos = 0),
-       state (badge + label) last. */
+    /* Related table on a phone: only word, var, Shavian and the state badge fit —
+       drop POS, SOURCE and the state LABEL (their tracks collapse to 0, cells hide),
+       keeping the shared 7-track template so header + rows stay aligned. word + shaw
+       get real min widths so they never crush to one letter. Tracks:
+       word · pos(0) · var · shaw · source(0) · badge · label(0). */
     .related-head, .related-row {
-        grid-template-columns: minmax(0, 0.9fr) 0 56px minmax(0, 1.6fr) 66px 20px 76px;
-        gap: 6px 10px;
+        grid-template-columns: minmax(84px, 1fr) 0 48px minmax(96px, 1.4fr) 0 18px 0;
+        gap: 6px 8px;
     }
-    .related-pos { display: none; }
+    .related-pos,
+    .related-source,
+    .related-label { display: none; }
+    .related-head .related-head-state { grid-column: auto; }
     .related-shaw { font-size: 18px; }
 }
 

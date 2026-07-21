@@ -119,6 +119,19 @@ MERGER_HELD_BACK = "SKIP_MERGER"
 # module docstring's RRP-LANE OCCUPANCY GUARD section).
 LANE_HELD_BACK = "SKIP_OCCUPIED"
 
+# Only a WITHIN-BRITISH source var is promoted to RRP. RSSB is rhotic-restored
+# unconfirmed British, so canonicalizing it to RRP is a same-accent move that
+# cannot smuggle in a foreign vowel. GenAm (and the harvested national accents
+# GenAus/GenCan/NZ/SthAfr/IrEng) are DIFFERENT accents: the classifier judges a
+# spelling's structural RRP-plausibility against the record's OWN ipa, but that
+# ipa is the source accent's — so a faithful transcription of a GenAm vowel
+# (e.g. oddball /ˈɑːdˌbɒl/ -> 𐑭𐑛𐑚𐑪𐑤, "ahdball" to a British ear) PASSes and gets
+# wrongly stamped RRP. Until the classifier judges plausibility against an RP
+# pronunciation of the WORD (the pronunciation-anchored fix), only RSSB promotes;
+# a passing non-British candidate is held back (SKIP_NONBRITISH) in its source var.
+PROMOTABLE_VARS = {"RSSB", CANONICAL_VAR}
+NONBRITISH_HELD_BACK = "SKIP_NONBRITISH"
+
 # Judgment sentinel for an upstream ReadLex record in the pool: core IS the lane,
 # never a candidate. It is not judged, not relabelled, not respelled, and not
 # even decorated with rrp_* provenance — it passes through verbatim, while its
@@ -230,6 +243,18 @@ def reclassify_record(entry, judgment, lane_blocked, tallies, samples):
         tallies[LANE_HELD_BACK] += 1
         return record
 
+    # A candidate the rules would PASS but whose SOURCE var is not within-British
+    # is held back in its source var — a faithful transcription of a foreign
+    # accent's vowels is not an RP spelling (see PROMOTABLE_VARS). Recorded so the
+    # editor can still surface "the rules judged this a valid RRP SHAPE" for review.
+    if (j.outcome in ("PASS", "PASS_RESPELL")
+            and record.get("var", "") not in PROMOTABLE_VARS):
+        record["rrp_outcome"] = NONBRITISH_HELD_BACK
+        record["rrp_tier"] = j.tier
+        tallies[NONBRITISH_HELD_BACK] += 1
+        tallies[f"held-nonbritish-{record.get('var', '')}"] += 1
+        return record
+
     record["rrp_outcome"] = j.outcome
     record["rrp_tier"] = j.tier
     tallies[j.outcome] += 1
@@ -282,7 +307,8 @@ def reclassify_supplement(supplement, tallies, samples):
 def report(tallies, samples):
     print("\n=== RRP reclassification report ===")
     total = sum(tallies[o] for o in ("PASS", "PASS_RESPELL", "STAY", "REVIEW",
-                                     MERGER_HELD_BACK, LANE_HELD_BACK))
+                                     MERGER_HELD_BACK, LANE_HELD_BACK,
+                                     NONBRITISH_HELD_BACK))
     print(f"Records judged:            {total:,}")
     print(f"  PASS (relabel RRP):      {tallies['PASS']:,}")
     print(f"  PASS_RESPELL (+respell): {tallies['PASS_RESPELL']:,}")
@@ -290,6 +316,12 @@ def report(tallies, samples):
     print(f"  REVIEW (flagged):        {tallies['REVIEW']:,}")
     print(f"  SKIP (merger-flagged):   {tallies[MERGER_HELD_BACK]:,}")
     print(f"  PASS blocked (RRP lane occupied): {tallies[LANE_HELD_BACK]:,}")
+    print(f"  PASS held (non-British source, not promoted): "
+          f"{tallies[NONBRITISH_HELD_BACK]:,}")
+    for src in ("GenAm", "GenAus", "GenCan", "NZ", "SthAfr", "IrEng"):
+        n = tallies.get(f"held-nonbritish-{src}", 0)
+        if n:
+            print(f"      {src:7}: {n:,}")
     print(f"  upstream core (the lane; passed through verbatim): "
           f"{tallies['upstream-lane']:,}")
     relabelled = tallies["PASS"] + tallies["PASS_RESPELL"]

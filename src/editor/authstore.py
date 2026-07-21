@@ -29,6 +29,16 @@ HASH_SCHEME = "pbkdf2_sha256"
 SESSION_TTL_SECONDS = 30 * 24 * 3600
 SESSION_TOKEN_BYTES = 32
 
+# Login throttle: after this many failures for a handle within the window, reject
+# further attempts until the window lapses. Persisted in SQLite because editor.cgi
+# runs as a fresh process per request — in-memory state would never accumulate.
+LOGIN_MAX_FAILURES = 8
+LOGIN_WINDOW_SECONDS = 300
+
+# A throwaway hash the miss path verifies against, so a nonexistent handle costs
+# the same PBKDF2 work as a real one — no timing oracle for handle existence.
+_DUMMY_HASH = None
+
 DEFAULT_DB_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "data", "auth", "users.sqlite")
@@ -71,6 +81,11 @@ def migrate(path=None):
                 created_at INTEGER NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+            CREATE TABLE IF NOT EXISTS login_failures (
+                handle TEXT NOT NULL,
+                ts INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_login_failures ON login_failures(handle, ts);
             """
         )
         conn.commit()
@@ -123,19 +138,50 @@ def create_user(handle, password, path=None):
 
 def authenticate(handle, password, path=None):
     """Return the user_id on a correct handle+password, else None. Bad handle
-    and bad password are indistinguishable to the caller (no enumeration
-    oracle)."""
+    and bad password are indistinguishable — same 401 AND same time cost (the
+    miss path verifies a dummy hash), so neither value nor timing leaks handle
+    existence. Rejects (as None) once a handle is rate-limited."""
+    global _DUMMY_HASH
+    if _DUMMY_HASH is None:
+        _DUMMY_HASH = _hash_password(secrets.token_hex(16))
     conn = _connect(path)
     try:
+        if _is_rate_limited(conn, handle):
+            _verify_password(password, _DUMMY_HASH)  # keep the cost uniform
+            return None
         row = conn.execute(
             "SELECT id, password_hash FROM users WHERE handle = ? LIMIT 1",
             (handle,)).fetchone()
-        if row is None:
+        encoded = row[1] if row is not None else _DUMMY_HASH
+        ok = _verify_password(password, encoded)
+        if row is None or not ok:
+            _record_login_failure(conn, handle)
             return None
-        user_id, encoded = row
-        return user_id if _verify_password(password, encoded) else None
+        _clear_login_failures(conn, handle)
+        return row[0]
     finally:
         conn.close()
+
+
+def _is_rate_limited(conn, handle):
+    cutoff = int(time.time()) - LOGIN_WINDOW_SECONDS
+    conn.execute("DELETE FROM login_failures WHERE ts < ?", (cutoff,))
+    conn.commit()
+    (n,) = conn.execute(
+        "SELECT COUNT(*) FROM login_failures WHERE handle = ? AND ts >= ?",
+        (handle, cutoff)).fetchone()
+    return n >= LOGIN_MAX_FAILURES
+
+
+def _record_login_failure(conn, handle):
+    conn.execute("INSERT INTO login_failures (handle, ts) VALUES (?, ?)",
+                 (handle, int(time.time())))
+    conn.commit()
+
+
+def _clear_login_failures(conn, handle):
+    conn.execute("DELETE FROM login_failures WHERE handle = ?", (handle,))
+    conn.commit()
 
 
 def handle_for_user(user_id, path=None):

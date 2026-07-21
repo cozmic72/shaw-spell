@@ -104,6 +104,21 @@ data/supplement-names-ipa.json: $(SRC_TOOLS)/fill_names_ipa.py $(SRC_TOOLS)/ipa_
 	@echo "Filling names IPA from CMUdict..."
 	$(RUN) python3 $(SRC_TOOLS)/fill_names_ipa.py
 
+# Pass 0.8 — neural G2P IPA fill (generated slice only). The generated slice
+# has Shaw but no IPA (shave spelled it Roman->Shavian directly); the frozen
+# Latin+Shavian->RP-IPA model (data/g2p-model/, committed artifact) predicts
+# house IPA, filled ONLY where BOTH voter gates pass: the prediction
+# forward-converts back to the record's exact Shaw (round-trip) AND the model
+# likelihood clears the calibrated threshold (see fill_generated_ipa.py).
+# Failing records keep no ipa — this is the dictionary, nothing low-confidence
+# ships. Filled records carry ipa_source="model-g2p" plus a calibrated numeric
+# confidence. Deterministic (greedy CPU decode, no shave), so ordinary
+# mtime-triggered prerequisites are safe. Combine reads this instead of
+# supplement-generated.json. See src/tools/fill_generated_ipa.py.
+data/supplement-generated-ipa.json: $(SRC_TOOLS)/fill_generated_ipa.py $(SRC_TOOLS)/g2p_common.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-generated.json data/g2p-model/model.pt data/g2p-model/meta.json
+	@echo "Filling generated IPA from the frozen neural G2P..."
+	$(RUN) python3 $(SRC_TOOLS)/fill_generated_ipa.py
+
 # Supplement preprocessing — ONE in-memory pipeline, ONE recipe, ONE output.
 #
 # build_supplement.py is the orchestrator: it LOADS the source pools + upstream +
@@ -152,7 +167,7 @@ data/supplement-combined-filtered.json: $(SUPPLEMENT_STEP_MODULES) \
 		data/supplement-wiktionary-neardot.json \
 		data/supplement-wiktionary-reliable.json \
 		data/supplement-names-ipa.json \
-		data/supplement-generated.json \
+		data/supplement-generated-ipa.json \
 		external/readlex/readlex.json \
 		$(WORDNET_YAML) $(WIKTIONARY_JSONL) \
 		data/patches/patches.jsonl

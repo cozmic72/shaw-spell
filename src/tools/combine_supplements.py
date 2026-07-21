@@ -75,8 +75,10 @@ SOURCES = [
     # corpus, spelled by shave (Roman->Shavian G2P). Its own `generated` label
     # keeps the synthetic G2P flood filterable in the review surface. Records
     # carry synthetic/tier/shaw_source/origin through to the basis. See
-    # src/tools/generate_supplement_speculative.py.
-    ("generated", PROJECT_ROOT / "data" / "supplement-generated.json"),
+    # src/tools/generate_supplement_speculative.py. Read via the neural G2P
+    # IPA-fill pass (fill_generated_ipa.py): supplement-generated.json plus
+    # voter-gated (round-trip + likelihood) `ipa`/`ipa_source`/`confidence`.
+    ("generated", PROJECT_ROOT / "data" / "supplement-generated-ipa.json"),
 ]
 
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-raw.json"

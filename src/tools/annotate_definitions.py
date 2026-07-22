@@ -166,10 +166,23 @@ def build_def_keys():
 
 
 def annotate(supplement, wn_keys, wikt_keys, tallies=None):
-    """Set `has_definition` on every record: the LOGICAL OR, over the record's
-    attesting sources, of whether that source carries a definition for the
-    record's (word, pos). A source not in the record's list does not contribute.
-    Mutates records in place; returns the supplement."""
+    """Set `has_definition` on every record: true iff a WORDNET definition exists
+    for the record's (word, pos) AND the record is WordNet-attested.
+
+    WordNet-ONLY, deliberately. The shipped shaw-spell library carries no
+    Wiktionary definitions — build_definition_caches.py builds the production
+    definitions-shavian-{gb,us}.json purely from WordNet synsets, and the editor's
+    display (editor/definitions.py) loads only those same WordNet caches. A record
+    whose ONLY definition lived in Wiktionary would be flagged has_definition with
+    nothing for either the editor or production to show, so the Wiktionary arm is
+    excluded and the flag matches what is actually displayable.
+
+    `from_wordnet` covers both the `wordnet` source and the `generated` slice
+    (WordNet's own no-IPA output re-spelled by shave — it still carries the WordNet
+    gloss and credits against the same wn_keys). `wikt_keys` is kept in the
+    signature but no longer consulted; it stays so the disk-reading caller and any
+    future re-inclusion need not change shape. Mutates records in place; returns
+    the supplement."""
     if tallies is None:
         tallies = Counter()
     for entries in supplement.values():
@@ -178,12 +191,7 @@ def annotate(supplement, wn_keys, wikt_keys, tallies=None):
             wn_word = entry["Latn"].lower()
             from_wordnet = (SOURCE_WORDNET in sources
                             or SOURCE_GENERATED in sources)
-            has_def = (
-                (from_wordnet
-                 and (wn_word, entry["pos"]) in wn_keys)
-                or (SOURCE_WIKTIONARY in sources
-                    and (entry["Latn"], entry["pos"]) in wikt_keys)
-            )
+            has_def = from_wordnet and (wn_word, entry["pos"]) in wn_keys
             entry["has_definition"] = has_def
             tallies["has_definition" if has_def else "no_definition"] += 1
     return supplement

@@ -53,6 +53,7 @@ from basis import (
     PATCH_NOOP,
     PATCH_ORPHAN,
     PROJECT_ROOT,
+    anchor_from_key,
     anchor_key,
     anchor_of,
     build_basis,
@@ -132,9 +133,50 @@ def patch_order_key(patch):
     return (*anchor_key(anchor), patch["id"])
 
 
+# The var/variants of a record are NOT part of a decision's identity: the owner
+# reviews (word, pos, shaw) and the dialect var can drift under it (a non-
+# deterministic supplement respell relabels the var, or a var-collapse moves it)
+# WITHOUT changing what was reviewed. So an orphaned patch whose weaker key
+# (word_lower, pos, shaw) still resolves to EXACTLY ONE basis record is anchored to
+# that same record — the shaw (spelling) is unchanged, only var drifted — and the
+# owner's decision (whatever its op) still applies verbatim. This kills "zombie"
+# records: a drop the owner made re-emerging live under a drifted var is re-dropped.
+#
+# The rule is deliberately conservative on the two ways it could go wrong:
+#   - shaw CHANGED (no weak-key match): the spelling the owner reviewed is gone.
+#     A respell deserves fresh review, so leave it ORPHANED (never auto-apply a
+#     verdict to a different spelling).
+#   - AMBIGUOUS (weak key matches >1 record — multiple live vars share the
+#     word/pos/shaw): which var the owner meant is unrecoverable, so do NOT guess.
+#     Leave orphaned and surface it (safer than dropping/accepting the wrong var).
+def weak_reanchor_index(basis_index):
+    """Map the weak key (word_lower, pos, shaw) -> the list of full basis keys that
+    share it. A single-element list is an unambiguous var-only match a patch can
+    re-anchor onto; a multi-element list is ambiguous and left orphaned."""
+    weak = {}
+    for full_key in basis_index:
+        word, pos, shaw, _var = full_key
+        weak.setdefault((word, pos, shaw), []).append(full_key)
+    return weak
+
+
+def weak_reanchor_patch(patch, weak_map):
+    """A copy of an orphaned `patch` re-pointed at the CURRENT full key of the ONE
+    basis record whose (word_lower, pos, shaw) matches — var ignored — or None when
+    the weak key matches zero records (shaw drifted: re-review) or more than one
+    (ambiguous var: don't guess). Same op/changes/id/meta; only the anchor's var
+    moves, and only in memory for this apply (the store is never rewritten)."""
+    word, pos, shaw, _var = anchor_key(patch["anchor"])
+    matches = weak_map.get((word, pos, shaw))
+    if matches is None or len(matches) != 1:
+        return None
+    return {**patch, "anchor": anchor_from_key(matches[0])}
+
+
 def apply_patches(output, basis_index, basis_source, patches):
     stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
-             "reanchored": 0, "skipped_numeral": 0, "skipped_shaw": 0}
+             "reanchored": 0, "reanchored_var": 0,
+             "skipped_numeral": 0, "skipped_shaw": 0}
     orphans = []
 
     # The auto-re-anchor lookup: an OLD natural key a key-moving transform rewrote
@@ -143,6 +185,7 @@ def apply_patches(output, basis_index, basis_source, patches):
     # key, ahead of the soft-fail below. Empty (and free) when no basis record
     # carries orig_* — the pre-convention behaviour.
     reanchor_map = reanchor_index(basis_index)
+    weak_map = weak_reanchor_index(basis_index)
 
     for patch in sorted(patches, key=patch_order_key):
         entry = resolve_patch(patch, basis_index, basis_source)
@@ -154,29 +197,56 @@ def apply_patches(output, basis_index, basis_source, patches):
             stats["flag"] += 1
             continue
 
+        # Is this anchored patch orphaned — its anchor no longer resolving against
+        # the basis? resolve_patch signals this with PATCH_ORPHAN for an ACCEPT, but
+        # a DROP short-circuits to None (drop = "emit nothing") BEFORE the anchor
+        # lookup, so its orphan state is invisible in `entry`. An orphaned drop whose
+        # record has re-emerged under a drifted var is a ZOMBIE: the removal below
+        # would target the stale anchor and no-op, leaving the record the owner
+        # deleted live. So detect the drop-orphan explicitly here and route it
+        # through the SAME re-anchor cascade as an accept-orphan.
+        is_orphan = entry is PATCH_ORPHAN or (
+            patch["anchor"] is not None
+            and anchor_key(patch["anchor"]) not in basis_index)
+
         # The anchor no longer resolves against the basis. FIRST resort: a key-
         # moving transform (var relabel / respell) may have rewritten the record
         # but preserved its old key in orig_*. If so, follow the record to its new
         # key and apply the decision there — the verdict is preserved automatically,
         # no manual migration. Only if no orig_* record covers the anchor does it
         # fall through to the soft-fail below.
-        if entry is PATCH_ORPHAN:
+        if is_orphan:
+            # FIRST resort: follow an orig_* pre-image to the record's new key.
             moved = reanchor_patch(patch, reanchor_map)
             reresolved = (resolve_patch(moved, basis_index, basis_source)
                           if moved is not None else None)
-            if moved is None or reresolved is PATCH_ORPHAN:
-                # Still orphaned: upstream drifted and no orig_* pre-image covers
-                # it. Collect to log below and skip — it contributes nothing to the
-                # output. The patch stays in the store (this applicator never
-                # rewrites it) and is surfaced via the editor's `orphaned` filter.
-                orphans.append(patch)
-                stats["orphaned"] += 1
-                continue
-            # Auto-re-anchored: apply against the record's current key. The removal
-            # below must target the CURRENT anchor (where the record now lives), so
-            # carry the moved patch forward.
-            patch, entry = moved, reresolved
-            stats["reanchored"] += 1
+            if moved is not None and reresolved is not PATCH_ORPHAN:
+                # Auto-re-anchored via orig_*: apply against the record's current
+                # key. The removal below must target the CURRENT anchor (where the
+                # record now lives), so carry the moved patch forward.
+                patch, entry = moved, reresolved
+                stats["reanchored"] += 1
+            else:
+                # SECOND resort (any op): the var/variants are not part of a
+                # decision's identity, so if the WEAKER key (word, pos, shaw) still
+                # resolves to exactly one record — shaw unchanged, only var drifted —
+                # re-anchor onto it and re-apply the SAME op. See weak_reanchor_index
+                # for why this is safe (var-only holds intent; shaw-drift and
+                # multi-var stay orphaned). This is what re-kills zombie drops.
+                moved = weak_reanchor_patch(patch, weak_map)
+                reresolved = (resolve_patch(moved, basis_index, basis_source)
+                              if moved is not None else None)
+                if moved is None or reresolved is PATCH_ORPHAN:
+                    # Still orphaned: shaw drifted (deserves re-review) or the weak
+                    # key is ambiguous (don't guess the var), and no orig_* covered
+                    # it. Collect to log below and skip — it contributes nothing to
+                    # the output. The patch stays in the store (this applicator never
+                    # rewrites it) and is surfaced via the editor's `orphaned` filter.
+                    orphans.append(patch)
+                    stats["orphaned"] += 1
+                    continue
+                patch, entry = moved, reresolved
+                stats["reanchored_var"] += 1
 
         if patch["anchor"] is None:
             # Authorship: a standalone record no source attests.
@@ -246,6 +316,10 @@ def main():
     print(f"  auto-re-anchored:    {stats['reanchored']:,}"
           + ("  — orphaned anchor followed to its transformed record via orig_*"
              if stats['reanchored'] else ""))
+    print(f"  re-anchored (var-only): {stats['reanchored_var']:,}"
+          + ("  — orphaned anchor re-anchored on (word,pos,shaw); only var/variants "
+             "drifted, so the decision still applies (re-kills zombie drops)"
+             if stats['reanchored_var'] else ""))
     print(f"  orphaned (skipped):  {stats['orphaned']:,}"
           + ("  — see log above; retained in store, surface via editor 'orphaned' filter"
              if stats['orphaned'] else ""))

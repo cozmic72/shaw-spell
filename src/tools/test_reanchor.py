@@ -42,6 +42,12 @@ def accept_patch(word, pos, shaw, var, pid, changes=None):
             "op": "accept", "changes": changes or {}, "meta": {}}
 
 
+def drop_patch(word, pos, shaw, var, pid):
+    """A drop patch anchored to (word, pos, shaw, var)."""
+    return {"id": pid, "anchor": {"word": word, "pos": pos, "shaw": shaw, "var": var},
+            "op": "drop", "changes": {}, "meta": {}}
+
+
 def build_index(entries):
     """(index, source) over a list of canonical entries — the two structures
     apply_patches consumes, built the way basis.build_basis would."""
@@ -193,6 +199,122 @@ class AutoReanchorApplyTest(unittest.TestCase):
         (stats, _o) = self.apply([e], [accept_patch("cat", "n", "𐑒𐑨𐑑", "RRP", "p")])
         self.assertEqual(stats["reanchored"], 0)
         self.assertEqual(stats["update"], 1)
+
+
+class WeakReanchorPatchTest(unittest.TestCase):
+    """The weak-key (word, pos, shaw) re-anchor: var/variants are NOT part of a
+    decision's identity, so an orphaned patch re-anchors onto the ONE record whose
+    word+pos+shaw match (var ignored). Zero match (shaw drifted) or >1 match
+    (ambiguous var) -> no re-anchor."""
+
+    def test_single_var_only_match_reanchors(self):
+        # One basis record shares word+pos+shaw with the orphaned anchor but under a
+        # different var: unambiguous var-only drift, so re-anchor onto it.
+        e = entry("shed", "n", "𐑖𐑧𐑛", "RRP")
+        wmap = apply_patches.weak_reanchor_index(build_index([e])[0])
+        p = drop_patch("shed", "n", "𐑖𐑧𐑛", "RSSB", "p")  # anchored to gone RSSB var
+        moved = apply_patches.weak_reanchor_patch(p, wmap)
+        self.assertIsNotNone(moved)
+        self.assertEqual(moved["anchor"]["var"], "RRP")     # re-pointed at current var
+        self.assertEqual(moved["op"], "drop")               # same op preserved
+        self.assertEqual(moved["id"], "p")
+
+    def test_shaw_drift_no_match_stays_orphaned(self):
+        # No record shares the anchor's shaw: the spelling the owner reviewed is
+        # gone, so no re-anchor (leave orphaned for re-review).
+        e = entry("shed", "n", "𐑖𐑧𐑛𐑛", "RRP")  # different shaw
+        wmap = apply_patches.weak_reanchor_index(build_index([e])[0])
+        p = drop_patch("shed", "n", "𐑖𐑧𐑛", "RSSB", "p")
+        self.assertIsNone(apply_patches.weak_reanchor_patch(p, wmap))
+
+    def test_ambiguous_multivar_stays_orphaned(self):
+        # Two records share word+pos+shaw under different vars: which var the owner
+        # meant is unrecoverable, so don't guess.
+        a = entry("i", "n", "𐑲", "RRP")
+        b = entry("i", "n", "𐑲", "GenAm")
+        wmap = apply_patches.weak_reanchor_index(build_index([a, b])[0])
+        p = drop_patch("i", "n", "𐑲", "RSSB", "p")
+        self.assertIsNone(apply_patches.weak_reanchor_patch(p, wmap))
+
+
+class ZombieDropReanchorApplyTest(unittest.TestCase):
+    """End-to-end: an orphaned DROP whose record re-emerged under a drifted var is a
+    ZOMBIE — the owner deleted it but it is live again. The weak-key re-anchor must
+    re-kill it (remove it from the output), while shaw-drift / ambiguous drops stay
+    orphaned. This is the case resolve_patch's early None-return for drop hides."""
+
+    def apply(self, entries, patches):
+        index, source = build_index(entries)
+        output = {}
+        for e in entries:            # seed the output as the basis would appear
+            apply_patches.insert_entry(output, e)
+        stats, orphans = apply_patches.apply_patches(output, index, source, patches)
+        emitted = [r for v in output.values() for r in v]
+        return stats, emitted, orphans
+
+    def test_zombie_drop_reanchors_and_removes(self):
+        # Basis has 'shed' live under RRP; the owner's drop was anchored to the old
+        # RSSB var. It must re-anchor onto RRP and REMOVE the record (var-only stat).
+        e = entry("shed", "n", "𐑖𐑧𐑛", "RRP")
+        p = drop_patch("shed", "n", "𐑖𐑧𐑛", "RSSB", "p")
+        stats, emitted, orphans = self.apply([e], [p])
+        self.assertEqual(stats["reanchored_var"], 1)
+        self.assertEqual(stats["orphaned"], 0)
+        self.assertEqual(stats["removal"], 1)
+        self.assertEqual(emitted, [])          # zombie killed
+        self.assertEqual(orphans, [])
+
+    def test_live_drop_unaffected(self):
+        # A drop whose anchor still resolves removes normally, no re-anchor.
+        e = entry("cat", "n", "𐑒𐑨𐑑", "RRP")
+        stats, emitted, _ = self.apply([e], [drop_patch("cat", "n", "𐑒𐑨𐑑", "RRP", "p")])
+        self.assertEqual(stats["reanchored_var"], 0)
+        self.assertEqual(stats["removal"], 1)
+        self.assertEqual(emitted, [])
+
+    def test_shaw_drift_drop_stays_orphaned(self):
+        # The record's shaw changed: leave the drop orphaned (re-review), don't kill
+        # a differently-spelt record.
+        e = entry("shed", "n", "𐑖𐑧𐑛𐑛", "RRP")  # respelt
+        p = drop_patch("shed", "n", "𐑖𐑧𐑛", "RSSB", "p")
+        stats, emitted, orphans = self.apply([e], [p])
+        self.assertEqual(stats["reanchored_var"], 0)
+        self.assertEqual(stats["orphaned"], 1)
+        self.assertEqual(len(emitted), 1)      # the respelt record survives (not killed)
+        self.assertEqual(len(orphans), 1)
+
+    def test_ambiguous_drop_stays_orphaned(self):
+        # Two live vars share the weak key: don't guess which to drop.
+        a = entry("i", "n", "𐑲", "RRP")
+        b = entry("i", "n", "𐑲", "GenAm")
+        stats, emitted, orphans = self.apply([a, b], [drop_patch("i", "n", "𐑲", "RSSB", "p")])
+        self.assertEqual(stats["reanchored_var"], 0)
+        self.assertEqual(stats["orphaned"], 1)
+        self.assertEqual(len(emitted), 2)      # both survive
+        self.assertEqual(len(orphans), 1)
+
+    def test_accept_var_only_reanchors_and_reapplies(self):
+        # The rule is general: an orphaned ACCEPT re-anchors on var-only drift too,
+        # re-emitting the current record sanctioned (with any edits laid over it).
+        e = entry("shed", "n", "𐑖𐑧𐑛", "RRP", freq=5)
+        p = accept_patch("shed", "n", "𐑖𐑧𐑛", "RSSB", "p", changes={"ipa": "ʃɛd"})
+        stats, emitted, orphans = self.apply([e], [p])
+        self.assertEqual(stats["reanchored_var"], 1)
+        self.assertEqual(stats["orphaned"], 0)
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0]["var"], "RRP")
+        self.assertEqual(emitted[0]["ipa"], "ʃɛd")
+        self.assertEqual(emitted[0]["status"], "sanctioned")
+
+    def test_orig_star_precedence_over_weak(self):
+        # When an orig_* pre-image covers the anchor, that FIRST resort wins and the
+        # weak-key path is not used (reanchored, not reanchored_var).
+        e = entry("shed", "n", "𐑖𐑧𐑛", "RRP", orig_var="RSSB")
+        p = drop_patch("shed", "n", "𐑖𐑧𐑛", "RSSB", "p")
+        stats, emitted, _ = self.apply([e], [p])
+        self.assertEqual(stats["reanchored"], 1)
+        self.assertEqual(stats["reanchored_var"], 0)
+        self.assertEqual(emitted, [])
 
 
 class EndToEndTempStoreTest(unittest.TestCase):

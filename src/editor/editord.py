@@ -145,6 +145,7 @@ import signal
 import socketserver
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -1386,9 +1387,21 @@ def main():
     os.chmod(socket_path, int(args.socket_mode, 8))
     logging.info("listening on %s", socket_path)
 
+    shutting_down = threading.Event()
+
     def _shutdown(signum, _frame):
         logging.info("signal %d — shutting down", signum)
-        server.shutdown()
+        # server.shutdown() BLOCKS until serve_forever() returns and MUST run on a
+        # different thread than the one running serve_forever() (see stdlib docs).
+        # The signal handler fires on the MAIN thread — the same thread serving —
+        # so calling shutdown() inline deadlocks: it waits for a serve loop that
+        # can't proceed until the handler returns. systemd then SIGKILLs after
+        # TimeoutStopSec. Spawn it off-thread so serve_forever() can unwind. The
+        # flag makes a second signal a no-op (one shutdown thread, not a race).
+        if shutting_down.is_set():
+            return
+        shutting_down.set()
+        threading.Thread(target=server.shutdown, daemon=True).start()
 
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)

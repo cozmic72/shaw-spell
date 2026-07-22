@@ -283,6 +283,11 @@ class Bug9IumSuffixFused(unittest.TestCase):
     def test_byzantium_baked_plus(self):
         self.assertEqual(norm_rp("baɪˈzænti+əm", "byzantium"), "𐑚𐑲𐑟𐑨𐑯𐑑𐑾𐑥")
 
+    def test_kit_vowel_iium_fuses(self):
+        # KIT ɪ before the -ium suffix fuses like FLEECE i (both → 𐑾 in RP).
+        self.assertEqual(norm_rp("reɪdɪ+əm", "radium"), "𐑮𐑱𐑛𐑾𐑥")
+        self.assertEqual(norm_rp("pəˈləʊnɪ+əm", "polonium"), "𐑐𐑩𐑤𐑴𐑯𐑾𐑥")
+
     def test_plural_iums_fuses(self):
         self.assertEqual(norm_rp("ˈmiːdi.əmz", "mediums"), "𐑥𐑰𐑛𐑾𐑥𐑟")
 

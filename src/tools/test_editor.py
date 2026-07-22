@@ -121,6 +121,15 @@ def ensure_font(project_root, site_dir):
         fonts_link.symlink_to(project_root / 'src' / 'fonts')
 
 
+def ensure_keyboard(project_root, site_dir):
+    """deploy_editor stages the shared keyboard wrapper into the docroot; in dev
+    the docroot IS the source, so symlink it in for parity. (The widget assets
+    dir is already staged under site_dir by `make virtual-keyboard`.)"""
+    wrapper_link = site_dir / 'virtual-keyboard-modal.js'
+    if not wrapper_link.exists():
+        wrapper_link.symlink_to(project_root / 'src' / 'site' / 'js' / 'virtual-keyboard-modal.js')
+
+
 def main():
     project_root = Path(__file__).parent.parent.parent
     site_dir = project_root / 'src' / 'editor' / 'site'
@@ -132,6 +141,7 @@ def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
 
     ensure_font(project_root, site_dir)
+    ensure_keyboard(project_root, site_dir)
     _, socket_path = start_daemon(project_root, site_dir)
 
     # Point the CGI at our local socket. CGIHTTPRequestHandler passes the

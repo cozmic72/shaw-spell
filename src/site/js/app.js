@@ -16,7 +16,11 @@ const STRINGS = {
         shavian_defs_english: 'English (with Shavian headword)',
         shavian_defs_shavian: 'Shavian only (immersive mode)',
         save_button: 'Save Settings',
-        cancel_button: 'Cancel'
+        cancel_button: 'Cancel',
+        menu_about: 'About…',
+        menu_settings: 'Settings…',
+        menu_show_keyboard: 'Show keyboard',
+        menu_keyboard_layout: 'Keyboard layout…'
     },
     shavian: {
         settings_title: '𐑕𐑧𐑑𐑦𐑙𐑟',
@@ -29,7 +33,12 @@ const STRINGS = {
         shavian_defs_english: '𐑦𐑙𐑜𐑤𐑦𐑖 (𐑢𐑦𐑞 ·𐑖𐑱𐑝𐑾𐑯 𐑣𐑧𐑛𐑢𐑻𐑛)',
         shavian_defs_shavian: '𐑖𐑱𐑝𐑾𐑯 𐑴𐑯𐑤𐑦 (𐑦𐑥𐑻𐑕𐑦𐑝 𐑥𐑴𐑛)',
         save_button: '𐑕𐑱𐑝 𐑕𐑧𐑑𐑦𐑙𐑟',
-        cancel_button: '𐑒𐑨𐑯𐑕𐑩𐑤'
+        cancel_button: '𐑒𐑨𐑯𐑕𐑩𐑤',
+        // Shavian from the shave G2P — owner to confirm 𐑒𐑰𐑚𐑹𐑛/𐑤𐑱𐑬𐑑 spellings
+        menu_about: '𐑩𐑚𐑬𐑑…',
+        menu_settings: '𐑕𐑧𐑑𐑦𐑙𐑟…',
+        menu_show_keyboard: '𐑖𐑴 𐑒𐑰𐑚𐑹𐑛',
+        menu_keyboard_layout: '𐑒𐑰𐑚𐑹𐑛 𐑤𐑱𐑬𐑑…'
     }
 };
 
@@ -129,8 +138,29 @@ function closeModal() {
     modalOverlay.classList.remove('show');
 }
 
+// Fill burger-menu labels from STRINGS, respelling in immersive mode.
+function initBurgerLabels() {
+    const settings = window.SETTINGS || {dialect: 'gb', shavianDefs: 'english'};
+    const lang = settings.shavianDefs === 'shavian' ? 'shavian' : 'latin';
+    const strings = STRINGS[lang];
+    const map = {
+        'menu-label-about': strings.menu_about,
+        'menu-label-settings': strings.menu_settings,
+        'menu-label-show-keyboard': strings.menu_show_keyboard,
+        'menu-label-keyboard-layout': strings.menu_keyboard_layout
+    };
+    for (const id in map) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = map[id];
+        }
+    }
+}
+
 // Close modal when clicking overlay
 document.addEventListener('DOMContentLoaded', function() {
+    initBurgerLabels();
+
     const modalOverlay = document.getElementById('modalOverlay');
     if (modalOverlay) {
         modalOverlay.addEventListener('click', function(event) {

@@ -295,6 +295,7 @@ PAGE = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shaw-Spell — Editorial Workbench</title>
     <link rel="stylesheet" href="editor.css?v={css_v}">
+    <link rel="stylesheet" href="virtual-keyboard/virtual-keyboard.css">
 </head>
 <body>
     <header class="masthead">
@@ -316,6 +317,9 @@ PAGE = """<!DOCTYPE html>
                 title="Author a brand-new dictionary entry">+ New entry</button>
         <button type="button" class="help-toggle" id="helpToggle"
                 aria-controls="cheatsheet" title="Keyboard shortcuts (?)">? keys</button>
+        <button type="button" class="masthead-btn" id="kbToggle"
+                onclick="ShawSpellKeyboard.openSettings()"
+                title="Keyboard layout & settings (Cmd/Ctrl+K toggles)">⌨ Keyboard</button>
         <button type="button" class="masthead-btn" id="logout"
                 title="Sign out">Sign out</button>
         <div class="tally" id="tally" aria-live="polite"></div>
@@ -464,6 +468,8 @@ PAGE = """<!DOCTYPE html>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="editor.js?v={js_v}"></script>
+    <script src="virtual-keyboard/virtual-keyboard.js"></script>
+    <script src="virtual-keyboard-modal.js"></script>
 </body>
 </html>"""
 

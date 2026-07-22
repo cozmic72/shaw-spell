@@ -54,6 +54,7 @@ SITE_DATA_FILES = $(BUILD_SITE_DATA)/english-shavian-gb-index.json \
 #   - font source files (any format)
 #   - hunspell dictionaries (bundled for the daemon)
 $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
+                         $(VK_SITE_STAMP) \
                          $(shell find $(SRC_SITE) -type f 2>/dev/null) \
                          $(shell find $(SRC_SITE_DAEMON) -type f 2>/dev/null) \
                          $(HUNSPELL_FILES) \

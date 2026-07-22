@@ -162,6 +162,7 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png">
     <link rel="apple-touch-icon" sizes="192x192" href="apple-touch-icon-192x192.png">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="virtual-keyboard/virtual-keyboard.css">
 </head>
 <body>
     <div class="container">
@@ -171,8 +172,10 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
             <div class="burger-menu">
                 <button class="burger-btn" onclick="toggleBurgerMenu()">☰</button>
                 <div class="burger-dropdown" id="burgerDropdown">
-                    <a href="#" onclick="openAbout(); return false;">About</a>
-                    <a href="#" onclick="openSettings(); return false;">Settings</a>
+                    <a href="#" onclick="openAbout(); return false;"><span id="menu-label-about">About&hellip;</span></a>
+                    <a href="#" onclick="openSettings(); return false;"><span id="menu-label-settings">Settings&hellip;</span></a>
+                    <a href="#" onclick="ShawSpellKeyboard.toggle(); return false;"><span id="menu-label-show-keyboard">Show keyboard</span> (<span id="vk-shortcut">Ctrl+K</span>)</a>
+                    <a href="#" onclick="ShawSpellKeyboard.openSettings(); return false;"><span id="menu-label-keyboard-layout">Keyboard layout&hellip;</span></a>
                 </div>
             </div>
         </div>
@@ -218,6 +221,18 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
         }};
     </script>
     <script src="js/app.js"></script>
+    <script src="virtual-keyboard/virtual-keyboard.js"></script>
+    <script src="js/virtual-keyboard-modal.js"></script>
+    <script>
+        // Per-platform shortcut in the burger item. Fail-soft on the label only:
+        // if the keyboard lib is absent, leave the default Ctrl+K text.
+        (function () {{
+            var el = document.getElementById('vk-shortcut');
+            if (el && window.ShawSpellKeyboard && window.ShawSpellKeyboard.shortcutLabel) {{
+                el.textContent = window.ShawSpellKeyboard.shortcutLabel;
+            }}
+        }})();
+    </script>
 </body>
 </html>'''
 

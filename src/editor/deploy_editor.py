@@ -94,6 +94,10 @@ def deploy(version, output_dir='build/editor'):
     editor_site_src = editor_src / 'site'
     tools_src = project_root / 'src' / 'tools'
     fonts_src = project_root / 'src' / 'fonts'
+    # The keyboard wrapper is shared with the site (single source of truth) and
+    # the generated widget assets are staged into the editor docroot by make.
+    vk_wrapper_src = project_root / 'src' / 'site' / 'js' / 'virtual-keyboard-modal.js'
+    vk_assets_src = editor_site_src / 'virtual-keyboard'
     output_path = project_root / output_dir
 
     if not editor_site_src.exists():
@@ -150,6 +154,21 @@ def deploy(version, output_dir='build/editor'):
         return 1
     shutil.copy2(font_src, fonts_output / FONT)
     print(f"  ✓ fonts/{FONT}")
+
+    # --- virtual keyboard (wrapper + generated widget assets) ---
+    print()
+    print("Copying virtual keyboard...")
+    if not vk_wrapper_src.exists():
+        print(f"Error: keyboard wrapper missing: {vk_wrapper_src}")
+        return 1
+    shutil.copy2(vk_wrapper_src, output_path / 'virtual-keyboard-modal.js')
+    print(f"  ✓ virtual-keyboard-modal.js")
+    if not vk_assets_src.exists():
+        print(f"Error: keyboard assets missing: {vk_assets_src} — run 'make virtual-keyboard'")
+        return 1
+    shutil.copytree(vk_assets_src, output_path / 'virtual-keyboard',
+                    ignore=shutil.ignore_patterns('.DS_Store'))
+    print(f"  ✓ virtual-keyboard/ (widget)")
 
     # --- daemon tree (-> /opt/shaw-spell) ---
     # The src/ level is preserved: basis.py's PROJECT_ROOT = parent.parent.parent,

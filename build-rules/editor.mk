@@ -24,7 +24,8 @@ EDITOR_DAEMON_SRCS = $(SRC_EDITOR)/editord.py \
 
 EDITOR_WEB_SRCS = $(SRC_EDITOR)/site/editor.cgi \
                   $(SRC_EDITOR)/site/editor.js \
-                  $(SRC_EDITOR)/site/editor.css
+                  $(SRC_EDITOR)/site/editor.css \
+                  $(SRC_SITE)/js/virtual-keyboard-modal.js
 
 # The ~317MB read-only basis the tarball ships (the payload — the server
 # rebuilds nothing). Restage when any of these change. The freq corpus is
@@ -37,6 +38,7 @@ EDITOR_BASIS_SRCS = external/readlex/readlex.json \
 # Stage the editor into build/editor (index.cgi is the representative target,
 # mirroring site's $(BUILD_SITE)/index.cgi).
 $(BUILD_EDITOR)/index.cgi: $(EDITOR_WEB_SRCS) \
+                           $(VK_EDITOR_STAMP) \
                            $(EDITOR_DAEMON_SRCS) \
                            $(EDITOR_BASIS_SRCS) \
                            $(SRC_EDITOR)/deploy_editor.py \

@@ -2214,6 +2214,9 @@ kbd {
        the label collapses to just the "?" glyph. */
     .help-toggle { flex: 0 0 auto; margin-left: 0; padding: 5px 11px; font-size: 0; }
     .help-toggle::before { content: "?"; font-size: 13px; }
+    /* Same compaction for the keyboard toggle — collapse to just the glyph. */
+    #kbToggle { flex: 0 0 auto; padding: 5px 11px; font-size: 0; }
+    #kbToggle::before { content: "⌨"; font-size: 15px; }
 
     .shaw-field { font-size: 46px; }
     .ipa-field { font-size: 22px; }

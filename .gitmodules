@@ -15,3 +15,6 @@
 	path = external/cmudict
 	url = https://github.com/cmusphinx/cmudict.git
 	shallow = true
+[submodule "external/shaw-type"]
+	path = external/shaw-type
+	url = git@github.com:cozmic72/shaw-type.git

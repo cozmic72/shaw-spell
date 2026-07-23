@@ -15,14 +15,14 @@ READLEX_JSON := external/readlex/readlex.json
 
 # The -reliable.json files are COMMITTED artifacts and the anchor identity for
 # every editorial patch. Their generators consult the external `shave` tool,
-# which is NON-DETERMINISTIC (low-confidence Shavian drifts between runs), so
-# regeneration is a DELIBERATE act — never an automatic mtime-triggered one.
-# A `git checkout` shuffles mtimes, which could otherwise make a generator or
-# source dump look "newer" and silently rebuild -reliable.json, drifting the
-# Shavian and ORPHANING the owner's patches. Hence ALL prerequisites are
-# order-only (after `|`): make rebuilds -reliable.json only when it is MISSING
-# (e.g. a fresh clone), not when a prereq is merely newer. To re-baseline on
-# purpose, use the `regenerate-supplements` target below.
+# which is EXPENSIVE (a fixed per-invocation startup cost; re-shaving the whole
+# pool is minutes of work). shave is DETERMINISTIC (verified: identical output
+# run-to-run, including --confidence 0 pot-luck mode), so a re-shave does NOT
+# drift the Shavian or orphan patches — but it's wasteful, so regeneration is a
+# DELIBERATE act, not something a stray `git checkout` mtime-shuffle should
+# silently trigger. Hence ALL prerequisites are order-only (after `|`): make
+# rebuilds -reliable.json only when it is MISSING (e.g. a fresh clone), not when
+# a prereq is merely newer. To re-baseline on purpose, use `regenerate-supplements`.
 data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json: | $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WORDNET_CACHE)
 	@echo "Generating WordNet supplement..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_wordnet_supplement.py

@@ -20,7 +20,9 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # Categorical facets take a LIST, OR-ed within the facet and
                 # AND-ed across facets, e.g. {"source": ["wordnet","wiktionary"],
                 # "novelty": ["new-word"]}; an empty/absent list is unconstrained.
-                # word/shaw are substring scalars; confidence_min/max are numeric.
+                # word/shaw are substring scalars; confidence_min/max and patch_days
+                # (a record's patch made within the last N days) are numeric;
+                # patch_author is a categorical facet on the patch's meta.author.
                 # word/shaw each take optional companion booleans in the same
                 # filters dict: "<field>_regex" (match the value as a Python
                 # re.search pattern instead of a plain substring) and "<field>_ci"
@@ -110,6 +112,13 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 clear), keyed by anchor; an authorship record (anchor null) is
                 cleared by patch_id and its row removed (records empty)
 
+    Request:   {"op": "patch_counts"}
+    Response:  {"total": N, "today": M}   # N = every patch line in the store; M =
+                those whose meta.ts is on the server's LOCAL calendar day. Counted
+                from the patch store directly (not git), so it works on a repo-less
+                tarball deploy where the Commit button is hidden. The masthead reads
+                this on boot and after every write.
+
     Request:   {"op": "commit_status"}
     Response:  {"uncommitted": N, "head": "<short-sha>"|null,
                 "subject": "<last commit subject>"|null}   # N = patch lines in the
@@ -136,6 +145,7 @@ Run under systemd (see shaw-spell-editord.service).
 """
 
 import argparse
+import calendar
 import functools
 import json
 import logging
@@ -361,7 +371,17 @@ def _field_matches(record, key, value, established):
     if key == "confidence_max":
         conf = record.get("confidence")
         return conf is not None and conf <= value
+    if key == "patch_days":
+        # A SCALAR "days back" filter: the record's patch was made within the last
+        # N days. A record with no patch (no patch_ts — an unreviewed/basis row) is
+        # excluded, like a numeric sort excludes records missing the value.
+        return _within_days(record.get("patch_ts"), value)
     values, mode = _categorical_values_mode(key, value)
+    if key == "patch_author":
+        # The author facet: the record's patch author (meta.author) is one of those
+        # selected. A record with no patch carries no patch_author and matches no
+        # author value. Scalar (one author per record) — ALL with >1 matches nothing.
+        return _combine(values, mode, lambda v: record.get("patch_author") == v)
     if key in ("pos", "var"):
         # Scalar facets carry one relevant value per record: ANY = the record's
         # value is one of those selected; ALL with >1 value matches nothing.
@@ -585,6 +605,26 @@ def _matches_attribute(record, value):
     return value in attributes
 
 
+# The date filter is RELATIVE ("last N days"): a record matches when its patch was
+# made no more than N days before now. `patch_ts` is ISO-8601 UTC (patchstore
+# _now_iso); the cutoff is computed in UTC too, so the comparison is timezone-clean
+# (unlike the "today" count below, which is a local-calendar-day question). A record
+# with no patch_ts (unreviewed/basis) never matches — there is no decision to date.
+def _within_days(patch_ts, days):
+    if not patch_ts:
+        return False
+    made = _parse_iso_utc(patch_ts)
+    cutoff = time.time() - float(days) * 86400.0
+    return made >= cutoff
+
+
+def _parse_iso_utc(ts):
+    """Epoch seconds for an ISO-8601 UTC timestamp of the form _now_iso emits
+    (YYYY-MM-DDTHH:MM:SSZ). Fails loud on a shape it cannot parse rather than
+    silently reading as 0 (the epoch) and mis-dating the record."""
+    return calendar.timegm(time.strptime(ts, "%Y-%m-%dT%H:%M:%SZ"))
+
+
 def filter_records(records, query, established):
     return [r for r in records if matches(r, query, established)]
 
@@ -714,8 +754,25 @@ DATA_DERIVED_FACETS = ("pos", "var", "source")
 
 
 def handle_facets(state, _request):
-    return {facet: _distinct_values(state.view, facet)
-            for facet in DATA_DERIVED_FACETS}
+    facets = {facet: _distinct_values(state.view, facet)
+              for facet in DATA_DERIVED_FACETS}
+    # patch_author is present only on patched rows (absent on unreviewed/basis
+    # ones), so it cannot go through _distinct_values' record[field] access; it is
+    # collected with .get so unreviewed rows contribute nothing.
+    facets["patch_author"] = _distinct_authors(state.view)
+    return facets
+
+
+def _distinct_authors(view):
+    """The sorted distinct patch authors across the view — the author facet's chips.
+    Read under the view lock (like _distinct_values), collecting patch_author with
+    .get since it is absent on unreviewed/basis rows."""
+    with view._lock:
+        authors = {record.get("patch_author")
+                   for group in view.by_anchor_index.values()
+                   for record in group}
+    authors.discard(None)
+    return sorted(authors)
 
 
 def _distinct_values(view, field):
@@ -1225,6 +1282,46 @@ def _store_line_count(root):
         return sum(1 for stored in handle if stored.strip())
 
 
+# Patch counts for the masthead — the batch-size signal the Commit button used to
+# carry, but now surfaced independently so it survives a repo-less tarball deploy
+# (where Commit is hidden). Counted from the PATCH STORE directly, never git.
+#
+# "today" = patches whose ts falls on the current LOCAL calendar day. The ts is
+# ISO-8601 UTC (_now_iso); the owner reads this on the DEPLOYED editor, so "today"
+# means the server's local calendar day (the day the owner sees on that machine's
+# clock). We convert each UTC ts to the server's local time and compare its date to
+# today's local date. (America/Chicago is the owner's zone; the deploy host's TZ is
+# the authority — set TZ there if it differs.)
+def _patch_counts():
+    """{total, today} over the current patch store. total = every patch line;
+    today = those whose ts is on the server's local calendar day. Reads the store
+    fresh (like the commit ops) so the count reflects what is on disk, working
+    with no repo."""
+    from patchstore import load_patches
+
+    patches = load_patches()
+    today = time.localtime().tm_yday, time.localtime().tm_year
+    today_count = 0
+    for patch in patches:
+        ts = (patch.get("meta") or {}).get("ts")
+        if ts and _is_local_today(ts, today):
+            today_count += 1
+    return {"total": len(patches), "today": today_count}
+
+
+def _is_local_today(ts, today):
+    """Whether an ISO-8601 UTC timestamp falls on the server's local calendar day
+    `today` (a (tm_yday, tm_year) pair). The UTC instant is converted to local time,
+    then its day-of-year + year are compared — so a late-evening Chicago decision
+    stored as the next UTC day still counts as today locally."""
+    local = time.localtime(_parse_iso_utc(ts))
+    return (local.tm_yday, local.tm_year) == today
+
+
+def handle_patch_counts(_state, _request):
+    return _patch_counts()
+
+
 def handle_commit_status(_state, _request):
     root = _commit_repo_root()
     if root is None:
@@ -1283,6 +1380,7 @@ HANDLERS = {
     "unpatch": handle_unpatch,
     "commit_status": handle_commit_status,
     "commit": handle_commit,
+    "patch_counts": handle_patch_counts,
 }
 
 

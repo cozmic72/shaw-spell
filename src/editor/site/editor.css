@@ -116,6 +116,22 @@ body {
     font-size: 12px;
     letter-spacing: 0.04em;
 }
+/* Patch-store counts (total + edited-today): the batch signal the Commit button
+   used to carry, kept alive on a repo-less deploy. Sits just before the .tally in
+   the right cluster; margin-left:auto absorbs the slack before the pair. The
+   today count is tinted the accent when non-zero so a live session shows progress
+   at a glance. */
+.patch-counts {
+    margin-left: auto;
+    color: var(--ink-soft);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+.patch-counts:empty { display: none; }
+.patch-counts + .tally { margin-left: 12px; }
+.patch-counts:empty + .tally { margin-left: auto; }
+.patch-counts .today-count { color: var(--accent); font-weight: 700; }
 /* Chevron toggles (filter panel, ledger drawer): a compact affordance whose rotating
    caret carries the collapsed/expanded state (▸ collapsed, ▾ expanded), leaving just
    a short label beside it. Only shown once the layout collapses (see mobile block). */
@@ -2149,6 +2165,7 @@ kbd {
 
     .chevron-toggle { display: inline-flex; }
     .tally { display: none; }
+    .patch-counts { display: none; }
 
     /* The filter bar collapses to its chevron on narrow screens so the results own
        the first screen; the row is restored to a wrapping two-column grid when

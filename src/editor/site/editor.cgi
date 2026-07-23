@@ -322,6 +322,13 @@ PAGE = """<!DOCTYPE html>
                 title="Keyboard layout & settings (Cmd/Ctrl+K toggles)">⌨ Keyboard</button>
         <button type="button" class="masthead-btn" id="logout"
                 title="Sign out">Sign out</button>
+        <!-- Patch-store counts: total patches banked + how many were edited today
+             (server local calendar day). Replaces the batch count the Commit button
+             used to carry, so the signal survives on a repo-less tarball deploy where
+             Commit is hidden. Filled by paintPatchCounts from the daemon patch_counts
+             op on boot and after every write. -->
+        <div class="patch-counts" id="patchCounts" aria-live="polite"
+             title="Patches in the store — total, and edited today"></div>
         <div class="tally" id="tally" aria-live="polite"></div>
     </header>
 
@@ -426,8 +433,19 @@ PAGE = """<!DOCTYPE html>
             <label class="chip"><input value="variant"><span>other</span></label>
             <label class="chip"><input value="(none)"><span>(none / canonical)</span></label>
         </div>
-        <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"></div>
-        <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"></div>
+        <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"
+             data-min="0" data-max="100"></div>
+        <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"
+             data-min="0" data-max="100"></div>
+        <!-- Author: the patch's meta.author. Data-derived (the distinct authors the
+             daemon facets op returns). A record with no patch carries no author and
+             matches nothing. -->
+        <div data-field="patch_author" data-kind="categorical" data-label="Author"></div>
+        <!-- Edited within: a relative "days back" scalar. A record matches when its
+             patch was made no more than N days ago (patch_days). data-min/max bound
+             the number input (1..365, unlike the 0..100 confidence range). -->
+        <div data-field="patch_days" data-kind="numeric" data-label="Edited ≤ days back"
+             data-min="1" data-max="365"></div>
     </div>
 
     <main class="workbench" id="workbench">

@@ -187,6 +187,18 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
         "op": patch.get("op") if patch else None,
         "patch": patch,
     }
+    # The patch's meta (author + ISO-8601 UTC timestamp) surfaced onto the row so
+    # the UI can filter/count on WHO made a decision and WHEN. Present only for a
+    # patched row — an unreviewed/basis record has no patch, so neither field is
+    # emitted (the author/date filters and counts skip it). meta always carries both
+    # (see patchstore._meta), so a patch that lacks either is malformed and left
+    # absent rather than defaulted.
+    if patch:
+        meta = patch.get("meta") or {}
+        if meta.get("author"):
+            ui["patch_author"] = meta["author"]
+        if meta.get("ts"):
+            ui["patch_ts"] = meta["ts"]
     for orig_key in ORIG_FIELDS.values():
         if record.get(orig_key) not in (None, ""):
             ui[orig_key] = record[orig_key]

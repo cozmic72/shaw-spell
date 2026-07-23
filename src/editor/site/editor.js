@@ -257,6 +257,7 @@ const FILTER_META = document.getElementById("filterMeta");
 const FILTERS_TOGGLE = document.getElementById("filtersToggle");
 const REFRESH_RESULTS = document.getElementById("refreshResults");
 const TALLY = document.getElementById("tally");
+const PATCH_COUNTS = document.getElementById("patchCounts");
 const LEDGER = document.getElementById("ledgerList");
 const LEDGER_HEAD = document.getElementById("ledgerHead");
 const LEDGER_FOOT = document.getElementById("ledgerFoot");
@@ -3132,6 +3133,7 @@ function insertAuthoredRecord(record) {
     syncSelectionUI();
     saveSession();
     refreshCommitStatus();
+    refreshPatchCounts();
 }
 
 // Run a single-record verdict, surfacing any failure as an error toast. The bulk
@@ -3151,8 +3153,9 @@ async function single(action) {
         verdictInFlight = false;
     }
     // Every single-record action here mutates the patch store, so the uncommitted
-    // count may have changed — keep the Commit button honest.
+    // count may have changed — keep the Commit button and the masthead counts honest.
     await refreshCommitStatus();
+    await refreshPatchCounts();
 }
 
 // Save is inherently single-record — it writes the edited fields, which only make
@@ -3219,6 +3222,7 @@ function autoSaveMainEdit() {
             showToast(error.message, true);
         }
         await refreshCommitStatus();
+        await refreshPatchCounts();
     })();
 }
 
@@ -3441,6 +3445,7 @@ async function runBulk(verb, applyOne) {
     reportBulk(verb, done, skipped, failures);
     // One refresh for the whole run, not per record — the store changed.
     await refreshCommitStatus();
+    await refreshPatchCounts();
 }
 
 // Rebuild the ledger once after a bulk run (rows may have been re-annotated or
@@ -4142,6 +4147,42 @@ async function refreshCommitStatus() {
     }
 }
 
+// ---- patch counts ----
+// The masthead shows the patch store's size: TOTAL banked patches + how many were
+// EDITED TODAY (the server's local calendar day). This is the batch signal the
+// Commit button's label used to carry; it lives independently now so it survives on
+// a repo-less tarball deploy, where Commit is hidden. The daemon is the single
+// source of truth (counted from patches.jsonl, never git), refreshed on boot and
+// after every write so the numbers stay live — the same cadence as refreshCommitStatus.
+
+function paintPatchCounts(counts) {
+    if (!counts || !Number.isFinite(counts.total)) {
+        PATCH_COUNTS.textContent = "";
+        return;
+    }
+    const total = counts.total.toLocaleString();
+    const today = Number.isFinite(counts.today) ? counts.today : 0;
+    PATCH_COUNTS.replaceChildren(
+        document.createTextNode(`${total} patch${counts.total === 1 ? "" : "es"} · `),
+        (() => {
+            const span = document.createElement("span");
+            span.className = "today-count";
+            span.textContent = `${today.toLocaleString()} today`;
+            return span;
+        })(),
+    );
+}
+
+// Query the daemon for the store counts and repaint. Non-fatal to the review flow
+// (the count is advisory): a failure clears the element quietly rather than toasting.
+async function refreshPatchCounts() {
+    try {
+        paintPatchCounts(await callDaemon({ op: "patch_counts" }));
+    } catch (_error) {
+        PATCH_COUNTS.textContent = "";
+    }
+}
+
 async function commitDecisions() {
     COMMIT_DECISIONS.disabled = true;
     try {
@@ -4293,7 +4334,13 @@ function fieldSpecFromMeta(meta, derived) {
             inline: meta.dataset.inline === "true",
         };
     }
-    return { field, kind, label, pinned };
+    // A numeric field may bound its input via data-min/data-max (confidence is
+    // 0..100, "days back" is 1..365); absent, the picker leaves the input unbounded.
+    return {
+        field, kind, label, pinned,
+        min: meta.dataset.min ?? null,
+        max: meta.dataset.max ?? null,
+    };
 }
 
 // The value→label pairs a closed-vocabulary categorical field ships in its meta div,
@@ -4614,8 +4661,12 @@ function numericPicker(spec, entry) {
     wrap.className = "numeric-picker";
     const input = document.createElement("input");
     input.type = "number";
-    input.min = "0";
-    input.max = "100";
+    // Bounds come from the field's registry spec (data-min/data-max in the CGI):
+    // confidence is 0..100, "days back" is 1..365. Absent bounds leave it unbounded.
+    input.min = spec.min ?? "0";
+    if (spec.max !== null && spec.max !== undefined) {
+        input.max = spec.max;
+    }
     input.value = entry.value === null ? "" : String(entry.value);
     input.addEventListener("input", () => {
         entry.value = input.value.trim() === "" ? null : Number(input.value);
@@ -4769,6 +4820,7 @@ async function boot() {
     }
     syncSortIndicators();
     refreshCommitStatus();
+    refreshPatchCounts();
     return runQuery(0, stored ? stored.anchor : null);
 }
 

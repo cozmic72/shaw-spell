@@ -1228,16 +1228,21 @@ def _store_line_count(root):
 def handle_commit_status(_state, _request):
     root = _commit_repo_root()
     if root is None:
-        return {"error": "commit is only supported for the default patch store"}
+        # No repo (tarball deploy / redirected store): committing is simply
+        # unavailable here — a STATE, not an error. The UI hides the button and
+        # stays quiet; erroring would toast on every write for a non-problem.
+        return {"commit_available": False}
     try:
         uncommitted = _uncommitted_patch_count(root)
     except RuntimeError as exc:
         return {"error": str(exc)}
     head = _run_git(root, "log", "-1", "--format=%h\t%s")
     if head.returncode != 0 or not head.stdout.strip():
-        return {"uncommitted": uncommitted, "head": None, "subject": None}
+        return {"commit_available": True, "uncommitted": uncommitted,
+                "head": None, "subject": None}
     short_sha, _, subject = head.stdout.strip().partition("\t")
-    return {"uncommitted": uncommitted, "head": short_sha, "subject": subject}
+    return {"commit_available": True, "uncommitted": uncommitted,
+            "head": short_sha, "subject": subject}
 
 
 def handle_commit(_state, _request):

@@ -4121,18 +4121,24 @@ function paintCommitButton(uncommitted) {
         ? `Commit ${count.toLocaleString()} decision${count === 1 ? "" : "s"}`
         : "Commit";
     COMMIT_DECISIONS.disabled = count === 0;
+    COMMIT_DECISIONS.hidden = false;
 }
 
-// Query the daemon for the uncommitted count and repaint the button. A failure here
-// is non-fatal to the review flow (the count is advisory), so it dims the button
-// and reports once rather than aborting whatever write just completed.
+// Query the daemon for the uncommitted count and repaint the button. Committing is
+// unavailable on a tarball deploy (no repo) — the daemon says so via
+// commit_available:false; we HIDE the button and stay silent (it is a state, not an
+// error). A genuine status failure is non-fatal to the review flow (the count is
+// advisory), so it hides the button quietly rather than toasting on every write.
 async function refreshCommitStatus() {
     try {
         const status = await callDaemon({ op: "commit_status" });
+        if (status.commit_available === false) {
+            COMMIT_DECISIONS.hidden = true;
+            return;
+        }
         paintCommitButton(status.uncommitted);
-    } catch (error) {
-        paintCommitButton(0);
-        showToast(error.message, true);
+    } catch (_error) {
+        COMMIT_DECISIONS.hidden = true;
     }
 }
 

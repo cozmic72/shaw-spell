@@ -39,10 +39,13 @@ die() { echo "install.sh: $*" >&2; exit 1; }
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Confirm the tree we expect to copy is actually here before touching anything.
-for d in "editor-daemon/src/editor" "editor-daemon/src/tools" "fonts" "basis"; do
+for d in "editor-daemon/src/editor" "editor-daemon/src/tools" "fonts" "basis" \
+         "virtual-keyboard"; do
     [ -d "$HERE/$d" ] || die "expected dir missing from tarball: $d (run from the extracted editor/ root)"
 done
 for f in "editor.cgi" "index.cgi" "authstore.py" "editor.js" "editor.css" \
+         "virtual-keyboard-modal.js" \
+         "virtual-keyboard/virtual-keyboard.js" \
          "editor-daemon/shaw-spell-editord.service" \
          "basis/external/readlex/readlex.json" \
          "basis/data/supplement-combined-filtered.json" \
@@ -70,6 +73,14 @@ install -m 644 "$HERE/authstore.py" "$WWW_ROOT/authstore.py"
 install -m 644 "$HERE/editor.js"    "$WWW_ROOT/editor.js"
 install -m 644 "$HERE/editor.css"   "$WWW_ROOT/editor.css"
 install -m 644 "$HERE"/fonts/*      "$WWW_ROOT/fonts/"
+
+# The Shavian virtual keyboard: the wrapper beside the cgi, and the widget's
+# assets (js/css/layout-json/png) under virtual-keyboard/ where the cgi's
+# relative <script src="virtual-keyboard/..."> resolves. Replace the dir wholesale
+# so a re-install picks up new layouts. WITHOUT this the cgi 404s the keyboard.
+install -m 644 "$HERE/virtual-keyboard-modal.js" "$WWW_ROOT/virtual-keyboard-modal.js"
+rm -rf "${WWW_ROOT:?}/virtual-keyboard"
+cp -R "$HERE/virtual-keyboard" "$WWW_ROOT/virtual-keyboard"
 
 # --- daemon (code only) ---
 # The src/ level is preserved from the repo: basis.py's PROJECT_ROOT =

@@ -311,7 +311,7 @@ PAGE = """<!DOCTYPE html>
         <button type="button" class="drawer-toggle chevron-toggle" id="drawerToggle"
                 aria-controls="ledger" aria-expanded="false"
                 title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
-        <button type="button" class="commit-decisions" id="commitDecisions" disabled
+        <button type="button" class="commit-decisions" id="commitDecisions" disabled hidden
                 title="Commit the accumulated editorial decisions to git">Commit</button>
         <button type="button" class="new-entry" id="newEntry"
                 title="Author a brand-new dictionary entry">+ New entry</button>

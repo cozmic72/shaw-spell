@@ -71,7 +71,7 @@ def batch_shave(words: list[str], dialect: str = "british",
     Args:
         dialect: "british" or "american" — selects shave's readlex flag
     """
-    flag = "--readlex-british" if dialect == "british" else "--readlex-american"
+    flag = "-b" if dialect == "british" else "-a"
     # NB: we deliberately do NOT pass -q so that WSD diagnostic lines reach stderr.
     results: dict[str, str] = {}
     wsd: dict[str, int] = {}

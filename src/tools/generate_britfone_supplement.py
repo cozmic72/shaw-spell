@@ -77,7 +77,7 @@ def _batch_shave(words: list[str]) -> dict[str, str]:
     try:
         input_text = "\n".join(words)
         result = subprocess.run(
-            ["shave", "-q", "--readlex-british"],
+            ["shave", "-q", "-b"],
             input=input_text,
             capture_output=True,
             text=True,

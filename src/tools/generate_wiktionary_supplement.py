@@ -76,7 +76,7 @@ def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, 
         # POS/phrase heuristics contaminate homograph disambiguation across word
         # boundaries (e.g. 'bow' 𐑚𐑴↔𐑚𐑬).
         input_text = "\n\n".join(words)
-        flag = "--readlex-british" if dialect == "british" else "--readlex-american"
+        flag = "-b" if dialect == "british" else "-a"
         result = subprocess.run(
             ["shave", flag],   # NOT -q: we want WSD diagnostics on stderr
             input=input_text,

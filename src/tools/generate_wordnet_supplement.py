@@ -135,7 +135,7 @@ def _batch_shave(words: list[str], dialect: str = "british") -> tuple[dict[str, 
         # POS/phrase heuristics contaminate homograph disambiguation across word
         # boundaries (e.g. 'bow' 𐑚𐑴↔𐑚𐑬).
         input_text = "\n\n".join(words)
-        flag = "--readlex-british" if dialect == "british" else "--readlex-american"
+        flag = "-b" if dialect == "british" else "-a"
         result = subprocess.run(
             ["shave", flag],   # not -q: need WSD on stderr
             input=input_text,
@@ -328,11 +328,11 @@ def main():
     wsd_british: dict[str, int] = {}
     wsd_american: dict[str, int] = {}
     if review_british:
-        print(f"\n  Consulting `shave --readlex-british` for {len(review_british)} review words...")
+        print(f"\n  Consulting `shave -b` for {len(review_british)} review words...")
         shave_results_british, wsd_british = _batch_shave(sorted(review_british), dialect="british")
         print(f"  ({len(wsd_british):,} WSD-ambiguous)")
     if review_american:
-        print(f"  Consulting `shave --readlex-american` for {len(review_american)} review words...")
+        print(f"  Consulting `shave -a` for {len(review_american)} review words...")
         shave_results_american, wsd_american = _batch_shave(sorted(review_american), dialect="american")
         print(f"  ({len(wsd_american):,} WSD-ambiguous)")
 

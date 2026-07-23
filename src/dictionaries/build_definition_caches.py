@@ -1,13 +1,32 @@
 #!/usr/bin/env python3
 """
-Build definition caches for Shavian dictionaries.
+Derive the Shavian definitions cache from the Latin definitions source.
 
-This script is a preprocessing step that:
-1. Loads WordNet definitions (English)
-2. Transliterates all definitions to Shavian
-3. Saves both caches to data/
+data/definitions-latin-{gb,us}.json is the SOURCE OF TRUTH: the English gloss, POS
+tag, examples (and, on gap entries, source/confidence annotations) per `lemma|synset`
+key. This script is the single straight-through pass that transliterates EVERY Latin
+definition to Shavian and writes the DERIVED cache:
 
-The dictionary generators then simply load from these caches.
+    data/definitions-shavian-{gb,us}.json    {transliterated_definition,
+                                              transliterated_pos,
+                                              transliterated_examples}
+
+keyed identically. There is no "gap" — every source gloss is transliterated, so the
+Shavian file always covers the full Latin key set (the make dependency is the honest
+`definitions-shavian-X.json : definitions-latin-X.json`).
+
+Transliteration uses the shave tool on shave's OWN shipped dictionary (-b British /
+-a American). Definitions are a PRISTINE external source — shave is never fed our own
+readlex/corrections, or the transliterator becomes an echo chamber of our decisions.
+shave is deterministic but EXPENSIVE; this is a committed checkpoint rebuilt only
+deliberately (see build-rules/dictionaries.mk).
+
+The POS tag is NOT transliterated via shave — it uses the static POS_TO_SHAVIAN map
+(pass-through for unmapped tags), matching the source corpus convention. Examples are
+carried through empty (the corpus holds none; owner: "definitions not examples").
+
+Usage:
+    python3 src/dictionaries/build_definition_caches.py [--gb|--us] [--force]
 """
 
 import json
@@ -17,8 +36,8 @@ from pathlib import Path
 from html import escape
 
 
-# Static mapping for WordNet POS tags
-# These should NOT be transliterated via shave tool
+# Static WordNet POS -> English word map (used by generate_dictionaries for POS
+# labels; NOT transliterated via shave).
 POS_TO_ENGLISH = {
     'n': 'noun',
     'v': 'verb',
@@ -27,6 +46,8 @@ POS_TO_ENGLISH = {
     's': 'adjective',  # satellite adjective
 }
 
+# Static POS -> Shavian map (POS tags are NOT transliterated via shave).
+# Unmapped tags (n-1, name, suffix, wikt POS strings, ...) pass through unchanged.
 POS_TO_SHAVIAN = {
     'n': '𐑯𐑬𐑯',
     'v': '𐑝𐑻𐑚',
@@ -35,332 +56,165 @@ POS_TO_SHAVIAN = {
     's': '𐑨𐑡𐑩𐑒𐑑𐑦𐑝',
 }
 
+# shave's phrase/sentence heuristics scale super-linearly with document size: one
+# ~180K-gloss document degrades badly. Chunk the batch into documents of this size to
+# keep shave in its linear regime — each gloss is isolated in its own <div>, so the
+# transliteration is identical to a single-document result; only the invocation splits.
+SHAVE_CHUNK = 6000
+
 
 def format_for_transliteration(text):
-    """
-    Format text for transliteration - capitalize and add period if needed.
-    This helps shave work faster by providing proper sentence boundaries.
-    """
+    """Capitalise the first letter and add a terminal period so shave sees a proper
+    sentence boundary (better WSD, consistent style)."""
     if not text or len(text) < 2:
         return text
-
-    # Capitalize first letter
     formatted = text[0].upper() + text[1:]
-
-    # Add period if not already there and text looks like a sentence
-    if formatted and formatted[-1] not in '.!?;:':
+    if formatted[-1] not in '.!?;:':
         formatted += '.'
-
     return formatted
 
 
+def _shave_chunk(texts, dialect_flag, dialect):
+    """Transliterate ONE chunk of glosses in a single `shave` invocation via the
+    HTML-div method. Fails LOUD on a non-zero exit or a missing/unterminated div
+    (never silently mis-zip)."""
+    html_parts = ['<!DOCTYPE html><html><body>\n']
+    for i, text in enumerate(texts):
+        formatted = format_for_transliteration(text)
+        html_parts.append(f'<div id="t{i}">{escape(formatted)}</div>\n')
+    html_parts.append('</body></html>\n')
+
+    proc = subprocess.run(
+        ['shave', dialect_flag],
+        input=''.join(html_parts),
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"shave exited {proc.returncode} ({dialect}): {proc.stderr[-500:]}")
+
+    output = proc.stdout
+    transliterations = []
+    search_pos = 0
+    for i in range(len(texts)):
+        start_tag = f'<div id="t{i}">'
+        start_idx = output.find(start_tag, search_pos)
+        if start_idx == -1:
+            raise RuntimeError(
+                f"shave output missing div t{i} ({dialect}) — cannot align "
+                f"transliterations to glosses; refusing to mis-zip.")
+        start_idx += len(start_tag)
+        end_idx = output.find('</div>', start_idx)
+        if end_idx == -1:
+            raise RuntimeError(f"shave output div t{i} unterminated ({dialect}).")
+        transliterations.append(output[start_idx:end_idx])
+        search_pos = end_idx + len('</div>')
+
+    return transliterations
+
+
 def batch_transliterate_to_shavian(texts, dialect='gb'):
-    """
-    Batch transliterate texts to Shavian using shave tool.
-
-    Args:
-        texts: List of texts to transliterate
-        dialect: 'gb' for British English, 'us' for American English
-
-    Returns a list of transliterated texts in the same order.
-    """
+    """Transliterate `texts` to Shavian, chunked into SHAVE_CHUNK-sized `shave`
+    invocations. Returns the Shavian string per input, in order. Fails LOUD on any
+    chunk-level div mismatch, and asserts the reassembled count matches the input."""
     if not texts:
         return []
 
-    # Dialect on shave's OWN shipped dictionary (-b/-a, no file arg). Definitions
-    # are transliterated by shave as a PRISTINE external source — never fed our
-    # own readlex/corrections (no --dict, no --readlex-*), or the transliterator
-    # becomes an echo chamber of our decisions. (The old --readlex-british flag
-    # never existed; shave silently ignored it and used its default anyway.)
-    readlex_flag = '-b' if dialect == 'gb' else '-a'
+    # Dialect on shave's OWN shipped dictionary (-b/-a, no file arg) — never our
+    # readlex/corrections (no --dict, no --readlex-*), or shave becomes an echo
+    # chamber of our own decisions.
+    dialect_flag = '-b' if dialect == 'gb' else '-a'
+    n_chunks = (len(texts) + SHAVE_CHUNK - 1) // SHAVE_CHUNK
+    print(f"Transliterating {len(texts):,} texts to Shavian ({dialect.upper()}, "
+          f"{dialect_flag}) in {n_chunks} chunk(s) of <={SHAVE_CHUNK:,}...")
 
-    print(f"Transliterating {len(texts)} texts to Shavian ({dialect.upper()})...")
-    print("Preparing HTML document...")
+    transliterations = []
+    for chunk_idx in range(n_chunks):
+        chunk = texts[chunk_idx * SHAVE_CHUNK:(chunk_idx + 1) * SHAVE_CHUNK]
+        transliterations.extend(_shave_chunk(chunk, dialect_flag, dialect))
+        print(f"  chunk {chunk_idx + 1}/{n_chunks} done "
+              f"({len(transliterations):,}/{len(texts):,})")
 
-    try:
-        # Build complete HTML document
-        html_parts = ['<!DOCTYPE html><html><body>\n']
-        for i, text in enumerate(texts):
-            # Format text with capitalization and period for better WSD
-            formatted_text = format_for_transliteration(text)
-            div_html = f'<div id="t{i}">{escape(formatted_text)}</div>\n'
-            html_parts.append(div_html)
+    if len(transliterations) != len(texts):
+        raise RuntimeError(
+            f"{dialect}: reassembled {len(transliterations)} transliterations for "
+            f"{len(texts)} glosses — chunk misalignment; refusing to mis-zip.")
 
-            # Progress update while building
-            if (i + 1) % 5000 == 0:
-                print(f"  Prepared: {i + 1}/{len(texts)}")
-
-        html_parts.append('</body></html>\n')
-        html_input = ''.join(html_parts)
-
-        print(f"Sending {len(texts)} texts to shave tool with {readlex_flag}...")
-
-        # Run shave process with dialect flag
-        proc = subprocess.Popen(
-            ['shave', readlex_flag],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=None,  # Let stderr pass through to terminal
-            text=True
-        )
-
-        # Send all HTML and get output
-        print(f"Waiting for shave...")
-        output_html, _ = proc.communicate(input=html_input)
-
-        print("Parsing transliteration results...")
-
-        # Extract transliterated texts from output
-        transliterated = []
-        search_pos = 0  # Track position in output to avoid re-finding earlier divs
-        for i in range(len(texts)):
-            start_tag = f'<div id="t{i}">'
-            end_tag = '</div>'
-
-            start_idx = output_html.find(start_tag, search_pos)
-            if start_idx != -1:
-                start_idx += len(start_tag)
-                end_idx = output_html.find(end_tag, start_idx)
-                if end_idx != -1:
-                    transliterated_text = output_html[start_idx:end_idx]
-                    transliterated.append(transliterated_text)
-                    search_pos = end_idx + len(end_tag)  # Move search position forward
-                else:
-                    transliterated.append(texts[i])
-            else:
-                transliterated.append(texts[i])
-
-            # Progress update while parsing
-            if (i + 1) % 5000 == 0:
-                print(f"  Parsed: {i + 1}/{len(texts)}")
-
-        print(f"Transliteration complete! ({len(transliterated)} items)")
-        return transliterated
-
-    except (subprocess.TimeoutExpired, FileNotFoundError, BrokenPipeError) as e:
-        print(f"Warning: shave tool error: {e}")
-        if 'proc' in locals():
-            proc.kill()
-        return texts  # Return original texts on error
+    return transliterations
 
 
-def extract_lemma_from_key(key):
-    """Extract lemma from readlex key format: {lemma}_{pos}_{shavian}"""
-    parts = key.split('_')
-    if len(parts) >= 1:
-        return parts[0].lower()
-    return None
-
-
-def process_readlex_with_lemmas(readlex_data):
-    """
-    Process readlex data to include lemma information.
-    Returns: dict mapping readlex keys to (lemma, entries) tuples
-    """
-    print("Processing readlex with lemma information...")
-    processed = {}
-
-    for key, entries in readlex_data.items():
-        # Extract lemma from key
-        lemma = extract_lemma_from_key(key)
-        if not lemma and entries:
-            # Fallback to first entry's Latn field
-            lemma = entries[0]['Latn'].lower()
-
-        processed[key] = {
-            'lemma': lemma,
-            'entries': entries
-        }
-
-    print(f"Processed {len(processed)} lemma groups")
-    return processed
-
-
-def build_shavian_definition_cache(readlex_data, wordnet_defs, output_path, dialect='gb', force=False, test_batch=False):
-    """
-    Build cache of Shavian transliterated definitions.
-
-    Args:
-        readlex_data: Processed readlex data with lemma information
-        wordnet_defs: WordNet definitions dictionary
-        output_path: Path to save the cache
-        dialect: 'gb' for British English, 'us' for American English
-        force: Force rebuild even if cache exists
-        test_batch: If True, only process first 10 lemmas for testing
-
-    Cache structure:
-    {
-      "lemma": [
-        {
-          "definition": "original English definition",
-          "transliterated_definition": "Shavian definition",
-          "pos": "original POS tag",
-          "transliterated_pos": "Shavian POS",
-          "examples": ["English example 1", ...],
-          "transliterated_examples": ["Shavian example 1", ...]
-        }
-      ]
-    }
-    """
-    # Check if cache already exists
+def build_shavian_definition_cache(latin_defs, output_path, dialect='gb', force=False):
+    """Derive the Shavian cache from the Latin source, keyed identically. Every Latin
+    definition is transliterated (straight-through, no gap). The transliterated_pos
+    uses the static POS map; examples carry through empty (the corpus holds none)."""
     if output_path.exists() and not force:
         print(f"Cache already exists at {output_path}")
         print("Use --force to rebuild")
         with open(output_path, 'r', encoding='utf-8') as f:
             cache = json.load(f)
-        print(f"Loaded existing cache with {len(cache)} lemmas")
+        print(f"Loaded existing cache with {len(cache)} keys")
         return cache
 
-    print(f"\nBuilding Shavian definition cache ({dialect.upper()})...")
+    print(f"\nBuilding Shavian definition cache ({dialect.upper()}) from Latin source...")
 
-    # Find all lemmas that exist in readlex
-    readlex_lemmas = set()
-    for key, data in readlex_data.items():
-        readlex_lemmas.add(data['lemma'])
+    # Deterministic key order so the transliteration batch is stable and the output
+    # is byte-idempotent.
+    keys = sorted(latin_defs)
+    glosses = [latin_defs[key]['definition'] for key in keys]
 
-    print(f"Found {len(readlex_lemmas)} unique lemmas in readlex")
+    transliterations = batch_transliterate_to_shavian(glosses, dialect)
 
-    # Find all (lemma, synset_id) pairs from WordNet where lemma is in readlex
-    # Use case-insensitive matching since readlex lemmas are lowercased
-    synset_keys_with_defs = []
-    for (lemma, synset_id) in wordnet_defs.keys():
-        if lemma.lower() in readlex_lemmas:
-            synset_keys_with_defs.append((lemma, synset_id))
-
-    synset_keys_with_defs = sorted(synset_keys_with_defs)
-    print(f"Found {len(synset_keys_with_defs)} (lemma, synset) pairs with definitions")
-
-    if test_batch:
-        print("TEST BATCH MODE: Processing only first 10 pairs")
-        synset_keys_with_defs = synset_keys_with_defs[:10]
-
-    # Collect all texts to transliterate
-    all_texts_to_transliterate = []
-
-    print("Collecting texts for transliteration...")
-    for lemma_synset_key in synset_keys_with_defs:
-        def_data = wordnet_defs[lemma_synset_key]
-        all_texts_to_transliterate.append(def_data['definition'])
-        # NOTE: POS tags are NOT transliterated - we use static POS_TRANSLATIONS mapping
-        all_texts_to_transliterate.extend(def_data.get('examples', []))
-
-    print(f"Total texts to transliterate: {len(all_texts_to_transliterate)}")
-
-    # Transliterate all texts
-    transliterated_texts = batch_transliterate_to_shavian(all_texts_to_transliterate, dialect)
-
-    # Map transliterations back to (lemma, synset_id) keys
-    print("Building synset-based cache...")
-    synset_cache = {}
-    text_idx = 0
-
-    for lemma_synset_key in synset_keys_with_defs:
-        def_data = wordnet_defs[lemma_synset_key]
-
-        # Use static POS translation instead of transliterating
-        pos_code = def_data['pos']
-        transliterated_pos = POS_TO_SHAVIAN.get(pos_code, pos_code)
-
-        transliterated_def = {
-            'definition': def_data['definition'],
-            'transliterated_definition': transliterated_texts[text_idx],
-            'pos': pos_code,
-            'transliterated_pos': transliterated_pos,
-            'examples': def_data.get('examples', []),
-            'transliterated_examples': []
+    cache = {}
+    for key, shaw_def in zip(keys, transliterations):
+        pos_code = latin_defs[key]['pos']
+        cache[key] = {
+            'transliterated_definition': shaw_def,
+            'transliterated_pos': POS_TO_SHAVIAN.get(pos_code, pos_code),
+            'transliterated_examples': [],
         }
-        text_idx += 1  # Only increment by 1 now (just the definition)
 
-        # Add transliterated examples
-        for ex in def_data.get('examples', []):
-            transliterated_def['transliterated_examples'].append(transliterated_texts[text_idx])
-            text_idx += 1
-
-        # Store as "lemma|synset_id" string for JSON compatibility
-        cache_key = f"{lemma_synset_key[0]}|{lemma_synset_key[1]}"
-        synset_cache[cache_key] = transliterated_def
-
-    # Save cache
     print(f"Saving cache to {output_path}...")
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(synset_cache, f, ensure_ascii=False, indent=2)
+        json.dump(cache, f, ensure_ascii=False, indent=2, sort_keys=True)
 
-    print(f"Saved transliterations for {len(synset_cache)} (lemma, synset) pairs")
-    return synset_cache
+    print(f"Saved transliterations for {len(cache)} keys")
+    return cache
 
 
 def main():
     """Main function."""
     force = '--force' in sys.argv
-    test_batch = '--test-batch' in sys.argv
 
-    # Parse dialect argument
     dialect = 'gb'  # default
     if '--dialect=us' in sys.argv or '--us' in sys.argv:
         dialect = 'us'
     elif '--dialect=gb' in sys.argv or '--gb' in sys.argv:
         dialect = 'gb'
 
-    # Paths
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent.parent
-    readlex_path = project_dir / 'external/readlex/readlex.json'
-    wordnet_cache_path = project_dir / 'data/wordnet-comprehensive.json'
     data_dir = project_dir / 'data'
 
-    # Output path includes dialect
+    latin_defs_path = data_dir / f'definitions-latin-{dialect}.json'
     shavian_defs_path = data_dir / f'definitions-shavian-{dialect}.json'
 
-    # Ensure directories exist
     data_dir.mkdir(exist_ok=True)
 
-    # Load data
-    print("Loading readlex data...")
-    with open(readlex_path, 'r', encoding='utf-8') as f:
-        readlex_raw = json.load(f)
-    print(f"Loaded {len(readlex_raw)} readlex entries")
+    print(f"Loading Latin definition source ({dialect.upper()})...")
+    with open(latin_defs_path, 'r', encoding='utf-8') as f:
+        latin_defs = json.load(f)
+    print(f"Loaded {len(latin_defs)} Latin definitions")
 
-    print("\nLoading WordNet comprehensive cache...")
-    with open(wordnet_cache_path, 'r', encoding='utf-8') as f:
-        wordnet_cache = json.load(f)
-    print(f"Loaded cache with {len(wordnet_cache)} lemmas")
-
-    # Extract definitions from comprehensive cache (from sense_variants)
-    # Group by (lemma, synset_id) to match dictionary generation
-    wordnet_defs = {}
-    for lemma, entry in wordnet_cache.items():
-        for pos, pos_entry in entry.get('pos_entries', {}).items():
-            for sense in pos_entry.get('sense_variants', []):
-                synset_id = sense.get('synset')
-                if not synset_id:
-                    continue
-
-                sense_defs = sense.get('definitions', [])
-                if sense_defs:
-                    # Key by (lemma, synset_id)
-                    key = (lemma, synset_id)
-                    # Take first definition for this synset
-                    wordnet_defs[key] = {
-                        'definition': sense_defs[0],
-                        'pos': pos
-                    }
-    print(f"Extracted definitions for {len(wordnet_defs)} (lemma, synset) pairs")
-
-    # Process readlex
-    readlex_data = process_readlex_with_lemmas(readlex_raw)
-
-    # Build Shavian definition cache
     shavian_cache = build_shavian_definition_cache(
-        readlex_data, wordnet_defs, shavian_defs_path,
-        dialect=dialect, force=force, test_batch=test_batch
+        latin_defs, shavian_defs_path, dialect=dialect, force=force
     )
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Definition cache build complete!")
-    print("="*60)
+    print("=" * 60)
     print(f"Shavian definitions ({dialect.upper()}): {shavian_defs_path}")
-    print(f"  {len(shavian_cache)} (lemma, synset) pairs cached")
-    print("\nYou can now run ./build.sh to generate dictionaries (no transliteration needed)")
+    print(f"  {len(shavian_cache)} keys cached")
 
 
 if __name__ == '__main__':

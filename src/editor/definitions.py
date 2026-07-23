@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 """
-The definitions index: a read-only, word-keyed view of the Shavian definitions
-corpus (data/definitions-shavian-{gb,us}.json) for the editor's inline sense
-summary (docs/definitions-editor-design.md §5b, phase P2).
+The definitions index: a read-only, word-keyed view of the definitions corpus for
+the editor's inline sense summary (docs/definitions-editor-design.md §5b, phase P2).
+
+The corpus is split across two files per dialect, joined on the identical
+`lemma|synset` key:
+    data/definitions-latin-{gb,us}.json     SOURCE   (English gloss, POS, examples)
+    data/definitions-shavian-{gb,us}.json    DERIVED  (Shavian transliteration)
 
 This is a SEPARATE index from the annotated basis (overlay.py). The basis is the
 reviewable dictionary the owner edits; the definitions corpus is machine-produced
 gloss data the editor merely SHOWS beside a word. Keeping them apart means loading
-the ~88K-key corpus never touches the basis, and the read-only view can never
-mutate a patch or a record.
+the corpus never touches the basis, and the read-only view can never mutate a patch
+or a record.
 
-Corpus shape (per dialect file):
-    "word|synset-id" -> {
-        definition,                 # English gloss
-        transliterated_definition,  # Shavian transliteration of the gloss
-        pos,                        # WordNet POS tag (n/v/a/r/s, or n-1 …)
-        transliterated_pos,         # Shavian transliteration of the POS word
-        examples, transliterated_examples,  # (design drops examples — ignored)
-    }
+Corpus shapes (per dialect):
+    latin[key]   -> {definition,                # English gloss
+                     pos,                        # WordNet POS tag (n/v/a/r/s, or n-1 …)
+                     examples[, source][, confidence]}
+    shavian[key] -> {transliterated_definition,  # Shavian transliteration of the gloss
+                     transliterated_pos,         # Shavian transliteration of the POS word
+                     transliterated_examples}    # (design drops examples — ignored)
 
 The design (§6a owner decisions) scopes the editor to the SHAVIAN definitions
 only and to per-sense senses; examples are dropped ("we want definitions not
@@ -54,8 +57,10 @@ from pathlib import Path
 
 from basis import PROJECT_ROOT
 
-DEFINITIONS_GB_PATH = PROJECT_ROOT / "data" / "definitions-shavian-gb.json"
-DEFINITIONS_US_PATH = PROJECT_ROOT / "data" / "definitions-shavian-us.json"
+LATIN_GB_PATH = PROJECT_ROOT / "data" / "definitions-latin-gb.json"
+LATIN_US_PATH = PROJECT_ROOT / "data" / "definitions-latin-us.json"
+SHAVIAN_GB_PATH = PROJECT_ROOT / "data" / "definitions-shavian-gb.json"
+SHAVIAN_US_PATH = PROJECT_ROOT / "data" / "definitions-shavian-us.json"
 
 # A WordNet synset offset: 8 digits, a dash, and a POS letter (n/v/a/s/r). Every
 # key in the Shavian corpus today matches this, so every sense is WordNet-derived.
@@ -88,36 +93,34 @@ def _split_key(key):
     return word, synset
 
 
-def _sense(word_lower, synset, gb_entry, us_entry):
-    """One internal sense, merging the gb and us corpus entries for the same key.
-    The English gloss, POS tag, Shavian POS and derived `source` are shared across
-    dialects; the Shavian gloss is kept RAW PER DIALECT in `shaw` (a {gb, us} map)
-    so a correction can target one dialect even when the two currently match. The
-    UI-facing shape (shaw_gb, shaw_us only on divergence) is derived on demand by
-    _serialise_sense. Empty strings are normalised to None (the "absent" signal the
-    view renders as a coverage gap). `word_lower` is retained as the anchor's word.
+def _sense(word_lower, synset, latin_entry, gb_shaw, us_shaw):
+    """One internal sense, joining the Latin source (English gloss/POS, shared across
+    dialects) with the per-dialect Shavian transliterations. The Shavian gloss is kept
+    RAW PER DIALECT in `shaw` (a {gb, us} map) so a correction can target one dialect
+    even when the two currently match. The UI-facing shape (shaw_gb, shaw_us only on
+    divergence) is derived on demand by _serialise_sense. Empty strings are normalised
+    to None (the "absent" signal the view renders as a coverage gap). `word_lower` is
+    retained as the anchor's word.
 
     Note: the internal sense is a mutable working copy the overlay corrects in
     place; `_serialise_sense` produces the read-only public shape the daemon
     returns, never the internal object."""
+    gb_shaw_def = _clean(gb_shaw.get("transliterated_definition", ""))
+    us_shaw_def = _clean(us_shaw.get("transliterated_definition", "")) if us_shaw else None
+    # The Shavian POS is shared across dialects (static POS map); take it from GB.
+    shaw_pos = _clean(gb_shaw.get("transliterated_pos", ""))
     return {
         "word_lower": word_lower,
         "synset": synset,
-        "gloss": gb_entry.get("definition", ""),
-        "pos": gb_entry.get("pos", ""),
-        "shaw_pos": _clean(gb_entry.get("transliterated_pos", "")),
+        "gloss": latin_entry.get("definition", ""),
+        "pos": latin_entry.get("pos", ""),
+        "shaw_pos": shaw_pos,
         "source": _sense_source(synset),
-        "shaw": {
-            "gb": _clean(gb_entry.get("transliterated_definition", "")),
-            "us": _clean(us_entry.get("transliterated_definition", "")) if us_entry else None,
-        },
+        "shaw": {"gb": gb_shaw_def, "us": us_shaw_def},
         # The PRISTINE machine transliteration per dialect, never mutated. `shaw` is
         # the working copy the overlay corrects; `_pristine` lets revert() restore
         # the original when a correction is removed, without re-reading the corpus.
-        "_pristine": {
-            "gb": _clean(gb_entry.get("transliterated_definition", "")),
-            "us": _clean(us_entry.get("transliterated_definition", "")) if us_entry else None,
-        },
+        "_pristine": {"gb": gb_shaw_def, "us": us_shaw_def},
     }
 
 
@@ -223,25 +226,29 @@ def _require(path):
     if not path.exists():
         raise FileNotFoundError(
             f"definitions corpus missing: {path} — the definitions viewer "
-            "requires data/definitions-shavian-{gb,us}.json")
+            "requires data/definitions-{latin,shavian}-{gb,us}.json")
     with open(path, "r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
 def load_definitions_index():
-    """Build the word-keyed definitions index from the gb and us Shavian corpora.
+    """Build the word-keyed definitions index by joining the Latin source (English
+    gloss/POS) with the per-dialect Shavian transliterations on the identical
+    `lemma|synset` key.
 
-    Both files carry the SAME sense keys (verified: identical key sets); the us
-    entry is looked up per key to attach a divergent US Shavian where present. A
-    key in gb but absent from us is tolerated (the US Shavian is simply omitted for
-    that sense) — a benign data condition, not a fallback around a precondition."""
-    gb = _require(DEFINITIONS_GB_PATH)
-    us = _require(DEFINITIONS_US_PATH)
+    The GB Latin source drives the key set (both dialects' Latin files carry the same
+    keys). The Shavian transliteration is looked up per key per dialect; a key present
+    in Latin but absent from a Shavian file is tolerated (that dialect's Shavian is
+    simply omitted) — a benign data condition, not a fallback around a precondition."""
+    latin = _require(LATIN_GB_PATH)
+    gb_shaw = _require(SHAVIAN_GB_PATH)
+    us_shaw = _require(SHAVIAN_US_PATH)
 
     by_word = {}
-    for key, gb_entry in gb.items():
+    for key, latin_entry in latin.items():
         word, synset = _split_key(key)
         word_lower = word.lower()
-        sense = _sense(word_lower, synset, gb_entry, us.get(key))
+        sense = _sense(word_lower, synset, latin_entry,
+                       gb_shaw.get(key, {}), us_shaw.get(key))
         by_word.setdefault(word_lower, []).append(sense)
     return DefinitionsIndex(by_word)

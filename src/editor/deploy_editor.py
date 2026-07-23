@@ -80,6 +80,8 @@ FONT = 'BernieSansBetaVF.woff2'
 BASIS_REQUIRED = [
     'external/readlex/readlex.json',
     'data/supplement-combined-filtered.json',
+    'data/definitions-latin-gb.json',
+    'data/definitions-latin-us.json',
     'data/definitions-shavian-gb.json',
     'data/definitions-shavian-us.json',
 ]

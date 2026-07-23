@@ -14,66 +14,33 @@ $(WORDNET_CACHE): $(SRC_TOOLS)/build_wordnet_cache.py $(SRC_DICTIONARIES)/wordne
 	@echo "✓ WordNet cache generated: $(WORDNET_CACHE)"
 	@echo "  Note: This file is large and not committed to git."
 
-# Transliteration caches — COMMITTED checkpoints built by the EXPENSIVE shave
-# tool. Prerequisites are ORDER-ONLY (after `|`) so a fresh checkout with the
-# cache present is up-to-date and make skips the re-shave; it rebuilds only when
-# MISSING. To re-baseline deliberately, use `make transliterations-gb/-us`
-# (--force) or rm the file and re-make.
-data/definitions-shavian-gb.json: | $(SRC_DICTIONARIES)/build_definition_caches.py $(READLEX_PATH)
-	@echo "Building Shavian definition cache (GB)..."
+# The Latin definitions file is the SOURCE OF TRUTH (English gloss/pos/examples per
+# `lemma|synset`). The Shavian file DERIVES from it via one straight-through
+# transliterate-all pass — every Latin gloss is transliterated, so there is no
+# "gap". Both are COMMITTED checkpoints.
+#
+# The Shavian cache is built by the EXPENSIVE shave tool from the Latin source. Its
+# prerequisite (the Latin file) is ORDER-ONLY (after `|`) so a fresh checkout with
+# the committed Shavian cache present is up-to-date and make skips the re-shave; it
+# rebuilds only when MISSING. (shave is deterministic — this is a deliberateness/cost
+# guard, not anti-drift.) To re-baseline deliberately, use `make transliterations-gb/
+# -us` (--force) or rm the file and re-make.
+data/definitions-shavian-gb.json: | data/definitions-latin-gb.json $(SRC_DICTIONARIES)/build_definition_caches.py
+	@echo "Building Shavian definition cache (GB) from Latin source..."
 	@echo "This requires the shave tool."
 	@mkdir -p data
 	$(RUN) $(SRC_DICTIONARIES)/build_definition_caches.py --gb
 
-data/definitions-shavian-us.json: | $(SRC_DICTIONARIES)/build_definition_caches.py $(READLEX_PATH)
-	@echo "Building Shavian definition cache (US)..."
+data/definitions-shavian-us.json: | data/definitions-latin-us.json $(SRC_DICTIONARIES)/build_definition_caches.py
+	@echo "Building Shavian definition cache (US) from Latin source..."
 	@echo "This requires the shave tool."
 	@mkdir -p data
 	$(RUN) $(SRC_DICTIONARIES)/build_definition_caches.py --us
 
-###########################################
-# Definition transliteration coverage gap
-###########################################
-# The base cache above only transliterates WordNet single-word synset senses. The
-# gap-fill pass ADDS a Shavian transliteration for every remaining English gloss
-# (the WordNet senses the base pass missed + the whole Wiktionary def corpus),
-# NEVER re-transliterating an existing key (rewriting an entry would orphan the
-# owner's definition-correction patches; gap-fill only). shave itself is
-# deterministic — see project_shave_nondeterminism.md — the freeze protects the
-# patch anchors, not against drift.
-#
-# A stamp file records completion: the gap tool rewrites the shavian-*.json files in
-# place, so it cannot be its own Make output without a rebuild loop. The committed
-# shavian-*.json caches already contain the gap-fill, so this COMMITTED stamp makes
-# a fresh checkout up-to-date — the EXPENSIVE gap re-shave fires only when the stamp
-# is MISSING. Hence ALL prerequisites are ORDER-ONLY (after `|`): the base caches
-# (the gap augments them but must never force a base re-shave) plus the gap tool and
-# its gloss sources — incidental mtime churn on any of those must not re-shave. To
-# re-baseline deliberately, rm the stamp and re-make (or use `make transliterations`).
-DEFINITIONS_GAP_STAMP := data/.definitions-gap.stamp
-
-$(DEFINITIONS_GAP_STAMP): | $(SRC_TOOLS)/transliterate_definitions_gap.py \
-                          $(WORDNET_CACHE) \
-                          data/definitions-wiktionary.json \
-                          external/readlex/readlex.json \
-                          data/definitions-shavian-gb.json data/definitions-shavian-us.json
-	@echo "Filling definition transliteration coverage gap (GB & US)..."
-	@echo "This requires the shave tool."
-	$(RUN) $(SRC_TOOLS)/transliterate_definitions_gap.py
-	@touch $@
-
-.PHONY: definitions-gap
-definitions-gap: $(DEFINITIONS_GAP_STAMP)
-	@echo "✓ Definition transliteration coverage gap filled"
-
-# Latin definition files with dialect-specific spelling. COMMITTED checkpoints
-# with ORDER-ONLY prerequisites (after `|`): a fresh checkout with them present is
-# up-to-date; rebuilt only when MISSING, not on incidental mtime churn. rm to
-# re-baseline.
-data/definitions-latin-gb.json data/definitions-latin-us.json: | $(SRC_TOOLS)/generate_dialect_definitions.py $(WORDNET_CACHE) data/definitions-shavian-gb.json
-	@echo "Building dialect-specific Latin definitions (GB & US)..."
-	@mkdir -p data
-	$(RUN) $(SRC_TOOLS)/generate_dialect_definitions.py
+# The Latin definition source files are COMMITTED checkpoints established by a one-off
+# split of the historical merged Shavian corpus (src/tools/split_definition_corpus.py).
+# They have no Make recipe: they ARE the source, edited/curated deliberately, not
+# regenerated. A fresh checkout carries them from git.
 
 # Phony targets to explicitly regenerate caches
 .PHONY: wordnet-cache transliterations
@@ -84,22 +51,19 @@ wordnet-cache:
 
 .PHONY: transliterations-gb transliterations-us
 transliterations-gb:
-	@echo "Rebuilding Shavian GB transliteration cache..."
+	@echo "Rebuilding Shavian GB transliteration cache from Latin source..."
 	@mkdir -p data
 	$(RUN) $(SRC_DICTIONARIES)/build_definition_caches.py --gb --force
 	@echo "✓ GB transliteration cache rebuilt"
 
 transliterations-us:
-	@echo "Rebuilding Shavian US transliteration cache..."
+	@echo "Rebuilding Shavian US transliteration cache from Latin source..."
 	@mkdir -p data
 	$(RUN) $(SRC_DICTIONARIES)/build_definition_caches.py --us --force
 	@echo "✓ US transliteration cache rebuilt"
 
 transliterations: transliterations-gb transliterations-us
-	@echo "Filling definition transliteration coverage gap after base rebuild..."
-	$(RUN) $(SRC_TOOLS)/transliterate_definitions_gap.py
-	@touch $(DEFINITIONS_GAP_STAMP)
-	@echo "✓ All transliteration caches rebuilt (base + coverage gap)"
+	@echo "✓ All transliteration caches rebuilt from Latin source"
 
 ###########################################
 # XML generation
@@ -112,11 +76,11 @@ $(BUILD_DICT_XML)/shavian-english-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDN
 	@echo "Generating Shavian-English XML (GB)..."
 	$(RUN) $(DICT_SCRIPT) --gb --dict shavian-english
 
-$(BUILD_DICT_XML)/english-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json $(DEFINITIONS_GAP_STAMP) | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/english-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json | $(BUILD_DICT_XML)
 	@echo "Generating English-Shavian XML (GB)..."
 	$(RUN) $(DICT_SCRIPT) --gb --dict english-shavian
 
-$(BUILD_DICT_XML)/shavian-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json $(DEFINITIONS_GAP_STAMP) | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json | $(BUILD_DICT_XML)
 	@echo "Generating Shavian-Shavian XML (GB)..."
 	$(RUN) $(DICT_SCRIPT) --gb --dict shavian-shavian
 
@@ -125,11 +89,11 @@ $(BUILD_DICT_XML)/shavian-english-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDN
 	@echo "Generating Shavian-English XML (US)..."
 	$(RUN) $(DICT_SCRIPT) --us --dict shavian-english
 
-$(BUILD_DICT_XML)/english-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json $(DEFINITIONS_GAP_STAMP) | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/english-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json | $(BUILD_DICT_XML)
 	@echo "Generating English-Shavian XML (US)..."
 	$(RUN) $(DICT_SCRIPT) --us --dict english-shavian
 
-$(BUILD_DICT_XML)/shavian-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json $(DEFINITIONS_GAP_STAMP) | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json | $(BUILD_DICT_XML)
 	@echo "Generating Shavian-Shavian XML (US)..."
 	$(RUN) $(DICT_SCRIPT) --us --dict shavian-shavian
 

@@ -694,39 +694,6 @@ def get_synsets_from_cache(lemma, pos_filter, wordnet_cache):
     return synsets
 
 
-def get_definitions_from_cache(lemma, wordnet_cache):
-    """
-    Extract definitions for a lemma from the comprehensive cache.
-
-    Args:
-        lemma: The lemma to look up (normalized to lowercase)
-        wordnet_cache: The comprehensive WordNet cache
-
-    Returns:
-        List of definition dicts compatible with wordnet-definitions.json format:
-        [{'definition': str, 'pos': str, 'examples': [str, ...]}, ...]
-    """
-    if not wordnet_cache or lemma.lower() not in wordnet_cache:
-        return []
-
-    entry = wordnet_cache[lemma.lower()]
-    all_definitions = []
-
-    # Extract definitions from all POS entries and their senses
-    for pos, pos_data in entry.get('pos_entries', {}).items():
-        # Get definitions from sense_variants
-        for sense in pos_data.get('sense_variants', []):
-            sense_defs = sense.get('definitions', [])
-            for def_text in sense_defs:
-                all_definitions.append({
-                    'definition': def_text,
-                    'pos': pos,
-                    'source': 'WordNet'
-                })
-
-    return all_definitions
-
-
 def pos_to_readable(pos_code):
     """Convert CLAWS POS tags to readable forms."""
     if '+' in pos_code:
@@ -996,7 +963,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             'index_key': 'shaw',        # Index by Shavian
             'display_text': 'latn',      # Display English text
             'translate_labels': False,   # Don't translate labels
-            'use_shavian_cache': False,  # Use WordNet
+            'use_shavian_cache': False,  # Read English gloss from Latin source
             'msg': 'Generating Shavian → English dictionary...'
         },
         'eng-shaw': {
@@ -1072,21 +1039,13 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             'examples': trans_def['transliterated_examples']
                         })
         else:
-            # For non-Shavian dictionaries, use old lemma-based lookup
-            if wordnet_cache:
-                lemma_defs = get_definitions_from_cache(lemma, wordnet_cache)
-            else:
-                lemma_defs = []
-
-            # Fall back to passed definitions if cache didn't have any
-            if not lemma_defs:
-                lemma_defs = definitions.get(lemma, [])
-
-            # Determine POS for this readlex key to filter definitions
+            # Shavian → English: read the ENGLISH gloss from the `lemma|synset`-keyed
+            # Latin definitions source (`definitions`), joined by the SAME synset key
+            # the Shavian branch uses. This is the source-of-truth split off from the
+            # merged corpus — one gloss per synset, so no POS-filtering is needed.
             key_pos_set = set()
             for entry in data['entries']:
                 pos_code = entry.get('pos', '')
-                # Map CLAWS POS to WordNet POS (v, n, a, r)
                 if pos_code.startswith('V'):
                     key_pos_set.add('v')
                 elif pos_code.startswith('N') and not is_proper_noun(pos_code):
@@ -1096,18 +1055,23 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 elif pos_code.startswith('AV'):
                     key_pos_set.add('r')
 
-            # Filter definitions to match the POS of this readlex key
-            filtered_defs = []
-            for def_data in lemma_defs:
-                if def_data.get('pos') in key_pos_set:
-                    filtered_defs.append(def_data)
+            synsets = []
+            if wordnet_cache and key_pos_set:
+                first_pos = sorted(key_pos_set)[0]
+                synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache)
 
-            # Don't use fallback - if we can't find definitions for this POS,
-            # leave filtered_defs empty and we'll show "no definition found"
+            lemma_defs = []
+            for synset_id in synsets:
+                latin_def = definitions.get(f"{lemma}|{synset_id}")
+                if latin_def:
+                    lemma_defs.append({
+                        'definition': latin_def['definition'],
+                        'pos': latin_def['pos'],
+                        'examples': latin_def.get('examples', []),
+                    })
 
-        # For Shavian cache, no filtering needed (already synset-specific)
-        if config['use_shavian_cache']:
-            filtered_defs = lemma_defs
+        # Both branches are synset-specific already — no POS filtering needed.
+        filtered_defs = lemma_defs
 
         # Process each form in this readlex key
         forms = []
@@ -1865,17 +1829,18 @@ def main():
         readlex_raw = json.load(f)
     print(f"Loaded {len(readlex_raw)} readlex entries")
 
-    # Load dialect-specific Latin definitions for shavian-english dictionary
+    # Load the Latin definitions source (`lemma|synset`-keyed English glosses) for the
+    # shavian-english dictionary. This is the source-of-truth split off from the merged
+    # Shavian corpus (src/tools/split_definition_corpus.py).
     latin_defs = {}
     if latin_defs_path.exists():
         print(f"\nLoading {dialect.upper()} Latin definitions...")
         with open(latin_defs_path, 'r', encoding='utf-8') as f:
             latin_defs = json.load(f)
-        print(f"Loaded definitions for {len(latin_defs)} words")
+        print(f"Loaded definitions for {len(latin_defs)} senses")
     else:
         print(f"\nNote: Latin definitions not found at {latin_defs_path}")
-        print(f"Please run: ./src/tools/generate_dialect_definitions.py")
-        print("Will use comprehensive cache if available")
+        print("The shavian-english dictionary will have no glosses.")
 
     # Load comprehensive WordNet cache (required for dialect detection)
     wordnet_cache = {}

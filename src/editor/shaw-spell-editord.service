@@ -18,14 +18,20 @@ RuntimeDirectory=shaw-spell
 RuntimeDirectoryMode=0755
 RuntimeDirectoryPreserve=yes
 
-# Mutable state lives under /var/lib (NOT /opt code): the daemon writes both
-# patch stores there. The auth DB lives under /var/lib too, but only the CGI
-# (via Apache SetEnv SHAW_SPELL_AUTH_DB) touches it — not this daemon.
-Environment=SHAW_SPELL_PATCH_STORE=/var/lib/shaw-spell/patches/patches.jsonl
-Environment=SHAW_SPELL_DEFINITION_PATCH_STORE=/var/lib/shaw-spell/patches/definition-patches.jsonl
+# The patch stores live INSIDE the `data/` git clone (their repo default:
+# PROJECT_ROOT/data/patches/), NOT redirected to /var/lib — that is what makes the
+# Commit button's commit+push work: the daemon commits the store in the clone it
+# tracks, then pushes. Redirecting the store outside git would sever it from any
+# repo and disable committing. So NO SHAW_SPELL_PATCH_STORE override here; the code
+# defaults to PROJECT_ROOT/data/patches/{patches,definition-patches}.jsonl. The auth
+# DB is the only mutable state still under /var/lib (gitignored, CGI-owned) — pointed
+# to by Apache SetEnv SHAW_SPELL_AUTH_DB, not touched by this daemon.
 
-# The src/ level is preserved so basis.py's PROJECT_ROOT (parent.parent.parent
-# of src/tools/basis.py) resolves to /opt/shaw-spell, not /opt.
+# /opt/shaw-spell holds the COPIED code (src/, external/) plus a standalone git
+# CLONE of the data repo at data/. basis.py's PROJECT_ROOT (parent.parent.parent of
+# src/tools/basis.py) resolves to /opt/shaw-spell, so the daemon reads the basis and
+# writes+commits patches in-place from the data/ clone.
+WorkingDirectory=/opt/shaw-spell
 ExecStart=/usr/bin/python3 /opt/shaw-spell/src/editor/editord.py \
     --socket /run/shaw-spell/editord.sock
 
@@ -36,14 +42,17 @@ RestartSec=2s
 # it slack before systemd declares the service failed to start.
 TimeoutStartSec=60s
 
-# Unlike suggestd, editord WRITES the patch stores, so it needs one writable
-# path: /var/lib/shaw-spell (the /opt code tree and the docroot stay read-only).
-# The auth DB lives under the same tree; the CGI (same www-data account) writes it.
+# editord WRITES + COMMITS the patch store in the data clone, so its writable path
+# is the clone's tree at /opt/shaw-spell/data — which contains BOTH the working tree
+# and the clone's own git dir (data/.git), so a single ReadWritePath covers `git
+# add`/`commit`/`push`. The docroot and the rest of the /opt code tree stay
+# read-only. (The auth DB under /var/lib is written by the CGI, a separate process —
+# not this daemon — so it is not listed here.)
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/shaw-spell
+ReadWritePaths=/opt/shaw-spell/data
 
 [Install]
 WantedBy=multi-user.target

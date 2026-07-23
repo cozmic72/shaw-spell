@@ -22,8 +22,10 @@ This pass is GAP-FILL ONLY. It NEVER re-transliterates or rewrites an existing
 Shavian entry: the owner's definition-correction patches anchor to those entries by
 (word, synset, dialect), and rewriting one would orphan its patch. The acceptance
 gate is byte-identity of every pre-existing key after the pass (asserted below).
-This mirrors annotate_definitions.py's discipline: shave is non-deterministic, so a
-rebuild must add missing keys and leave the frozen set untouched.
+This mirrors annotate_definitions.py's discipline: to keep patch anchors stable a
+rebuild must add missing keys and leave the frozen set untouched. (shave itself is
+deterministic — see project_shave_nondeterminism.md — the freeze protects the
+anchors, not against drift.)
 
 The gap glosses are transliterated per dialect with the SAME method the original
 pass used — batch the glosses into one HTML document, run `shave` once per dialect

@@ -133,9 +133,11 @@ RRP record (the spelling is universal); `source` unions the origins.
 **shave-names path is feature-flagged OFF by default** — SETTLED.
 The IPA-basis path is pure/deterministic. The `generate_rrp` shave/names path (no-IPA names)
 is gated behind `SHAW_SPELL_ENABLE_SHAVE_NAMES` (default OFF) — present but dormant, an
-owner-undecided lane. shave is non-deterministic on low-confidence spellings, which orphans
-patches; the `-reliable`/`names`/`generated` targets are order-only Make targets (rebuilt only
-when missing) so a checkout can't re-shave and orphan the owner's decisions.
+owner-undecided lane. shave is deterministic (a re-shave is idempotent — see
+[`project_shave_nondeterminism`], verified run-to-run incl. `--confidence 0`) but EXPENSIVE, and
+the `-reliable`/`names`/`generated` files are the anchor identity for the owner's patches; the
+targets are order-only Make targets (rebuilt only when missing) so a stray checkout mtime-shuffle
+can't trigger a wasteful re-shave — a deliberateness/cost guard, not an anti-drift one.
 → [`src/tools/generate_rrp.py`](../src/tools/generate_rrp.py) `ENABLE_SHAVE_NAMES`,
 [`src/tools/build_supplement.py`](../src/tools/build_supplement.py).
 

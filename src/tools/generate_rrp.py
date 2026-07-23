@@ -70,12 +70,12 @@ the RIGHT confidence for the canonical.
 DETERMINISM (honest): the IPA-basis path is a pure function of the record
 (Guide-table transforms + the repo converter, NO shave), so the ipa portion of
 the output is byte-deterministic run-to-run on identical input — unchanged. The
-shave/names path is only "as deterministic as shave allows": `--confidence 0`
-pins shave to its argmax (no interactive ambiguity, no bracket-list), so it is
-stable-as-shave-allows, but shave can drift run-to-run on low-confidence words.
-That drift is confined to tier-D `generated_shaw` proposals — never the record's
-own Shaw, never a patch, never a high tier — so flaky ⟺ low-confidence holds and
-the drift costs nothing ("stakes not mistakes").
+shave/names path is also deterministic: shave yields byte-identical output
+run-to-run on identical input+version, including `--confidence 0` argmax mode
+(empirically verified — see project_shave_nondeterminism.md). Any run-to-run
+change would only follow a shave binary/version or converter change, not shave
+randomness. Even so, that path's output is confined to tier-D `generated_shaw`
+proposals — never the record's own Shaw, never a patch, never a high tier.
 
 NEVER-AUTO-ACCEPT: every generated proposal and every gate action produces REVIEW
 CANDIDATES. Nothing is sanctioned, nothing is written to the patch store, no
@@ -403,9 +403,10 @@ def process(supplement, gen_tallies, gen_samples, gate_tallies, gate_samples,
     are added/stripped).
 
     `upstream` (reinterpreted ReadLex) and `shave_fn` (words -> {word: shaw}) are
-    threaded in by the orchestrator; None uses the disk/subprocess defaults. Note
-    the shave/names path is non-deterministic on low-confidence words; injecting a
-    fixed shave_fn is how a parity harness pins it.
+    threaded in by the orchestrator; None uses the disk/subprocess defaults. The
+    shave/names path is deterministic (shave is idempotent on identical
+    input+version — see project_shave_nondeterminism.md); injecting a fixed
+    shave_fn lets a parity harness run without invoking the costly shave binary.
 
     `enable_shave` gates the OWNER-UNDECIDED shave/names path and DEFAULTS OFF: when
     off, shave is NEVER invoked and no-ipa records pass through verbatim (IPA-basis

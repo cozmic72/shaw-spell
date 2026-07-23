@@ -7,11 +7,12 @@ pronunciation with no gloss), so the editor surfaces has/no-definition as a pill
 and a filter facet.
 
 This is a SEPARATE annotation pass, NOT a change to the -reliable generators.
-The generators consult the non-deterministic `shave` tool, so re-running them
-would re-spell low-confidence records and orphan the owner's patches (see
-docs / MEMORY). This pass only READS the same source files the generators read
-and JOINS `has_definition` onto EXISTING combined records by (word, pos) — it
-re-shaves nothing and touches no anchor field.
+The generators consult the EXPENSIVE `shave` tool and are the anchor identity for
+the owner's patches, so re-running them is avoided (see project_shave_nondeterminism.md
+— shave is deterministic, so a re-shave is idempotent, but it's costly and the
+patch anchors must stay put). This pass only READS the same source files the
+generators read and JOINS `has_definition` onto EXISTING combined records by
+(word, pos) — it re-shaves nothing and touches no anchor field.
 
 It runs directly after combine_supplements.py, on the source-combined pool, so
 the field rides verbatim through the rest of the pruning chain (dedup ->

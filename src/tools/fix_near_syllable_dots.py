@@ -6,9 +6,10 @@ into the review pool as moderate-confidence candidates.
 Wiktionary marks the happier /ˈhæp.i.ə/ syllable break with a dot; the stored
 supplement doesn't, so the generator collapsed `i.ə` to NEAR (𐑣𐑨𐑐𐑽) instead of
 the two-syllable 𐑣𐑨𐑐𐑦𐑼. The converter is now fixed (ipa_to_shavian.py routes
-`[iɪ].ə` through the affix boundary), but the committed reliable set predates the
-fix and MUST NOT be regenerated (the generator consults the non-deterministic
-shave tool and would orphan the owner's patches).
+`[iɪ].ə` through the affix boundary), but the committed reliable set is the anchor
+identity for the owner's patches, so a full regeneration is avoided here (it would
+also be expensive — the generator consults the costly shave tool). shave itself is
+deterministic; see project_shave_nondeterminism.md.
 
 This additive post-pass repairs those records without regenerating. For each
 stored record whose Shaw contains a NEAR letter, it re-finds the SAME word's

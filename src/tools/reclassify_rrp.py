@@ -108,10 +108,11 @@ merger collapses merged forms to RRP and destroys attestation — 2,629 tags -> 
 
 DETERMINISM: the classifier is a pure, shave-free function of the record, so
 this stage is byte-deterministic run-to-run on identical input. shave is NOT
-consulted (in the classifier it is only a tier-A/B witness); dropping it costs
-only that nuance and buys the determinism the patch model requires — a
-non-deterministic respell would orphan the owner's accept/flag patches on every
-rebuild (shave-nondeterminism). The model judge preserves this: greedy CPU
+consulted here (in the classifier it is only a tier-A/B witness) — dropping it
+costs only that nuance and keeps this stage cheap and self-contained (shave is
+expensive, and its output would depend on the installed binary version rather
+than the record alone; shave itself is deterministic — see
+project_shave_nondeterminism.md). The model judge preserves this: greedy CPU
 decode over a sorted, fixed-batch input is byte-identical run-to-run (verified
 in the model's phase-1 evaluation), and flag-off it is not even loaded.
 

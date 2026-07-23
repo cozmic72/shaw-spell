@@ -86,10 +86,11 @@ This is the same philosophy as the word supplement: **generate broadly, let the 
 sieve.** #11 R&D is checking what breaks (multi-word glosses, punctuation, the POS words like
 `𐑨𐑛𐑝𐑻𐑚`, per-sense keying) before we commit to shave-over-everything.
 
-Caveat noted from memory: shave is non-deterministic on low-confidence re-spells, which orphaned
-word patches before. For *definitions* the same risk exists → the coverage pass must be
-**gap-fill only** (never re-run over already-transliterated senses), so it can't churn existing
-keys and orphan definition-patches. Mirror the `annotate_definitions` discipline.
+Caveat noted from memory: re-transliterating an existing sense would orphan its correction patch
+(the patch anchors to that key). shave is deterministic (see `project_shave_nondeterminism.md`), so
+a re-shave is idempotent, but the coverage pass is still **gap-fill only** (never re-run over
+already-transliterated senses) to keep every existing key — and thus every patch anchor — frozen.
+Mirror the `annotate_definitions` discipline.
 
 ## 5. UX — the correction editor
 

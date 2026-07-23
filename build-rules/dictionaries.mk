@@ -33,8 +33,10 @@ data/definitions-shavian-us.json: $(SRC_DICTIONARIES)/build_definition_caches.py
 # The base cache above only transliterates WordNet single-word synset senses. The
 # gap-fill pass ADDS a Shavian transliteration for every remaining English gloss
 # (the WordNet senses the base pass missed + the whole Wiktionary def corpus),
-# NEVER re-transliterating an existing key (shave is non-deterministic; rewriting an
-# entry would orphan the owner's definition-correction patches). Gap-fill only.
+# NEVER re-transliterating an existing key (rewriting an entry would orphan the
+# owner's definition-correction patches; gap-fill only). shave itself is
+# deterministic — see project_shave_nondeterminism.md — the freeze protects the
+# patch anchors, not against drift.
 #
 # A stamp file records completion: the gap tool rewrites the shavian-*.json files in
 # place, so it cannot be its own Make output without a rebuild loop. The stamp depends

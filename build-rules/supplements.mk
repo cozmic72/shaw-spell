@@ -33,17 +33,21 @@ data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.
 
 # Shave-generated slice of the no-IPA WordNet words (net-new + non-zero corpus
 # freq) that the reliable/neardot buckets miss. Like the -reliable.json files it
-# consults the NON-DETERMINISTIC shave tool, so its prerequisites are order-only
-# (after `|`): make builds it only when MISSING (fresh clone), never on a mere
-# mtime bump — a checkout shuffling mtimes must not silently re-shave and orphan
-# review decisions. To re-baseline on purpose, delete it and re-make (or use
-# regenerate-supplements below). See generate_supplement_speculative.py.
+# consults the EXPENSIVE shave tool (fixed per-invocation startup; re-shaving the
+# pool is minutes), so its prerequisites are order-only (after `|`): make builds
+# it only when MISSING (fresh clone), never on a mere mtime bump — a checkout
+# shuffling mtimes must not silently trigger a wasteful re-shave. shave is
+# DETERMINISTIC (a re-shave is idempotent, does NOT drift Shaw or orphan patches),
+# so this is a deliberateness/cost guard, not an anti-drift one. To re-baseline on
+# purpose, delete it and re-make (or use regenerate-supplements below). See
+# generate_supplement_speculative.py.
 data/supplement-generated.json: | $(SRC_TOOLS)/generate_supplement_speculative.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/apply_frequency_data.py data/supplement-wordnet-speculative.json $(FREQUENCY_CORPUS)
 	@echo "Generating shave-spelled supplement from no-IPA WordNet words..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_supplement_speculative.py
 
-# Deliberately regenerate the reliable supplements (re-runs the non-deterministic
-# shave tool — expect Shavian drift; only run when you intend to re-baseline).
+# Deliberately regenerate the reliable supplements (re-runs the EXPENSIVE shave
+# tool — minutes of work; only run when you intend to re-baseline. shave is
+# deterministic, so this is idempotent — it won't drift Shaw or orphan patches).
 .PHONY: regenerate-supplements
 regenerate-supplements:
 	rm -f data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json \

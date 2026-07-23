@@ -1227,26 +1227,42 @@ def _now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-# The one file a commit is ever allowed to touch, as a repo-relative pathspec.
-# Every git command below names it explicitly — the working tree carries lots of
-# other uncommitted work that must never be swept into the owner's decision commit.
-PATCH_PATHSPEC = "data/patches/patches.jsonl"
-
-
+# The patch store lives inside the `data/` git SUBMODULE, so a commit runs git in
+# the submodule's working tree — not PROJECT_ROOT, where `data/` is only a gitlink.
+# The commit stages ONE pathspec (the store, submodule-relative from _commit_pathspec)
+# and nothing else: the submodule tree carries regenerated data that must never be
+# swept into the owner's decision commit.
 def _commit_repo_root():
-    """The repo root to run git in, or None when committing is not supported.
+    """The git working tree that TRACKS the patch store, or None when committing is
+    not supported.
 
-    Committing is only meaningful for the real store under the repo. A test that
-    redirects SHAW_SPELL_PATCH_STORE to a temp file has no repo to commit to, so we
-    refuse loudly rather than commit against whatever cwd git happens to find.
+    The store lives under the `data/` submodule, so the commit root is that
+    submodule's toplevel — resolved with `git rev-parse --show-toplevel` run from the
+    store's own directory, which works whether `.git` is a dir (plain repo) or a file
+    (submodule gitlink). Returns None (→ commit unavailable, button hidden) when the
+    store is not inside any git checkout, so a tarball deploy degrades cleanly.
 
-    A tarball deploy is not a checkout either: PROJECT_ROOT has no .git, so commit
-    is unsupported there and the button disables cleanly."""
-    if _store_path().resolve() != PATCHES_PATH.resolve():
+    Anchoring on the store's directory is also the test guard: a store redirected to a
+    bare temp file sits in no repo, so rev-parse fails and we return None (that test
+    cannot commit); a test that points the store INTO a throwaway repo resolves that
+    repo's toplevel and can exercise the commit path. We double-check the resolved
+    toplevel is actually an ancestor of the store, never committing to a stray repo
+    git happened to find above an unrelated temp dir."""
+    store = _store_path().resolve()
+    toplevel = _run_git(store.parent, "rev-parse", "--show-toplevel")
+    if toplevel.returncode != 0 or not toplevel.stdout.strip():
         return None
-    if not (PROJECT_ROOT / ".git").exists():
+    root = Path(toplevel.stdout.strip()).resolve()
+    if root not in store.parents:
         return None
-    return PROJECT_ROOT
+    return root
+
+
+def _commit_pathspec(root):
+    """The patch store as a pathspec relative to the commit root — the one file a
+    commit is ever allowed to touch. Derived (not hardcoded) so it stays correct
+    wherever _commit_repo_root points (the real `data/` submodule, or a test repo)."""
+    return str(_store_path().resolve().relative_to(Path(root).resolve()))
 
 
 def _run_git(root, *args):
@@ -1258,15 +1274,15 @@ def _run_git(root, *args):
     )
 
 
-def _uncommitted_patch_count(root):
+def _uncommitted_patch_count(root, pathspec):
     """Patch lines in the store not yet in HEAD: the added-line count of the store's
     diff against the HEAD blob. `git diff HEAD` omits a store absent from HEAD (never
     committed, or no commits yet), so that case is counted as every line added — the
     diff against an empty tree — rather than silently reported as zero."""
-    in_head = _run_git(root, "cat-file", "-e", f"HEAD:{PATCH_PATHSPEC}")
+    in_head = _run_git(root, "cat-file", "-e", f"HEAD:{pathspec}")
     if in_head.returncode != 0:
-        return _store_line_count(root)
-    result = _run_git(root, "diff", "--numstat", "HEAD", "--", PATCH_PATHSPEC)
+        return _store_line_count(root, pathspec)
+    result = _run_git(root, "diff", "--numstat", "HEAD", "--", pathspec)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "git diff failed")
     line = result.stdout.strip()
@@ -1276,8 +1292,8 @@ def _uncommitted_patch_count(root):
     return int(added) if added.isdigit() else 0
 
 
-def _store_line_count(root):
-    store = root / PATCH_PATHSPEC
+def _store_line_count(root, pathspec):
+    store = root / pathspec
     with open(store, "r", encoding="utf-8") as handle:
         return sum(1 for stored in handle if stored.strip())
 
@@ -1330,7 +1346,7 @@ def handle_commit_status(_state, _request):
         # stays quiet; erroring would toast on every write for a non-problem.
         return {"commit_available": False}
     try:
-        uncommitted = _uncommitted_patch_count(root)
+        uncommitted = _uncommitted_patch_count(root, _commit_pathspec(root))
     except RuntimeError as exc:
         return {"error": str(exc)}
     head = _run_git(root, "log", "-1", "--format=%h\t%s")
@@ -1346,25 +1362,41 @@ def handle_commit(_state, _request):
     root = _commit_repo_root()
     if root is None:
         return {"error": "commit is only supported for the default patch store"}
+    pathspec = _commit_pathspec(root)
     try:
-        uncommitted = _uncommitted_patch_count(root)
+        uncommitted = _uncommitted_patch_count(root, pathspec)
     except RuntimeError as exc:
         return {"error": str(exc)}
     if uncommitted == 0:
         return {"result": "nothing-to-commit"}
 
-    staged = _run_git(root, "add", "--", PATCH_PATHSPEC)
+    staged = _run_git(root, "add", "--", pathspec)
     if staged.returncode != 0:
         return {"error": staged.stderr.strip() or "git add failed"}
 
     message = f"Editorial decisions from review session ({uncommitted} patches)"
-    committed = _run_git(root, "commit", "-m", message, "--", PATCH_PATHSPEC)
+    committed = _run_git(root, "commit", "-m", message, "--", pathspec)
     if committed.returncode != 0:
         return {"error": committed.stderr.strip() or "git commit failed"}
 
     head = _run_git(root, "rev-parse", "--short", "HEAD")
     sha = head.stdout.strip() if head.returncode == 0 else None
-    return {"result": "committed", "message": message, "sha": sha, "uncommitted": 0}
+
+    # Sync the decision off-host. The commit is already durable locally, so a push
+    # failure (no remote, offline, auth, non-fast-forward) must NOT fail the commit
+    # or crash — we report it so the UI can say "committed locally, push failed: …".
+    # `git push` with no args pushes the current branch to its configured upstream
+    # (origin on the owner's laptop; a local bare repo via submodule URL override on
+    # the server), so the same call works either place.
+    pushed = _run_git(root, "push")
+    result = {"result": "committed", "message": message, "sha": sha, "uncommitted": 0}
+    if pushed.returncode == 0:
+        result["pushed"] = True
+    else:
+        result["pushed"] = False
+        result["push_error"] = (pushed.stderr.strip() or pushed.stdout.strip()
+                                or "git push failed")
+    return result
 
 
 HANDLERS = {

@@ -4192,7 +4192,13 @@ async function commitDecisions() {
             paintCommitButton(0);
             return;
         }
-        showToast(`Committed ${result.message} · ${result.sha}`);
+        // The commit is durable locally even when the off-host push fails, so a
+        // push failure is a warning (committed, but not synced), not an error.
+        if (result.pushed === false) {
+            showToast(`Committed ${result.sha}, but push failed: ${result.push_error}`, true);
+        } else {
+            showToast(`Committed & pushed ${result.message} · ${result.sha}`);
+        }
     } catch (error) {
         showToast(error.message, true);
     }

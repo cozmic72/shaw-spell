@@ -167,7 +167,7 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo chmod -R g+rwX "$(OPT_ROOT)/data"; \
 	sudo find "$(OPT_ROOT)/data" -type d -exec chmod g+s {} +; \
 	git -C "$(OPT_ROOT)/data" config core.sharedRepository group; \
-	sudo -u "$(SERVICE_USER)" git config --global --add safe.directory "$(OPT_ROOT)/data"; \
+	sudo git config --system --add safe.directory "$(OPT_ROOT)/data"; \
 	sudo -u "$(SERVICE_USER)" git -C "$(OPT_ROOT)/data" config user.name  "$(EDITOR_GIT_NAME)"; \
 	sudo -u "$(SERVICE_USER)" git -C "$(OPT_ROOT)/data" config user.email "$(EDITOR_GIT_EMAIL)"; \
 	echo "==> systemd daemon-reload + (re)start (picks up new $(DATA_GROUP) membership)"; \

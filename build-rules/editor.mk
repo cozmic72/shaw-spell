@@ -62,11 +62,13 @@ $(BUILD_EDITOR)/index.cgi: $(EDITOR_WEB_SRCS) \
 #     no git. Upgrades come from re-running this target with fresh files.
 #   * ReadLex (external/readlex/readlex.json) is COPIED — a read-only basis, never
 #     committed, so it needs no clone.
-#   * DATA  ($(OPT_ROOT)/data) is a STANDALONE `git clone` of $(DATA_REMOTE). This is
+#   * DATA  ($(DATA_DIR)) is a STANDALONE `git clone` of $(DATA_REMOTE). This is
 #     the ONLY git checkout on the server; the daemon's Commit button commits the
-#     patch store here and pushes it upstream. basis.py's PROJECT_ROOT is
-#     $(OPT_ROOT), so a plain clone at $(OPT_ROOT)/data satisfies every basis path —
-#     it need NOT be a submodule of anything.
+#     patch store here and pushes it upstream. It lives under /var/lib (FHS:
+#     mutable state), NOT $(OPT_ROOT)/data — that path belongs to the dictionary
+#     site's install-site. The systemd unit points basis.py's DATA_ROOT at it via
+#     SHAW_SPELL_DATA_DIR; PROJECT_ROOT stays $(OPT_ROOT) for the read-only
+#     external/ basis.
 #
 # Run from THIS repo (not from /opt):  sudo -v && make install-editor
 # The build never runs as root; only the privileged commands (writing /var/www,
@@ -74,7 +76,7 @@ $(BUILD_EDITOR)/index.cgi: $(EDITOR_WEB_SRCS) \
 #
 # Idempotent: safe to re-run to upgrade. PRESERVES mutable state — the auth DB under
 # /var/lib, and the data clone's working tree + patch store (re-clone is SKIPPED if
-# $(OPT_ROOT)/data is already a clone; only a `git fetch` refreshes it, never a
+# $(DATA_DIR) is already a clone; only a `git fetch` refreshes it, never a
 # reset that would clobber uncommitted patches). Does NOT edit Apache config or seed
 # users — prints those manual steps.
 #
@@ -83,6 +85,8 @@ $(BUILD_EDITOR)/index.cgi: $(EDITOR_WEB_SRCS) \
 WWW_ROOT_EDITOR ?= /var/www/shaw-spell/editor
 OPT_ROOT ?= /opt/shaw-spell
 VAR_LIB ?= /var/lib/shaw-spell
+# The mutable data clone. MUST match the systemd unit's SHAW_SPELL_DATA_DIR.
+DATA_DIR ?= $(VAR_LIB)/data
 SERVICE_USER ?= www-data
 # The group SHARED by you (the invoking user) and $(SERVICE_USER), owning the data
 # clone group-writable so BOTH can commit+push it: you from the invoking account,
@@ -118,7 +122,7 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "    web:      $(WWW_ROOT_EDITOR)"; \
 	echo "    code:     $(OPT_ROOT)/src  (copied)"; \
 	echo "    readlex:  $(OPT_ROOT)/external/readlex  (copied, read-only basis)"; \
-	echo "    data:     $(OPT_ROOT)/data  (git clone of $(DATA_REMOTE) — daemon commits+pushes this)"; \
+	echo "    data:     $(DATA_DIR)  (git clone of $(DATA_REMOTE) — daemon commits+pushes this)"; \
 	echo "    auth db:  $(VAR_LIB)/auth  (owner: $(SERVICE_USER))"; \
 	echo; \
 	echo "==> Daemon code -> $(OPT_ROOT)/src/{editor,tools} (copied)"; \
@@ -129,17 +133,17 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "==> ReadLex basis -> $(OPT_ROOT)/external/readlex (copied, read-only)"; \
 	sudo mkdir -p "$(OPT_ROOT)/external/readlex"; \
 	sudo install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
-	echo "==> Data clone -> $(OPT_ROOT)/data (from $(DATA_REMOTE))"; \
-	if [ -e "$(OPT_ROOT)/data/.git" ]; then \
+	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE))"; \
+	if [ -e "$(DATA_DIR)/.git" ]; then \
 	  echo "    already a clone — fetching (working tree + patches preserved, no reset)"; \
-	  git -C "$(OPT_ROOT)/data" -c protocol.file.allow=always fetch --prune origin; \
+	  git -C "$(DATA_DIR)" -c protocol.file.allow=always fetch --prune origin; \
 	else \
-	  [ -e "$(OPT_ROOT)/data" ] && { \
-	    echo "install-editor: $(OPT_ROOT)/data exists but is not a git clone — refusing" >&2; \
+	  [ -e "$(DATA_DIR)" ] && { \
+	    echo "install-editor: $(DATA_DIR) exists but is not a git clone — refusing" >&2; \
 	    echo "  to overwrite it. Move it aside and re-run." >&2; exit 1; }; \
-	  sudo mkdir -p "$(OPT_ROOT)"; \
-	  sudo chown "$$(id -un):$$(id -gn)" "$(OPT_ROOT)"; \
-	  git -c protocol.file.allow=always clone "$(DATA_REMOTE)" "$(OPT_ROOT)/data"; \
+	  sudo mkdir -p "$(DATA_DIR)"; \
+	  sudo chown "$$(id -un):$$(id -gn)" "$(DATA_DIR)"; \
+	  git -c protocol.file.allow=always clone "$(DATA_REMOTE)" "$(DATA_DIR)"; \
 	fi; \
 	echo "==> Web tier -> $(WWW_ROOT_EDITOR)"; \
 	sudo mkdir -p "$(WWW_ROOT_EDITOR)" "$(WWW_ROOT_EDITOR)/fonts"; \
@@ -163,13 +167,13 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo groupadd -f "$(DATA_GROUP)"; \
 	sudo usermod -aG "$(DATA_GROUP)" "$(SERVICE_USER)"; \
 	sudo usermod -aG "$(DATA_GROUP)" "$$(id -un)"; \
-	sudo chgrp -R "$(DATA_GROUP)" "$(OPT_ROOT)/data"; \
-	sudo chmod -R g+rwX "$(OPT_ROOT)/data"; \
-	sudo find "$(OPT_ROOT)/data" -type d -exec chmod g+s {} +; \
-	git -C "$(OPT_ROOT)/data" config core.sharedRepository group; \
-	sudo git config --system --add safe.directory "$(OPT_ROOT)/data"; \
-	sudo -u "$(SERVICE_USER)" git -C "$(OPT_ROOT)/data" config user.name  "$(EDITOR_GIT_NAME)"; \
-	sudo -u "$(SERVICE_USER)" git -C "$(OPT_ROOT)/data" config user.email "$(EDITOR_GIT_EMAIL)"; \
+	sudo chgrp -R "$(DATA_GROUP)" "$(DATA_DIR)"; \
+	sudo chmod -R g+rwX "$(DATA_DIR)"; \
+	sudo find "$(DATA_DIR)" -type d -exec chmod g+s {} +; \
+	git -C "$(DATA_DIR)" config core.sharedRepository group; \
+	sudo git config --system --add safe.directory "$(DATA_DIR)"; \
+	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.name  "$(EDITOR_GIT_NAME)"; \
+	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.email "$(EDITOR_GIT_EMAIL)"; \
 	echo "==> systemd daemon-reload + (re)start (picks up new $(DATA_GROUP) membership)"; \
 	sudo systemctl daemon-reload; \
 	sudo systemctl enable shaw-spell-editord; \
@@ -180,8 +184,8 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "  web tier   -> $(WWW_ROOT_EDITOR) (editor.cgi, index.cgi, authstore.py, js/css/fonts, keyboard)"; \
 	echo "  code       -> $(OPT_ROOT)/src/{editor,tools} (copied) + the systemd unit"; \
 	echo "  readlex    -> $(OPT_ROOT)/external/readlex (copied, read-only basis)"; \
-	echo "  data       -> $(OPT_ROOT)/data (git clone of $(DATA_REMOTE); daemon commits+pushes)"; \
-	echo "  patches    -> $(OPT_ROOT)/data/patches/ (IN the clone → Commit button can commit+push)"; \
+	echo "  data       -> $(DATA_DIR) (git clone of $(DATA_REMOTE); daemon commits+pushes)"; \
+	echo "  patches    -> $(DATA_DIR)/patches/ (IN the clone → Commit button can commit+push)"; \
 	echo "  auth db    -> $(VAR_LIB)/auth (owned by $(SERVICE_USER); existing data preserved)"; \
 	echo; \
 	echo "The daemon is enabled and running. Remaining MANUAL steps (this target"; \
@@ -198,15 +202,15 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "     sudo -u $(SERVICE_USER) SHAW_SPELL_AUTH_DB=$(AUTH_DB) \\"; \
 	echo "          python3 $(WWW_ROOT_EDITOR)/authstore.py --create-user HANDLE"; \
 	echo; \
-	echo "3. The BARE remote $(DATA_REMOTE) — the ONE thing outside $(OPT_ROOT) this"; \
-	echo "   target won't touch (it stays owned by YOU so you push from home). Give it"; \
+	echo "3. The BARE remote $(DATA_REMOTE) — the ONE thing this target won't"; \
+	echo "   touch (it stays owned by YOU so you push from home). Give it"; \
 	echo "   the SAME shared-group treatment the clone got so $(SERVICE_USER) can push to it"; \
 	echo "   too — never chown it to $(SERVICE_USER):"; \
 	echo "        sudo chgrp -R $(DATA_GROUP) $(DATA_REMOTE)"; \
 	echo "        sudo chmod -R g+rwX $(DATA_REMOTE) && sudo find $(DATA_REMOTE) -type d -exec chmod g+s {} +"; \
 	echo "        sudo git -C $(DATA_REMOTE) config core.sharedRepository group"; \
 	echo "   (the clone's group perms, safe.directory, and the daemon's git identity are"; \
-	echo "   set by this target; verify origin with:  git -C $(OPT_ROOT)/data remote -v)"; \
+	echo "   set by this target; verify origin with:  git -C $(DATA_DIR) remote -v)"; \
 	echo "============================================================"; \
 	echo "Done."
 

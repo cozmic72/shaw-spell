@@ -56,9 +56,9 @@ import json
 import os
 from pathlib import Path
 
-from basis import PROJECT_ROOT
+from basis import DATA_ROOT
 
-DEFINITION_PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "definition-patches.jsonl"
+DEFINITION_PATCHES_PATH = DATA_ROOT / "patches" / "definition-patches.jsonl"
 
 # The anchor fields, in a fixed order — the per-sense natural key. word is stored
 # LOWERCASED (the corpus headword case varies; the index lowercases too), synset is

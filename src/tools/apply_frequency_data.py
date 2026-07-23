@@ -36,10 +36,10 @@ import json
 import sys
 from pathlib import Path
 
-from basis import PROJECT_ROOT
+from basis import DATA_ROOT, PROJECT_ROOT
 from spelling_variants import spelling_variants
 
-READLEX_PATH = PROJECT_ROOT / "data" / "readlex.json"
+READLEX_PATH = DATA_ROOT / "readlex.json"
 CORPUS_PATH = PROJECT_ROOT / "external" / "frequency-words" / "content" / "2018" / "en" / "en_full.txt"
 FREQ_SOURCE_TAG = "opensubtitles-2018"
 

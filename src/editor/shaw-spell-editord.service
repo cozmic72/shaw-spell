@@ -18,19 +18,26 @@ RuntimeDirectory=shaw-spell
 RuntimeDirectoryMode=0755
 RuntimeDirectoryPreserve=yes
 
-# The patch stores live INSIDE the `data/` git clone (their repo default:
-# PROJECT_ROOT/data/patches/), NOT redirected to /var/lib — that is what makes the
-# Commit button's commit+push work: the daemon commits the store in the clone it
-# tracks, then pushes. Redirecting the store outside git would sever it from any
-# repo and disable committing. So NO SHAW_SPELL_PATCH_STORE override here; the code
-# defaults to PROJECT_ROOT/data/patches/{patches,definition-patches}.jsonl. The auth
-# DB is the only mutable state still under /var/lib (gitignored, CGI-owned) — pointed
-# to by Apache SetEnv SHAW_SPELL_AUTH_DB, not touched by this daemon.
+# The MUTABLE data clone lives at /var/lib/shaw-spell/data (FHS: mutable state
+# under /var, and it must not collide with the dictionary site's install-site,
+# which writes /opt/shaw-spell/data). SHAW_SPELL_DATA_DIR points basis.py's
+# DATA_ROOT there, relocating the whole clone wholesale: the patch stores, the
+# supplement basis, and the published readlex.json.
+Environment=SHAW_SPELL_DATA_DIR=/var/lib/shaw-spell/data
 
-# /opt/shaw-spell holds the COPIED code (src/, external/) plus a standalone git
-# CLONE of the data repo at data/. basis.py's PROJECT_ROOT (parent.parent.parent of
-# src/tools/basis.py) resolves to /opt/shaw-spell, so the daemon reads the basis and
-# writes+commits patches in-place from the data/ clone.
+# The patch stores live INSIDE that data clone (their repo default:
+# DATA_ROOT/patches/) — that is what makes the Commit button's commit+push work:
+# the daemon commits the store in the clone it tracks, then pushes. Redirecting
+# the store outside git would sever it from any repo and disable committing. So
+# NO SHAW_SPELL_PATCH_STORE override here; the code defaults to
+# DATA_ROOT/patches/{patches,definition-patches}.jsonl. The auth DB is the other
+# mutable state under /var/lib (gitignored, CGI-owned) — pointed to by Apache
+# SetEnv SHAW_SPELL_AUTH_DB, not touched by this daemon.
+
+# /opt/shaw-spell holds the COPIED code (src/) and the read-only basis
+# (external/). basis.py's PROJECT_ROOT (parent.parent.parent of
+# src/tools/basis.py) resolves to /opt/shaw-spell, so every external/ path
+# resolves there; everything mutable resolves via SHAW_SPELL_DATA_DIR.
 WorkingDirectory=/opt/shaw-spell
 ExecStart=/usr/bin/python3 /opt/shaw-spell/src/editor/editord.py \
     --socket /run/shaw-spell/editord.sock
@@ -43,16 +50,16 @@ RestartSec=2s
 TimeoutStartSec=60s
 
 # editord WRITES + COMMITS the patch store in the data clone, so its writable path
-# is the clone's tree at /opt/shaw-spell/data — which contains BOTH the working tree
-# and the clone's own git dir (data/.git), so a single ReadWritePath covers `git
-# add`/`commit`/`push`. The docroot and the rest of the /opt code tree stay
-# read-only. (The auth DB under /var/lib is written by the CGI, a separate process —
-# not this daemon — so it is not listed here.)
+# is the clone's tree at /var/lib/shaw-spell/data — which contains BOTH the working
+# tree and the clone's own git dir (data/.git), so a single ReadWritePath covers
+# `git add`/`commit`/`push`. The docroot and the whole /opt tree (code + read-only
+# external/ basis) stay read-only. (The auth DB under /var/lib is written by the
+# CGI, a separate process — not this daemon — so it is not listed here.)
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/shaw-spell/data
+ReadWritePaths=/var/lib/shaw-spell/data
 
 [Install]
 WantedBy=multi-user.target

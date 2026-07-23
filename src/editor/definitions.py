@@ -55,12 +55,12 @@ import re
 import threading
 from pathlib import Path
 
-from basis import PROJECT_ROOT
+from basis import DATA_ROOT
 
-LATIN_GB_PATH = PROJECT_ROOT / "data" / "definitions-latin-gb.json"
-LATIN_US_PATH = PROJECT_ROOT / "data" / "definitions-latin-us.json"
-SHAVIAN_GB_PATH = PROJECT_ROOT / "data" / "definitions-shavian-gb.json"
-SHAVIAN_US_PATH = PROJECT_ROOT / "data" / "definitions-shavian-us.json"
+LATIN_GB_PATH = DATA_ROOT / "definitions-latin-gb.json"
+LATIN_US_PATH = DATA_ROOT / "definitions-latin-us.json"
+SHAVIAN_GB_PATH = DATA_ROOT / "definitions-shavian-gb.json"
+SHAVIAN_US_PATH = DATA_ROOT / "definitions-shavian-us.json"
 
 # A WordNet synset offset: 8 digits, a dash, and a POS letter (n/v/a/s/r). Every
 # key in the Shavian corpus today matches this, so every sense is WordNet-derived.

@@ -46,6 +46,7 @@ Two record shapes meet here, and the mapping between them lives in one place:
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -53,6 +54,15 @@ from dialect_mergers import MERGER_TRAP_BATH
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
+
+# The MUTABLE data clone. Everything writable (the patch stores, readlex.json,
+# the combined supplement, the definitions corpora) resolves under here; the
+# read-only basis under external/ stays on PROJECT_ROOT. Defaults to the in-repo
+# data/ (laptop/dev); a deploy sets SHAW_SPELL_DATA_DIR (systemd:
+# /var/lib/shaw-spell/data) to relocate the clone wholesale.
+DATA_ROOT = (Path(os.environ["SHAW_SPELL_DATA_DIR"]).resolve()
+             if os.environ.get("SHAW_SPELL_DATA_DIR")
+             else PROJECT_ROOT / "data")
 
 # The ONE pool that makes up the basis: the phrase-filtered view of the
 # SOURCE-COMBINED, merger-classified pool (combine -> defs-annotated -> deduped
@@ -71,7 +81,7 @@ UPSTREAM_PATH = PROJECT_ROOT / "external" / "readlex" / "readlex.json"
 # `source` list (the origins that attested its anchor), and its `has_definition`
 # provenance boolean (whether any attesting source carries a definition).
 SUPPLEMENT_PATHS = [
-    PROJECT_ROOT / "data" / "supplement-combined-filtered.json",
+    DATA_ROOT / "supplement-combined-filtered.json",
 ]
 
 # ReadLex's read-only `var: "TrapBath"` records ARE the trap-bath-merged form. The

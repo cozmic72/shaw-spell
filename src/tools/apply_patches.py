@@ -50,9 +50,9 @@ import sys
 from pathlib import Path
 
 from basis import (
+    DATA_ROOT,
     PATCH_NOOP,
     PATCH_ORPHAN,
-    PROJECT_ROOT,
     anchor_from_key,
     anchor_key,
     anchor_of,
@@ -63,8 +63,8 @@ from basis import (
     resolve_patch,
 )
 
-DEFAULT_PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
-OUTPUT_PATH = PROJECT_ROOT / "data" / "readlex.json"
+DEFAULT_PATCHES_PATH = DATA_ROOT / "patches" / "patches.jsonl"
+OUTPUT_PATH = DATA_ROOT / "readlex.json"
 
 
 def patches_path():

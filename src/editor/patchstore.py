@@ -31,9 +31,9 @@ import json
 import os
 from pathlib import Path
 
-from basis import PROJECT_ROOT, anchor_key
+from basis import DATA_ROOT, anchor_key
 
-PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
+PATCHES_PATH = DATA_ROOT / "patches" / "patches.jsonl"
 
 
 def _store_path():

@@ -1,5 +1,34 @@
 # Supplement generation rules
 # Generates supplementary dictionary data from WordNet and Wiktionary
+#
+# =========================================================================
+# THE COMMITTED-CHECKPOINT MODEL (read this before touching prerequisites)
+# =========================================================================
+# The expensive pipeline output — the combine→classify→prune supplement pool
+# (data/supplement-combined-filtered.json) and its downstream derivations
+# (readlex.json, the definition caches) — is COMMITTED to git and IS the build's
+# starting point. Downstream targets (dictionaries, editor, macOS dict, spell-
+# checker) CONSUME these checkpoints; they do NOT rebuild them. So a normal
+# `make dictionaries` on a clean tree runs ZERO slow generators — it just reads
+# the checked-in data. This is the whole point: fast builds, no re-running shave
+# or the neural fills on every build.
+#
+# HOW: every committed-checkpoint target uses ORDER-ONLY prerequisites (after
+# `|`). Order-only means make rebuilds the target only when it is MISSING (a
+# fresh clone with the file absent), NOT when a prerequisite is merely newer.
+# This is REQUIRED, not cosmetic: even a pristine `git clone` writes the source
+# .py files with newer mtimes than the data/, so with normal prereqs a clean
+# checkout would re-fire the entire slow chain. Order-only prevents that.
+#
+# THE TRADEOFF (important — don't get caught): because the edges are order-only,
+# editing a generator .py does NOT auto-rebuild its checkpoint. `make` will
+# happily ship the OLD committed data after you edit a generator. To refresh a
+# checkpoint on purpose, use the deliberate regenerate-* targets (regenerate-
+# supplements / regenerate-supplement-pool / regenerate-readlex) or rm the file
+# and re-make. Regeneration is a CONSCIOUS act — the committed data is the source
+# of truth, not the generators. (shave is EXPENSIVE but DETERMINISTIC, so a
+# re-shave is idempotent and safe — see the per-target notes below.)
+# =========================================================================
 
 ###########################################
 # Source data paths
@@ -81,7 +110,12 @@ rescore-full: data/supplement-wordnet-reliable.json data/supplement-wiktionary-r
 # IPA and tagged `copied-homograph` for review. Additive: reliable + speculative
 # plus the rescued NP0 records. Pass 1 reads this for wiktionary. See
 # src/tools/rescue_proper_nouns.py.
-data/supplement-wiktionary-rescued.json: $(SRC_TOOLS)/rescue_proper_nouns.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json $(WIKTIONARY_JSONL) $(READLEX_JSON)
+#
+# COMMITTED checkpoint: prerequisites are ORDER-ONLY (after `|`) so a fresh
+# checkout with the file present is up-to-date and make skips this pass — it
+# rebuilds only when the file is MISSING. (Deterministic, so this is a cost/
+# deliberateness guard, not anti-drift.) To re-baseline: rm the file and re-make.
+data/supplement-wiktionary-rescued.json: | $(SRC_TOOLS)/rescue_proper_nouns.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json $(WIKTIONARY_JSONL) $(READLEX_JSON)
 	@echo "Rescuing IPA-less proper nouns via ReadLex homographs..."
 	$(RUN) python3 $(SRC_TOOLS)/rescue_proper_nouns.py
 
@@ -92,7 +126,10 @@ data/supplement-wiktionary-rescued.json: $(SRC_TOOLS)/rescue_proper_nouns.py $(S
 # confidence and tagged `near-dot-fixed` for the owner to adjudicate (ReadLex is
 # editorially inconsistent here). Genuine NEAR (here/weird) and patch-anchored
 # records are left untouched. See src/tools/fix_near_syllable_dots.py.
-data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-rescued.json $(WIKTIONARY_JSONL) data/patches/patches.jsonl
+#
+# COMMITTED checkpoint: ORDER-ONLY prerequisites (see rescued above) — rebuilt
+# only when MISSING, not on incidental mtime churn. rm to re-baseline.
+data/supplement-wiktionary-neardot.json: | $(SRC_TOOLS)/fix_near_syllable_dots.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-rescued.json $(WIKTIONARY_JSONL) data/patches/patches.jsonl
 	@echo "Correcting NEAR syllable-dot collapses..."
 	$(RUN) python3 $(SRC_TOOLS)/fix_near_syllable_dots.py
 
@@ -101,10 +138,11 @@ data/supplement-wiktionary-neardot.json: $(SRC_TOOLS)/fix_near_syllable_dots.py 
 # and filled ONLY where the derived IPA forward-converts back to the record's
 # existing Shaw (independent round-trip confirmation — this is the dictionary,
 # unconfirmed IPA is left absent for the owner-gated neural fill). Filled
-# records carry ipa_source="cmu". Deterministic (no shave), so ordinary
-# mtime-triggered prerequisites are safe. Combine reads this instead of
-# supplement-names.json. See src/tools/fill_names_ipa.py.
-data/supplement-names-ipa.json: $(SRC_TOOLS)/fill_names_ipa.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-names.json external/cmudict/cmudict.dict
+# records carry ipa_source="cmu". COMMITTED checkpoint with ORDER-ONLY
+# prerequisites (see rescued above): rebuilt only when MISSING, not on incidental
+# mtime churn — a fresh checkout is up-to-date. rm to re-baseline. Combine reads
+# this instead of supplement-names.json. See src/tools/fill_names_ipa.py.
+data/supplement-names-ipa.json: | $(SRC_TOOLS)/fill_names_ipa.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-names.json external/cmudict/cmudict.dict
 	@echo "Filling names IPA from CMUdict..."
 	$(RUN) python3 $(SRC_TOOLS)/fill_names_ipa.py
 
@@ -116,10 +154,11 @@ data/supplement-names-ipa.json: $(SRC_TOOLS)/fill_names_ipa.py $(SRC_TOOLS)/ipa_
 # likelihood clears the calibrated threshold (see fill_generated_ipa.py).
 # Failing records keep no ipa — this is the dictionary, nothing low-confidence
 # ships. Filled records carry ipa_source="model-g2p" plus a calibrated numeric
-# confidence. Deterministic (greedy CPU decode, no shave), so ordinary
-# mtime-triggered prerequisites are safe. Combine reads this instead of
+# confidence. COMMITTED checkpoint with ORDER-ONLY prerequisites (see rescued
+# above): rebuilt only when MISSING, not on incidental mtime churn — a fresh
+# checkout is up-to-date. rm to re-baseline. Combine reads this instead of
 # supplement-generated.json. See src/tools/fill_generated_ipa.py.
-data/supplement-generated-ipa.json: $(SRC_TOOLS)/fill_generated_ipa.py $(SRC_TOOLS)/g2p_common.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-generated.json data/g2p-model/model.pt data/g2p-model/meta.json
+data/supplement-generated-ipa.json: | $(SRC_TOOLS)/fill_generated_ipa.py $(SRC_TOOLS)/g2p_common.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/basis.py data/supplement-generated.json data/g2p-model/model.pt data/g2p-model/meta.json
 	@echo "Filling generated IPA from the frozen neural G2P..."
 	$(RUN) python3 $(SRC_TOOLS)/fill_generated_ipa.py
 
@@ -146,6 +185,18 @@ data/supplement-generated-ipa.json: $(SRC_TOOLS)/fill_generated_ipa.py $(SRC_TOO
 # dedup/contamination/phrase anchor-exemption). For debugging, the orchestrator's
 # --dump flag re-emits the old per-stage intermediates, but Make never depends on
 # them: ordering lives in the orchestrator, not the build graph.
+#
+# supplement-combined-filtered.json is a COMMITTED checkpoint (see .gitignore),
+# and rebuilding it is EXPENSIVE — the orchestrator processes the full ~200 MB
+# pool through the whole combine->classify->prune chain (minutes), consuming the
+# shave-generated -reliable/neardot/names-ipa/generated-ipa inputs. So, exactly
+# like those upstream shave generators, ALL prerequisites are ORDER-ONLY (after
+# `|`): make rebuilds the checkpoint only when it is MISSING (e.g. a fresh clone),
+# never because a source pool or generator .py merely has a newer mtime (a stray
+# `git checkout` mtime-shuffle must not silently trigger the slow chain). The
+# transforms are deterministic, so this is a deliberateness/cost guard, not an
+# anti-drift one. To re-baseline on purpose: rm the file and re-make, or use the
+# regenerate-supplement-pool target below.
 SUPPLEMENT_STEP_MODULES := \
 	$(SRC_TOOLS)/build_supplement.py \
 	$(SRC_TOOLS)/combine_supplements.py \
@@ -173,7 +224,7 @@ SUPPLEMENT_STEP_MODULES := \
 # by default (SHAW_SPELL_MODEL_JUDGE=1 enables it) and the model is loaded
 # lazily only when it is on, but the artifacts are unconditional prerequisites
 # so a flag-on build rebuilds when the frozen model changes.
-data/supplement-combined-filtered.json: $(SUPPLEMENT_STEP_MODULES) \
+data/supplement-combined-filtered.json: | $(SUPPLEMENT_STEP_MODULES) \
 		data/supplement-wordnet-reliable.json \
 		data/supplement-wiktionary-neardot.json \
 		data/supplement-wiktionary-reliable.json \
@@ -185,6 +236,14 @@ data/supplement-combined-filtered.json: $(SUPPLEMENT_STEP_MODULES) \
 		data/patches/patches.jsonl
 	@echo "Building supplement pool (in-memory pipeline, one write)..."
 	$(RUN) python3 $(SRC_TOOLS)/build_supplement.py
+
+# Deliberately rebuild the committed supplement checkpoint (re-runs the whole
+# combine->classify->prune chain — minutes; only when you intend to re-baseline.
+# The transforms are deterministic, so it won't drift the pool or orphan patches).
+.PHONY: regenerate-supplement-pool
+regenerate-supplement-pool:
+	rm -f data/supplement-combined-filtered.json
+	@$(MAKE) data/supplement-combined-filtered.json
 
 ###########################################
 # Merged readlex (combines original + supplements)
@@ -199,20 +258,35 @@ SUPPLEMENT_DEPS := data/supplement-combined-filtered.json
 # The final readlex.json — the thing every downstream target consumes — is only
 # "done" after frequency runs, so any rebuild reruns both stages in order.
 # (legacy generate_merged_readlex.py is retained on disk but off the build path.)
+#
+# BOTH files are COMMITTED checkpoints, so ALL prerequisites are ORDER-ONLY
+# (after `|`): a fresh checkout with them present is up-to-date and make skips
+# the merge+frequency steps — they rebuild only when MISSING. Regenerating
+# readlex after an editorial change (a new patch in patches.jsonl, a rebuilt
+# supplement pool) is therefore a DELIBERATE act: run `make regenerate-readlex`
+# (or rm the two files and re-make). Order-only still preserves the sequential
+# ordering — merged is (re)built before final when either is missing.
 READLEX_MERGED := data/readlex-merged.json
 FREQUENCY_CORPUS := external/frequency-words/content/2018/en/en_full.txt
 
-$(READLEX_MERGED): $(SRC_TOOLS)/apply_patches.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py external/readlex/readlex.json $(SUPPLEMENT_DEPS) data/patches/patches.jsonl
+$(READLEX_MERGED): | $(SRC_TOOLS)/apply_patches.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py external/readlex/readlex.json $(SUPPLEMENT_DEPS) data/patches/patches.jsonl
 	@echo "Applying editorial patches to produce merged readlex..."
 	$(RUN) python3 $(SRC_TOOLS)/apply_patches.py --out $(READLEX_MERGED)
 
-$(READLEX_PATH): $(READLEX_MERGED) $(SRC_TOOLS)/apply_frequency_data.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py $(SRC_TOOLS)/spelling_variants.py $(FREQUENCY_CORPUS)
+$(READLEX_PATH): | $(READLEX_MERGED) $(SRC_TOOLS)/apply_frequency_data.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py $(SRC_TOOLS)/spelling_variants.py $(FREQUENCY_CORPUS)
 	@echo "Filling missing frequency data from subtitle corpus..."
 	$(RUN) python3 $(SRC_TOOLS)/apply_frequency_data.py --in $(READLEX_MERGED) --out $(READLEX_PATH)
 
 # Convenience alias — the frequency step is now part of the readlex build itself.
 .PHONY: frequency
 frequency: $(READLEX_PATH)
+
+# Deliberately regenerate the committed readlex checkpoints after an editorial
+# change (new patches, rebuilt supplement pool). Reruns merge + frequency in order.
+.PHONY: regenerate-readlex
+regenerate-readlex:
+	rm -f $(READLEX_MERGED) $(READLEX_PATH)
+	@$(MAKE) $(READLEX_PATH)
 
 # frequency-words is a ~1.4 GB all-languages submodule; setup checks it out lean
 # (sparse-checkout, only content/2018/en) so a fresh clone stays ~30 MB.
@@ -251,7 +325,9 @@ phrase-divergence: data/phrase-divergence.tsv
 # Wiktionary definitions
 ###########################################
 
-data/definitions-wiktionary.json: $(SRC_TOOLS)/extract_wiktionary_definitions.py $(READLEX_PATH) $(WIKTIONARY_JSONL)
+# COMMITTED checkpoint (feeds the gap-fill). ORDER-ONLY prerequisites: rebuilt
+# only when MISSING, not on incidental mtime churn. rm to re-baseline.
+data/definitions-wiktionary.json: | $(SRC_TOOLS)/extract_wiktionary_definitions.py $(READLEX_PATH) $(WIKTIONARY_JSONL)
 	@echo "Extracting Wiktionary definitions..."
 	$(RUN) python3 $(SRC_TOOLS)/extract_wiktionary_definitions.py
 

@@ -14,14 +14,18 @@ $(WORDNET_CACHE): $(SRC_TOOLS)/build_wordnet_cache.py $(SRC_DICTIONARIES)/wordne
 	@echo "✓ WordNet cache generated: $(WORDNET_CACHE)"
 	@echo "  Note: This file is large and not committed to git."
 
-# Transliteration caches (auto-build if missing, requires shave tool)
-data/definitions-shavian-gb.json: $(SRC_DICTIONARIES)/build_definition_caches.py $(READLEX_PATH)
+# Transliteration caches — COMMITTED checkpoints built by the EXPENSIVE shave
+# tool. Prerequisites are ORDER-ONLY (after `|`) so a fresh checkout with the
+# cache present is up-to-date and make skips the re-shave; it rebuilds only when
+# MISSING. To re-baseline deliberately, use `make transliterations-gb/-us`
+# (--force) or rm the file and re-make.
+data/definitions-shavian-gb.json: | $(SRC_DICTIONARIES)/build_definition_caches.py $(READLEX_PATH)
 	@echo "Building Shavian definition cache (GB)..."
 	@echo "This requires the shave tool."
 	@mkdir -p data
 	$(RUN) $(SRC_DICTIONARIES)/build_definition_caches.py --gb
 
-data/definitions-shavian-us.json: $(SRC_DICTIONARIES)/build_definition_caches.py $(READLEX_PATH)
+data/definitions-shavian-us.json: | $(SRC_DICTIONARIES)/build_definition_caches.py $(READLEX_PATH)
 	@echo "Building Shavian definition cache (US)..."
 	@echo "This requires the shave tool."
 	@mkdir -p data
@@ -39,17 +43,20 @@ data/definitions-shavian-us.json: $(SRC_DICTIONARIES)/build_definition_caches.py
 # patch anchors, not against drift.
 #
 # A stamp file records completion: the gap tool rewrites the shavian-*.json files in
-# place, so it cannot be its own Make output without a rebuild loop. The stamp depends
-# on the base caches (ORDER-ONLY, via '|': the gap augments them but must never force
-# a base re-shave) and on the gap tool + its gloss sources; touching any of those
-# re-runs the gap-fill.
+# place, so it cannot be its own Make output without a rebuild loop. The committed
+# shavian-*.json caches already contain the gap-fill, so this COMMITTED stamp makes
+# a fresh checkout up-to-date — the EXPENSIVE gap re-shave fires only when the stamp
+# is MISSING. Hence ALL prerequisites are ORDER-ONLY (after `|`): the base caches
+# (the gap augments them but must never force a base re-shave) plus the gap tool and
+# its gloss sources — incidental mtime churn on any of those must not re-shave. To
+# re-baseline deliberately, rm the stamp and re-make (or use `make transliterations`).
 DEFINITIONS_GAP_STAMP := data/.definitions-gap.stamp
 
-$(DEFINITIONS_GAP_STAMP): $(SRC_TOOLS)/transliterate_definitions_gap.py \
+$(DEFINITIONS_GAP_STAMP): | $(SRC_TOOLS)/transliterate_definitions_gap.py \
                           $(WORDNET_CACHE) \
                           data/definitions-wiktionary.json \
                           external/readlex/readlex.json \
-                          | data/definitions-shavian-gb.json data/definitions-shavian-us.json
+                          data/definitions-shavian-gb.json data/definitions-shavian-us.json
 	@echo "Filling definition transliteration coverage gap (GB & US)..."
 	@echo "This requires the shave tool."
 	$(RUN) $(SRC_TOOLS)/transliterate_definitions_gap.py
@@ -59,8 +66,11 @@ $(DEFINITIONS_GAP_STAMP): $(SRC_TOOLS)/transliterate_definitions_gap.py \
 definitions-gap: $(DEFINITIONS_GAP_STAMP)
 	@echo "✓ Definition transliteration coverage gap filled"
 
-# Latin definition files with dialect-specific spelling (auto-build if missing)
-data/definitions-latin-gb.json data/definitions-latin-us.json: $(SRC_TOOLS)/generate_dialect_definitions.py $(WORDNET_CACHE) data/definitions-shavian-gb.json
+# Latin definition files with dialect-specific spelling. COMMITTED checkpoints
+# with ORDER-ONLY prerequisites (after `|`): a fresh checkout with them present is
+# up-to-date; rebuilt only when MISSING, not on incidental mtime churn. rm to
+# re-baseline.
+data/definitions-latin-gb.json data/definitions-latin-us.json: | $(SRC_TOOLS)/generate_dialect_definitions.py $(WORDNET_CACHE) data/definitions-shavian-gb.json
 	@echo "Building dialect-specific Latin definitions (GB & US)..."
 	@mkdir -p data
 	$(RUN) $(SRC_TOOLS)/generate_dialect_definitions.py

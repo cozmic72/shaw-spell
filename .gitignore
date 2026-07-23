@@ -34,7 +34,14 @@ external/wiktionary/
 # Supplement pipeline intermediates (rebuildable; never committed). The combined
 # pool superseded the per-source *-{deduped,classified,collapsed,decontaminated,
 # filtered} files; none of these are tracked.
+#
+# EXCEPTION: supplement-combined-filtered.json is the COMMITTED checkpoint — the
+# build_supplement orchestrator's single output that every downstream target
+# consumes. It is tracked so a fresh checkout is up-to-date and `make` skips the
+# expensive combine->classify->prune chain (the negation below un-ignores it; the
+# glob still ignores the other combined-* debug dumps).
 data/supplement-combined-*.json
+!data/supplement-combined-filtered.json
 data/supplement-wordnet-deduped.json
 data/supplement-wiktionary-deduped.json
 data/supplement-wordnet-classified.json

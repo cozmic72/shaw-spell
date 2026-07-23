@@ -24,7 +24,7 @@
 # editing a generator .py does NOT auto-rebuild its checkpoint. `make` will
 # happily ship the OLD committed data after you edit a generator. To refresh a
 # checkpoint on purpose, use the deliberate regenerate-* targets (regenerate-
-# supplements / regenerate-supplement-pool / regenerate-readlex) or rm the file
+# supplements / regenerate-supplement-pool) or rm the file
 # and re-make. Regeneration is a CONSCIOUS act — the committed data is the source
 # of truth, not the generators. (shave is EXPENSIVE but DETERMINISTIC, so a
 # re-shave is idempotent and safe — see the per-target notes below.)
@@ -246,47 +246,22 @@ regenerate-supplement-pool:
 	@$(MAKE) data/supplement-combined-filtered.json
 
 ###########################################
-# Merged readlex (combines original + supplements)
+# Merged readlex (published by the EDITOR)
 ###########################################
 
 SUPPLEMENT_DEPS := data/supplement-combined-filtered.json
 
-# readlex.json is produced by a two-stage SEQUENTIAL pipeline so the frequency
-# enrichment can never be silently reverted by a rebuild:
-#   1. apply_patches.py: patch store + supplements -> readlex-merged.json (intermediate)
-#   2. apply_frequency_data.py: readlex-merged.json + corpus -> readlex.json (final)
-# The final readlex.json — the thing every downstream target consumes — is only
-# "done" after frequency runs, so any rebuild reruns both stages in order.
-# (legacy generate_merged_readlex.py is retained on disk but off the build path.)
+# readlex.json ($(READLEX_PATH)) is a COMMITTED INPUT with NO recipe — the
+# EDITOR is its sole publisher. On Commit the editor daemon derives it
+# in-process (apply_patches over the live basis, then the corpus frequency
+# pass) and commits+pushes it alongside patches/patches.jsonl, so the published
+# artifact is never out of sync with the patches that produced it. Downstream
+# targets depend on $(READLEX_PATH) exactly as they depend on the supplement
+# checkpoint above: a committed file make never rebuilds.
 #
-# BOTH files are COMMITTED checkpoints, so ALL prerequisites are ORDER-ONLY
-# (after `|`): a fresh checkout with them present is up-to-date and make skips
-# the merge+frequency steps — they rebuild only when MISSING. Regenerating
-# readlex after an editorial change (a new patch in patches.jsonl, a rebuilt
-# supplement pool) is therefore a DELIBERATE act: run `make regenerate-readlex`
-# (or rm the two files and re-make). Order-only still preserves the sequential
-# ordering — merged is (re)built before final when either is missing.
-READLEX_MERGED := data/readlex-merged.json
+# The frequency corpus is still needed at RUNTIME by the editor (its basis and
+# the publish step enrich freq from it), so its lean checkout stays in setup.
 FREQUENCY_CORPUS := external/frequency-words/content/2018/en/en_full.txt
-
-$(READLEX_MERGED): | $(SRC_TOOLS)/apply_patches.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py external/readlex/readlex.json $(SUPPLEMENT_DEPS) data/patches/patches.jsonl
-	@echo "Applying editorial patches to produce merged readlex..."
-	$(RUN) python3 $(SRC_TOOLS)/apply_patches.py --out $(READLEX_MERGED)
-
-$(READLEX_PATH): | $(READLEX_MERGED) $(SRC_TOOLS)/apply_frequency_data.py $(SRC_TOOLS)/basis.py $(SRC_TOOLS)/dialect_mergers.py $(SRC_TOOLS)/spelling_variants.py $(FREQUENCY_CORPUS)
-	@echo "Filling missing frequency data from subtitle corpus..."
-	$(RUN) python3 $(SRC_TOOLS)/apply_frequency_data.py --in $(READLEX_MERGED) --out $(READLEX_PATH)
-
-# Convenience alias — the frequency step is now part of the readlex build itself.
-.PHONY: frequency
-frequency: $(READLEX_PATH)
-
-# Deliberately regenerate the committed readlex checkpoints after an editorial
-# change (new patches, rebuilt supplement pool). Reruns merge + frequency in order.
-.PHONY: regenerate-readlex
-regenerate-readlex:
-	rm -f $(READLEX_MERGED) $(READLEX_PATH)
-	@$(MAKE) $(READLEX_PATH)
 
 # frequency-words is a ~1.4 GB all-languages submodule; setup checks it out lean
 # (sparse-checkout, only content/2018/en) so a fresh clone stays ~30 MB.
@@ -351,8 +326,6 @@ supplements: $(READLEX_PATH)
 supplements-from-source: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring with full shave..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
-	@echo "Applying editorial patches into readlex..."
-	$(RUN) python3 $(SRC_TOOLS)/apply_patches.py
 	@echo "Generating review files..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_review_files.py
 	@echo "✓ All supplements rebuilt from source"

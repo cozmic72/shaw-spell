@@ -19,6 +19,7 @@ EDITOR_DAEMON_SRCS = $(SRC_EDITOR)/editord.py \
                      $(SRC_EDITOR)/shaw-spell-editord.service \
                      $(SRC_TOOLS)/basis.py \
                      $(SRC_TOOLS)/dialect_mergers.py \
+                     $(SRC_TOOLS)/apply_patches.py \
                      $(SRC_TOOLS)/apply_frequency_data.py \
                      $(SRC_TOOLS)/spelling_variants.py
 
@@ -29,8 +30,11 @@ EDITOR_WEB_SRCS = $(SRC_EDITOR)/site/editor.cgi \
 
 # The ~317MB read-only basis the tarball ships (the payload — the server
 # rebuilds nothing). Restage when any of these change. The freq corpus is
-# optional (deploy_editor skips-with-notice if absent), so it's not a prereq.
+# REQUIRED: this deploy is Commit-capable, and Commit publishes readlex.json,
+# which must match production. deploy_editor fails the build if it's absent —
+# run `make setup` to fetch it first.
 EDITOR_BASIS_SRCS = external/readlex/readlex.json \
+                    $(FREQUENCY_CORPUS) \
                     data/supplement-combined-filtered.json \
                     data/definitions-shavian-gb.json \
                     data/definitions-shavian-us.json

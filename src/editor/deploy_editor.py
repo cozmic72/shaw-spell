@@ -64,6 +64,7 @@ EDITOR_MODULES = [
 TOOLS_MODULES = [
     'basis.py',
     'dialect_mergers.py',
+    'apply_patches.py',
     'apply_frequency_data.py',
     'spelling_variants.py',
 ]
@@ -74,19 +75,19 @@ WEB_FILES = ['editor.cgi', 'editor.js', 'editor.css']
 FONT = 'BernieSansBetaVF.woff2'
 
 # The read-only basis the daemon reads, repo-relative. Staged under basis/ with
-# paths preserved so install.sh drops them straight into $OPT_ROOT. The first
-# four are required (daemon won't start without them); the freq corpus is
-# optional — basis.py soft-fails to freq-0 when it's absent.
+# paths preserved so install.sh drops them straight into $OPT_ROOT. All are
+# required. The freq corpus is required too: this deploy is Commit-capable, and
+# Commit publishes readlex.json, which MUST match production — a freq-less
+# fallback would ship a different dictionary depending on deploy state. (The
+# daemon still STARTS without the corpus, freq-0; it just can't publish.)
 BASIS_REQUIRED = [
     'external/readlex/readlex.json',
+    'external/frequency-words/content/2018/en/en_full.txt',
     'data/supplement-combined-filtered.json',
     'data/definitions-latin-gb.json',
     'data/definitions-latin-us.json',
     'data/definitions-shavian-gb.json',
     'data/definitions-shavian-us.json',
-]
-BASIS_OPTIONAL = [
-    'external/frequency-words/content/2018/en/en_full.txt',
 ]
 
 
@@ -206,8 +207,9 @@ def deploy(version, output_dir='build/editor'):
     # --- read-only basis (-> /opt/shaw-spell, paths preserved) ---
     # THE payload: the ~317MB of expensive artifacts, so the server rebuilds
     # nothing. Staged under basis/<repo-relative-path>; install.sh copies the
-    # tree into $OPT_ROOT. Required inputs fail the build if missing; the freq
-    # corpus is skipped-with-notice (basis.py soft-fails to freq-0).
+    # tree into $OPT_ROOT. Every input is required — a missing one fails the
+    # build (the freq corpus included: Commit publishes readlex.json, which
+    # needs it — run `make setup` to fetch it before deploying).
     print()
     print("Copying read-only basis...")
     basis_output = output_path / 'basis'
@@ -216,15 +218,6 @@ def deploy(version, output_dir='build/editor'):
         if not src.exists():
             print(f"Error: required basis input missing: {src}")
             return 1
-        dest = basis_output / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
-        print(f"  ✓ basis/{rel}  ({src.stat().st_size >> 20} MB)")
-    for rel in BASIS_OPTIONAL:
-        src = project_root / rel
-        if not src.exists():
-            print(f"  – basis/{rel} absent — skipped (freq sort disabled)")
-            continue
         dest = basis_output / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest)

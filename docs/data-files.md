@@ -9,8 +9,7 @@ Reference for the key files under `data/`. For how they flow together see
 
 | File | What it is | Written by | Tracked | Ships |
 |---|---|---|---|---|
-| `readlex.json` | the shipping dictionary (final merged + frequency-stamped) | `apply_frequency_data.py` | yes | yes |
-| `readlex-merged.json` | basis + patches, pre-frequency | `apply_patches.py` | yes | intermediate |
+| `readlex.json` | the shipping dictionary (final merged + frequency-stamped) | editor daemon (Commit publish) | yes | yes |
 | `definitions-shavian-{gb,us}.json` | machine Shavian transliterations of glosses, keyed `word\|synset-id` | translit/gap-fill pass | yes | yes (dict builds) |
 | `definitions-latin-{gb,us}.json` | English glosses, keyed `word` | def extraction | **gitignored** | source for translit |
 | `definitions-wiktionary.json` | raw extracted Wiktionary definitions | `extract_wiktionary_definitions.py` | yes | source |

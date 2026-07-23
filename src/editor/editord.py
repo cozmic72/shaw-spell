@@ -1229,9 +1229,10 @@ def _now_iso():
 
 # The patch store lives inside the `data/` git SUBMODULE, so a commit runs git in
 # the submodule's working tree — not PROJECT_ROOT, where `data/` is only a gitlink.
-# The commit stages ONE pathspec (the store, submodule-relative from _commit_pathspec)
-# and nothing else: the submodule tree carries regenerated data that must never be
-# swept into the owner's decision commit.
+# The commit stages EXACTLY TWO pathspecs — the store (_commit_pathspec) and the
+# readlex.json artifact published from it (_publish_pathspec) — and nothing else:
+# the submodule tree carries other regenerated data that must never be swept into
+# the owner's decision commit.
 def _commit_repo_root():
     """The git working tree that TRACKS the patch store, or None when committing is
     not supported.
@@ -1259,10 +1260,73 @@ def _commit_repo_root():
 
 
 def _commit_pathspec(root):
-    """The patch store as a pathspec relative to the commit root — the one file a
-    commit is ever allowed to touch. Derived (not hardcoded) so it stays correct
+    """The patch store as a pathspec relative to the commit root — the file whose
+    uncommitted lines gate a commit. Derived (not hardcoded) so it stays correct
     wherever _commit_repo_root points (the real `data/` submodule, or a test repo)."""
     return str(_store_path().resolve().relative_to(Path(root).resolve()))
+
+
+# The editor is the SOLE publisher of data/readlex.json: `make` no longer builds
+# it, it just depends on the committed file. Deriving it here — from the same
+# on-disk store the commit is about to stage — and committing the two together
+# means the published artifact can never drift out of sync with the patches that
+# produced it.
+def _publish_pathspec(root):
+    """data/readlex.json as a pathspec relative to the commit root, or None when
+    the artifact lives outside that repo — a store redirected into a throwaway
+    test repo has no readlex beside it, so there is nothing to publish there. In
+    the real `data/` submodule the artifact always resolves."""
+    from apply_patches import OUTPUT_PATH
+
+    output = OUTPUT_PATH.resolve()
+    root = Path(root).resolve()
+    if root not in output.parents:
+        return None
+    return str(output.relative_to(root))
+
+
+class PublishError(Exception):
+    """A publish precondition failed with a message meant for the owner verbatim
+    (not a raw stack/sys.exit). handle_commit surfaces it as the commit error."""
+
+
+def _publish_readlex():
+    """Derive readlex.json from the on-disk patch store and write it to its
+    canonical path — the exact offline applicator chain (apply_patches over the
+    live basis, then the corpus frequency pass), emitting the same deterministic
+    JSON shape, just produced by the editor instead of `make`. Orphaned patches
+    soft-fail exactly as in the offline applicator: logged, skipped, retained in
+    the store — never a blocked publish. Raises on any genuine derivation error
+    (the caller aborts the commit)."""
+    from apply_patches import OUTPUT_PATH, apply_patches, load_patches
+    from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
+    from basis import build_basis, load_upstream
+
+    # The frequency corpus is REQUIRED to publish: a published readlex.json must
+    # match production, so a freq-less fallback (which basis.py deliberately
+    # allows for the review pool at STARTUP) is not acceptable here. Fail loud and
+    # early with an actionable message rather than letting load_corpus sys.exit
+    # with a cryptic one mid-derivation.
+    if not CORPUS_PATH.exists():
+        raise PublishError(
+            f"Cannot publish readlex.json: frequency corpus missing "
+            f"({CORPUS_PATH.name}). The editor can run without it, but "
+            f"committing requires it so the published dictionary matches "
+            f"production. Run `make setup` to fetch the corpus, then retry.")
+
+    output = load_upstream()
+    basis_index, basis_source = build_basis()
+    _stats, orphans = apply_patches(output, basis_index, basis_source,
+                                    load_patches())
+    for patch in orphans:
+        anchor = patch["anchor"]
+        logging.warning(
+            "publish: orphaned patch skipped: %r pos=%s shaw=%s var=%s (id=%s)",
+            anchor["word"], anchor["pos"], anchor["shaw"], anchor["var"],
+            patch["id"])
+    enrich_all(output, load_corpus())
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=4)
 
 
 def _run_git(root, *args):
@@ -1370,12 +1434,31 @@ def handle_commit(_state, _request):
     if uncommitted == 0:
         return {"result": "nothing-to-commit"}
 
-    staged = _run_git(root, "add", "--", pathspec)
+    # Publish readlex.json BEFORE git touches anything: a derivation failure
+    # aborts the whole commit with nothing staged, so the store is never
+    # committed ahead of the artifact it ships with. Both the pathspec resolution
+    # (imports apply_patches at call time) and the derivation are inside the try,
+    # so a missing module surfaces as a clean error, not a 500. A PublishError
+    # carries an owner-facing message verbatim (e.g. the corpus precheck); other
+    # failures (including load_corpus's sys.exit backstop) get the generic wrap.
+    try:
+        published = _publish_pathspec(root)
+        if published is not None:
+            _publish_readlex()
+    except PublishError as exc:
+        return {"error": str(exc)}
+    except (SystemExit, Exception) as exc:
+        return {"error": f"readlex publish failed, nothing committed: {exc}"}
+
+    pathspecs = [pathspec] if published is None else [pathspec, published]
+    staged = _run_git(root, "add", "--", *pathspecs)
     if staged.returncode != 0:
         return {"error": staged.stderr.strip() or "git add failed"}
 
     message = f"Editorial decisions from review session ({uncommitted} patches)"
-    committed = _run_git(root, "commit", "-m", message, "--", pathspec)
+    if published is not None:
+        message += "; publishes readlex.json"
+    committed = _run_git(root, "commit", "-m", message, "--", *pathspecs)
     if committed.returncode != 0:
         return {"error": committed.stderr.strip() or "git commit failed"}
 

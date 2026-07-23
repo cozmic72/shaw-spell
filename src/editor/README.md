@@ -7,10 +7,17 @@ supplements, computed on demand) overlaid with the **patch store**
 record is annotated with its patch-state — unreviewed / edited / dropped / authored —
 and a derived `reviewed` flag (a patch exists). See `docs/editorial-overlay-design.md`.
 
-A patch is `{anchor, record, meta}`: `anchor` is the reviewed record's immutable
-natural key `{word, pos, shaw, var}` (never changed on edit, so an entry never moves);
-`record` is the COMPLETE wanted record, emitted verbatim (no source+patch merge), or
-`null` to drop; `anchor: null` is authorship.
+A **persisted** patch is `{anchor, op, changes, meta}` — a minimal diff over the live basis
+(see `src/editor/patchstore.py`). `anchor` is the reviewed record's immutable natural key
+`{word, pos, shaw, var}` (never changed on edit, so an entry never moves; `anchor: null`
+is authorship). `op` is `accept` (sanction the anchored basis record), `edit` (a bare
+not-yet-reviewed edit), `drop` (remove it), or `flag` (a production no-op). `changes` are
+the intrinsic edits (`word, shaw, pos, ipa, var, mergers, variant`) laid over the basis
+record — empty means accept as-is; for authorship it is the whole self-contained record.
+
+The **socket `patch` op** (below) is client-facing and still sends the COMPLETE wanted
+`record`; the daemon diffs its intrinsic fields against the live basis and persists the
+minimal-diff patch above.
 
 It is a sibling of the production `suggestd`, never touching it or the read-only
 spell-check path.
@@ -18,7 +25,8 @@ spell-check path.
 ## Parts
 
 - `editord.py` — the daemon. Loads the annotated view once, serves editor ops over a
-  Unix socket, rebuilds the view on each write.
+  Unix socket, and on each write updates only the affected anchor's annotation in the
+  in-memory view (an incremental update, not a full reload).
 - `overlay.py`, `patchstore.py` — the annotated view and the patch read/write, both
   built on `src/tools/basis.py` (the same anchor logic the applicator uses).
 - `site/editor.cgi` — thin HTTP frontend. Serves the page and proxies each POSTed
@@ -31,12 +39,19 @@ spell-check path.
         -> {"total","offset","limit","records":[...]}
     {"op":"entry","anchor":{"word","pos","shaw","var"}}
         -> {"records":[...]}                       # the record on that natural key
-    {"op":"patch","anchor":{"word","pos","shaw","var"}|null,"record":{...}|null,"author":"…"}
+    {"op":"patch","anchor":{"word","pos","shaw","var"}|null,"record":{...}|null,
+     "author":"…","dirty"?:bool,"replaces"?:"p_…"}
         -> {"result":"appended"|"replaced","id","records":[...]}
+    {"op":"flag","anchor":{"word","pos","shaw","var"}|null,"author":"…"}   # production no-op
+    {"op":"unpatch","anchor":{...}|"patch_id":"p_…"}                        # undo/clear
 
-`record` is the complete wanted record (accept sets `record.status: sanctioned`);
-`record:null` is a drop; `anchor:null` is authorship. The write validates the
-patch shape and, for an edit/drop, that the anchor resolves to a basis record.
+`record` is the complete wanted record; `record:null` is a drop; `anchor:null`
+(with a record) is authorship. `dirty` marks a bare edit-on-navigate (persisted
+`op:edit`, not reviewed/shipped); an explicit Accept (no `dirty`) reviews and ships.
+The daemon diffs the record and persists the minimal-diff patch (see above). The write
+validates the patch shape and, for an accept/edit/drop, that the anchor resolves to a
+basis record. See `editord.py` for the full op set (`related`, `definitions`,
+`commit`, `patch_counts`, …).
 
 Filters: `word`/`shaw` (substring), `reviewed` (reviewed/unreviewed — the primary
 partition), `source`, `status`, `pos`, `var`, `patch_state`, `confidence_min`,
@@ -81,9 +96,9 @@ editord writes the patch store, so the unit grants `ReadWritePaths` for
 ## Editing
 
 The detail editor exposes every editable field of the focused record — shaw, var,
-ipa, status — because the record is self-contained. Actions produce a patch on the
-record's immutable anchor: **Accept** (status → sanctioned), **Save edit** (the
-edited fields), **Drop** (record → null).
+ipa — because the record is self-contained. Actions produce a patch on the
+record's immutable anchor: **Accept** (persisted `op:accept`, reviewed and shipped),
+**Save edit** (the edited fields), **Drop** (`op:drop`, removes the record).
 
 The filtered list is a materialised working set: a just-reviewed row stays in place
 showing its new content and stamp (it does not vanish), and the list only re-syncs —

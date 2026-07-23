@@ -21,15 +21,16 @@ xcode-select --install
 brew install hunspell      # Spell checking library (also needed by the web-UI daemon)
 brew install python@3      # For build scripts
 
-# Homebrew installs libhunspell as libhunspell-1.7.dylib. cyhunspell (the
-# Python binding used by the web-UI daemon) hard-codes `-lhunspell`, so
-# add an unversioned symlink so it links. Production Linux hosts don't
-# need this — `apt install libhunspell-dev` already ships libhunspell.so.
+# Homebrew installs libhunspell as libhunspell-1.7.dylib. The `hunspell`
+# (aka pyhunspell) Python binding used by the web-UI daemon links against an
+# unversioned `-lhunspell`, so add an unversioned symlink so it builds.
+# Production Linux hosts don't need this — `apt install libhunspell-dev`
+# already ships libhunspell.so.
 ln -sf "$(brew --prefix hunspell)/lib/libhunspell-1.7.dylib" \
        "$(brew --prefix hunspell)/lib/libhunspell.dylib"
 
-# Install Python dependencies (PyYAML for the build system, cyhunspell for
-# the web-UI backing daemon — see src/site-daemon/README.md).
+# Install Python dependencies (PyYAML for the build system, hunspell/pyhunspell
+# for the web-UI backing daemon — see src/site-daemon/README.md).
 CPPFLAGS="-I$(brew --prefix hunspell)/include/hunspell" \
 LDFLAGS="-L$(brew --prefix hunspell)/lib" \
 pip3 install -r requirements.txt
@@ -59,33 +60,32 @@ init normally. The target is re-runnable and safe to run on an existing tree.
 
 ## Supplement Data Pipeline
 
-Shaw-Spell supplements the core ReadLex dictionary with pronunciation and definition data from three open-source datasources, adding ~29,000 new words.
+Shaw-Spell supplements the core ReadLex dictionary with pronunciation and definition data from several open-source datasources. See [`docs/pipeline-architecture.md`](docs/pipeline-architecture.md) for the full pipeline.
 
 ### Data Sources
 
-| Source | Words | What it provides |
-|--------|-------|-----------------|
-| [ReadLex](https://github.com/shavian-info/readlex) | 77,342 | Core Shavian dictionary (IPA, Shavian, POS, frequency) |
-| [Britfone](https://github.com/JoseLlarena/Britfone) | +764 new | British (SSB) IPA pronunciations |
-| [Open English WordNet](https://github.com/globalwordnet/english-wordnet) | +6,500 new | GB+US IPA, POS, definitions |
-| [Wiktionary](https://kaikki.org/dictionary/English/) | +24,000 new | IPA with dialect labels (RP, GenAm), definitions |
+| Source | What it provides |
+|--------|-----------------|
+| [ReadLex](https://github.com/shavian-info/readlex) | Core Shavian dictionary (IPA, Shavian, POS, frequency) |
+| [Open English WordNet](https://github.com/globalwordnet/english-wordnet) | GB+US IPA, POS, definitions |
+| [Wiktionary](https://kaikki.org/dictionary/English/) | IPA with dialect labels (RP, GenAm), definitions |
+| Curated names / generated | Proper names (shave + CMUdict voters) and shave-generated no-IPA WordNet words |
+
+(Britfone was dropped from the pipeline — marginal value, no POS, r-restoration quality issues. See [`docs/data-files.md`](docs/data-files.md).)
 
 ### Generating Supplements
 
+The supplement build is a single in-memory orchestrator (`build_supplement.py`) that loads
+the sources once and writes `data/supplement-combined-filtered.json`. The shipping
+`data/readlex.json` is then produced by `apply_patches.py` (patch store + supplements →
+`readlex-merged.json`) followed by `apply_frequency_data.py` (→ `readlex.json`).
+
 ```bash
-# Generate all supplements from source data, rescore, and merge
+# Regenerate the supplement pool, re-score, apply editorial patches, build review files
 make supplements-from-source
 
-# Or step by step:
-python3 src/tools/generate_britfone_supplement.py
-python3 src/tools/generate_wordnet_supplement.py
-python3 src/tools/generate_wiktionary_supplement.py
-
-# Re-score confidence with shave consultation (fast, no source re-parsing)
-python3 src/tools/rescore_supplements.py --full-shave
-
-# Merge supplements into data/readlex.json
-python3 src/tools/generate_merged_readlex.py
+# Just bring the shipping readlex.json up to date (runs apply_patches + apply_frequency_data)
+make supplements
 
 # Generate review files for human inspection
 python3 src/tools/generate_review_files.py
@@ -106,26 +106,27 @@ python3 src/tools/generate_review_files.py
 
 ### Confidence Scoring
 
-Each supplement entry has an empirically calibrated confidence percentage:
-
-| Confidence | Meaning |
-|-----------|---------|
-| 97% | IPA conversion + shave morphological tool agree |
-| 95% | Shave rescued from lower confidence |
-| 89% | Clean IPA conversion, shave disagrees (dialect difference) |
-| ≤30% | Known issues (missing r, unknown characters) |
+Each supplement entry carries a `confidence` in the range 0–100, computed by the final
+build stage (`score_confidence_blend.py`) as a clamped weighted sum of voter signals
+(positive weight = trust, negative = red flag). The per-voter contributions are persisted
+on the record under `votes` so a score is explainable. It is an ordering the editor can
+sort/filter on, not a fixed-tier ladder.
 
 ### Dialect Variants
 
-Following ReadLex conventions, the `var` field tags dialect-specific entries:
+The dialect model separates a record's **base accent** (scalar `var`) from the
+**within-accent vowel mergers** its spelling reflects (an additive `mergers` list). See
+[`docs/dialect-mergers.md`](docs/dialect-mergers.md) and [`docs/record-schema.md`](docs/record-schema.md).
 
 | `var` | Meaning |
 |-------|---------|
 | `RRP` | Rhotic Received Pronunciation (canonical, universal default) |
 | `RSSB` | Rhotic Standard Southern British (supplement data) |
 | `GenAm` | General American (exceptions + supplement data) |
-| `TrapBath` | TRAP-BATH unsplit alternative (𐑭→𐑨 in BATH words) |
-| `CotCaught` | Cot-caught merger alternative (𐑪→𐑷 in LOT words) |
+
+Mergers are NOT `var` values — they live in `mergers`, e.g. `["trap-bath"]` (PALM 𐑭→TRAP 𐑨 in
+BATH words). `cot-caught` and `lot-palm` are defined but currently disabled (see `MERGER_ENABLED`
+in `src/tools/dialect_mergers.py`).
 
 ### Regenerating Caches
 
@@ -147,7 +148,6 @@ Shaw-Spell © 2025 joro.io • [MIT License](LICENSE.md)
 Includes:
 - **[ReadLex](https://github.com/shavian-info/readlex)** (Shavian word data) • MIT License
 - **[Open English WordNet 2024](https://github.com/globalwordnet/english-wordnet)** (definitions) • CC BY 4.0
-- **[Britfone](https://github.com/JoseLlarena/Britfone)** (British pronunciations) • MIT License
 - **[Wiktionary](https://en.wiktionary.org/)** (pronunciations, definitions) • CC BY-SA 3.0
 
 See [LICENSE.md](LICENSE.md) for complete details.

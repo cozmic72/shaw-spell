@@ -1,106 +1,41 @@
 # Data Directory
 
-## Editorial Process
+For the full, current reference on every file under `data/` and how they flow
+together, see the canonical docs:
 
-The editorial process reviews all supplement entries before they are merged into `readlex.json`. It produces four files: the editorial-* ones are CSV (LF line endings, minimal quoting — RFC 4180 with Unix newlines), the readlex-reference dump is TSV.
+- [`docs/data-files.md`](../docs/data-files.md) — every key file, who writes it, whether it ships.
+- [`docs/pipeline-architecture.md`](../docs/pipeline-architecture.md) — how the sources become the shipping dictionary.
+- [`docs/editorial-overlay-design.md`](../docs/editorial-overlay-design.md) — the patch-overlay editorial system.
+- [`docs/record-schema.md`](../docs/record-schema.md) / [`docs/dialect-mergers.md`](../docs/dialect-mergers.md) — record fields and the dialect model.
 
-### Files
+## Editorial review (patch overlay)
 
-| File | Purpose | Editable? |
-|------|---------|-----------|
-| `editorial.csv` | Entries needing editorial review | Yes — this is the working file |
-| `editorial-duplicates.csv` | Entries matching ReadLex (word, shaw) | Reference only |
-| `editorial-drops.csv` | Fragments, affixes, other rejects | Recoverable — move rows to editorial.csv if wanted |
-| `readlex-reference.tsv` | All upstream ReadLex entries | Reference only |
+Editorial review is a **patch overlay**, not a CSV workflow. Reviewers work in the
+editor (`src/editor/`), which presents the **basis** — upstream ReadLex plus the
+wordnet/wiktionary/names/generated supplements, computed on demand — and records
+each decision as a patch in **`data/patches/patches.jsonl`**, the only persisted
+editorial artifact (owner-only; the pipeline never writes it).
 
-### Column Reference
+A patch is `{anchor, op, changes, meta}`:
 
-| Column | Description |
-|--------|-------------|
-| `word` | Latin spelling |
-| `pos` | Part of speech (C5 tagset: NN1, VVI, AJ0, NP0, UNC, etc.) |
-| `var` | Pipeline-assigned dialect variant (RSSB, GenAm, RRP, etc.) |
-| `shaw` | Pipeline-generated Shavian spelling |
-| `ipa` | Source IPA pronunciation |
-| `confidence` | Pipeline confidence percentage |
-| `source` | Data source: `wordnet`, `wiktionary`, or `wordnet+wiktionary` for collapsed entries |
-| `status` | Relationship to ReadLex (see below) |
-| `readlex_var` | If this (word, shaw) pair exists in ReadLex, shows ReadLex's var tag(s). Blank if not in ReadLex |
-| `shaw_override` | Editorial: corrected Shavian spelling. Blank = accept pipeline `shaw` |
-| `pos_override` | Editorial: corrected POS tag. Blank = accept pipeline `pos` |
-| `var_override` | Editorial: corrected dialect variant. Blank = accept pipeline `var` |
-| `verdict` | Editorial decision (see below) |
-| `notes` | Auto-generated flags and/or human notes |
+- `anchor` — the reviewed record's immutable natural key `{word, pos, shaw, var}` (`null` = authorship).
+- `op` — `accept` (sanction), `edit` (bare not-yet-reviewed edit), `drop` (remove), or `flag` (production no-op).
+- `changes` — the minimal intrinsic edits laid over the basis record (empty = accept as-is).
+- `meta` — `{author, origin, ts, note?}`.
 
-### Status Values
+The shipping `data/readlex.json` is produced by applying the patch store over the
+basis: `apply_patches.py` (basis + patches → `readlex-merged.json`) followed by
+`apply_frequency_data.py` (→ `readlex.json`).
 
-Set at generation time. Describes the entry's relationship to upstream ReadLex.
+> The older CSV editorial flow (`editorial.csv` with `verdict`/`*_override`
+> columns, merged by `generate_merged_readlex.py`) is **superseded** by this
+> overlay. Any remaining CSV files under `data/` are migration history, not the
+> build path.
 
-| Status | Meaning |
-|--------|---------|
-| `new` | Word does not exist in ReadLex at all |
-| `supplement` | Word exists in ReadLex but this is an alternate spelling/pronunciation |
-| `fragment` | Partial IPA transcription (e.g. `-di` for "Thursday") |
-| `affix` | Affix entry (e.g. `-ity`, `giga-`) |
-| `readlex` | Entry from upstream ReadLex (readlex-reference.tsv only) |
+## Other data files
 
-### Verdict Values
-
-Set during editorial review. Determines what happens to the entry in the final build.
-
-| Verdict | Meaning |
-|---------|---------|
-| *(blank)* | Not yet reviewed |
-| `keep` | Canonical entry — this is the preferred spelling |
-| `supplemental` | Accepted alternative — valid spelling, not the preferred one |
-| `drop` | Reject — do not include |
-| `duplicate` | Matches upstream ReadLex exactly (editorial-duplicates.csv only) |
-
-### Dialect Collapsing
-
-When RSSB and GenAm entries produce the same Shavian spelling for a word, they are collapsed into a single row with `var=RRP` (since the spelling is universal). The `source` field shows the combined sources (e.g. `britfone+wiktionary`).
-
-### Workflow
-
-1. **Generate**: `python3 src/tools/generate_editorial_csv.py` creates/appends to the CSV files
-2. **Review**: Open `editorial.csv` in Numbers (or any IDE / spreadsheet). Filter by `status`, `confidence`, `source`, etc. Fill in `verdict` and any overrides
-3. **Export**: Save back as CSV (UTF-8)
-4. **Build**: `generate_merged_readlex.py` reads the editorial CSV and applies verdicts when merging into `readlex.json`
-
-New entries from updated data sources are appended to the existing editorial.csv, preserving all previous verdicts.
-
-### Override columns
-
-The `shaw_override`, `pos_override`, and `var_override` columns allow correcting pipeline output without modifying the source data. When building the merged readlex:
-
-- If `shaw_override` is non-blank, it replaces `shaw`
-- If `pos_override` is non-blank, it replaces `pos`
-- If `var_override` is non-blank, it replaces `var`
-
-This lets you fix IPA-to-Shavian conversion errors, reassign POS tags, or change dialect assignments on a per-entry basis.
-
-### Recovering drops
-
-The `editorial-drops.csv` file contains fragments and affixes pre-tagged with `verdict=drop`. If any of these are actually useful (e.g. a fragment that captures a valid alternative pronunciation), copy the row into `editorial.csv` and change the verdict.
-
-## Other Data Files
-
-| File | Description |
-|------|-------------|
-| `readlex.json` | Merged ReadLex — the build output used by dictionaries and spell checker |
-| `supplement-wordnet-reliable.json` | WordNet supplement (GB+US IPA, definitions) |
-| `supplement-wiktionary-reliable.json` | Wiktionary supplement (RP, GenAm IPA, definitions) |
-| `supplement-wordnet-filtered.json` | WordNet supplement with duplicate candidates removed (the editorial basis reads this) |
-| `supplement-wiktionary-filtered.json` | Wiktionary supplement with duplicate candidates removed (the editorial basis reads this) |
-| `definitions-*.json` | Transliterated definition caches for dictionary builds |
-
-### Duplicate filtering
-
-`filter_supplement_duplicates.py` produces the `*-filtered.json` views the
-editorial basis reads. A supplement candidate is dropped when an established
-entry (upstream ReadLex plus sanctioned patches) already resolves to the same
-Shavian spelling for the candidate's scope — i.e. a same-word, same-shaw
-established entry whose `(var, pos)` is the same as or broader than the
-candidate's. RRP is the var wildcard (covers every dialect); UNC is the broadest
-POS and NN0 is broader than NN1/NN2; compound `+tags` only self-match. A
-candidate a patch already anchors to is exempt (it has left the review surface).
+The `supplement-*.json` files are the candidate inputs (see `docs/data-files.md`
+for the full list). The editorial basis reads a single combined, filtered pool,
+`supplement-combined-filtered.json` (written by the `build_supplement.py`
+orchestrator); `definitions-*.json` are the transliterated definition caches for
+the dictionary builds.

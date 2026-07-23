@@ -60,8 +60,10 @@ single-stage debugging.
 | 5 | reclassify RRP | `reclassify_rrp` | **=** | relabel RRP-passable candidates' var → RRP |
 | 6 | generate RRP | `generate_rrp` | **=** | mint RRP for IPA-only gaps (propose-alongside); flag-gate |
 | 7 | collapse | `collapse_identical_dialects` | drops | merge identical-spelling dialects (D2) |
-| 8 | decontaminate | `filter_supplement_contamination` | drops | drop IPA-contaminated Shavian |
-| 9 | phrases | `filter_supplement_phrases` | drops | drop non-divergent multi-word candidates |
+| 8 | flag variants | `flag_variants` | = | set the `variant` flag on disfavoured/regional spellings |
+| 9 | decontaminate | `filter_supplement_contamination` | drops | drop IPA-contaminated Shavian |
+| 10 | phrases | `filter_supplement_phrases` | drops | drop non-divergent multi-word candidates |
+| 11 | score confidence | `score_confidence_blend` | = | overwrite `confidence` with the blended voter score (0–100) |
 
 Stages marked **=** are count-preserving by contract; the orchestrator asserts this (fail-loud) so
 a future edit that silently drops/dupes records can't build a wrong basis (commit a257dbb). The
@@ -77,10 +79,11 @@ signal that only exists post-stage-4.
 The IPA-basis path is pure and deterministic. `generate_rrp`'s shave/names path (for no-IPA names)
 is gated behind `ENABLE_SHAVE_NAMES` (default **OFF**; env `SHAW_SPELL_ENABLE_SHAVE_NAMES`) — the
 code is present but dormant, an owner-undecided lane. With the flag off, the generator is
-IPA-basis-only and the whole pipeline is byte-deterministic run-to-run. (shave itself is
-non-deterministic on low-confidence spellings, which is why `-reliable`/`names`/`generated` are
-built as order-only Make targets — rebuilt only when missing, so a checkout can't re-shave and
-orphan the owner's review decisions.)
+IPA-basis-only and the whole pipeline is byte-deterministic run-to-run. (shave itself IS
+deterministic — a re-shave is idempotent, verified run-to-run incl. `--confidence 0` — but
+EXPENSIVE, and the `-reliable`/`names`/`generated` files are the anchor identity for the
+owner's patches, so they are built as order-only Make targets — rebuilt only when missing.
+That guard is a deliberateness/cost measure, not anti-drift.)
 
 ## Invariants
 

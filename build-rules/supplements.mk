@@ -153,6 +153,7 @@ SUPPLEMENT_STEP_MODULES := \
 	$(SRC_TOOLS)/collapse_identical_dialects.py \
 	$(SRC_TOOLS)/filter_supplement_contamination.py \
 	$(SRC_TOOLS)/filter_supplement_phrases.py \
+	$(SRC_TOOLS)/score_confidence_blend.py \
 	$(SRC_TOOLS)/basis.py \
 	$(SRC_TOOLS)/dialect_mergers.py \
 	$(SRC_TOOLS)/rrp_classifier.py \

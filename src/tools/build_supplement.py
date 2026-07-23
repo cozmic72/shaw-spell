@@ -17,7 +17,8 @@ stage to stage, one read at the front and one write at the back.
 THE CHAIN (identical order + behaviour to the old .mk chain):
   combine  -> annotate_definitions -> filter_duplicates -> classify_mergers ->
   reclassify_rrp -> generate_rrp -> collapse_dialects -> flag_variants ->
-  filter_contamination -> filter_phrases -> data/supplement-combined-filtered.json
+  filter_contamination -> filter_phrases -> score_confidence ->
+  data/supplement-combined-filtered.json
 
 Records are the bucketed `{word_pos_shaw: [record, ...]}` dict every stage
 already reads/writes; each pure function takes that dict (+ its threaded deps)
@@ -87,6 +88,7 @@ import collapse_identical_dialects as collapse_mod
 import flag_variants as variant_mod
 import filter_supplement_contamination as contam_mod
 import filter_supplement_phrases as phrase_mod
+import score_confidence_blend as score_mod
 from detect_phrase_divergence import build_label_classifier
 
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-filtered.json"
@@ -103,6 +105,7 @@ DUMP_NAMES = {
     "collapsed": "supplement-combined-collapsed.json",
     "varflagged": "supplement-combined-varflagged.json",
     "decontaminated": "supplement-combined-decontaminated.json",
+    "phrased": "supplement-combined-phrased.json",
     "filtered": "supplement-combined-filtered.json",
 }
 
@@ -237,6 +240,20 @@ def build_supplement(shave_fn=None, enable_shave=None):
     # 10. phrase prune
     supplement, _dropped = phrase_mod.prune_supplement(
         supplement, label_of, exempt_keys, [], [])
+    yield "phrased", supplement
+
+    # 11. blended confidence score (FINAL stage). Slotted last so every field a
+    #     voter reads (source, rrp_*, shaw_source, ipa, has_definition, and the
+    #     survivors of the contamination/phrase prunes) is fully populated.
+    #     Count-preserving: only OVERWRITES confidence + ADDS the votes dict.
+    n_in = count(supplement)
+    supplement = score_mod.score_supplement(supplement)
+    n_out = count(supplement)
+    if n_out != n_in:
+        raise SystemExit(
+            f"score_confidence: record count changed ({n_in} -> {n_out}); this "
+            f"stage only rewrites confidence + adds votes — it never drops or "
+            f"splits a record, so a count change is a bug")
     yield "filtered", supplement
 
 

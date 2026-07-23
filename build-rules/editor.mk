@@ -97,7 +97,7 @@ install-editor: $(VK_EDITOR_STAMP)
 	SRC_EDITOR="$(SRC_EDITOR)"; SITE="$(SRC_EDITOR)/site"; \
 	for f in "$$SITE/editor.cgi" "$$SITE/editor.js" "$$SITE/editor.css" \
 	         "$$SRC_EDITOR/authstore.py" \
-	         "$$SITE/virtual-keyboard-modal.js" \
+	         "$(SRC_SITE)/js/virtual-keyboard-modal.js" \
 	         "$$SITE/virtual-keyboard/virtual-keyboard.js" \
 	         "$$SRC_EDITOR/shaw-spell-editord.service" \
 	         "$(SRC_TOOLS)/basis.py" \
@@ -142,7 +142,7 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo install -m 644 "$$SITE/editor.js"    "$(WWW_ROOT_EDITOR)/editor.js"; \
 	sudo install -m 644 "$$SITE/editor.css"   "$(WWW_ROOT_EDITOR)/editor.css"; \
 	sudo install -m 644 "$(SRC_FONTS)"/*.woff2 "$(WWW_ROOT_EDITOR)/fonts/"; \
-	sudo install -m 644 "$$SITE/virtual-keyboard-modal.js" "$(WWW_ROOT_EDITOR)/virtual-keyboard-modal.js"; \
+	sudo install -m 644 "$(SRC_SITE)/js/virtual-keyboard-modal.js" "$(WWW_ROOT_EDITOR)/virtual-keyboard-modal.js"; \
 	sudo rm -rf "$(WWW_ROOT_EDITOR)/virtual-keyboard"; \
 	sudo cp -R "$$SITE/virtual-keyboard" "$(WWW_ROOT_EDITOR)/virtual-keyboard"; \
 	echo "==> systemd unit -> /etc/systemd/system/shaw-spell-editord.service"; \

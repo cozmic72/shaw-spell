@@ -67,8 +67,12 @@ def batch_transliterate_to_shavian(texts, dialect='gb'):
     if not texts:
         return []
 
-    # Choose readlex flag based on dialect
-    readlex_flag = '--readlex-british' if dialect == 'gb' else '--readlex-american'
+    # Dialect on shave's OWN shipped dictionary (-b/-a, no file arg). Definitions
+    # are transliterated by shave as a PRISTINE external source — never fed our
+    # own readlex/corrections (no --dict, no --readlex-*), or the transliterator
+    # becomes an echo chamber of our decisions. (The old --readlex-british flag
+    # never existed; shave silently ignored it and used its default anyway.)
+    readlex_flag = '-b' if dialect == 'gb' else '-a'
 
     print(f"Transliterating {len(texts)} texts to Shavian ({dialect.upper()})...")
     print("Preparing HTML document...")

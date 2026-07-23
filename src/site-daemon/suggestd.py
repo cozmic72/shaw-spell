@@ -39,6 +39,7 @@ import os
 import signal
 import socketserver
 import sys
+import threading
 from pathlib import Path
 
 import hunspell  # pyhunspell — https://pypi.org/project/hunspell/ — exposes HunSpell(dic_path, aff_path)
@@ -276,9 +277,19 @@ def main():
     os.chmod(socket_path, int(args.socket_mode, 8))
     logging.info('listening on %s', socket_path)
 
+    # server.shutdown() BLOCKS until serve_forever() returns and MUST run on a
+    # different thread than the one running serve_forever() (stdlib docs). The
+    # signal handler fires on the MAIN thread — the same thread serving — so
+    # calling shutdown() inline deadlocks; systemd then SIGKILLs after timeout.
+    # Spawn it off-thread; a flag makes a repeat signal a no-op.
+    shutting_down = threading.Event()
+
     def _shutdown(signum, _frame):
         logging.info('signal %d — shutting down', signum)
-        server.shutdown()
+        if shutting_down.is_set():
+            return
+        shutting_down.set()
+        threading.Thread(target=server.shutdown, daemon=True).start()
 
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)

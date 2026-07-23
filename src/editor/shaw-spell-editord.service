@@ -10,9 +10,13 @@ Type=simple
 User=www-data
 Group=www-data
 
-# /run/shaw-spell is auto-created for the socket.
+# /run/shaw-spell is auto-created for the socket. It is SHARED with the suggest
+# daemon (shaw-spell-suggestd), which puts its own socket here. Preserve the dir
+# when THIS unit stops, or systemd's default (RuntimeDirectoryPreserve=no) would
+# delete /run/shaw-spell and destroy suggestd's live socket too (→ Errno 2).
 RuntimeDirectory=shaw-spell
 RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
 
 # Mutable state lives under /var/lib (NOT /opt code): the daemon writes both
 # patch stores there. The auth DB lives under /var/lib too, but only the CGI

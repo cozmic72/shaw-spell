@@ -57,6 +57,7 @@ $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
                          $(VK_SITE_STAMP) \
                          $(shell find $(SRC_SITE) -type f 2>/dev/null) \
                          $(shell find $(SRC_SITE_DAEMON) -type f 2>/dev/null) \
+                         $(SRC_SITE_DAEMON)/install.sh.template \
                          $(HUNSPELL_FILES) \
                          Makefile \
                          $(wildcard $(SRC_FONTS)/*)
@@ -84,29 +85,10 @@ site-tarball:
 	@$(MAKE) site
 	@echo "Creating deployable site tarball..."
 	@cd build && tar czf shaw-spell-site-$(VERSION).tar.gz site/
-	@echo "✓ Tarball created: build/shaw-spell-site-$(VERSION).tar.gz"
-	@echo ""
-	@echo "To deploy on Linux:"
-	@echo "  1. Extract: tar xzf shaw-spell-site-$(VERSION).tar.gz"
-	@echo "  2. Configure web server to serve site/ with CGI support (index.cgi)"
-	@echo "  3. Install the backing daemon (see site/site-daemon/README.md):"
-	@echo "       sudo apt install libhunspell-dev"
-	@echo "       sudo pip3 install hunspell"
-	@echo "       sudo mkdir -p /opt/shaw-spell"
-	@echo "       sudo cp -r site/site-daemon /opt/shaw-spell/"
-	@echo "       sudo cp -r site/hunspell    /opt/shaw-spell/"
-	@echo "       sudo cp -r site/site-data   /opt/shaw-spell/"
-	@echo "       sudo cp /opt/shaw-spell/site-daemon/shaw-spell-suggestd.service \\"
-	@echo "               /etc/systemd/system/"
-	@echo "       sudo systemctl daemon-reload"
-	@echo "       sudo systemctl enable --now shaw-spell-suggestd"
-	@echo ""
-	@echo "  The CGI talks to the daemon over /run/shaw-spell/suggestd.sock."
-	@echo "  If the daemon is down, the site will return errors."
-	@echo ""
-	@echo "Configuration:"
-	@echo "  Font URL: $(FONT_URL)"
-	@echo "  Version:  $(VERSION)"
+	@echo "✓ Tarball: build/shaw-spell-site-$(VERSION).tar.gz (v$(VERSION))"
+	@echo "  Deploy: extract, then  sudo ./install.sh  (./install.sh --help for details)."
+	@echo "  It installs the frontend + suggestd daemon and prints any remaining"
+	@echo "  manual steps (hunspell prereq, Apache CGI check)."
 
 clean-site:
 	@echo "Cleaning web frontend artifacts..."

@@ -10,9 +10,13 @@ Type=simple
 User=www-data
 Group=www-data
 
-# /run/shaw-spell is auto-created for the socket.
+# /run/shaw-spell is auto-created for the socket. It is SHARED with the editor
+# daemon (shaw-spell-editord), which puts its own socket here. Preserve the dir
+# when THIS unit stops, or systemd's default (RuntimeDirectoryPreserve=no) would
+# delete /run/shaw-spell and destroy the editor's live socket too (→ Errno 2).
 RuntimeDirectory=shaw-spell
 RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
 
 ExecStart=/usr/bin/python3 /opt/shaw-spell/site-daemon/suggestd.py \
     --socket /run/shaw-spell/suggestd.sock \

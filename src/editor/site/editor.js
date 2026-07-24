@@ -22,6 +22,30 @@ const AUTHOR = "editor";
 // in one go, without a corpus-wide bulk op.
 const PAGE_LIMIT = 500;
 const ACCEPTED_STATUS = "sanctioned";
+
+// The daemon's patch_state vocabulary — the review-state a record carries, read
+// off record.patch_state (and the Review filter's facet values). A closed set;
+// the client compares against it in switches and guards, so it must track the
+// daemon's constants exactly. Single source of truth on the Python side:
+// src/editor/overlay.py (PATCH_STATE_*). A rename there MUST be mirrored here.
+const PATCH_STATE = {
+    UNREVIEWED: "unreviewed",
+    ACCEPTED: "accepted",
+    EDITED: "edited",
+    DROPPED: "dropped",
+    FLAGGED: "flagged",
+    AUTHORED: "authored",
+    ORPHANED: "orphaned",
+};
+
+// The daemon's orphan_kind vocabulary — WHY an orphaned patch stranded, read off
+// record.orphan_kind. Single source of truth on the Python side:
+// src/editor/overlay.py (ORPHAN_LOST_ACCEPT / ORPHAN_RESURFACED_DROP). Keep in sync.
+const ORPHAN_KIND = {
+    LOST_ACCEPT: "lost-accept",
+    RESURFACED_DROP: "resurfaced-drop",
+};
+
 const SESSION_KEY = "shaw-spell.editor.session";
 // Detail-panel sub-section expansion prefs. Persisted apart from SESSION_KEY (which
 // carries query/selection state) so the owner's "keep related at a glance" choice
@@ -137,13 +161,13 @@ const NOVELTY_LABELS = new Map([
 // kind for the palette (resurfaced-drop reads as a warning). Shown only on `orphaned`
 // rows, beside the state badge.
 const ORPHAN_KIND_TAGS = new Map([
-    ["lost-accept", {
+    [ORPHAN_KIND.LOST_ACCEPT, {
         label: "accept-orphan",
         title: "a sanction whose record vanished upstream — re-anchor or clear it",
         reason: "A sanction whose record vanished upstream.",
         action: "Re-anchor it to the current record, or clear the patch.",
     }],
-    ["resurfaced-drop", {
+    [ORPHAN_KIND.RESURFACED_DROP, {
         label: "drop — resurfaced",
         title: "a drop the basis evaded: the same word+pos+shaw is back under a different var, so the suppressed record returned — re-suppress it",
         reason: "A drop the basis evaded: the same word + pos + shaw returned under a different var, so the suppressed record is back.",
@@ -760,7 +784,7 @@ function ledgerRow(record, index) {
     // in the list. The wide DROP·RESURFACED / ACCEPT·ORPHAN badge is NOT crammed into
     // the narrow state column any more (it overflowed onto the word); it lives in the
     // detail panel, where there is room. Here the hue alone carries the distinction.
-    if (record.patch_state === "orphaned" && record.orphan_kind) {
+    if (record.patch_state === PATCH_STATE.ORPHANED && record.orphan_kind) {
         row.classList.add(`orphan-${record.orphan_kind}`);
     }
     row.dataset.index = String(index);
@@ -2398,19 +2422,19 @@ function relatedSource(record) {
 // badge reuses the ledger palette; `glyph` is the non-colour channel.
 function relatedProvenance(record) {
     switch (record.patch_state) {
-        case "authored":
+        case PATCH_STATE.AUTHORED:
             return { state: "authored", glyph: "✎", label: "manual" };
-        case "dropped":
+        case PATCH_STATE.DROPPED:
             return { state: "dropped", glyph: "✕", label: "dropped" };
-        case "flagged":
+        case PATCH_STATE.FLAGGED:
             return { state: "flagged", glyph: "⚑", label: "flagged" };
-        case "orphaned":
-            return record.orphan_kind === "resurfaced-drop"
+        case PATCH_STATE.ORPHANED:
+            return record.orphan_kind === ORPHAN_KIND.RESURFACED_DROP
                 ? { state: "dropped", glyph: "⚠", label: "drop — resurfaced" }
                 : { state: "orphaned", glyph: "⚠", label: "accept-orphan" };
-        case "accepted":
+        case PATCH_STATE.ACCEPTED:
             return { state: "accepted", glyph: "✓", label: "sanctioned" };
-        case "edited":
+        case PATCH_STATE.EDITED:
             return {
                 state: "edited",
                 glyph: "✓",
@@ -2443,7 +2467,7 @@ const STATE_LABELS = { authored: "manual" };
 function orphanKindBadge(record) {
     const wrap = document.createElement("span");
     wrap.className = "orphan-kind-badges";
-    if (record.patch_state !== "orphaned") {
+    if (record.patch_state !== PATCH_STATE.ORPHANED) {
         return wrap;
     }
     const tag = ORPHAN_KIND_TAGS.get(record.orphan_kind);
@@ -2462,7 +2486,7 @@ function orphanKindBadge(record) {
 // and action out in words rather than hiding them in a tooltip. Non-orphan records, or
 // an orphan of an unrecognised kind, render nothing.
 function orphanReasonNote(record) {
-    if (record.patch_state !== "orphaned") {
+    if (record.patch_state !== PATCH_STATE.ORPHANED) {
         return null;
     }
     const tag = ORPHAN_KIND_TAGS.get(record.orphan_kind);
@@ -2719,7 +2743,7 @@ function actionBar(ctx, record) {
         actionButton("clear", "Clear", clearSelected),
         cloneButton(record),
     );
-    if (record.patch_state === "flagged") {
+    if (record.patch_state === PATCH_STATE.FLAGGED) {
         bar.append(actionButton("unflag", "Unflag", unflagSelected));
     }
     if (ctx.scope !== "modal" && session.undoStack.length) {
@@ -2884,7 +2908,7 @@ function requireShaw(record) {
 // patch in place (anchor stays null), not write an anchored patch that would
 // resolve to nothing and orphan the decision (failing the build).
 function isAuthored(record) {
-    return record.patch_state === "authored";
+    return record.patch_state === PATCH_STATE.AUTHORED;
 }
 
 // ---- create modal (authorship from scratch or cloned across a dialect) ----
@@ -3355,7 +3379,7 @@ async function flagOne(selected, { step = true, toast = true, refocus = true } =
 // explicit "actually, back to the pool" on a flagged row.
 async function unflagSelected() {
     const selected = activeContext()?.record;
-    if (!selected || selected.patch_state !== "flagged") {
+    if (!selected || selected.patch_state !== PATCH_STATE.FLAGGED) {
         return;
     }
     await single(() => unpatch(anchorOf(selected), "unflagged", { step: false }));
@@ -3390,7 +3414,7 @@ async function clearOne(selected, options = {}) {
     if (!selected.reviewed) {
         return BULK_SKIPPED;
     }
-    if (selected.patch_state === "authored") {
+    if (selected.patch_state === PATCH_STATE.AUTHORED) {
         if (!selected.patch_id) {
             throw new Error(`${selected.word}: authored entry has no patch id.`);
         }
@@ -3996,11 +4020,11 @@ function refreshPacing() {
 // when the active Review filter is exactly "unreviewed".
 function countUnreviewedRemaining() {
     const review = state.filters.review;
-    if (!Array.isArray(review) || review.length !== 1 || review[0] !== "unreviewed") {
+    if (!Array.isArray(review) || review.length !== 1 || review[0] !== PATCH_STATE.UNREVIEWED) {
         return null;
     }
     const decidedInSet = state.records.filter(
-        (r) => r.reviewed && r.patch_state !== "flagged",
+        (r) => r.reviewed && r.patch_state !== PATCH_STATE.FLAGGED,
     ).length;
     return Math.max(0, state.total - decidedInSet);
 }

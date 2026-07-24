@@ -91,8 +91,13 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
 	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE))"; \
 	if [ -e "$(DATA_DIR)/.git" ]; then \
-	  echo "    already a clone — fetching (working tree + patches preserved, no reset)"; \
+	  echo "    already a clone — fetching + fast-forwarding (working tree + patches preserved, no reset)"; \
 	  git -C "$(DATA_DIR)" -c protocol.file.allow=always fetch --prune origin; \
+	  DATA_UPSTREAM="$$(git -C "$(DATA_DIR)" rev-parse --abbrev-ref --symbolic-full-name '@{u}')"; \
+	  git -C "$(DATA_DIR)" merge --ff-only "$$DATA_UPSTREAM" || { \
+	    echo "install-editor: data clone has local commits that aren't on $$DATA_UPSTREAM;" >&2; \
+	    echo "  fast-forward refused. The daemon's patches need pushing/merging before this" >&2; \
+	    echo "  clone can advance — resolve manually in $(DATA_DIR), then re-run." >&2; exit 1; }; \
 	else \
 	  [ -e "$(DATA_DIR)" ] && { \
 	    echo "install-editor: $(DATA_DIR) exists but is not a git clone — refusing" >&2; \

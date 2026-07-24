@@ -362,56 +362,71 @@ def matches(record, query, established):
     return True
 
 
-# A categorical facet matches under its mode (ANY = one selected value matches;
-# ALL = every selected value matches). The numeric facets stay scalar. word/shaw
-# are handled by QueryFilters' pre-compiled predicates, not here.
+# The scalar (non-categorical) facets: word/shaw are handled by QueryFilters'
+# pre-compiled predicates, not here; these three carry a bare scalar value rather
+# than a {values, mode} facet, so they dispatch before the categorical table.
+def _confidence_min(record, value):
+    conf = record.get("confidence")
+    return conf is not None and conf >= value
+
+
+def _confidence_max(record, value):
+    conf = record.get("confidence")
+    return conf is not None and conf <= value
+
+
+def _patch_days(record, value):
+    # A SCALAR "days back" filter: the record's patch was made within the last N
+    # days. A record with no patch (no patch_ts — an unreviewed/basis row) is
+    # excluded, like a numeric sort excludes records missing the value.
+    return _within_days(record.get("patch_ts"), value)
+
+
+SCALAR_MATCHERS = {
+    "confidence_min": _confidence_min,
+    "confidence_max": _confidence_max,
+    "patch_days": _patch_days,
+}
+
+
+# The categorical facets: each maps to a per-value predicate that _combine folds
+# under the facet's mode (ANY = one selected value matches; ALL = every selected
+# value matches). The scalar facets above stay outside this table.
+#   patch_author  the record's patch author (meta.author) is one of those
+#                 selected. A record with no patch carries no patch_author and
+#                 matches no value. Scalar per record — ALL with >1 matches nothing.
+#   pos/var       one relevant value per record: ANY = the record's value is one of
+#                 those selected; ALL with >1 value matches nothing.
+#   source        a LIST (the atomic origins that attested the anchor). A record
+#                 matches a selected atomic source when that origin is in its
+#                 source-set; ANY = the sets intersect, ALL = the record's set is a
+#                 SUPERSET of the selected origins (multi-source agreement). This
+#                 replaces the former exact-combo equality: selecting "wiktionary"
+#                 now catches every anchor carrying wiktionary, alone or in a combo.
+CATEGORICAL_MATCHERS = {
+    "patch_author": lambda record, v, established: record.get("patch_author") == v,
+    "pos": lambda record, v, established: record.get("pos") == v,
+    "var": lambda record, v, established: record.get("var") == v,
+    "source": lambda record, v, established: v in set(record.get("source", ())),
+    "attributes": lambda record, v, established: _matches_attribute(record, v),
+    "mergers": lambda record, v, established: _matches_merger(record, v),
+    "variant": lambda record, v, established: _matches_variant(record, v),
+    "review": lambda record, v, established: _matches_review(record, v),
+    "data": lambda record, v, established: _matches_data(record, v),
+    "word_kind": lambda record, v, established: _matches_word_kind(record, v),
+    "novelty": lambda record, v, established: _matches_novelty(record, v, established),
+}
+
+
 def _field_matches(record, key, value, established):
-    if key == "confidence_min":
-        conf = record.get("confidence")
-        return conf is not None and conf >= value
-    if key == "confidence_max":
-        conf = record.get("confidence")
-        return conf is not None and conf <= value
-    if key == "patch_days":
-        # A SCALAR "days back" filter: the record's patch was made within the last
-        # N days. A record with no patch (no patch_ts — an unreviewed/basis row) is
-        # excluded, like a numeric sort excludes records missing the value.
-        return _within_days(record.get("patch_ts"), value)
+    scalar = SCALAR_MATCHERS.get(key)
+    if scalar is not None:
+        return scalar(record, value)
     values, mode = _categorical_values_mode(key, value)
-    if key == "patch_author":
-        # The author facet: the record's patch author (meta.author) is one of those
-        # selected. A record with no patch carries no patch_author and matches no
-        # author value. Scalar (one author per record) — ALL with >1 matches nothing.
-        return _combine(values, mode, lambda v: record.get("patch_author") == v)
-    if key in ("pos", "var"):
-        # Scalar facets carry one relevant value per record: ANY = the record's
-        # value is one of those selected; ALL with >1 value matches nothing.
-        return _combine(values, mode, lambda v: record.get(key) == v)
-    if key == "source":
-        # source is a LIST (the atomic origins that attested the anchor). A record
-        # matches a selected atomic source when that origin is in its source-set;
-        # ANY = the sets intersect, ALL = the record's set is a SUPERSET of the
-        # selected origins (multi-source agreement). This replaces the former
-        # exact-combo equality: selecting "wiktionary" now catches every anchor
-        # carrying wiktionary, alone or in a combo.
-        origins = set(record.get("source", ()))
-        return _combine(values, mode, lambda v: v in origins)
-    if key == "attributes":
-        return _combine(values, mode, lambda v: _matches_attribute(record, v))
-    if key == "mergers":
-        return _combine(values, mode, lambda v: _matches_merger(record, v))
-    if key == "variant":
-        return _combine(values, mode, lambda v: _matches_variant(record, v))
-    if key == "review":
-        return _combine(values, mode, lambda v: _matches_review(record, v))
-    if key == "data":
-        return _combine(values, mode, lambda v: _matches_data(record, v))
-    if key == "word_kind":
-        return _combine(values, mode, lambda v: _matches_word_kind(record, v))
-    if key == "novelty":
-        return _combine(values, mode,
-                        lambda v: _matches_novelty(record, v, established))
-    raise ValueError(f"unknown filter: {key}")
+    matcher = CATEGORICAL_MATCHERS.get(key)
+    if matcher is None:
+        raise ValueError(f"unknown filter: {key}")
+    return _combine(values, mode, lambda v: matcher(record, v, established))
 
 
 # AXIS 1 — process status. The Review facet is the review-lifecycle filter: the
@@ -1010,30 +1025,9 @@ def handle_patch(state, request):
         return _reauthor(state, record, _meta(author, request.get("note")), replaces)
 
     meta = _meta(author, request.get("note"))
-
-    # Authorship (anchor null, record supplied): the record is self-contained, so
-    # `changes` IS the whole record and there is no op to resolve.
-    if anchor is None:
-        patch = make_patch(None, None, record, meta)
-        key = anchor_key(record)
-    else:
-        # An accept/drop must anchor to a record that exists in the basis right
-        # now. Writing an anchor that resolves to nothing would create an orphan
-        # the build later fails on; reject it here where the actor can fix it.
-        basis = state.view.basis_record(anchor_key(anchor))
-        if basis is None:
-            return {"error": f"anchor resolves to no basis record: {anchor}"}
-        if record is None:
-            patch = make_patch(anchor, OP_DROP, {}, meta)
-        else:
-            changes = _compute_changes(record, basis)
-            # A bare edit persisted on navigate (autoSaveMainEdit) sends
-            # dirty=true -> op="edit" (DIRTY: edited, not reviewed, not shipped).
-            # Explicit Accept omits it -> op="accept" (reviewed, shipped, carrying
-            # any accumulated edits). Acceptance is the ONLY thing that reviews.
-            op = OP_EDIT if request.get("dirty") else OP_ACCEPT
-            patch = make_patch(anchor, op, changes, meta)
-        key = anchor_key(anchor)
+    patch, key, error = _build_patch(state, anchor, record, meta, request.get("dirty"))
+    if error:
+        return {"error": error}
 
     # Enforce the one-canonical-per-(word,pos,var) invariant on any canonical
     # accept (authorship or anchored). A drop, a DIRTY edit (op="edit" ships
@@ -1050,6 +1044,34 @@ def handle_patch(state, request):
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)
     return _write_result(state, key, result, patch["id"])
+
+
+def _build_patch(state, anchor, record, meta, dirty):
+    """Construct the (patch, key) an accept/drop/authorship persists. Returns
+    (patch, key, None) on success, or (None, None, error) when the anchor
+    resolves to no basis record. `dirty` selects op=edit vs op=accept for an
+    anchored change."""
+    # Authorship (anchor null, record supplied): the record is self-contained, so
+    # `changes` IS the whole record and there is no op to resolve.
+    if anchor is None:
+        return make_patch(None, None, record, meta), anchor_key(record), None
+    # An accept/drop must anchor to a record that exists in the basis right now.
+    # Writing an anchor that resolves to nothing would create an orphan the build
+    # later fails on; reject it here where the actor can fix it.
+    basis = state.view.basis_record(anchor_key(anchor))
+    if basis is None:
+        return None, None, f"anchor resolves to no basis record: {anchor}"
+    if record is None:
+        patch = make_patch(anchor, OP_DROP, {}, meta)
+    else:
+        changes = _compute_changes(record, basis)
+        # A bare edit persisted on navigate (autoSaveMainEdit) sends
+        # dirty=true -> op="edit" (DIRTY: edited, not reviewed, not shipped).
+        # Explicit Accept omits it -> op="accept" (reviewed, shipped, carrying
+        # any accumulated edits). Acceptance is the ONLY thing that reviews.
+        op = OP_EDIT if dirty else OP_ACCEPT
+        patch = make_patch(anchor, op, changes, meta)
+    return patch, anchor_key(anchor), None
 
 
 def _compute_changes(record, basis):

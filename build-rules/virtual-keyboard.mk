@@ -14,22 +14,14 @@ VK_EDITOR_STAMP := $(VK_EDITOR_DEST)/.stamp
 .PHONY: virtual-keyboard
 virtual-keyboard: $(VK_SITE_STAMP) $(VK_EDITOR_STAMP)
 
-$(VK_SITE_STAMP): $(SHAW_TYPE_SRC)/virtual-keyboard.js
+# Both docroots stage identically: the stamp's own directory ($(@D)) is the
+# dest, so one recipe serves both. Add another docroot by listing its stamp here.
+$(VK_SITE_STAMP) $(VK_EDITOR_STAMP): $(SHAW_TYPE_SRC)/virtual-keyboard.js
 	@test -d $(SHAW_TYPE_SRC) || { \
 		echo "Error: $(SHAW_TYPE_SRC) not found. Run 'git submodule update --init external/shaw-type' first."; \
 		exit 1; \
 	}
-	@mkdir -p $(VK_SITE_DEST)
-	cp -R $(SHAW_TYPE_SRC)/. $(VK_SITE_DEST)/
-	@touch $(VK_SITE_STAMP)
-	@echo "Virtual keyboard assets copied to $(VK_SITE_DEST)/"
-
-$(VK_EDITOR_STAMP): $(SHAW_TYPE_SRC)/virtual-keyboard.js
-	@test -d $(SHAW_TYPE_SRC) || { \
-		echo "Error: $(SHAW_TYPE_SRC) not found. Run 'git submodule update --init external/shaw-type' first."; \
-		exit 1; \
-	}
-	@mkdir -p $(VK_EDITOR_DEST)
-	cp -R $(SHAW_TYPE_SRC)/. $(VK_EDITOR_DEST)/
-	@touch $(VK_EDITOR_STAMP)
-	@echo "Virtual keyboard assets copied to $(VK_EDITOR_DEST)/"
+	@mkdir -p $(@D)
+	cp -R $(SHAW_TYPE_SRC)/. $(@D)/
+	@touch $@
+	@echo "Virtual keyboard assets copied to $(@D)/"

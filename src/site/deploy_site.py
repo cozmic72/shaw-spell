@@ -197,8 +197,8 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
 
     # Copy Hunspell dictionaries. The daemon needs these at runtime; ops
     # installs them under /opt/shaw-spell/hunspell/ (matches the path in
-    # the systemd unit). Ship them inside the tarball so deployment is
-    # a single tar-extract.
+    # the systemd unit). Stage them into build/site so install-site copies
+    # them into place in one pass.
     if hunspell_dir.exists():
         print()
         print("Copying Hunspell dictionaries...")
@@ -213,18 +213,6 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
     else:
         print()
         print(f"Warning: {hunspell_dir} not found — run 'make spellcheck' first")
-
-    # Stage the server-side installer at the tarball root (owner runs
-    # `sudo ./install.sh`). Mirrors deploy_editor.py. Fail fast if missing.
-    print()
-    install_src = site_daemon_src / 'install.sh.template'
-    if not install_src.exists():
-        print(f"Error: installer template missing: {install_src}")
-        return 1
-    install_dest = output_path / 'install.sh'
-    shutil.copy2(install_src, install_dest)
-    os.chmod(install_dest, 0o755)
-    print(f"  ✓ install.sh (executable)")
 
     print()
     print(f"Deployed {stats['html']} HTML files, {stats['css']} CSS files, "
@@ -242,8 +230,8 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
     print(f"To test locally:")
     print(f"  cd {output_path} && python3 -m http.server --cgi 8000")
     print()
-    print("To deploy on the server: extract the tarball, then  sudo ./install.sh")
-    print("  (./install.sh --help for details)")
+    print("To deploy on the server: run  make install-site  (copies this staged")
+    print("  tree into place and enables the suggestd daemon).")
 
     return 0
 

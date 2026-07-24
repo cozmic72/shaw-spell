@@ -122,7 +122,7 @@ def ensure_font(project_root, site_dir):
 
 
 def ensure_keyboard(project_root, site_dir):
-    """deploy_editor stages the shared keyboard wrapper into the docroot; in dev
+    """install-editor stages the shared keyboard wrapper into the docroot; in dev
     the docroot IS the source, so symlink it in for parity. (The widget assets
     dir is already staged under site_dir by `make virtual-keyboard`.)"""
     wrapper_link = site_dir / 'virtual-keyboard-modal.js'

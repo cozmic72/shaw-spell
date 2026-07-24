@@ -46,8 +46,6 @@ BUILD_DMG_FILE := $(BUILD_DMG)/Shaw-Spell-$(VERSION).dmg
 BUILD_SITE := $(BUILD_ROOT)/site
 BUILD_SITE_DATA := $(BUILD_ROOT)/site-data
 
-BUILD_EDITOR := $(BUILD_ROOT)/editor
-
 BUILD_ICONS := $(BUILD_ROOT)/icons
 
 # All build directories that need to be created
@@ -87,7 +85,8 @@ BUILD_DICT_BUNDLE := $(SRC_TOOLS)/build-dictionary-bundle.sh
 FONT_URL ?= /fonts
 export FONT_URL
 
-# Load site deployment configuration if it exists (for site-tarball)
+# Load site deployment configuration if it exists (sets FONT_URL for the
+# site / install-site build; falls back to the /fonts default otherwise).
 -include .site-config
 
 # Load signing configuration if it exists

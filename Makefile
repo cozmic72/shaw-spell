@@ -1,7 +1,9 @@
 # Makefile for Shaw-Spell
 # Provides incremental builds for dictionaries and spell checker
 
-.PHONY: all clean install uninstall help setup spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache site site-tarball clean-site test
+# NOTE: site/install-site/clean-site, install-editor, dictionaries, and the
+# supplement/regenerate targets declare their own .PHONY in build-rules/*.mk.
+.PHONY: all clean install uninstall help setup spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache test
 .PHONY: shavian-english-gb shavian-english-us english-shavian-gb english-shavian-us shavian-shavian-gb shavian-shavian-us
 .DEFAULT_GOAL := help
 
@@ -43,8 +45,13 @@ help:
 	@echo "  uninstaller-app     Build uninstaller app only"
 	@echo "  dmg                 Build DMG (without notarization)"
 	@echo "  spellcheck          Build all Hunspell dictionaries"
-	@echo "  site                Build web dictionary frontend"
-	@echo "  site-tarball        Build deployable tarball for Linux/web servers"
+	@echo "  dictionaries        Build all Dictionary.app bundles (GB & US)"
+	@echo "  site                Stage web dictionary frontend into build/site"
+	@echo ""
+	@echo "Deploy targets (Linux/web server; copy staged tree + git clone):"
+	@echo "  install-site        Deploy staged site + suggestd daemon into place"
+	@echo "  install-editor      Deploy editor (copied code + live data git clone)"
+	@echo "  clean-site          Remove build/site + build/site-data"
 	@echo ""
 	@echo "Supplement targets:"
 	@echo "  supplements         Ensure merged readlex is up to date"
@@ -55,6 +62,8 @@ help:
 	@echo "Cache regeneration (explicit only, commits to git):"
 	@echo "  wordnet-cache       Rebuild comprehensive WordNet cache (~2 min)"
 	@echo "  transliterations    Rebuild Shavian caches (requires shave tool)"
+	@echo "  complete-definitions  Fill definition corpus entries missing vs its"
+	@echo "                      gloss sources (run after WordNet changes; shave)"
 	@echo ""
 	@echo "Cleanup targets:"
 	@echo "  clean               Remove build/ artifacts (preserves data/ caches)"

@@ -2,8 +2,8 @@
 #
 # Builds the shaw-dict.com web dictionary application
 # - Converts XML dictionaries to JSON indexes
-# - Deploys static frontend (HTML, CSS, JS)
-# - Generates deployable tarballs for Linux/web servers
+# - Stages the static frontend (HTML, CSS, JS) into build/site
+# - install-site copies the staged tree into place (web tier + suggestd daemon)
 
 # Note: BUILD_SITE and BUILD_SITE_DATA are defined in common.mk
 
@@ -57,38 +57,110 @@ $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
                          $(VK_SITE_STAMP) \
                          $(shell find $(SRC_SITE) -type f 2>/dev/null) \
                          $(shell find $(SRC_SITE_DAEMON) -type f 2>/dev/null) \
-                         $(SRC_SITE_DAEMON)/install.sh.template \
                          $(HUNSPELL_FILES) \
                          Makefile \
                          $(wildcard $(SRC_FONTS)/*)
 	@echo "Deploying web frontend..."
 	$(RUN) $(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL)
 
-.PHONY: site site-tarball clean-site
+.PHONY: site install-site clean-site
+
+# --- install-site: deploy the staged site from build/site into place ---
+#
+# Installs directly from the staged build tree (build/site, produced by
+# `make site`): $HERE is that tree. Run as the normal user: `make install-site`.
+# Only the privileged commands (writing /var/www, /opt, /etc/systemd, systemctl)
+# escalate via sudo; the build itself never runs as root.
+#
+# This server ALSO hosts the editor (make install-editor). The two share
+# /opt/shaw-spell and the /var/www/shaw-spell docroot, so every removal here is
+# SCOPED to the site's own subdirs — NEVER rm -rf the whole docroot or /opt.
+# Idempotent: safe to re-run to upgrade.
+#
+# Override any path on the command line, e.g.
+#   make install-site WWW_ROOT_SITE=/srv/www/shaw-spell
+WWW_ROOT_SITE ?= /var/www/shaw-spell
+# OPT_ROOT / SERVICE_USER default in editor.mk (shared); redeclare defensively
+# in case site.mk is used without editor.mk.
+OPT_ROOT ?= /opt/shaw-spell
+SERVICE_USER ?= www-data
+
+install-site: site
+	@set -eu; \
+	HERE="$(BUILD_SITE)"; \
+	echo "==> Preflight: verifying staged site tree in $$HERE"; \
+	for d in css js fonts templates virtual-keyboard site-daemon site-data hunspell; do \
+	  [ -d "$$HERE/$$d" ] || { echo "install-site: expected dir missing from build: $$d (run 'make site')" >&2; exit 1; }; \
+	done; \
+	for f in index.cgi .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
+	  [ -f "$$HERE/$$f" ] || { echo "install-site: expected file missing from build: $$f (run 'make site')" >&2; exit 1; }; \
+	done; \
+	echo "==> Installing Shaw-Spell site"; \
+	echo "    web:      $(WWW_ROOT_SITE)"; \
+	echo "    daemon:   $(OPT_ROOT)/{site-daemon,site-data,hunspell}"; \
+	echo; \
+	echo "==> Web tier -> $(WWW_ROOT_SITE)"; \
+	sudo mkdir -p "$(WWW_ROOT_SITE)"; \
+	sudo install -m 755 "$$HERE/index.cgi" "$(WWW_ROOT_SITE)/index.cgi"; \
+	sudo install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
+	[ -f "$$HERE/.version" ] && sudo install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
+	for d in css js fonts templates virtual-keyboard; do \
+	  sudo rm -rf "$(WWW_ROOT_SITE)/$$d"; \
+	  sudo cp -R "$$HERE/$$d" "$(WWW_ROOT_SITE)/$$d"; \
+	done; \
+	echo "==> Daemon + data -> $(OPT_ROOT)"; \
+	sudo mkdir -p "$(OPT_ROOT)"; \
+	for d in site-daemon site-data hunspell; do \
+	  sudo rm -rf "$(OPT_ROOT)/$$d"; \
+	  sudo cp -R "$$HERE/$$d" "$(OPT_ROOT)/$$d"; \
+	done; \
+	sudo install -m 644 "$$HERE/site-daemon/shaw-spell-suggestd.service" \
+	                    /etc/systemd/system/shaw-spell-suggestd.service; \
+	HUNSPELL_OK=1; \
+	if ! python3 -c "import hunspell" 2>/dev/null; then \
+	  HUNSPELL_OK=0; \
+	  echo; \
+	  echo "!! WARNING: python3 cannot 'import hunspell' — the daemon WILL fail to start." >&2; \
+	  echo "!! Install the prerequisite, then re-run (or just restart the unit):" >&2; \
+	  echo "!!     sudo apt install libhunspell-dev" >&2; \
+	  echo "!!     sudo pip3 install hunspell" >&2; \
+	  echo; \
+	fi; \
+	echo "==> systemd daemon-reload + enable"; \
+	sudo systemctl daemon-reload; \
+	if [ "$$HUNSPELL_OK" -eq 1 ]; then \
+	  sudo systemctl enable --now shaw-spell-suggestd; \
+	else \
+	  sudo systemctl enable shaw-spell-suggestd; \
+	  echo "   (enabled but NOT started — install hunspell then: sudo systemctl start shaw-spell-suggestd)"; \
+	fi; \
+	echo; \
+	echo "============================================================"; \
+	echo "Installed:"; \
+	echo "  web tier   -> $(WWW_ROOT_SITE) (index.cgi, css/, js/, fonts/, templates/, virtual-keyboard/)"; \
+	echo "  daemon     -> $(OPT_ROOT)/site-daemon + /etc/systemd/system/shaw-spell-suggestd.service"; \
+	echo "  data       -> $(OPT_ROOT)/{site-data,hunspell}"; \
+	echo "  (the editor's $(WWW_ROOT_SITE)/editor and $(OPT_ROOT)/{src,external,data} are untouched)"; \
+	echo; \
+	echo "The CGI talks to the daemon over /run/shaw-spell/suggestd.sock. If the daemon"; \
+	echo "is down, the site returns errors (no silent fallback)."; \
+	echo; \
+	echo "Remaining MANUAL steps (this target cannot safely do these):"; \
+	echo; \
+	echo "1. Apache must serve $(WWW_ROOT_SITE) with CGI enabled (ExecCGI, .cgi handler,"; \
+	echo "   DirectoryIndex index.cgi). The owner's Apache already does this, so this is"; \
+	echo "   typically a NO-OP — verify with:  curl -sI https://<host>/ | head -1"; \
+	if [ "$$HUNSPELL_OK" -eq 0 ]; then \
+	  echo "2. Install the hunspell python binding (see the WARNING above), then:"; \
+	  echo "     sudo systemctl start shaw-spell-suggestd"; \
+	fi; \
+	echo "============================================================"; \
+	echo "Done."
 
 site: $(BUILD_SITE)/index.cgi
 	@echo "Web dictionary frontend built successfully!"
 	@echo "Location: $(BUILD_SITE)/"
 	@echo "To test: src/tools/test_site.py 8000"
-
-site-tarball:
-	@if [ ! -f .site-config ]; then \
-		echo "Error: .site-config file not found"; \
-		echo ""; \
-		echo "Create .site-config from the example:"; \
-		echo "  cp .site-config.example .site-config"; \
-		echo "  # Edit .site-config with your production FONT_URL"; \
-		echo ""; \
-		exit 1; \
-	fi
-	@echo "Building site with FONT_URL=$(FONT_URL)..."
-	@$(MAKE) site
-	@echo "Creating deployable site tarball..."
-	@cd build && tar czf shaw-spell-site-$(VERSION).tar.gz site/
-	@echo "✓ Tarball: build/shaw-spell-site-$(VERSION).tar.gz (v$(VERSION))"
-	@echo "  Deploy: extract, then  sudo ./install.sh  (./install.sh --help for details)."
-	@echo "  It installs the frontend + suggestd daemon and prints any remaining"
-	@echo "  manual steps (hunspell prereq, Apache CGI check)."
 
 clean-site:
 	@echo "Cleaning web frontend artifacts..."

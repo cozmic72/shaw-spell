@@ -18,9 +18,10 @@ This judges ONLY the supplement candidates, never upstream ReadLex: the
 ring-point/word-joiner acronym markers, variation-selector ligatures, digits and
 hyphens in the shipped dictionary are intentional ReadLex conventions, not
 review candidates — so the core records riding in the pool (basis.is_upstream)
-pass through verbatim, never dropped. A candidate a patch already anchors to has
-left the review surface and is exempt too — dropping it would orphan the patch's
-anchor (apply_patches.py fails loud on that).
+pass through verbatim, never dropped. The filter never reads patches: it is a
+pure function of the pool. If a drop orphans a patch's anchor, apply_patches
+soft-fails downstream (logged, retained, surfaced in the editor's 'orphaned'
+filter).
 
 This is a pruning-chain stage between the identical-dialect collapse and the
 phrase filter over the source-combined pool: combined-collapsed -> HERE
@@ -28,8 +29,7 @@ phrase filter over the source-combined pool: combined-collapsed -> HERE
 output next; records pass through verbatim (only contaminated ones are dropped),
 so each candidate's `mergers` annotation and `source` list survive.
 
-Inputs:  data/supplement-combined-collapsed.json,
-         data/patches/patches.jsonl.
+Inputs:  data/supplement-combined-collapsed.json.
 Outputs: data/supplement-combined-decontaminated.json  — the phrase filter reads
          this next. The combined-collapsed file is left untouched; the dropped
          candidates are regenerable machine output.
@@ -39,10 +39,8 @@ Usage:
 """
 
 import json
-from collections import Counter
 
-from basis import PROJECT_ROOT, anchor_of, is_upstream
-from filter_supplement_duplicates import anchored_keys, load_patches
+from basis import PROJECT_ROOT, is_upstream
 from ipa_to_shavian import contains_non_shavian
 
 # (collapsed input, decontaminated output) — one combined pool.
@@ -57,20 +55,18 @@ def load_json(path):
         return json.load(f)
 
 
-def prune_supplement(supplement, exempt_keys, dropped_samples):
+def prune_supplement(supplement, dropped_samples):
     """A copy of a supplement dict with contaminated candidates removed. A
-    candidate whose `Shaw` contains a non-Shavian character is dropped unless a
-    patch anchors it (it has left the review surface) or it is an upstream
-    ReadLex record (core's acronym/ligature conventions are intentional, and
-    core is never dropped). Returns (pruned, dropped_count)."""
+    candidate whose `Shaw` contains a non-Shavian character is dropped unless
+    it is an upstream ReadLex record (core's acronym/ligature conventions are
+    intentional, and core is never dropped). Returns (pruned, dropped_count)."""
     pruned = {}
     dropped = 0
     for key, entries in supplement.items():
         kept_entries = []
         for entry in entries:
             if (not is_upstream(entry)
-                    and contains_non_shavian(entry["Shaw"])
-                    and anchor_of(entry) not in exempt_keys):
+                    and contains_non_shavian(entry["Shaw"])):
                 dropped += 1
                 if len(dropped_samples) < SAMPLE_LIMIT:
                     dropped_samples.append(entry)
@@ -97,13 +93,11 @@ def report(total_dropped, dropped_samples):
 
 
 def main():
-    exempt_keys = anchored_keys(load_patches())
-
     dropped_samples = []
     total_dropped = 0
 
     supplement = load_json(INPUT_PATH)
-    pruned, dropped = prune_supplement(supplement, exempt_keys, dropped_samples)
+    pruned, dropped = prune_supplement(supplement, dropped_samples)
     total_dropped += dropped
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(pruned, f, ensure_ascii=False, indent=4)

@@ -41,6 +41,15 @@ data/definitions-shavian-us.json: | data/definitions-latin-us.json $(SRC_DICTION
 # split of the historical merged Shavian corpus (src/tools/split_definition_corpus.py).
 # They have no Make recipe: they ARE the source, edited/curated deliberately, not
 # regenerated. A fresh checkout carries them from git.
+#
+# COMPLETING the corpus against its gloss sources is a deliberate, MANUAL act:
+# `make complete-definitions` (below) — never part of the normal build. Run it
+# after the WordNet cache changes (or when a new gloss source lands) to fill any
+# (lemma, synset) glosses missing from the committed corpus; it appends the
+# missing Latin entries AND shave-transliterates just those into the Shavian
+# caches, touching no existing entry (so the owner's definition patches keep
+# their anchors). Idempotent: a second run finds nothing missing. Commit the
+# result to git.
 
 # Phony targets to explicitly regenerate caches
 .PHONY: wordnet-cache transliterations
@@ -64,6 +73,23 @@ transliterations-us:
 
 transliterations: transliterations-gb transliterations-us
 	@echo "✓ All transliteration caches rebuilt from Latin source"
+
+# MANUAL corpus completion (fill-missing-only; see the comment block above).
+.PHONY: complete-definitions complete-definitions-gb complete-definitions-us
+complete-definitions-gb: $(WORDNET_CACHE)
+	@echo "Completing definition corpus (GB) against gloss sources..."
+	$(RUN) $(SRC_TOOLS)/complete_definition_corpus.py --gb
+	@echo "✓ GB definition corpus complete"
+
+complete-definitions-us: $(WORDNET_CACHE)
+	@echo "Completing definition corpus (US) against gloss sources..."
+	$(RUN) $(SRC_TOOLS)/complete_definition_corpus.py --us
+	@echo "✓ US definition corpus complete"
+
+complete-definitions: $(WORDNET_CACHE)
+	@echo "Completing definition corpus (GB & US) against gloss sources..."
+	$(RUN) $(SRC_TOOLS)/complete_definition_corpus.py
+	@echo "✓ Definition corpus complete (GB & US)"
 
 ###########################################
 # XML generation

@@ -27,9 +27,9 @@ and returns the next. File I/O is peeled to the edges of this module only.
 DEPENDENCY EDGES (loaded once, threaded as arguments):
   - the source pools (ReadLex core FIRST — folded into the pool as ordinary
     `upstream` records — then wordnet-reliable, wiktionary-neardot, names)  -> combine
-  - WordNet YAML + Wiktionary JSONL definition key sets                    -> annotate
-  - patches (exempt anchors); the dedup established index derives from the
-    POOL's own upstream records after combine — no separate readlex.json load -> dedup
+  - the definition artifact's headword set (definitions-latin-{gb,us})     -> annotate
+  - the dedup established index derives from the POOL's own upstream records
+    after combine — no separate readlex.json load, never patches             -> dedup
   - REINTERPRETED upstream ReadLex (load_upstream, reference index only)   -> classify, generate
   - the phrase label classifier (citation index over readlex + reliable)   -> phrases
   - shave (Roman->Shavian G2P for no-IPA names, non-deterministic)          -> generate
@@ -52,8 +52,10 @@ build_supplement(enable_shave=True)); off, shave is never invoked and no-ipa
 records pass through verbatim.
 
 FAIL-FAST: any stage raising aborts the whole build (no silent fallbacks).
-patches.jsonl is READ-ONLY here (dedup, contamination, phrases read it; nothing
-writes it). Determinism: every stage is a pure, byte-deterministic function of its
+patches.jsonl is NEVER read here: the pruning stages (dedup, contamination,
+phrases) are pure functions of the pool, so the build is reproducible from
+sources alone; a drop that orphans a patch is handled downstream by
+apply_patches' soft-fail. Determinism: every stage is a pure, byte-deterministic function of its
 input. The only exception is generate's shave/names path — and that is OFF by
 default; when explicitly enabled its low-confidence name proposals can drift
 run-to-run (documented in generate_rrp) and its shave call is injectable so a
@@ -145,14 +147,12 @@ def build_supplement(shave_fn=None, enable_shave=None):
           file=sys.stderr)
     sources_data = combine_mod.load_sources()
 
-    print("Loading upstream ReadLex reference and patches...", file=sys.stderr)
+    print("Loading upstream ReadLex reference...", file=sys.stderr)
     reinterpreted_upstream = load_upstream()
-    patches = dedup_mod.load_patches()
-    exempt_keys = dedup_mod.anchored_keys(patches)
 
-    print("Building definition key sets (WordNet YAML + Wiktionary JSONL)...",
+    print("Indexing the definition artifact (definitions-latin-{gb,us})...",
           file=sys.stderr)
-    wn_keys, wikt_keys = annotate_mod.build_def_keys()
+    def_lemmas = annotate_mod.build_def_lemmas()
 
     print("Building phrase label classifier...", file=sys.stderr)
     label_of = build_label_classifier()
@@ -163,14 +163,14 @@ def build_supplement(shave_fn=None, enable_shave=None):
     yield "combined", supplement
 
     # 2. annotate definitions (mutates in place)
-    supplement = annotate_mod.annotate(supplement, wn_keys, wikt_keys)
+    supplement = annotate_mod.annotate(supplement, def_lemmas)
     yield "defs", supplement
 
     # 3. duplicate filter — the established index derives from the POOL's own
-    #    upstream records (core rides in it since combine; no side-load) + patches
-    established_index = dedup_mod.build_established_index(supplement, patches)
+    #    upstream records (core rides in it since combine; no side-load)
+    established_index = dedup_mod.build_established_index(supplement)
     supplement = dedup_mod.filter_supplement(
-        supplement, established_index, exempt_keys,
+        supplement, established_index,
         Counter(), {r: [] for r in ("exact-var", "rrp-wildcard", "pos-broadening")},
         {kind: [] for kind in dedup_mod.KEPT_CLOSE_KINDS})
     yield "deduped", supplement
@@ -233,13 +233,12 @@ def build_supplement(shave_fn=None, enable_shave=None):
     yield "varflagged", supplement
 
     # 9. contamination prune
-    supplement, _dropped = contam_mod.prune_supplement(
-        supplement, exempt_keys, [])
+    supplement, _dropped = contam_mod.prune_supplement(supplement, [])
     yield "decontaminated", supplement
 
     # 10. phrase prune
     supplement, _dropped = phrase_mod.prune_supplement(
-        supplement, label_of, exempt_keys, [], [])
+        supplement, label_of, [], [])
     yield "phrased", supplement
 
     # 11. blended confidence score (FINAL stage). Slotted last so every field a

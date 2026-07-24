@@ -14,7 +14,8 @@ shave-generates their Shavian, and writes a NEW tracked pipeline source
 
 This is "the names import, but for common vocabulary WordNet couldn't pronounce":
 shave is the Roman->Shavian G2P, WordNet supplies the gloss + POS (attached later
-by annotate_definitions, which matches these headwords against the WordNet YAML).
+by annotate_definitions, which matches these headwords against the definition
+artifact).
 Every record lands as an UNREVIEWED review candidate — NEVER auto-accepted. The
 editor review surface is the sieve; we do NO upstream junk-filtering (fragments,
 abbreviations and short tokens pass through as candidates by design).

@@ -5,9 +5,9 @@ editorial basis.
 
 A supplement candidate is a DUPLICATE — and is removed — when an already
 established entry would resolve to the same Shavian spelling for the candidate's
-scope. "Established" is upstream ReadLex — read off the POOL's own core records
-(collated in at combine under the `readlex` source label; no separate
-readlex.json load) — plus sanctioned patches. An upstream record itself is NEVER
+scope. "Established" is upstream ReadLex ONLY — read off the POOL's own core
+records (collated in at combine under the `readlex` source label; no separate
+readlex.json load). An upstream record itself is NEVER
 a drop candidate: it would match its own scope in the established index and
 self-annihilate, and core must ride the chain untouched (basis.is_upstream).
 Resolution is
@@ -25,9 +25,10 @@ axes.
 A candidate that is BROADER than every same-spelling established entry (e.g.
 candidate UNC over an established NN1) makes a wider claim and is KEPT.
 
-The filter trims only the UNREVIEWED review surface: a candidate a patch already
-anchors to has left that surface, so it is exempt. Removing it would serve no
-purpose and would orphan the patch's anchor (see apply_patches.py).
+The filter never reads patches: it is a pure function of the candidate pool
+(upstream core rides in it). If a drop orphans a patch's anchor, apply_patches
+soft-fails downstream — the orphan is logged, retained and surfaced in the
+editor's 'orphaned' filter.
 
 This is the first pruning pass over the source-combined candidate pool (see
 combine_supplements.py, then definition-annotated by annotate_definitions.py);
@@ -36,7 +37,7 @@ copied verbatim, so each record's `source` list and `has_definition` flag ride
 through untouched.
 
 Inputs:  data/supplement-combined-defs.json (the combined, definition-annotated
-         candidate pool, core included), data/patches/patches.jsonl.
+         candidate pool, core included).
 Outputs: data/supplement-combined-deduped.json  — the merger classifier reads
          this. The combined-defs file is left untouched; the removed candidates
          are regenerable machine output.
@@ -48,7 +49,7 @@ Usage:
 import json
 from collections import Counter
 
-from basis import OP_ACCEPT, PROJECT_ROOT, anchor_key, anchor_of, is_upstream
+from basis import PROJECT_ROOT, anchor_key, is_upstream
 
 PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
 
@@ -98,10 +99,11 @@ def pos_covers(established_pos, candidate_pos):
     return candidate_pos in POS_BROADENS.get(established_pos, ())
 
 
-def build_established_index(pool, patches):
+def build_established_index(pool):
     """(word_lower, shaw) -> list of (var, pos) established scopes, drawn from
-    the POOL's own upstream ReadLex records and accepted patches (no separate
-    readlex.json load — core rides in the pool since combine). Keyed on
+    the POOL's own upstream ReadLex records ONLY (no separate readlex.json
+    load — core rides in the pool since combine; never patches, so the build
+    stays a pure function of its sources). Keyed on
     word+shaw because a candidate is only ever a duplicate of a same-spelling
     established entry; the var/pos comparison is the lattice test done at filter
     time.
@@ -114,12 +116,7 @@ def build_established_index(pool, patches):
     load registered their literal TrapBath/RRPVar vars, which covered nothing;
     excluding them here keeps that behaviour.) A candidate exactly matching such
     a record's full anchor was already merged into it at combine, so nothing is
-    lost.
-
-    An ACCEPT sanctions its anchor; drops and flags establish nothing. The
-    accepted scope is the anchor's (word, shaw, var, pos) with any intrinsic edit
-    in `changes` laid over it — the same overlay the applicator emits, so the
-    filter's notion of "established" matches what ships."""
+    lost."""
     index = {}
 
     def register(word, shaw, var, pos):
@@ -133,16 +130,6 @@ def build_established_index(pool, patches):
                 continue
             register(entry["Latn"], entry["Shaw"], entry.get("var", ""),
                      entry.get("pos", ""))
-
-    for patch in patches:
-        anchor = patch["anchor"]
-        if anchor is None or patch["op"] != OP_ACCEPT:
-            continue
-        changes = patch["changes"]
-        register(changes.get("word", anchor["word"]),
-                 changes.get("shaw", anchor["shaw"]),
-                 changes.get("var", anchor["var"]),
-                 changes.get("pos", anchor["pos"]))
 
     return index
 
@@ -169,6 +156,9 @@ def duplicate_reason(candidate, established_index):
     return None
 
 
+# The pruning chain itself NEVER reads patches (see module docstring). These two
+# helpers remain solely for fix_near_syllable_dots.py, an upstream pre-processor
+# outside the pruning chain.
 def load_patches():
     patches = []
     with open(PATCHES_PATH, "r", encoding="utf-8") as f:
@@ -181,23 +171,22 @@ def load_patches():
 
 def anchored_keys(patches):
     """The natural keys a patch's anchor resolves against — the candidates
-    already under review, exempt from filtering."""
+    already under review."""
     return {anchor_key(patch["anchor"])
             for patch in patches if patch["anchor"] is not None}
 
 
-def filter_supplement(supplement, established_index, exempt_keys, reasons,
+def filter_supplement(supplement, established_index, reasons,
                       removed_samples, kept_close_samples):
     """Return a copy of a supplement dict with duplicate candidates removed,
     tallying reasons and collecting samples for the report. An upstream ReadLex
     record is always kept — it IS the established data and must never be dropped
-    (it would self-annihilate against its own scope in the index) — as is a
-    candidate whose natural key is in exempt_keys (a patch anchors to it)."""
+    (it would self-annihilate against its own scope in the index)."""
     kept = {}
     for key, entries in supplement.items():
         kept_entries = []
         for entry in entries:
-            if is_upstream(entry) or anchor_of(entry) in exempt_keys:
+            if is_upstream(entry):
                 kept_entries.append(entry)
                 continue
             reason = duplicate_reason(entry, established_index)
@@ -262,17 +251,14 @@ def report(total, removed_by_reason, removed_samples, kept_close_samples):
 
 
 def main():
-    patches = load_patches()
-    exempt_keys = anchored_keys(patches)
-
     removed_by_reason = Counter()
     removed_samples = {r: [] for r in ("exact-var", "rrp-wildcard", "pos-broadening")}
     kept_close_samples = {kind: [] for kind in KEPT_CLOSE_KINDS}
 
     supplement = load_json(INPUT_PATH)
-    established_index = build_established_index(supplement, patches)
+    established_index = build_established_index(supplement)
     total = sum(len(entries) for entries in supplement.values())
-    filtered = filter_supplement(supplement, established_index, exempt_keys,
+    filtered = filter_supplement(supplement, established_index,
                                  removed_by_reason, removed_samples,
                                  kept_close_samples)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:

@@ -1,48 +1,38 @@
 #!/usr/bin/env python3
 """
-Annotate each combined supplement record with `has_definition`: a PROVENANCE
-boolean recording whether the upstream source(s) that produced the candidate
-carry a definition for it. Absence of a definition is a real signal (a bare
-pronunciation with no gloss), so the editor surfaces has/no-definition as a pill
-and a filter facet.
+Annotate each combined supplement record with `has_definition`: whether a
+DISPLAYABLE definition exists for the record's word. Absence of a definition is
+a real signal (a bare pronunciation with no gloss), so the editor surfaces
+has/no-definition as a pill and a filter facet.
+
+The predicate tests the shipped definition ARTIFACT itself —
+data/definitions-latin-{gb,us}.json, the committed source of truth the editor
+(editor/definitions.py) and the dictionary export actually display from — NOT
+the upstream WordNet YAML / Wiktionary JSONL. Testing the upstream sources
+over-claimed: a gloss present upstream but absent from the artifact flagged
+has_definition with nothing to show. Artifact membership is drift-proof by
+construction: the flag is true iff an entry exists in what ships.
+(complete_definition_corpus.py is the manual tool that fills the artifact from
+the upstream gloss sources.)
+
+Membership is LEMMA-LEVEL: the artifact is keyed `lemma|synset` and the editor
+looks definitions up by lowercased headword alone (no POS), so the flag matches
+the display exactly. The artifact's own pos tags (WordNet letters, wikt strings)
+are not comparable to the records' C5 tags, and comparing them would only make
+the flag stricter than what is actually shown. Source attestation is likewise
+not consulted: whatever source produced the record, the editor will display the
+artifact's entry for its headword.
 
 This is a SEPARATE annotation pass, NOT a change to the -reliable generators.
-The generators consult the EXPENSIVE `shave` tool and are the anchor identity for
-the owner's patches, so re-running them is avoided (see project_shave_nondeterminism.md
-— shave is deterministic, so a re-shave is idempotent, but it's costly and the
-patch anchors must stay put). This pass only READS the same source files the
-generators read and JOINS `has_definition` onto EXISTING combined records by
-(word, pos) — it re-shaves nothing and touches no anchor field.
-
 It runs directly after combine_supplements.py, on the source-combined pool, so
 the field rides verbatim through the rest of the pruning chain (dedup ->
-classify -> collapse -> decontaminate -> filter) into the editorial basis. Each
-combined record already carries a `source` LIST (the origins that attested its
-anchor, unioned by combine). `has_definition` is the LOGICAL OR over that list:
-true if ANY attesting source has a definition for the record's (word, pos). A
-wordnet-def record and a wiktionary-no-def record that combined onto one anchor
-are has_definition=true. (The one later union point — the identical-dialect
-collapse in collapse_identical_dialects.py — ORs the flag alongside its source
-union, so the OR invariant holds at every merge.)
-
-Definition provenance per source, matching each generator's word/pos keying:
-  - WordNet: generate_wordnet_supplement maps a YAML (word, wn_pos) to a record
-    keyed (word_lower, c5_pos) via POS_MAP. A wn_pos's pos_data lists `sense`s,
-    each pointing at a `synset`; the definition lives in the synset YAML files
-    (adj/adv/noun/verb.*.yaml). So (word_lower, c5_pos) has a definition iff some
-    wn_pos mapping to that c5_pos has a sense whose synset carries a non-empty
-    definition. POS_MAP is many-to-one (a/s -> AJ0), so all contributing wn_pos
-    are OR-ed into the c5_pos bucket.
-  - Wiktionary: generate_wiktionary_supplement maps a kaikki entry's `pos` to a
-    record keyed (word, c5_pos) via its own POS_MAP (defaulting to UNC), skipping
-    affix words (leading/trailing hyphen). A (word, c5_pos) has a definition iff
-    some matching kaikki entry has a sense with a non-empty gloss. The generators'
-    POS_MAP / affix-skip are reused here (imported), not re-implemented, so the
-    matching can never drift from what produced the records.
+classify -> collapse -> decontaminate -> filter) into the editorial basis. (The
+one later union point — the identical-dialect collapse in
+collapse_identical_dialects.py — ORs the flag alongside its source union; a
+word-level predicate is invariant under that merge.)
 
 Inputs:  data/supplement-combined-raw.json (combine output),
-         external/english-wordnet/src/yaml/ (entry + synset YAML),
-         external/wiktionary/kaikki.org-dictionary-English.jsonl.
+         data/definitions-latin-{gb,us}.json (the definition artifact).
 Output:  data/supplement-combined-defs.json — the dedup filter reads this next.
 
 Usage:
@@ -52,35 +42,16 @@ Usage:
 import json
 import sys
 from collections import Counter
-from glob import glob
 from pathlib import Path
-
-import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 from basis import PROJECT_ROOT
-import generate_wordnet_supplement as wordnet_gen
-import generate_wiktionary_supplement as wiktionary_gen
 
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-raw.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-defs.json"
 
-WORDNET_YAML_DIR = PROJECT_ROOT / "external" / "english-wordnet" / "src" / "yaml"
-WIKTIONARY_JSONL = (PROJECT_ROOT / "external" / "wiktionary"
-                    / "kaikki.org-dictionary-English.jsonl")
-
-# The source labels combine_supplements writes onto each record's `source` list.
-SOURCE_WORDNET = "wordnet"
-SOURCE_WIKTIONARY = "wiktionary"
-# The shave-generated slice (supplement-generated) is WordNet's OWN no-IPA
-# output re-spelled by shave — the word/pos still carries the WordNet gloss, so
-# it credits against the WordNet definition keys exactly as the `wordnet` label
-# does. See generate_supplement_speculative.py.
-SOURCE_GENERATED = "generated"
-
-# The synset YAML files carry the WordNet definitions (the entry YAML only points
-# at synset ids). Same globs as build_wordnet_cache.parse_synset_files.
-SYNSET_GLOBS = ("adj.*.yaml", "adv.*.yaml", "noun.*.yaml", "verb.*.yaml")
+LATIN_DEF_PATHS = (PROJECT_ROOT / "data" / "definitions-latin-gb.json",
+                   PROJECT_ROOT / "data" / "definitions-latin-us.json")
 
 
 def load_json(path):
@@ -88,111 +59,32 @@ def load_json(path):
         return json.load(f)
 
 
-def synsets_with_definition():
-    """The set of synset ids carrying a non-empty definition, read from the synset
-    YAML files (adj/adv/noun/verb.*.yaml). The entry YAML only references synsets;
-    the definition text lives here."""
-    defined = set()
-    for pattern in SYNSET_GLOBS:
-        for path in sorted(WORDNET_YAML_DIR.glob(pattern)):
-            data = yaml.safe_load(open(path, encoding="utf-8"))
-            if not data:
-                continue
-            for synset_id, synset_data in data.items():
-                if isinstance(synset_data, dict) and synset_data.get("definition"):
-                    defined.add(synset_id)
-    return defined
+def build_def_lemmas():
+    """The set of lowercased headwords the definition artifact carries an entry
+    for, from both dialect files (their key sets are identical today; the union
+    keeps the flag honest — displayable in SOME dialect — if they ever drift).
+    Keys are `lemma|synset`; fails loud on a malformed key rather than silently
+    mis-indexing (same guard as editor/definitions.py)."""
+    lemmas = set()
+    for path in LATIN_DEF_PATHS:
+        for key in load_json(path):
+            word, sep, _ = key.partition("|")
+            if not sep or not word:
+                raise ValueError(f"{path.name}: malformed definition key {key!r}")
+            lemmas.add(word.lower())
+    return lemmas
 
 
-def wordnet_def_keys():
-    """The set of (word_lower, c5_pos) the WordNet source carries a definition for.
-
-    Walks the entry YAML exactly as generate_wordnet_supplement does — single-word
-    entries, POS_MAP filtering wn_pos to a c5 tag — and marks the key defined iff
-    some contributing wn_pos has a sense whose synset carries a definition. POS_MAP
-    is many-to-one, so several wn_pos may OR into one (word, c5_pos) bucket."""
-    defined_synsets = synsets_with_definition()
-    keys = set()
-    for path in sorted(glob(str(WORDNET_YAML_DIR / "entries-*.yaml"))):
-        data = yaml.safe_load(open(path, encoding="utf-8"))
-        if not data:
-            continue
-        for word, pos_dict in data.items():
-            if not wordnet_gen.is_single_word(word):
-                continue
-            word_lower = word.lower()
-            for wn_pos, pos_data in pos_dict.items():
-                c5_pos = wordnet_gen.POS_MAP.get(wn_pos)
-                if c5_pos is None:
-                    continue
-                senses = pos_data.get("sense") or []
-                if any(isinstance(s, dict) and s.get("synset") in defined_synsets
-                       for s in senses):
-                    keys.add((word_lower, c5_pos))
-    return keys
-
-
-def wiktionary_def_keys():
-    """The set of (word, c5_pos) the Wiktionary source carries a definition for.
-
-    Streams the kaikki JSONL exactly as generate_wiktionary_supplement does —
-    English only, affix words (leading/trailing hyphen) skipped, pos mapped via its
-    POS_MAP (default UNC) — and marks the key defined iff some matching entry has a
-    sense with a non-empty gloss."""
-    keys = set()
-    with open(WIKTIONARY_JSONL, "r", encoding="utf-8") as f:
-        for line in f:
-            try:
-                entry = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if entry.get("lang_code") != "en":
-                continue
-            word = entry.get("word", "")
-            if not word or word.startswith("-") or word.endswith("-"):
-                continue
-            if not any(sense.get("glosses") for sense in entry.get("senses", [])):
-                continue
-            c5_pos = wiktionary_gen.POS_MAP.get(entry.get("pos", ""), "UNC")
-            keys.add((word, c5_pos))
-    return keys
-
-
-def build_def_keys():
-    """Build the (WordNet, Wiktionary) definition key sets from the source YAML/
-    JSONL. The disk-reading edge the annotate pure fn consumes; call once."""
-    wn_keys = wordnet_def_keys()
-    wikt_keys = wiktionary_def_keys()
-    return wn_keys, wikt_keys
-
-
-def annotate(supplement, wn_keys, wikt_keys, tallies=None):
-    """Set `has_definition` on every record: true iff a WORDNET definition exists
-    for the record's (word, pos) AND the record is WordNet-attested.
-
-    WordNet-ONLY, deliberately. The shipped shaw-spell library carries no
-    Wiktionary definitions — build_definition_caches.py builds the production
-    definitions-shavian-{gb,us}.json purely from WordNet synsets, and the editor's
-    display (editor/definitions.py) loads only those same WordNet caches. A record
-    whose ONLY definition lived in Wiktionary would be flagged has_definition with
-    nothing for either the editor or production to show, so the Wiktionary arm is
-    excluded and the flag matches what is actually displayable.
-
-    `from_wordnet` covers both the `wordnet` source and the `generated` slice
-    (WordNet's own no-IPA output re-spelled by shave — it still carries the WordNet
-    gloss and credits against the same wn_keys). `wikt_keys` is kept in the
-    signature but no longer consulted; it stays so the disk-reading caller and any
-    future re-inclusion need not change shape. Mutates records in place; returns
-    the supplement."""
+def annotate(supplement, def_lemmas, tallies=None):
+    """Set `has_definition` on every record: true iff the definition artifact
+    has an entry for the record's lowercased word — exactly what the editor and
+    the shipped dictionaries can display. Mutates records in place; returns the
+    supplement."""
     if tallies is None:
         tallies = Counter()
     for entries in supplement.values():
         for entry in entries:
-            sources = entry.get("source", [])
-            wn_word = entry["Latn"].lower()
-            from_wordnet = (SOURCE_WORDNET in sources
-                            or SOURCE_GENERATED in sources)
-            has_def = from_wordnet and (wn_word, entry["pos"]) in wn_keys
+            has_def = entry["Latn"].lower() in def_lemmas
             entry["has_definition"] = has_def
             tallies["has_definition" if has_def else "no_definition"] += 1
     return supplement
@@ -208,14 +100,11 @@ def main():
     tallies = Counter()
 
     supplement = load_json(INPUT_PATH)
-    print("Building WordNet definition index...")
-    wn_keys = wordnet_def_keys()
-    print(f"  WordNet (word, pos) with definition: {len(wn_keys):,}")
-    print("Building Wiktionary definition index (streaming kaikki)...")
-    wikt_keys = wiktionary_def_keys()
-    print(f"  Wiktionary (word, pos) with definition: {len(wikt_keys):,}")
+    print("Indexing the definition artifact...")
+    def_lemmas = build_def_lemmas()
+    print(f"  artifact headwords with a definition: {len(def_lemmas):,}")
 
-    annotate(supplement, wn_keys, wikt_keys, tallies)
+    annotate(supplement, def_lemmas, tallies)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(supplement, f, ensure_ascii=False, indent=4)
     print(f"\nWrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}: "

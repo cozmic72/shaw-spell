@@ -35,7 +35,6 @@
 ###########################################
 
 WIKTIONARY_JSONL := external/wiktionary/kaikki.org-dictionary-English.jsonl
-WORDNET_YAML := external/english-wordnet/src/yaml
 READLEX_JSON := external/readlex/readlex.json
 
 ###########################################
@@ -178,11 +177,11 @@ data/supplement-generated-ipa.json: | $(SRC_TOOLS)/fill_generated_ipa.py $(SRC_T
 #
 # Prerequisites below are the UNION of everything the composed chain reads: the
 # orchestrator + every step module + the shared helpers (basis, dialect_mergers,
-# rrp_classifier, rrp_generator, ipa_to_shavian, detect_phrase_divergence, the two
-# generator modules whose POS_MAP/synset logic the definition annotator reuses) +
-# the data inputs (the three source pools, upstream ReadLex, the WordNet YAML and
-# Wiktionary JSONL the definition indexes read, and patches — read-only — for the
-# dedup/contamination/phrase anchor-exemption). For debugging, the orchestrator's
+# rrp_classifier, rrp_generator, ipa_to_shavian, detect_phrase_divergence, the
+# wiktionary generator module whose constants the dialect collapse reuses) +
+# the data inputs (the three source pools, upstream ReadLex, the definition
+# artifact the has_definition annotator indexes, and patches — read-only — for
+# the dedup/contamination/phrase anchor-exemption). For debugging, the orchestrator's
 # --dump flag re-emits the old per-stage intermediates, but Make never depends on
 # them: ordering lives in the orchestrator, not the build graph.
 #
@@ -215,7 +214,6 @@ SUPPLEMENT_STEP_MODULES := \
 	$(SRC_TOOLS)/rrp_generator.py \
 	$(SRC_TOOLS)/ipa_to_shavian.py \
 	$(SRC_TOOLS)/detect_phrase_divergence.py \
-	$(SRC_TOOLS)/generate_wordnet_supplement.py \
 	$(SRC_TOOLS)/generate_wiktionary_supplement.py \
 	$(SRC_TOOLS)/g2p_common.py
 
@@ -232,7 +230,7 @@ data/supplement-combined-filtered.json: | $(SUPPLEMENT_STEP_MODULES) \
 		data/supplement-generated-ipa.json \
 		data/g2p-judge-model/model.pt data/g2p-judge-model/meta.json \
 		external/readlex/readlex.json \
-		$(WORDNET_YAML) $(WIKTIONARY_JSONL) \
+		data/definitions-latin-gb.json data/definitions-latin-us.json \
 		data/patches/patches.jsonl
 	@echo "Building supplement pool (in-memory pipeline, one write)..."
 	$(RUN) python3 $(SRC_TOOLS)/build_supplement.py

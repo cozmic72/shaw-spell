@@ -14,9 +14,10 @@ classifies each phrase as:
 
 Only `matches` phrases are dropped; `divergent` and `unknown` stay (an
 unresolvable component is not evidence of redundancy). Single-word candidates
-are outside the phrase classifier's scope and always pass through. A candidate a
-patch already anchors to has left the review surface and is exempt — dropping it
-would orphan the patch's anchor (apply_patches.py fails loud on that).
+are outside the phrase classifier's scope and always pass through. The filter
+never reads patches: it is a pure function of the pool. If a drop orphans a
+patch's anchor, apply_patches soft-fails downstream (logged, retained, surfaced
+in the editor's 'orphaned' filter).
 
 This is the last pass of supplement candidate pruning over the source-combined
 pool, chained after the duplicate filter, the merger classifier, the identical-
@@ -38,14 +39,11 @@ Usage:
 """
 
 import json
-from collections import Counter
-from pathlib import Path
 
-from basis import anchor_of, is_upstream
+from basis import is_upstream
 from detect_phrase_divergence import (
     MATCHES, PROJECT_ROOT, build_label_classifier, is_phrase_record,
 )
-from filter_supplement_duplicates import anchored_keys, load_patches
 
 # (decontaminated input, filtered output) — one combined pool.
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-decontaminated.json"
@@ -64,13 +62,13 @@ def load_json(path):
         return json.load(f)
 
 
-def prune_supplement(supplement, label_of, exempt_keys, dropped_samples,
+def prune_supplement(supplement, label_of, dropped_samples,
                      kept_samples):
     """A copy of a supplement dict with `matches` phrases removed. Single-word
-    candidates and divergent/unknown phrases are kept, as is any candidate a
-    patch anchors to. An upstream ReadLex record passes through unjudged — a
-    core multi-word entry is sanctioned dictionary data, never phrase noise, and
-    core is never dropped. Collects samples and returns (pruned, dropped_count)."""
+    candidates and divergent/unknown phrases are kept. An upstream ReadLex
+    record passes through unjudged — a core multi-word entry is sanctioned
+    dictionary data, never phrase noise, and core is never dropped. Collects
+    samples and returns (pruned, dropped_count)."""
     pruned = {}
     dropped = 0
     for key, entries in supplement.items():
@@ -81,8 +79,7 @@ def prune_supplement(supplement, label_of, exempt_keys, dropped_samples,
                 continue
             label = label_of(entry)
             is_named_entity = entry.get("pos") == PROPER_NOUN
-            if (label == MATCHES and not is_named_entity
-                    and anchor_of(entry) not in exempt_keys):
+            if label == MATCHES and not is_named_entity:
                 dropped += 1
                 if len(dropped_samples) < SAMPLE_LIMIT:
                     dropped_samples.append(entry)
@@ -117,7 +114,6 @@ def report(total_phrases, dropped, dropped_samples, kept_samples):
 
 def main():
     label_of = build_label_classifier()
-    exempt_keys = anchored_keys(load_patches())
 
     dropped_samples = []
     kept_samples = []
@@ -129,7 +125,7 @@ def main():
         1 for entries in supplement.values()
         for entry in entries if is_phrase_record(entry))
     pruned, dropped = prune_supplement(
-        supplement, label_of, exempt_keys, dropped_samples, kept_samples)
+        supplement, label_of, dropped_samples, kept_samples)
     total_dropped += dropped
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(pruned, f, ensure_ascii=False, indent=4)

@@ -128,7 +128,7 @@ data/supplement-wiktionary-rescued.json: | $(SRC_TOOLS)/rescue_proper_nouns.py $
 #
 # COMMITTED checkpoint: ORDER-ONLY prerequisites (see rescued above) — rebuilt
 # only when MISSING, not on incidental mtime churn. rm to re-baseline.
-data/supplement-wiktionary-neardot.json: | $(SRC_TOOLS)/fix_near_syllable_dots.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-rescued.json $(WIKTIONARY_JSONL) data/patches/patches.jsonl
+data/supplement-wiktionary-neardot.json: | $(SRC_TOOLS)/fix_near_syllable_dots.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/generate_wiktionary_supplement.py data/supplement-wiktionary-rescued.json $(WIKTIONARY_JSONL)
 	@echo "Correcting NEAR syllable-dot collapses..."
 	$(RUN) python3 $(SRC_TOOLS)/fix_near_syllable_dots.py
 

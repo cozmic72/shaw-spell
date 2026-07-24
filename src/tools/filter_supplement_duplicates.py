@@ -49,9 +49,7 @@ Usage:
 import json
 from collections import Counter
 
-from basis import PROJECT_ROOT, anchor_key, is_upstream
-
-PATCHES_PATH = PROJECT_ROOT / "data" / "patches" / "patches.jsonl"
+from basis import PROJECT_ROOT, is_upstream
 
 # (combined+annotated input, deduped output) — one combined pool.
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-defs.json"
@@ -154,26 +152,6 @@ def duplicate_reason(candidate, established_index):
             return "pos-broadening"
         return "exact-var"
     return None
-
-
-# The pruning chain itself NEVER reads patches (see module docstring). These two
-# helpers remain solely for fix_near_syllable_dots.py, an upstream pre-processor
-# outside the pruning chain.
-def load_patches():
-    patches = []
-    with open(PATCHES_PATH, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                patches.append(json.loads(line))
-    return patches
-
-
-def anchored_keys(patches):
-    """The natural keys a patch's anchor resolves against — the candidates
-    already under review."""
-    return {anchor_key(patch["anchor"])
-            for patch in patches if patch["anchor"] is not None}
 
 
 def filter_supplement(supplement, established_index, reasons,

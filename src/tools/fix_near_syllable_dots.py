@@ -30,12 +30,9 @@ with ReadLex on some words. Corrected records are therefore capped into the
 needs-review band and tagged with provenance so the owner adjudicates them — the
 UI is the sieve.
 
-Patch-anchored records are exempt (the owner already owns them); they are left
-verbatim for the owner to correct by hand.
-
 Inputs:  data/supplement-wiktionary-rescued.json (the STARTING dict — the rescue
          pass's output), external/wiktionary/kaikki.org-dictionary-English.jsonl
-         (streamed for the dotted sounds), data/patches/patches.jsonl (exemption).
+         (streamed for the dotted sounds).
 Outputs: data/supplement-wiktionary-neardot.json — the rescued set with the
          NEAR-dot records corrected. -rescued.json is left untouched.
 
@@ -48,8 +45,7 @@ import re
 import sys
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT, anchor_of
-from filter_supplement_duplicates import anchored_keys, load_patches
+from basis import PROJECT_ROOT
 from generate_wiktionary_supplement import (
     POS_MAP, VAR_TO_NORM_SOURCE, classify_sound, clean_ipa, make_key,
     strip_ipa_delimiters,
@@ -166,19 +162,15 @@ def select_dot_fix(stored_shaw, dotted_sounds, word, norm_source):
     return None
 
 
-def correct_entry(entry, dotted_index, exempt_keys, stats):
+def correct_entry(entry, dotted_index, stats):
     """Rewrite a NEAR record in place if a matching dotted kaikki sound re-derives
     a Shaw that fixes ONLY the NEAR collapse. Returns True if rewritten.
 
-    Skips records without a NEAR letter, patch-anchored records, records whose
-    (word, pos, dialect) has no dotted sound, and dotted sounds that would change
-    more than the NEAR collapse (a different pronunciation, not this bug)."""
+    Skips records without a NEAR letter, records whose (word, pos, dialect) has no
+    dotted sound, and dotted sounds that would change more than the NEAR collapse
+    (a different pronunciation, not this bug)."""
     shaw = entry.get("Shaw", "")
     if not any(letter in shaw for letter in NEAR_LETTERS):
-        return False
-
-    if anchor_of(entry) in exempt_keys:
-        stats["exempted"] += 1
         return False
 
     word = entry["Latn"]
@@ -212,7 +204,7 @@ def correct_entry(entry, dotted_index, exempt_keys, stats):
     return True
 
 
-def correct_supplement(supplement, dotted_index, exempt_keys, stats):
+def correct_supplement(supplement, dotted_index, stats):
     """Return the supplement dict with NEAR-dot records corrected and re-bucketed.
 
     A corrected Shaw changes the record's word_POS_shaw key, so the whole dict is
@@ -220,7 +212,7 @@ def correct_supplement(supplement, dotted_index, exempt_keys, stats):
     corrected = defaultdict(list)
     for entries in supplement.values():
         for entry in entries:
-            correct_entry(entry, dotted_index, exempt_keys, stats)
+            correct_entry(entry, dotted_index, stats)
             key = make_key(entry["Latn"], entry["pos"], entry["Shaw"])
             bucket = corrected[key]
             if entry not in bucket:
@@ -231,7 +223,6 @@ def correct_supplement(supplement, dotted_index, exempt_keys, stats):
 def report(stats):
     print("\n=== NEAR syllable-dot correction report ===")
     print(f"Corrected (dot re-routed):     {stats['corrected']:,}")
-    print(f"Exempted (patch-anchored):     {stats['exempted']:,}")
     print(f"Skipped (genuine NEAR):        {stats['skipped_genuine_near']:,}")
     print(f"Skipped (no clean dot-only fix): {stats['skipped_no_clean_fix']:,}")
 
@@ -242,11 +233,10 @@ def main():
         sys.exit(1)
 
     rescued = load_json(RESCUED_INPUT)
-    exempt_keys = anchored_keys(load_patches())
     dotted_index = index_dotted_near_sounds(WIKTIONARY_JSONL)
 
     stats = Counter()
-    corrected = correct_supplement(rescued, dotted_index, exempt_keys, stats)
+    corrected = correct_supplement(rescued, dotted_index, stats)
 
     with open(NEARDOT_OUTPUT, "w", encoding="utf-8") as f:
         json.dump(corrected, f, ensure_ascii=False, indent=4)

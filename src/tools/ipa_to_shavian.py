@@ -929,27 +929,18 @@ def classify_shaw_difference(our_shaw: str, readlex_shaw: str) -> str:
 KNOWN_SHAVIAN = set("𐑐𐑚𐑑𐑛𐑒𐑜𐑓𐑝𐑔𐑞𐑕𐑟𐑖𐑠𐑗𐑡𐑥𐑯𐑙𐑤𐑮𐑢𐑣𐑘𐑨𐑧𐑦𐑩𐑪𐑫𐑬𐑭𐑮𐑯𐑰𐑱𐑲𐑳𐑴𐑵𐑶𐑷𐑸𐑹𐑺𐑻𐑼𐑽𐑾𐑿 -.'")
 
 
-def score_confidence(word: str, ipa: str, shaw: str,
-                     ml_shaw: str | None = None) -> tuple[int, list[str]]:
-    """Score conversion confidence as a percentage (0-99) with explanatory notes.
+def detect_penalties(word: str, ipa: str, shaw: str,
+                     ml_shaw: str | None = None) -> tuple[list[str], list[str]]:
+    """Detect the converter's confidence-penalty flags for one conversion.
 
-    Empirically calibrated against ReadLex overlap data:
-      Clean (no flags):              89% accuracy → confidence 89
-      shave+ML consensus override:  ~99% accuracy → confidence 99
-      r_gap + shave agrees:          97% accuracy → confidence 95
-      ML disagrees + shave agrees:   67% accuracy → confidence 65
-      r_gap only:                    30% accuracy → confidence 30
-      ML disagrees only:              5% accuracy → confidence 5
-      missing_r or unknown_chars:     0% accuracy → confidence 1
-
-    Args:
-        word: Latin spelling
-        ipa: Normalized IPA string
-        shaw: Shavian output from converter
-        ml_shaw: Shavian from ML model (None if unavailable)
+    Pure function of (word, ipa, shaw, ml_shaw) — extracted from
+    score_confidence so re-scoring passes can reuse the flag detection
+    without the decision-tree percentage mapping.
 
     Returns:
-        (confidence_pct, notes) where confidence_pct is 0-99
+        (penalties, notes) — penalty flag names, and explanatory note strings
+        (superset: one note per penalty, carrying magnitudes like
+        "r_gap:spelling=2,ipa=1")
     """
     notes = []
     penalties = []
@@ -986,6 +977,33 @@ def score_confidence(word: str, ipa: str, shaw: str,
     if word and word[0].isdigit():
         notes.append("numeral")
         penalties.append("numeral")
+
+    return penalties, notes
+
+
+def score_confidence(word: str, ipa: str, shaw: str,
+                     ml_shaw: str | None = None) -> tuple[int, list[str]]:
+    """Score conversion confidence as a percentage (0-99) with explanatory notes.
+
+    Empirically calibrated against ReadLex overlap data:
+      Clean (no flags):              89% accuracy → confidence 89
+      shave+ML consensus override:  ~99% accuracy → confidence 99
+      r_gap + shave agrees:          97% accuracy → confidence 95
+      ML disagrees + shave agrees:   67% accuracy → confidence 65
+      r_gap only:                    30% accuracy → confidence 30
+      ML disagrees only:              5% accuracy → confidence 5
+      missing_r or unknown_chars:     0% accuracy → confidence 1
+
+    Args:
+        word: Latin spelling
+        ipa: Normalized IPA string
+        shaw: Shavian output from converter
+        ml_shaw: Shavian from ML model (None if unavailable)
+
+    Returns:
+        (confidence_pct, notes) where confidence_pct is 0-99
+    """
+    penalties, notes = detect_penalties(word, ipa, shaw, ml_shaw)
 
     # Compute confidence percentage from penalty combination
     p = set(penalties)

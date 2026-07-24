@@ -32,6 +32,12 @@ import authstore  # noqa: E402 — path set above
 DAEMON_SOCKET = os.environ.get("SHAW_SPELL_EDITOR_SOCKET",
                                "/run/shaw-spell/editord.sock")
 DAEMON_TIMEOUT_SEC = 10.0
+# A commit publishes readlex.json and runs git commit+push — legitimately longer
+# than any read op. The 10s cutoff mid-commit made the browser toast a false
+# "cannot reach editord" while the commit went on to land, so the commit op alone
+# holds the socket until the daemon's real answer (with a generous ceiling so a
+# wedged daemon still fails loud eventually).
+COMMIT_TIMEOUT_SEC = 600.0
 
 SESSION_COOKIE = "shaw-spell-session"
 MAX_AUTH_BODY_BYTES = 4096
@@ -42,11 +48,11 @@ class DaemonError(Exception):
     behind a fallback — if editord is down the editor should fail loud."""
 
 
-def daemon_request(request):
+def daemon_request(request, timeout=DAEMON_TIMEOUT_SEC):
     payload = (json.dumps(request, ensure_ascii=False) + "\n").encode("utf-8")
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.settimeout(DAEMON_TIMEOUT_SEC)
+        sock.settimeout(timeout)
         sock.connect(DAEMON_SOCKET)
         sock.sendall(payload)
         chunks = []
@@ -187,7 +193,10 @@ def serve_api():
     # author, unconditionally. meta.author becomes unforgeable.
     if isinstance(request, dict):
         request["author"] = handle
-    raw_response = daemon_request(request)
+    timeout = (COMMIT_TIMEOUT_SEC
+               if isinstance(request, dict) and request.get("op") == "commit"
+               else DAEMON_TIMEOUT_SEC)
+    raw_response = daemon_request(request, timeout)
     sys.stdout.write("Content-Type: application/json; charset=utf-8\r\n\r\n")
     sys.stdout.write(raw_response)
 

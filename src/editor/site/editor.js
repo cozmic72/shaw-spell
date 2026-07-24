@@ -4184,7 +4184,11 @@ async function refreshPatchCounts() {
 }
 
 async function commitDecisions() {
+    // The fetch has NO client-side timeout: it holds until the daemon's real
+    // answer (the CGI gives the commit op a matching long socket timeout), then
+    // renders success/failure from the actual result — never a guessed toast.
     COMMIT_DECISIONS.disabled = true;
+    COMMIT_DECISIONS.textContent = "Committing…";
     try {
         const result = await callDaemon({ op: "commit" });
         if (result.result === "nothing-to-commit") {

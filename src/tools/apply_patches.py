@@ -90,27 +90,50 @@ def load_patches():
     return patches
 
 
-def remove_anchored(output, key):
-    """Remove from the output the single entry whose natural key matches."""
-    for bucket_key in list(output.keys()):
-        kept = [e for e in output[bucket_key] if anchor_of(e) != key]
-        if len(kept) != len(output[bucket_key]):
+def bucket_locations(output):
+    """Natural key -> the output bucket keys holding an entry with that key, in
+    output order. Built once per apply so remove_anchored resolves its bucket in
+    O(1) instead of scanning every bucket per patch — the old full scan made the
+    applicator O(patches × buckets), minutes at current store size."""
+    locations = {}
+    for bucket_key, entries in output.items():
+        for entry in entries:
+            locations.setdefault(anchor_of(entry), []).append(bucket_key)
+    return locations
+
+
+def remove_anchored(output, key, locations=None):
+    """Remove from the output the single entry whose natural key matches.
+    `locations` (see bucket_locations) resolves the bucket directly; without it
+    the buckets are scanned in order — same result, linear cost."""
+    if locations is None:
+        bucket_keys = list(output.keys())
+    else:
+        bucket_keys = locations.get(key, ())
+    for bucket_key in bucket_keys:
+        kept = [e for e in output.get(bucket_key, ()) if anchor_of(e) != key]
+        if len(kept) != len(output.get(bucket_key, ())):
             if kept:
                 output[bucket_key] = kept
             else:
                 del output[bucket_key]
+            if locations is not None:
+                locations[key] = [bk for bk in locations[key] if bk != bucket_key]
             return
 
 
-def insert_entry(output, entry):
+def insert_entry(output, entry, locations=None):
     """Insert an output record under its ReadLex key, skipping an exact-identity
-    duplicate already present (e.g. the same natural key from two sources)."""
+    duplicate already present (e.g. the same natural key from two sources).
+    `locations` (see bucket_locations), when given, is kept in step."""
     key = f"{entry['Latn']}_{entry['pos']}_{entry['Shaw']}"
     bucket = output.setdefault(key, [])
     identity = anchor_of(entry)
     if any(anchor_of(existing) == identity for existing in bucket):
         return
     bucket.append(entry)
+    if locations is not None:
+        locations.setdefault(identity, []).append(key)
 
 
 def is_emittable(word, shaw, stats):
@@ -186,6 +209,7 @@ def apply_patches(output, basis_index, basis_source, patches):
     # carries orig_* — the pre-convention behaviour.
     reanchor_map = reanchor_index(basis_index)
     weak_map = weak_reanchor_index(basis_index)
+    locations = bucket_locations(output)
 
     for patch in sorted(patches, key=patch_order_key):
         entry = resolve_patch(patch, basis_index, basis_source)
@@ -251,19 +275,19 @@ def apply_patches(output, basis_index, basis_source, patches):
         if patch["anchor"] is None:
             # Authorship: a standalone record no source attests.
             if is_emittable(entry["Latn"], entry["Shaw"], stats):
-                insert_entry(output, entry)
+                insert_entry(output, entry, locations)
                 stats["authorship"] += 1
             continue
 
         # Accept or drop: the anchored source record leaves the output first.
-        remove_anchored(output, anchor_key(patch["anchor"]))
+        remove_anchored(output, anchor_key(patch["anchor"]), locations)
 
         if entry is None:
             stats["removal"] += 1
             continue
 
         if is_emittable(entry["Latn"], entry["Shaw"], stats):
-            insert_entry(output, entry)
+            insert_entry(output, entry, locations)
         stats["update"] += 1
 
     return stats, orphans

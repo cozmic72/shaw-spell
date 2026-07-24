@@ -166,8 +166,9 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
-from basis import (INTRINSIC_FIELDS, OP_ACCEPT, OP_DROP, OP_EDIT,  # noqa: E402
-                   OP_FLAG, PROJECT_ROOT, UPSTREAM_SOURCE, anchor_key)
+from basis import (ACCEPTED_STATUS, INTRINSIC_FIELDS, OP_ACCEPT,  # noqa: E402
+                   OP_DROP, OP_EDIT, OP_FLAG, PROJECT_ROOT, UPSTREAM_SOURCE,
+                   anchor_key)
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
@@ -1290,17 +1291,59 @@ class PublishError(Exception):
     (not a raw stack/sys.exit). handle_commit surfaces it as the commit error."""
 
 
-def _publish_readlex():
+# The published record schema: exactly these keys, nothing else. Everything the
+# editor carries internally (freq_readlex/freq_source, has_definition, orig_*,
+# info, confidence/source/status and the rest of the provenance) is editorial
+# working state and is deliberately NOT shipped.
+PUBLISH_FIELDS = ("Latn", "Shaw", "pos", "ipa", "freq", "var",
+                  "supplement", "mergers", "variant")
+
+# The provenance statuses that mean "vetted": an accept's sanction and an
+# authored (owner-minted) record. Anything else — including the absent status of
+# an unvetted supplement-pool record — publishes as supplement=true.
+_VETTED_STATUSES = (ACCEPTED_STATUS, AUTHORED_STATUS)
+
+
+def to_published_entry(entry, sources):
+    """The PUBLISHED shape of one applicator output entry: the whitelisted core
+    fields, the additive variation fields (mergers/variant) when set, and a bare
+    `supplement: true` flag on a not-yet-vetted record — one neither sanctioned/
+    authored by a patch (status, see basis.ACCEPTED_STATUS / overlay
+    AUTHORED_STATUS) nor attested by upstream ReadLex core (`sources`, the basis
+    origin list for its anchor — the same derivation as the overlay's
+    UPSTREAM_STATUS/SUPPLEMENT_STATUS split). Used ONLY by _publish_readlex; the
+    editor's internal round-trip shapes (basis.record_to_output) are untouched."""
+    published = {
+        "Latn": entry["Latn"],
+        "Shaw": entry["Shaw"],
+        "pos": entry["pos"],
+        "ipa": entry.get("ipa", ""),
+        "freq": entry.get("freq", 0),
+        "var": entry.get("var", ""),
+    }
+    if entry.get("mergers"):
+        published["mergers"] = entry["mergers"]
+    if entry.get("variant"):
+        published["variant"] = entry["variant"]
+    if (entry.get("status") not in _VETTED_STATUSES
+            and UPSTREAM_SOURCE not in sources):
+        published["supplement"] = True
+    return published
+
+
+def _publish_readlex(view):
     """Derive readlex.json from the on-disk patch store and write it to its
-    canonical path — the exact offline applicator chain (apply_patches over the
-    live basis, then the corpus frequency pass), emitting the same deterministic
-    JSON shape, just produced by the editor instead of `make`. Orphaned patches
-    soft-fail exactly as in the offline applicator: logged, skipped, retained in
-    the store — never a blocked publish. Raises on any genuine derivation error
-    (the caller aborts the commit)."""
+    canonical path — the offline applicator chain (apply_patches, then the corpus
+    frequency pass) run over the daemon's RESIDENT basis (view.basis_index /
+    basis_source, built once at startup) instead of a fresh minutes-long
+    build_basis(), then serialised through the publish whitelist
+    (to_published_entry). Orphaned patches soft-fail exactly as in the offline
+    applicator: skipped, retained in the store, summarised in one log line —
+    never a blocked publish. Raises on any genuine derivation error (the caller
+    aborts the commit)."""
     from apply_patches import OUTPUT_PATH, apply_patches, load_patches
     from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
-    from basis import build_basis, load_upstream
+    from basis import anchor_of, load_upstream
 
     # The frequency corpus is REQUIRED to publish: a published readlex.json must
     # match production, so a freq-less fallback (which basis.py deliberately
@@ -1315,18 +1358,39 @@ def _publish_readlex():
             f"production. Run `make setup` to fetch the corpus, then retry.")
 
     output = load_upstream()
-    basis_index, basis_source = build_basis()
-    _stats, orphans = apply_patches(output, basis_index, basis_source,
+    _stats, orphans = apply_patches(output, view.basis_index, view.basis_source,
                                     load_patches())
-    for patch in orphans:
-        anchor = patch["anchor"]
+    if orphans:
+        accepts = sum(1 for p in orphans if p.get("op") == OP_ACCEPT)
+        drops = sum(1 for p in orphans if p.get("op") == OP_DROP)
         logging.warning(
-            "publish: orphaned patch skipped: %r pos=%s shaw=%s var=%s (id=%s)",
-            anchor["word"], anchor["pos"], anchor["shaw"], anchor["var"],
-            patch["id"])
+            "publish: skipped %d orphaned patch(es) (%d accept, %d drop) — "
+            "see the editor 'orphaned' filter",
+            len(orphans), accepts, drops)
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            for patch in orphans:
+                anchor = patch["anchor"]
+                logging.debug(
+                    "publish: orphaned patch skipped: %r pos=%s shaw=%s var=%s "
+                    "(id=%s)", anchor["word"], anchor["pos"], anchor["shaw"],
+                    anchor["var"], patch["id"])
+
+    # Corpus freq for EVERY emitted record, recomputed from each record's current
+    # Latn — the view's basis freq covers anchored records, but an authored entry
+    # or an accept whose edit changed the word is keyed off the basis, so the one
+    # uniform pass (cheap: ~1s) is simpler and exactly production's semantics. The
+    # freq_readlex/freq_source bookkeeping it leaves behind is stripped by the
+    # whitelist below.
     enrich_all(output, load_corpus())
+
+    published = {
+        bucket_key: [
+            to_published_entry(
+                entry, view.basis_source.get(anchor_of(entry), ()))
+            for entry in entries]
+        for bucket_key, entries in output.items()}
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=4)
+        json.dump(published, f, ensure_ascii=False, indent=4)
 
 
 def _run_git(root, *args):
@@ -1422,7 +1486,7 @@ def handle_commit_status(_state, _request):
             "head": short_sha, "subject": subject}
 
 
-def handle_commit(_state, _request):
+def handle_commit(state, _request):
     root = _commit_repo_root()
     if root is None:
         return {"error": "commit is only supported for the default patch store"}
@@ -1444,7 +1508,7 @@ def handle_commit(_state, _request):
     try:
         published = _publish_pathspec(root)
         if published is not None:
-            _publish_readlex()
+            _publish_readlex(state.view)
     except PublishError as exc:
         return {"error": str(exc)}
     except (SystemExit, Exception) as exc:

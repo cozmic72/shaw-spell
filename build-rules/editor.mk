@@ -90,21 +90,24 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo mkdir -p "$(OPT_ROOT)/external/readlex"; \
 	sudo install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
 	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE))"; \
+	DATA_FF_DIVERGED=""; \
 	if [ -e "$(DATA_DIR)/.git" ]; then \
 	  echo "    already a clone — fetching + fast-forwarding (working tree + patches preserved, no reset)"; \
 	  git -C "$(DATA_DIR)" -c protocol.file.allow=always fetch --prune origin; \
 	  DATA_UPSTREAM="$$(git -C "$(DATA_DIR)" rev-parse --abbrev-ref --symbolic-full-name '@{u}')"; \
 	  git -C "$(DATA_DIR)" merge --ff-only "$$DATA_UPSTREAM" || { \
-	    echo "install-editor: data clone has local commits that aren't on $$DATA_UPSTREAM;" >&2; \
-	    echo "  fast-forward refused. The daemon's patches need pushing/merging before this" >&2; \
-	    echo "  clone can advance — resolve manually in $(DATA_DIR), then re-run." >&2; exit 1; }; \
+	    DATA_FF_DIVERGED="$$DATA_UPSTREAM"; \
+	    echo "install-editor: WARNING: data clone has local commits that aren't on $$DATA_UPSTREAM;" >&2; \
+	    echo "  fast-forward refused — the clone stays on its current commit. The rest of this" >&2; \
+	    echo "  install (perms repair, daemon restart) STILL runs; resolve the divergence" >&2; \
+	    echo "  manually in $(DATA_DIR) (push/merge the daemon's patches) when convenient." >&2; }; \
 	else \
 	  [ -e "$(DATA_DIR)" ] && { \
 	    echo "install-editor: $(DATA_DIR) exists but is not a git clone — refusing" >&2; \
 	    echo "  to overwrite it. Move it aside and re-run." >&2; exit 1; }; \
 	  sudo mkdir -p "$(DATA_DIR)"; \
 	  sudo chown "$$(id -un):$$(id -gn)" "$(DATA_DIR)"; \
-	  git -c protocol.file.allow=always clone "$(DATA_REMOTE)" "$(DATA_DIR)"; \
+	  git -c protocol.file.allow=always clone --config core.sharedRepository=group "$(DATA_REMOTE)" "$(DATA_DIR)"; \
 	fi; \
 	echo "==> Web tier -> $(WWW_ROOT_EDITOR)"; \
 	sudo mkdir -p "$(WWW_ROOT_EDITOR)" "$(WWW_ROOT_EDITOR)/fonts"; \
@@ -173,4 +176,11 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "   (the clone's group perms, safe.directory, and the daemon's git identity are"; \
 	echo "   set by this target; verify origin with:  git -C $(DATA_DIR) remote -v)"; \
 	echo "============================================================"; \
+	if [ -n "$$DATA_FF_DIVERGED" ]; then \
+	  echo; \
+	  echo "!! UNRESOLVED: the data clone could NOT fast-forward onto $$DATA_FF_DIVERGED"; \
+	  echo "   (it has local commits not yet on the remote). Perms were repaired and the"; \
+	  echo "   daemon restarted, but the clone is still on its old commit — push/merge the"; \
+	  echo "   daemon's patches in $(DATA_DIR), then re-run to advance it."; \
+	fi; \
 	echo "Done."

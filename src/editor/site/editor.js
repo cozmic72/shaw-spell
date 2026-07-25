@@ -334,10 +334,11 @@ const state = {
     // are suppressed — the workbench sits inert behind the backdrop. Both New Entry
     // (blank seed) and Clone (prepopulated seed) host a create-mode recordEditor here.
     modalEditor: null,
-    // Bulk selection: the anchor keys of the checked rows (an anchor is a stable
+    // Group selection: the anchor keys of the picked rows (an anchor is a stable
     // identity, so a row survives in-place updates and re-renders keyed by it). The
     // single focused row (state.selected) is independent — it stays the review
-    // cursor even while a bulk selection is active. 2+ selected == bulk mode.
+    // cursor. A non-empty selection is the group the panel edits and verdicts fan out
+    // over; 1 member is the degenerate single record, 2+ the multi-selection.
     multi: new Set(),
     // The last row toggled/clicked by pointer, so a shift-click can range-extend
     // from it — the selection anchor in the file-list sense.
@@ -975,15 +976,17 @@ function select(index) {
         state.mainContext.editing = false;
     }
     highlightActiveRow(index);
-    // In bulk mode the card shows the group summary, not a record; moving the review
-    // cursor still scrolls the row into view but leaves the summary in place.
-    if (inBulkMode()) {
+    // When a multi-selection is live the card shows that GROUP, not the focused record;
+    // moving the review cursor still scrolls the row into view but leaves the group
+    // panel in place. Otherwise the focused record (or the empty state) renders through
+    // the same group-native path.
+    if (state.multi.size) {
         scrollRowIntoView(index);
     } else if (index < 0) {
         renderEmptyDetail();
     } else {
         scrollRowIntoView(index);
-        renderDetail(state.records[index]);
+        renderGroupEditor(selectedGroup());
     }
     saveSession();
 }
@@ -1014,20 +1017,16 @@ function renderEmptyDetail() {
     setDetailMode();
 }
 
-// ---- bulk selection ----
-// A set of anchor keys over the current working set. 2+ selected is BULK MODE:
-// the verdict actions and their keyboard shortcuts operate on the whole group,
-// and the detail card shows a summary instead of the single-record editor. 0–1
-// selected leaves the single-record review flow exactly as it was.
+// ---- group selection ----
+// A set of anchor keys over the current working set. A non-empty selection is the
+// GROUP the detail panel edits and every verdict fans out over — one member is the
+// degenerate single record, 2+ members the multi-selection. An empty selection leaves
+// the focused single record in the panel.
 //
-// Bulk is a MAIN-context concept — it acts on the workbench selection. While an edit
-// modal owns the screen its verdicts act on the single modal record (via
-// activeContext()), so bulk is dormant: a verdict never fans out to the selection
-// sitting behind the backdrop.
-function inBulkMode() {
-    return !isModalEditorOpen() && state.multi.size >= 2;
-}
-
+// Selection is a MAIN-context concept — it acts on the workbench. While an edit modal
+// owns the screen its verdicts act on the single modal record (via activeContext()), so
+// the workbench selection is dormant: a verdict never fans out to the rows behind the
+// backdrop.
 function toggleSelection(anchor) {
     const key = anchorKey(anchor);
     if (state.multi.has(key)) {
@@ -1093,18 +1092,18 @@ function enterTouchMulti() {
 }
 
 // Re-sync everything the selection drives: the row highlights, the touch-mode
-// select bar, and the detail card (which flips to the bulk summary at 2+, back to
-// the focused record below that).
+// select bar, and the detail card. The card renders whatever selectedGroup() yields —
+// the multi-selection when the owner has picked rows, the focused singleton otherwise,
+// the empty state when neither — through the ONE group-native path.
 function onSelectionChanged() {
-    // A selection change can swap the detail card (single → bulk summary, or to a
-    // different focused record) without routing through select(); flush an unsaved edit
-    // on the record leaving the card first.
+    // A selection change can swap the detail card (single → group, or to a different
+    // focused record) without routing through select(); flush an unsaved edit on the
+    // record leaving the card first.
     autoSaveMainEdit();
     syncSelectionUI();
-    if (inBulkMode()) {
-        renderBulkDetail();
-    } else if (state.selected >= 0) {
-        renderDetail(state.records[state.selected]);
+    const group = selectedGroup();
+    if (group.length) {
+        renderGroupEditor(group);
     } else {
         renderEmptyDetail();
     }
@@ -1165,7 +1164,7 @@ function activeContext() {
 // context edits; today it is always a singleton, and the chrome renders that one member.
 // Returns a `.record-editor` container that owns the field inputs (the context's harvest
 // root), context-scoped so its ids and harvest never collide with another instance's.
-// The related section is never part of it (renderDetail appends that separately). Scope
+// The related section is never part of it (renderGroupEditor appends that separately). Scope
 // "detail" stores the context as state.mainContext; scope "modal" stores it as
 // state.modalEditor. It never shows the related section.
 //
@@ -1178,8 +1177,11 @@ function activeContext() {
 const CREATE_MODE = "create";
 
 function recordEditor(group, opts) {
-    // The context carries the whole group; the single-record chrome below renders its
-    // sole member (N=1 is the only case today — a widened group is a later phase).
+    // The context carries the whole group; the chrome renders it group-native — every
+    // field that is common across the group edits exactly as a single record's, every
+    // field that differs renders the "multiple"/tri-state form. N=1 is the degenerate
+    // case in which every field is trivially common, so its render is byte-identical to
+    // the single-record card.
     const record = group[0];
     const container = document.createElement("div");
     container.className = "record-editor";
@@ -1204,7 +1206,15 @@ function recordEditor(group, opts) {
         return container;
     }
 
-    const overridden = overriddenFields(record);
+    // A multi-member group leads with a banner naming the count — the single unambiguous
+    // signal that a verdict or edit fans out to N records, not one.
+    if (group.length > 1) {
+        container.append(groupHeader(group));
+    }
+
+    // For a group the "overridden" provenance marks are a single-record concept (which
+    // fields the owner changed on THIS record's accept); they only apply at N=1.
+    const overridden = group.length === 1 ? overriddenFields(record) : new Set();
 
     // Full-width chrome: the FIVE glance-fields stacked LEFT-ALIGNED down the left
     // column (Latin word, Shavian, IPA, then POS + var), and on the right the
@@ -1214,19 +1224,34 @@ function recordEditor(group, opts) {
     const chrome = document.createElement("div");
     chrome.className = "detail-chrome";
 
-    const glance = glanceColumn(ctx, record, overridden);
-    const rail = railColumn(ctx, record, overridden);
+    const glance = glanceColumn(ctx, group, overridden);
+    const rail = railColumn(ctx, group, overridden);
     chrome.append(glance, rail);
     container.append(chrome);
 
-    // On an orphaned record, spell out the reason + action right under the chrome,
-    // full width, where there is room — the ledger row shows only the coloured tag.
-    const orphanNote = orphanReasonNote(record);
-    if (orphanNote) {
-        container.append(orphanNote);
+    // The orphan note, reference links and word-identity chrome below are single-record
+    // affordances — a group has no single word to link out for. Render them at N=1 only.
+    if (group.length === 1) {
+        const orphanNote = orphanReasonNote(record);
+        if (orphanNote) {
+            container.append(orphanNote);
+        }
+        container.append(referenceLinks(record.word));
     }
-    container.append(referenceLinks(record.word));
     return container;
+}
+
+// The group banner: a one-line header naming how many records the panel edits, so a
+// verdict's or edit's fan-out to N records is never a surprise. Absent at N=1 (a single
+// record needs no banner — the N=1 invariant).
+function groupHeader(group) {
+    const header = document.createElement("div");
+    header.className = "group-edit-header";
+    header.append(
+        cell("group-edit-title", "Group edit"),
+        cell("group-edit-count", `${group.length} records`),
+    );
+    return header;
 }
 
 // The LEFT column of the chrome: the glance-fields left-aligned. The IDENTITY row
@@ -1234,27 +1259,42 @@ function recordEditor(group, opts) {
 // RIGHT — then the Shavian and IPA edit fields stack beneath the word. No state
 // badge on the word: it moved to the rail to keep the left edge clean. On a narrow
 // screen the POS + var group wraps under the word (identity row is flex-wrap).
-function glanceColumn(ctx, record, overridden) {
+function glanceColumn(ctx, group, overridden) {
+    const record = group[0];
     const column = document.createElement("div");
     column.className = "glance-column";
 
-    const word = cell("latin", record.word);
+    // The word is anchor identity (read-only). Common across the group → the single big
+    // Latin word, exactly as today; divergent (a cross-group hand-pick) → the distinct
+    // words rolled up, still read-only (bulk-retagging the anchor would re-anchor).
+    const wordConsensus = fieldConsensus(group, "word");
+    const word = wordConsensus.uniform
+        ? cell("latin", record.word)
+        : cell("latin latin-multiple", rollupLabel(wordConsensus));
     markOverridden(word, word, overridden.has("word"));
     // The word wears its verdict as a colour-coded box (state hue border) instead of
     // a separate STATE pill — so state is glanceable right on the word. The state name
-    // is on title/aria-label since the pill text is gone.
+    // is on title/aria-label since the pill text is gone. A group with a mixed state
+    // carries no single hue, so its box is neutral.
+    const stateConsensus = fieldConsensus(group, "patch_state");
     const wordGroup = document.createElement("div");
-    wordGroup.className = `glance-word state-box ${record.patch_state}`;
-    const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
-    wordGroup.title = `state: ${stateName}`;
-    wordGroup.setAttribute("aria-label", `${record.word} — state: ${stateName}`);
+    wordGroup.className = stateConsensus.uniform
+        ? `glance-word state-box ${record.patch_state}`
+        : "glance-word state-box state-multiple";
+    if (stateConsensus.uniform) {
+        const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
+        wordGroup.title = `state: ${stateName}`;
+        wordGroup.setAttribute("aria-label", `${record.word} — state: ${stateName}`);
+    } else {
+        wordGroup.title = "state: mixed";
+    }
     wordGroup.append(word, editedSummary(overridden));
 
     const posVar = document.createElement("div");
     posVar.className = "glance-posvar";
     posVar.append(
-        posSpelledOut(record.pos, overridden.has("pos")),
-        editField(ctx, "var", "Dialect (var)", record.var, "var-field", overridden.has("var")),
+        posSpelledOut(group, overridden.has("pos")),
+        editField(ctx, group, "var", "Dialect (var)", "var-field", overridden.has("var")),
     );
 
     // Identity row: [ big Latin word | POS + var ], side by side (wrapping on narrow).
@@ -1264,17 +1304,29 @@ function glanceColumn(ctx, record, overridden) {
 
     column.append(
         identity,
-        editField(ctx, "shaw", "Shavian", record.shaw, "shaw-field", overridden.has("shaw")),
-        editField(ctx, "ipa", "IPA", record.ipa, "ipa-field", overridden.has("ipa")),
+        editField(ctx, group, "shaw", "Shavian", "shaw-field", overridden.has("shaw")),
+        editField(ctx, group, "ipa", "IPA", "ipa-field", overridden.has("ipa")),
     );
     return column;
 }
 
-// POS as a read-only glance field: the CLAWS CODE (e.g. NN1) is the prominent,
-// big text; the spelled-out English ("singular common noun") sits beneath it,
-// smaller (and may wrap/truncate). The full expansion is also the hover title. An
-// overridden POS carries the edited tag on its label.
-function posSpelledOut(pos, overridden) {
+// A read-only "NN1 ·2, NN2 ·1" rollup of a divergent field across a group — the distinct
+// values (commonest first), each with its member count. Used for the anchor-identity
+// fields (word, pos) that must never be bulk-overwritten (§1.2).
+function rollupLabel(consensus) {
+    return [...consensus.distinct]
+        .sort((a, b) => b.count - a.count)
+        .map((entry) => `${entry.key || "—"} ·${entry.count}`)
+        .join(", ");
+}
+
+// POS as a read-only glance field. It is anchor identity, never editable — bulk-
+// retagging N anchors would re-anchor them, not edit them. Common across the group →
+// the CLAWS CODE (e.g. NN1) big, the spelled-out English beneath it, the full expansion
+// as the hover title (byte-identical to the single-record render). Divergent (a group
+// spanning several POS) → a compact "NN1 ·2, NN2 ·1" rollup so the owner sees the span.
+function posSpelledOut(group, overridden) {
+    const consensus = fieldConsensus(group, "pos");
     const wrap = document.createElement("div");
     wrap.className = "edit-field pos-glance";
     const caption = document.createElement("span");
@@ -1282,14 +1334,23 @@ function posSpelledOut(pos, overridden) {
     caption.textContent = "POS";
     const value = document.createElement("span");
     value.className = "pos-glance-value";
-    value.title = posTitle(pos);
-    const tag = document.createElement("span");
-    tag.className = "pos-glance-tag";
-    tag.textContent = pos || "—";
-    const expansion = document.createElement("span");
-    expansion.className = "pos-glance-name";
-    expansion.textContent = posExpansion(pos) || "";
-    value.append(tag, expansion);
+    if (consensus.uniform) {
+        const pos = consensus.value;
+        value.title = posTitle(pos);
+        const tag = document.createElement("span");
+        tag.className = "pos-glance-tag";
+        tag.textContent = pos || "—";
+        const expansion = document.createElement("span");
+        expansion.className = "pos-glance-name";
+        expansion.textContent = posExpansion(pos) || "";
+        value.append(tag, expansion);
+    } else {
+        value.classList.add("pos-glance-multiple");
+        const tag = document.createElement("span");
+        tag.className = "pos-glance-tag";
+        tag.textContent = rollupLabel(consensus);
+        value.append(tag);
+    }
     wrap.append(caption, value);
     markOverridden(wrap, caption, overridden);
     return wrap;
@@ -1307,14 +1368,14 @@ function posExpansion(pos) {
 // The RIGHT column of the chrome: the priority rail (fixed-slot state/sources/freq/
 // confidence), the attributes chips, the demoted metadata badges, and the action
 // buttons.
-function railColumn(ctx, record, overridden) {
+function railColumn(ctx, group, overridden) {
     const column = document.createElement("div");
     column.className = "rail-column";
     column.append(
-        priorityRail(record),
-        attributesField(ctx, record, overridden),
-        metadataBadges(record, overridden),
-        actionBar(ctx, record),
+        priorityRail(group),
+        attributesField(ctx, group, overridden),
+        metadataBadges(group[0], overridden),
+        actionBar(ctx, group),
     );
     return column;
 }
@@ -1323,37 +1384,52 @@ function railColumn(ctx, record, overridden) {
 // keeping its geometry so the glance loop never re-scans. An absent value's slot
 // goes invisible IN PLACE (visibility:hidden via .empty), and the others do NOT
 // reflow to fill it. Sources render as one atomic pill per attesting origin.
-function priorityRail(record) {
+//
+// Read-only context. Where the group shares a value the slot renders it exactly as a
+// single record's; where it differs the slot rolls up (state/source as "·N" tallies,
+// freq as a min–max range, confidence as "mixed") so the owner sees the spread without
+// the rail pretending the group is uniform.
+function priorityRail(group) {
+    const record = group[0];
     const rail = document.createElement("div");
     rail.className = "priority-rail";
 
     // The word-box carries state by COLOUR; this rail slot restates the exact state
     // WORD as a small, unobtrusive pill (so accepted/edited/dirty/flagged read apart
-    // — colour alone can't). An orphaned record also gets its sub-tag (op + why).
+    // — colour alone can't). An orphaned record also gets its sub-tag (op + why). A
+    // group of mixed state tallies each state instead.
     const state = railSlot("state");
-    const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
-    state.append(cell(`state-pill ${record.patch_state}`, stateName));
-    const orphanKind = orphanKindBadge(record);
-    if (orphanKind.childElementCount) {
-        state.append(orphanKind);
+    const stateConsensus = fieldConsensus(group, "patch_state");
+    if (stateConsensus.uniform) {
+        const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
+        state.append(cell(`state-pill ${record.patch_state}`, stateName));
+        const orphanKind = orphanKindBadge(record);
+        if (orphanKind.childElementCount) {
+            state.append(orphanKind);
+        }
+    } else {
+        for (const entry of stateConsensus.distinct) {
+            const label = STATE_LABELS[entry.value] ?? entry.value;
+            state.append(cell(`state-pill ${entry.value}`, `${label} ·${entry.count}`));
+        }
     }
 
     const sources = railSlot("sources");
-    if (record.source && record.source.length) {
-        sources.append(sourcePills(record.source));
+    const sourceSet = groupSources(group);
+    if (sourceSet.length) {
+        sources.append(sourcePills(sourceSet));
     } else {
         sources.classList.add("empty");
     }
 
     const freq = railSlot("freq");
-    if (record.freq !== null && record.freq !== undefined) {
-        freq.append(cell("rail-value", String(record.freq)));
-    } else {
-        freq.classList.add("empty");
-    }
+    freqSlotContent(group, freq);
 
     const conf = railSlot("confidence");
-    if (record.confidence !== null && record.confidence !== undefined) {
+    const confConsensus = fieldConsensus(group, "confidence");
+    if (!confConsensus.uniform) {
+        conf.append(cell("rail-value", "mixed"));
+    } else if (record.confidence !== null && record.confidence !== undefined) {
         conf.append(confidenceMeter(record.confidence), cell("rail-value", String(record.confidence)));
     } else {
         conf.classList.add("empty");
@@ -1361,6 +1437,36 @@ function priorityRail(record) {
 
     rail.append(state, sources, freq, conf);
     return rail;
+}
+
+// The union of every source attesting any member of the group, first-seen order — so
+// the sources slot shows every origin behind the selection, not just the first
+// member's. A single record's own source list is returned unchanged at N=1.
+function groupSources(group) {
+    const union = [];
+    for (const member of group) {
+        for (const source of member.source || []) {
+            if (!union.includes(source)) {
+                union.push(source);
+            }
+        }
+    }
+    return union;
+}
+
+// Fill the freq slot: the single value when the group shares one, a "min–max" range
+// when the members' frequencies span a spread, or empty when no member carries one.
+function freqSlotContent(group, slot) {
+    const freqs = group
+        .map((member) => member.freq)
+        .filter((freq) => freq !== null && freq !== undefined);
+    if (!freqs.length) {
+        slot.classList.add("empty");
+        return;
+    }
+    const min = Math.min(...freqs);
+    const max = Math.max(...freqs);
+    slot.append(cell("rail-value", min === max ? String(min) : `${min}–${max}`));
 }
 
 // One labelled rail slot: a small uppercase caption over its value area. The label
@@ -1406,24 +1512,43 @@ function metadataBadges(record, overridden) {
     return wrap;
 }
 
-// The group the single-record detail editor operates on. Today this is always the
-// focused singleton `[state.records[state.selected]]`; the group carrier makes the
-// detail context group-native (N=1) so a later phase can widen it to the multi-selection
-// without reshaping the render/harvest/verdict flow. Returns [] when nothing is focused.
+// The group the detail editor operates on: the multi-selection when the owner has
+// picked one-or-more rows (⌘-click / V / range), otherwise the focused singleton.
+// N=1 is the degenerate case that renders identically to a single-record card. The
+// picked selection wins over the focused row when both exist (the panel edits what is
+// selected). Returns [] when nothing is picked and nothing is focused.
 function selectedGroup() {
+    if (state.multi.size) {
+        return selectedRecords();
+    }
     const focused = state.records[state.selected];
     return focused ? [focused] : [];
 }
 
-function renderDetail(record) {
+// Render the detail panel for a group of N>=1 records — the ONE path both a single
+// focused record and a multi-selection route through. N=1 renders exactly today's
+// single-record card (chrome + the related/definitions evidence for that record); N>=2
+// renders the group-native chrome (common fields editable, divergent fields in the
+// "multiple"/tri-state form) with NO evidence section (a group has no single word to
+// gather evidence for). The verdict bar fans out to one patch per member (§1.3).
+function renderGroupEditor(group) {
+    const record = group[0];
     // A fresh context starts in review mode; but a re-render of the SAME focused record
     // (an undo, a selection re-sync) must not silently drop an active edit — carry the
-    // flag over, exactly as the flag survived a renderDetail not preceded by select().
+    // flag over, exactly as the flag survived a render not preceded by select(). Only
+    // meaningful for N=1 (a group edit has no single "the record" to compare against).
     const wasEditing = Boolean(
-        state.mainContext && contextRecord(state.mainContext) === record && state.mainContext.editing,
+        group.length === 1
+        && state.mainContext && contextRecord(state.mainContext) === record
+        && state.mainContext.editing,
     );
-    const editor = recordEditor(selectedGroup(), { scope: "detail", mode: "edit" });
+    const editor = recordEditor(group, { scope: "detail", mode: "edit" });
     state.mainContext.editing = wasEditing;
+    if (group.length > 1) {
+        DETAIL.replaceChildren(editor);
+        setDetailMode();
+        return;
+    }
     const definitions = definitionsSection();
     const related = relatedSection();
     // Full-width editor chrome on top; the evidence pair (related + definitions)
@@ -1438,6 +1563,48 @@ function renderDetail(record) {
     setDetailMode();
     loadDefinitions(record, definitions);
     loadRelated(record, related);
+}
+
+// The consensus of one field across a group: uniform (every member holds the same
+// value) or divergent ("multiple"). For a uniform field the shared value is returned
+// so the editor renders it exactly; for a divergent field the distinct values are
+// listed (with each member's identity) so the "·N values" reveal can name them. N=1 is
+// trivially uniform, which is what keeps the single-record render byte-identical.
+//
+// Values are compared by their canonical string form (`fieldValueKey`) so list-valued
+// mergers and null/empty compare correctly; the RETURNED `value` for a uniform field is
+// the first member's raw value (not the key), so the field renderer sees exactly what a
+// single-record render would.
+function fieldConsensus(group, field) {
+    const first = group[0][field];
+    const firstKey = fieldValueKey(first);
+    const distinct = [];
+    let uniform = true;
+    for (const member of group) {
+        const key = fieldValueKey(member[field]);
+        if (key !== firstKey) {
+            uniform = false;
+        }
+        const seen = distinct.find((entry) => entry.key === key);
+        if (seen) {
+            seen.count += 1;
+            seen.members.push(member);
+        } else {
+            distinct.push({ key, value: member[field], members: [member], count: 1 });
+        }
+    }
+    return { uniform, value: uniform ? first : null, distinct };
+}
+
+// A canonical, comparable string for a field value, so two members "hold the same
+// value" iff their keys match. A list-valued field (mergers) collapses to a
+// sorted-joined key so order does not create a spurious difference; null/undefined/""
+// all collapse to the empty key so an absent field reads as one value, not several.
+function fieldValueKey(value) {
+    if (Array.isArray(value)) {
+        return [...value].sort().join(" ");
+    }
+    return value == null ? "" : String(value);
 }
 
 // The Clone action: open the shared create modal PREPOPULATED with an exact copy of
@@ -1479,88 +1646,12 @@ function editedSummary(overridden) {
     return wrap;
 }
 
-// ---- bulk detail ----
-// When 2+ rows are selected the card drops the single-record editor (you can't
-// type one Shavian for forty rows) and shows what the group IS — a count and a
-// compact per-field readout — above the group verdict bar. Field editing is
-// simply absent here, so only flag/drop/clear/accept are offered.
-
-// The traits summarised, in the order they help a triage decision: the dialect
-// and POS the class shares, its origin, and its current review state.
-const BULK_TRAITS = [
-    ["var", "Dialect"],
-    ["pos", "POS"],
-    ["source", "Source"],
-    ["patch_state", "State"],
-];
-
-function renderBulkDetail() {
-    const selected = selectedRecords();
-
-    const heading = document.createElement("div");
-    heading.className = "bulk-word";
-    heading.append(
-        cell("bulk-count", String(selected.length)),
-        cell("bulk-count-label", "records selected"),
-    );
-
-    DETAIL.replaceChildren(
-        heading,
-        bulkTraits(selected),
-        bulkActionBar(),
-    );
-    setDetailMode();
-}
-
-// The records currently in the bulk selection, in working-set order (a selected
+// The records currently in the group selection, in working-set order (a selected
 // anchor that fell out of the set on a re-run is simply skipped).
 function selectedRecords() {
     return state.records.filter(
         (record) => state.multi.has(anchorKey(record.anchor)),
     );
-}
-
-// A per-field readout: for each trait, "all X" when the group is homogeneous, or
-// a breakdown "X ·12, Y ·3" (commonest first) when it is mixed — so the user sees
-// exactly what they are about to act on.
-function bulkTraits(records) {
-    const grid = document.createElement("dl");
-    grid.className = "bulk-traits";
-    for (const [field, label] of BULK_TRAITS) {
-        const counts = tallyField(records, field);
-        const dt = document.createElement("dt");
-        dt.textContent = label;
-        const dd = document.createElement("dd");
-        dd.textContent = summariseCounts(counts);
-        grid.append(dt, dd);
-    }
-    return grid;
-}
-
-function tallyField(records, field) {
-    const counts = new Map();
-    for (const record of records) {
-        // source is list-valued (the origins that agreed); collapse the ordered
-        // list to one "wordnet + wiktionary" key so the tally counts each origin
-        // combination, not an unhashable array.
-        const raw = record[field];
-        const value = field === "source" && Array.isArray(raw)
-            ? raw.join(" + ")
-            : raw ?? "—";
-        counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-    return counts;
-}
-
-function summariseCounts(counts) {
-    if (counts.size === 1) {
-        const [only] = counts.keys();
-        return `all ${only}`;
-    }
-    return [...counts.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map(([value, count]) => `${value} ·${count}`)
-        .join(", ");
 }
 
 // ---- definitions (read-only inline sense summary) ----
@@ -2027,8 +2118,8 @@ async function loadRelated(record, section) {
 // Re-fetch the related list for the record currently in the detail panel, in place —
 // after a write that re-decided one of its siblings WITHOUT re-rendering the detail
 // (a modal edit of a related entry, whose main card sits untouched behind the modal).
-// The stepping/re-selecting flow already reloads via renderDetail, so this is only for
-// the in-place case. A no-op when nothing is focused (empty/bulk detail has no list).
+// The stepping/re-selecting flow already reloads via renderGroupEditor, so this is only for
+// the in-place case. A no-op when nothing is focused (empty/group detail has no list).
 function reloadRelatedForDetail() {
     const record = state.records[state.selected];
     if (!record) {
@@ -2637,12 +2728,7 @@ function referenceLinks(word) {
 // only: nothing on disk is renamed.
 const ATTRIBUTE_VARIANT = VARIANT_LABEL; // on-disk "variant"; displayed "other"
 
-function attributesField(ctx, record, overridden) {
-    const active = new Set(record.mergers || []);
-    if (record.variant) {
-        active.add(ATTRIBUTE_VARIANT);
-    }
-
+function attributesField(ctx, group, overridden) {
     const wrap = document.createElement("div");
     wrap.className = "edit-field variations-field";
 
@@ -2653,18 +2739,67 @@ function attributesField(ctx, record, overridden) {
     const toggles = document.createElement("div");
     toggles.className = "variation-toggles";
     // All the mergers, then the "other" (variant) member — always visible, mirroring
-    // the pre-redesign toggle row (which showed every merger + the variant toggle).
+    // the pre-redesign toggle row (which showed every merger + the variant toggle). Each
+    // toggle's state comes from the group tally: all members carry it → on, none → off,
+    // some → indeterminate ("mixed", D2). Within a single record-list group the variation
+    // set is identical by construction, so "mixed" only arises for a cross-group hand-pick.
+    let anyMixed = false;
     for (const [value, label] of MERGERS) {
-        toggles.append(variationToggle(ctx, "merger-check", value, label, active.has(value)));
+        const tally = mergerTally(group, value);
+        anyMixed = anyMixed || tally === TRISTATE_MIXED;
+        toggles.append(variationToggle(ctx, "merger-check", value, label, tally));
     }
-    toggles.append(variationToggle(
-        ctx, "variant-check", "", VARIATION_OTHER_LABEL, active.has(ATTRIBUTE_VARIANT)));
+    const variant = variantTally(group);
+    anyMixed = anyMixed || variant === TRISTATE_MIXED;
+    toggles.append(variationToggle(ctx, "variant-check", "", VARIATION_OTHER_LABEL, variant));
 
+    // A group whose members disagree on their variation flags starts "mixed": the harvest
+    // must NOT fan the checkbox state out unless the owner actually moved a toggle (else an
+    // untouched group edit would silently rewrite each member's flags to the union). A
+    // uniform control (N=1 always) is never mixed, so its flags always apply — the N=1
+    // invariant. `markVariationsTouched` clears the block's untouched status on first move.
+    if (anyMixed) {
+        wrap.dataset.mixed = "true";
+    }
     wrap.append(caption, toggles);
     // An accept that changed either flattened field (mergers or variant) marks the
-    // Variations control as edited.
+    // Variations control as edited (a single-record provenance mark; empty for a group).
     markOverridden(wrap, caption, overridden.has("mergers") || overridden.has("variant"));
     return wrap;
+}
+
+// The group tally for one merger value: "on" if every member carries it, "off" if none
+// does, "mixed" if some do — the tri-state a toggle renders (D2). N=1 is always on/off.
+function mergerTally(group, value) {
+    return tristate(group, (member) => (member.mergers || []).includes(value));
+}
+
+// The group tally for the "other" (variant) flag: on/off/mixed across the members.
+function variantTally(group) {
+    return tristate(group, (member) => Boolean(member.variant));
+}
+
+// Collapse a per-member boolean predicate to a tri-state over the group: "on" when all
+// hold, "off" when none holds, "mixed" otherwise. The single primitive both variation
+// tallies share.
+const TRISTATE_ON = "on";
+const TRISTATE_OFF = "off";
+const TRISTATE_MIXED = "mixed";
+
+function tristate(group, holds) {
+    let any = false;
+    let all = true;
+    for (const member of group) {
+        if (holds(member)) {
+            any = true;
+        } else {
+            all = false;
+        }
+    }
+    if (all) {
+        return TRISTATE_ON;
+    }
+    return any ? TRISTATE_MIXED : TRISTATE_OFF;
 }
 
 // One VARIATIONS toggle button. It hosts the flattened backing checkbox — a
@@ -2672,7 +2807,14 @@ function attributesField(ctx, record, overridden) {
 // value; its presence is the "other"/variant flag) — exactly the inputs
 // applyAdditiveFields / mainEditIsDirty read. The pill IS the affordance; the
 // checkbox is the hidden state. Toggling enters edit mode on the owning context.
-function variationToggle(ctx, className, value, label, checked) {
+//
+// `tally` is the tri-state over the group: "on"/"off" render a plain checked/unchecked
+// toggle (N=1 always lands here); "mixed" renders the indeterminate dash. The first
+// click off "mixed" is a uniform decision — it sets the checkbox for real (the browser
+// clears indeterminate on click) and marks the whole Variations control touched, so the
+// group harvest fans the uniform mergers/variant out to every member (an untouched
+// control leaves each member's own flags alone — §1.3).
+function variationToggle(ctx, className, value, label, tally) {
     const chip = document.createElement("label");
     chip.className = "variation-toggle";
     if (className === "variant-check") {
@@ -2684,9 +2826,15 @@ function variationToggle(ctx, className, value, label, checked) {
     if (className === "merger-check") {
         input.value = value;
     }
-    input.checked = checked;
+    input.checked = tally === TRISTATE_ON;
+    input.indeterminate = tally === TRISTATE_MIXED;
+    chip.classList.toggle("on", tally === TRISTATE_ON);
+    chip.classList.toggle("mixed", tally === TRISTATE_MIXED);
     input.addEventListener("change", () => {
+        input.indeterminate = false;
+        chip.classList.remove("mixed");
         chip.classList.toggle("on", input.checked);
+        markVariationsTouched(ctx);
         enterEdit(ctx);
         // Release the checkbox so the single-key verdicts fire again — a focused form
         // control makes onGlobalKey treat A/X/F as typing and swallow them.
@@ -2694,9 +2842,18 @@ function variationToggle(ctx, className, value, label, checked) {
     });
     const text = document.createElement("span");
     text.textContent = label;
-    chip.classList.toggle("on", checked);
     chip.append(input, text);
     return chip;
+}
+
+// Mark the context's Variations control as touched: once the owner moves any variation
+// toggle, the whole mergers+variant block becomes a uniform decision the group harvest
+// fans out to every member. Left untouched, each member keeps its own flags.
+function markVariationsTouched(ctx) {
+    const field = ctx.root.querySelector(".variations-field");
+    if (field) {
+        field.dataset.touched = "true";
+    }
 }
 
 // The detail editor's field id prefix (its harvest is scoped by data-field, not id;
@@ -2737,22 +2894,83 @@ function fieldInput(name, label, value, extraClass, idPrefix) {
 // The review-editor field: the shared input plus the review-flow listeners
 // (focus enters edit mode, keys run the in-field verdicts) and the overridden mark.
 // Bound to its editor context, so focus enters edit mode on THAT context.
-function editField(ctx, name, label, value, extraClass, overridden) {
+//
+// Group-native: the field consults the whole group. When every member shares the value
+// the box shows it exactly and editing applies to all (N=1 is the trivial case — this is
+// the byte-identical single-record render). When members differ, the box renders the
+// "multiple" state (D1): empty, a greyed `multiple` placeholder, a `·N values` reveal
+// listing the distinct values, and a marker (`data-consensus="multiple"`) the harvest
+// reads. Typing OVERWRITES the field for every member (no unlock); the first keystroke
+// flips the box to a pending-overwrite style and marks it touched so the harvest knows
+// to fan the value out (an untouched "multiple" box leaves each member's value alone).
+function editField(ctx, group, name, label, extraClass, overridden) {
+    const consensus = fieldConsensus(group, name);
+    const divergent = !consensus.uniform;
     const { wrap, caption, input } = fieldInput(
-        name, label, value, extraClass, ctx.prefix,
+        name, label, divergent ? "" : consensus.value, extraClass, ctx.prefix,
     );
     input.addEventListener("focus", () => enterEdit(ctx));
     input.addEventListener("keydown", onFieldKey);
+    if (divergent) {
+        input.placeholder = "multiple";
+        input.dataset.consensus = "multiple";
+        wrap.classList.add("field-multiple");
+        input.addEventListener("input", () => {
+            const touched = input.value !== "";
+            input.dataset.touched = touched ? "true" : "";
+            input.classList.toggle("pending-overwrite", touched);
+        });
+        wrap.append(valuesReveal(consensus));
+    }
     markOverridden(wrap, caption, overridden);
     return wrap;
 }
 
-// The verdict controls. Unflag/undo appear only when they apply, so the bar shows
-// exactly the moves available on this record. The keyboard is the fast path; the
-// buttons mirror it and give mobile real touch targets. Undo is a MAIN-flow move
-// (it walks the global undo stack and steps the review cursor), so an edit-modal
-// omits it — Clear is the modal's in-place "reset this entry's patch".
-function actionBar(ctx, record) {
+// The `·N values` reveal beside a "multiple" text field: a disclosure that lists the
+// distinct values held across the group, each with the member(s) that hold it, so the
+// owner can inspect the spread before deciding to overwrite. Inspection only — clicking
+// a value does NOT set it (D1: only typing overwrites).
+function valuesReveal(consensus) {
+    const details = document.createElement("details");
+    details.className = "values-reveal";
+    const summary = document.createElement("summary");
+    summary.textContent = `·${consensus.distinct.length} values`;
+    details.append(summary);
+    const list = document.createElement("ul");
+    list.className = "values-reveal-list";
+    for (const entry of consensus.distinct) {
+        const item = document.createElement("li");
+        item.append(
+            cell("values-reveal-value", entry.key || "—"),
+            cell("values-reveal-where", valuesRevealWhere(entry.members)),
+        );
+        list.append(item);
+    }
+    details.append(list);
+    return details;
+}
+
+// A compact "(NN1/RRP)" tag naming where a distinct value lives — the member's pos/var
+// identity, joined for the few members that share the value. Read-only context.
+function valuesRevealWhere(members) {
+    return members
+        .map((member) => `${member.pos || "—"}/${member.var || "—"}`)
+        .join(", ");
+}
+
+// The verdict controls, group-native. Every verdict fans out to one patch per member
+// (§1.3), so the same four buttons drive a single record and a group alike — only their
+// tooltips ("Accept" vs "Accept all") and the trailing affordances differ. The keyboard
+// is the fast path; the buttons mirror it and give mobile real touch targets.
+//
+// N=1 renders exactly today's single-record bar: Accept/Drop/Flag/Clear, then Clone,
+// then (conditionally) Unflag and Undo. A multi-member group swaps Clone → Deselect
+// (Clone authors a NEW record FROM this one — a single-record move; a group has no one
+// record to clone) and drops the single-record Unflag/Undo, which act on one focused
+// row's patch, not a fan-out.
+function actionBar(ctx, group) {
+    const record = group[0];
+    const many = group.length > 1;
     const bar = document.createElement("div");
     bar.className = "actions";
 
@@ -2760,12 +2978,16 @@ function actionBar(ctx, record) {
     // the owner wants it always present. clearSelected() itself no-ops on an
     // unreviewed row (no patch to clear), so an always-visible Clear is safe.
     bar.append(
-        actionButton("accept", "Accept", acceptSelected),
-        actionButton("drop", "Drop", dropSelected),
-        actionButton("flag", "Flag", flagSelected),
-        actionButton("clear", "Clear", clearSelected),
-        cloneButton(record),
+        actionButton("accept", many ? "Accept all" : "Accept", acceptSelected),
+        actionButton("drop", many ? "Drop all" : "Drop", dropSelected),
+        actionButton("flag", many ? "Flag all" : "Flag", flagSelected),
+        actionButton("clear", many ? "Clear all" : "Clear", clearSelected),
     );
+    if (many) {
+        bar.append(actionButton("undo", "Deselect", clearSelection));
+        return bar;
+    }
+    bar.append(cloneButton(record));
     if (record.patch_state === PATCH_STATE.FLAGGED) {
         bar.append(actionButton("unflag", "Unflag", unflagSelected));
     }
@@ -2816,25 +3038,9 @@ function actionButton(kind, label, handler) {
     return button;
 }
 
-// The group verdict bar. Same buttons and colours as the single-record bar, but
-// every action runs over the whole selection; Save/Edit are absent (editing is
-// single-record). "Deselect" drops the whole selection without touching data.
-function bulkActionBar() {
-    const bar = document.createElement("div");
-    bar.className = "actions";
-    bar.append(
-        actionButton("accept", "Accept all", acceptSelected),
-        actionButton("drop", "Drop all", dropSelected),
-        actionButton("flag", "Flag all", flagSelected),
-        actionButton("clear", "Clear all", clearSelected),
-        actionButton("undo", "Deselect", clearSelection),
-    );
-    return bar;
-}
-
 // A patch body built from the record's OWN fields, no edit surface involved — the
-// shape a bulk verdict writes (bulk mode renders no editable fields). Single-record
-// verdicts overlay the live inputs on top of this (editedRecord, via harvestRecord).
+// base each member's group verdict overlays its harvested group edits onto. Single-
+// record verdicts overlay the live inputs on top of this (editedRecord, via harvestRecord).
 function recordFields(record) {
     const result = {
         word: record.word,
@@ -2916,6 +3122,56 @@ function applyAdditiveFields(ctx, record) {
     } else {
         delete record.variant;
     }
+}
+
+// The group's touched edits: ONLY the fields the owner actually changed, to overlay onto
+// each member so untouched fields keep each member's own value (§1.3). A verdict on a
+// group fans this overlay across every member. The rules per field kind:
+// - text (shaw/var/ipa): a COMMON field always contributes its (possibly edited) input
+//   value — at N=1 every field is common, so this reproduces editedRecord's overlay
+//   exactly (the N=1 invariant). A "multiple" field contributes ONLY if the owner typed
+//   into it (data-touched), overwriting all members; left blank it is omitted.
+// - variations (mergers/variant): a UNIFORM control (never mixed — always so at N=1)
+//   always contributes its checkbox state; a MIXED control contributes only once the
+//   owner has moved a toggle (data-touched on the variations field).
+function harvestGroupOverlay(ctx) {
+    const overlay = {};
+    for (const name of EDITABLE_FIELDS) {
+        const input = ctx.root.querySelector(`[data-field="${name}"]`);
+        if (input.dataset.consensus === "multiple" && input.dataset.touched !== "true") {
+            continue;
+        }
+        overlay[name] = input.value.trim();
+    }
+    const variations = ctx.root.querySelector(".variations-field");
+    if (variations && (variations.dataset.mixed !== "true" || variations.dataset.touched === "true")) {
+        overlay.variations = true;
+    }
+    return overlay;
+}
+
+// Apply the group's harvested overlay to one member's own record body: touched text
+// fields overwrite; an untouched text field keeps the member's value (recordFields
+// already carried it). When the variations control is included, its checkbox state
+// (uniform, or the owner's uniform decision off a mixed state) replaces the member's
+// mergers/variant via the shared applyAdditiveFields.
+function applyGroupOverlay(record, overlay, ctx) {
+    for (const name of EDITABLE_FIELDS) {
+        if (name in overlay) {
+            record[name] = overlay[name];
+        }
+    }
+    if (overlay.variations) {
+        applyAdditiveFields(ctx, record);
+    }
+    return record;
+}
+
+// One member's patch body under a group verdict: its OWN fields (recordFields) with the
+// group's touched edits overlaid. This is the group-native analogue of editedRecord —
+// at N=1 the overlay is the full editable surface, so the two produce the same body.
+function groupMemberRecord(member, overlay, ctx) {
+    return applyGroupOverlay(recordFields(member), overlay, ctx);
 }
 
 function requireShaw(record) {
@@ -3111,7 +3367,9 @@ function createVariantRow(ctx, record) {
     row.append(
         createField(ctx, "var", "Dialect (var)", record.var),
         createField(ctx, "pos", "POS", record.pos),
-        attributesField(ctx, record, new Set()),
+        // The create form authors ONE record; its variations render as the trivial
+        // singleton group (every tally on/off, never mixed) — identical to before.
+        attributesField(ctx, [record], new Set()),
     );
     return row;
 }
@@ -3183,8 +3441,8 @@ function insertAuthoredRecord(record) {
     refreshPatchCounts();
 }
 
-// Run a single-record verdict, surfacing any failure as an error toast. The bulk
-// path handles its own errors (per-record, in runBulk), so this guards only the
+// Run a single-record verdict, surfacing any failure as an error toast. The group
+// path handles its own errors (per-record, in runGroup), so this guards only the
 // single-record branch.
 async function single(action) {
     // A single-record verdict may step/select to the next record as part of its own
@@ -3211,11 +3469,18 @@ async function single(action) {
 // autoSaveMainEdit). Kept as the explicit "save now, don't step" path (⌘Enter in a
 // field) and as the shared writePatch("saved") core the auto-save reuses.
 async function saveSelected() {
-    const selected = contextRecord(activeContext());
+    const ctx = activeContext();
+    const selected = contextRecord(ctx);
     if (!selected) {
         return;
     }
-    const record = harvestRecord(activeContext());
+    // Save is single-record: it persists ONE record's bare edit. A group's edits are
+    // committed only through an explicit verdict (which fans out per member), never a
+    // save — so ⌘Enter in a group panel does nothing.
+    if (ctx.group.length > 1) {
+        return;
+    }
+    const record = harvestRecord(ctx);
     if (!requireShaw(record)) {
         return;
     }
@@ -3241,6 +3506,13 @@ function autoSaveMainEdit() {
     }
     const ctx = state.mainContext;
     if (!ctx || ctx.mode === CREATE_MODE || !contextRecord(ctx)) {
+        return;
+    }
+    // Auto-save-on-leave is a SINGLE-record concept: it persists one record's bare edit
+    // when the cursor moves off it. A group edit has no single record to auto-save (its
+    // "multiple" boxes read empty and would spuriously fail requireShaw); a group's edits
+    // are committed only through an explicit verdict, never on navigate. Skip for N>=2.
+    if (ctx.group.length > 1) {
         return;
     }
     // Only trust a harvest while the context's inputs still describe its record. After a
@@ -3296,25 +3568,53 @@ function mainEditIsDirty(ctx) {
     return false;
 }
 
-async function acceptSelected() {
-    if (inBulkMode()) {
-        await runBulk("accept", acceptOne);
-        return;
+// The group a verdict acts on: the active context's group, narrowed to the members still
+// present in the working set (a picked anchor that fell out on a re-run is skipped, as
+// selectedRecords already does). N=1 is the single focused/modal record; N>=2 is the
+// multi-selection. The verdict fans out to one patch per member (§1.3).
+function verdictGroup(ctx) {
+    if (!ctx || !ctx.group) {
+        return [];
     }
-    const selected = contextRecord(activeContext());
-    if (!selected) {
-        return;
+    // A modal edit acts on its own single record, which may not sit in state.records
+    // (a related entry); trust the context group directly there. The main context's
+    // group is drawn from the working set, so narrow it to what is still live.
+    if (ctx === state.modalEditor) {
+        return ctx.group;
     }
-    await single(() => acceptOne(selected, { step: true, toast: true }));
+    const live = new Set(state.records.map((record) => anchorKey(record.anchor)));
+    return ctx.group.filter((member) => live.has(anchorKey(member.anchor)));
 }
 
-// Accept one record: promote its fields with a sanctioned status. A bulk verdict
-// takes the record as it stands (no editable fields are rendered); a single verdict
-// overlays the live edit inputs. The `bulk` intent is passed in, never re-read from
-// global selection state, so a selection that shrinks mid-run can't flip the path.
-// Returns the daemon result; throws so the caller can fail loud.
+// Run a verdict over the active context's group. At N=1 it is the ordinary single-record
+// flow (steps to the next record, per-record toast). At N>=2 it fans out to one write per
+// member with the group's harvested edits overlaid, one summary toast and one refresh
+// (runGroup). The overlay — the fields the owner actually touched — is harvested ONCE and
+// applied per member, so untouched fields keep each member's own value (§1.3).
+async function groupVerdict(verb, applyOne, { step = true } = {}) {
+    const ctx = activeContext();
+    const group = verdictGroup(ctx);
+    if (!group.length) {
+        return;
+    }
+    const overlay = harvestGroupOverlay(ctx);
+    if (group.length === 1) {
+        await single(() => applyOne(group[0], { step, toast: true, overlay, ctx }));
+        return;
+    }
+    await runGroup(verb, applyOne, group, overlay, ctx);
+}
+
+async function acceptSelected() {
+    await groupVerdict("accept", acceptOne);
+}
+
+// Accept one member: promote its fields with a sanctioned status. Its patch body is the
+// member's OWN fields with the group's touched edits overlaid (groupMemberRecord) — at
+// N=1 the overlay is the full editable surface, so this reproduces the single-record
+// accept exactly. Returns the daemon result; throws so the caller can fail loud.
 async function acceptOne(selected, options = {}) {
-    const record = options.bulk ? recordFields(selected) : harvestRecord(activeContext());
+    const record = groupMemberRecord(selected, options.overlay, options.ctx);
     record.status = ACCEPTED_STATUS;
     if (!record.shaw) {
         throw new Error(`${selected.word}: Shavian cannot be empty.`);
@@ -3323,15 +3623,7 @@ async function acceptOne(selected, options = {}) {
 }
 
 async function dropSelected() {
-    if (inBulkMode()) {
-        await runBulk("dropped", dropOne);
-        return;
-    }
-    const selected = contextRecord(activeContext());
-    if (!selected) {
-        return;
-    }
-    await single(() => dropOne(selected, { step: true, toast: true }));
+    await groupVerdict("dropped", dropOne);
 }
 
 // Drop one record. An authored entry has no basis to revert to, so dropping it IS
@@ -3349,8 +3641,8 @@ async function dropOne(selected, options = {}) {
 // A verdict (accept/drop/edit) produces a patch. It records an undo frame (whether
 // the anchor already had a patch, so undo restores the right prior state) and
 // re-annotates the row in place. `step`/`toast` are on for a single verdict and off
-// per record in a bulk run (the run does one summary toast, no stepping). Returns
-// the daemon result; throws on failure so the bulk loop can fail loud per record.
+// per record in a group run (the run does one summary toast, no stepping). Returns
+// the daemon result; throws on failure so the group loop can fail loud per record.
 async function writePatch(anchor, record, verb, selected, { step = true, toast = true, refocus = true, dirty = false } = {}) {
     const priorReviewed = selected ? selected.reviewed : false;
     // A bare edit persisted on navigate is DIRTY (op="edit" server-side): the
@@ -3374,15 +3666,7 @@ async function writePatch(anchor, record, verb, selected, { step = true, toast =
 // source record unchanged; it counts as reviewed but not decided, and is a no-op
 // for production output.
 async function flagSelected() {
-    if (inBulkMode()) {
-        await runBulk("flagged", flagOne);
-        return;
-    }
-    const selected = contextRecord(activeContext());
-    if (!selected) {
-        return;
-    }
-    await single(() => flagOne(selected, { step: true, toast: true }));
+    await groupVerdict("flagged", flagOne);
 }
 
 async function flagOne(selected, { step = true, toast = true, refocus = true } = {}) {
@@ -3415,28 +3699,21 @@ async function unflagSelected() {
 // whenever the entry is reviewed. An authored record has no anchor, so it is
 // cleared by its patch id; the daemon then returns no record and the row is dropped.
 async function clearSelected() {
-    if (inBulkMode()) {
-        await runBulk("cleared", clearOne);
-        return;
-    }
-    const selected = contextRecord(activeContext());
-    if (!selected || !selected.reviewed) {
-        return;
-    }
-    await single(() => clearOne(selected, { step: false, toast: true }));
+    // Clear reverts in place (it does not advance the review cursor to a next record).
+    await groupVerdict("cleared", clearOne, { step: false });
 }
 
-// A record a bulk verdict passed over without writing (not an error, not a write) —
-// e.g. Clear on an unreviewed row, which holds no patch. runBulk tallies these apart
+// A record a group verdict passed over without writing (not an error, not a write) —
+// e.g. Clear on an unreviewed row, which holds no patch. runGroup tallies these apart
 // from the writes so the summary count is honest.
-const BULK_SKIPPED = Symbol("bulk-skipped");
+const GROUP_SKIPPED = Symbol("bulk-skipped");
 
 // Clear one record. An unreviewed record has no patch to clear — a no-op the bulk
 // run counts as skipped, not done. An authored record clears by patch id and its row
 // is dropped; a basis record clears by anchor and reverts in place.
 async function clearOne(selected, options = {}) {
     if (!selected.reviewed) {
-        return BULK_SKIPPED;
+        return GROUP_SKIPPED;
     }
     if (selected.patch_state === PATCH_STATE.AUTHORED) {
         if (!selected.patch_id) {
@@ -3447,35 +3724,34 @@ async function clearOne(selected, options = {}) {
     return unpatch(anchorOf(selected), "cleared", options);
 }
 
-// ---- bulk verdicts ----
-// Run a verdict over every selected record. Each record goes through the SAME
-// single-write path (writePatch/unpatch → the daemon's validated write), with
-// stepping, per-record toasts, and per-record re-render OFF (refocus:false); the
-// loop does one summary toast and one ledger refresh at the end. A large group asks
-// for confirmation first. A record that fails is collected and reported, never
-// silently skipped — the run continues so one bad row doesn't strand the rest. The
-// review cursor is preserved across the run, and the selection is cleared afterwards
+// ---- group verdicts (N>=2) ----
+// Run a verdict over every member of the group. Each member goes through the SAME
+// single-write path (writePatch/unpatch → the daemon's validated write) as a single
+// verdict, with stepping, per-record toasts, and per-record re-render OFF
+// (refocus:false); the loop does one summary toast and one ledger refresh at the end.
+// The group's harvested edits (overlay) are overlaid onto each member (§1.3). A large
+// group asks for confirmation first. A member that fails is collected and reported,
+// never silently skipped — the run continues so one bad row doesn't strand the rest.
+// The review cursor is preserved across the run, and the selection is cleared afterwards
 // (the class has been triaged).
 
-const BULK_CONFIRM_THRESHOLD = 10;
+const GROUP_CONFIRM_THRESHOLD = 10;
 
-async function runBulk(verb, applyOne) {
-    const targets = selectedRecords();
-    if (!targets.length) {
-        return;
-    }
-    if (targets.length >= BULK_CONFIRM_THRESHOLD
-        && !window.confirm(`${capitalise(verb)} ${targets.length} records?`)) {
+async function runGroup(verb, applyOne, group, overlay, ctx) {
+    if (group.length >= GROUP_CONFIRM_THRESHOLD
+        && !window.confirm(`${capitalise(verb)} ${group.length} records?`)) {
         return;
     }
     const focusedAnchor = state.records[state.selected]?.anchor ?? null;
     let done = 0;
     let skipped = 0;
     const failures = [];
-    for (const record of targets) {
+    for (const member of group) {
         try {
-            const outcome = await applyOne(record, { bulk: true, step: false, toast: false, refocus: false });
-            if (outcome === BULK_SKIPPED) {
+            const outcome = await applyOne(member, {
+                overlay, ctx, step: false, toast: false, refocus: false,
+            });
+            if (outcome === GROUP_SKIPPED) {
                 skipped += 1;
             } else {
                 done += 1;
@@ -3496,7 +3772,7 @@ async function runBulk(verb, applyOne) {
     await refreshPatchCounts();
 }
 
-// Rebuild the ledger once after a bulk run (rows may have been re-annotated or
+// Rebuild the ledger once after a group run (rows may have been re-annotated or
 // removed) and restore the review cursor to the entry it was on — or its nearest
 // surviving neighbour if that entry was itself dropped. With the selection cleared,
 // select() renders the single-record card, back in the ordinary review flow.
@@ -3538,7 +3814,7 @@ async function undoLast() {
     }
     if (frame.priorReviewed) {
         showToast("Can't undo: the entry already had a decision before this one.", true);
-        renderDetail(state.records[state.selected]);
+        renderGroupEditor(selectedGroup());
         return;
     }
     const index = state.records.findIndex((r) => sameAnchor(r.anchor, frame.anchor));
@@ -3549,7 +3825,7 @@ async function undoLast() {
 }
 
 // Delete an entry's patch. Returns the daemon result and throws on failure, so a
-// bulk loop can fail loud per record. `toast` is off inside a bulk run; the removed
+// group loop can fail loud per record. `toast` is off inside a group run; the removed
 // anchor (an authored entry the daemon returns nothing for) is dropped by anchor,
 // not by state.selected, so it works whether or not it is the focused row.
 async function unpatch(anchor, verb, { step = true, uncount = false, patchId = null, toast = true, refocus = true } = {}) {
@@ -3580,7 +3856,7 @@ function findAnchorByPatchId(patchId) {
 // Clearing an authored entry leaves no record — the daemon returns an empty set.
 // Drop that row (matched by anchor) from the working set, then, if it was the
 // focused row, land on its neighbour so the selection stays in view. `refocus:false`
-// (a bulk run) mutates the set but defers the ledger re-render to the loop's end.
+// (a group run) mutates the set but defers the ledger re-render to the loop's end.
 //
 // A removal from an edit-modal (dropping/clearing an authored related entry) targets
 // the modal record's anchor — NEVER state.selected, whose row must stay put — and
@@ -3647,7 +3923,7 @@ function countDecision() {
 // a full natural key). Update the row IN PLACE: it keeps its index, so it stays
 // put in the working set showing its new content and stamp, even if it no longer
 // matches the active filter. By default step to the next entry; a re-render in
-// place (unflag/undo) stays put. `refocus:false` (a bulk run) updates the row but
+// place (unflag/undo) stays put. `refocus:false` (a group run) updates the row but
 // leaves the review cursor where it was — the loop restores focus once at the end.
 //
 // A write from an edit-modal is always a re-annotate-in-place against the modal

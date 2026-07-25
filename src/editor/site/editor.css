@@ -1060,45 +1060,81 @@ body {
 .act.create { color: var(--state-authored); }
 .act.create:hover { background: var(--state-authored); color: var(--paper); }
 
-/* ---- bulk detail — the group summary the card shows at 2+ selected ---- */
-/* The count is the headline: a big tabular number, the class the reviewer is about
-   to act on, over a quiet per-field readout of what the group shares. No editable
-   fields — bulk verdicts act on the records as they stand. */
-.bulk-word {
+/* ---- group edit — the group-native panel the card shows at 2+ selected ---- */
+/* The banner names how many records the panel edits, so a verdict's or edit's fan-out
+   to N records is never a surprise. The fields below it edit group-native: a field
+   common to every member edits exactly as a single record's; a divergent field renders
+   the "multiple"/tri-state form (see .field-multiple / .variation-toggle.mixed). */
+.group-edit-header {
     display: flex;
     align-items: baseline;
     gap: 12px;
-    margin-bottom: 24px;
-    padding-bottom: 20px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
     border-bottom: 1px solid var(--rule);
 }
-.bulk-count {
-    font-size: 46px;
-    font-weight: 700;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-.bulk-count-label {
+.group-edit-title {
     font-size: 13px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ink-soft);
 }
-.bulk-traits {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 12px 20px;
-    align-items: baseline;
-    margin-bottom: 30px;
+.group-edit-count {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
 }
-.bulk-traits dt {
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+
+/* A divergent identity field (word/pos) or state, rolled up read-only as "NN1 ·2, NN2 ·1"
+   — the group spans several values the owner cannot bulk-overwrite (that would re-anchor). */
+/* A mixed-state group carries no single hue: the word box keeps the neutral --state-edge
+   default (var(--rule)) since .state-multiple sets no state class. */
+.latin.latin-multiple { font-size: 26px; color: var(--ink-soft); }
+.pos-glance-value.pos-glance-multiple .pos-glance-tag { font-size: 15px; }
+
+/* A "multiple" TEXT field (var/shaw/ipa differ across the group): an empty box with a
+   greyed `multiple` placeholder and a values reveal. Typing overwrites ALL members (D1),
+   flipping the box to a pending-overwrite tone so the fan-out is visible before commit. */
+.edit-field.field-multiple .edit-input::placeholder {
+    color: var(--ink-soft);
+    opacity: 0.7;
+    font-style: italic;
+}
+.edit-input.pending-overwrite {
+    border-left: 3px solid var(--state-edited);
+    border-bottom-color: var(--state-edited);
+}
+.values-reveal { margin-top: 6px; font-size: 12px; }
+.values-reveal > summary {
+    cursor: pointer;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    list-style: none;
+}
+.values-reveal > summary::-webkit-details-marker { display: none; }
+.values-reveal-list {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+}
+.values-reveal-list li {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+}
+.values-reveal-value { font-family: var(--mono); color: var(--ink); }
+.values-reveal-where { color: var(--ink-soft); font-size: 11px; }
+
+/* A tri-state variation toggle whose members disagree ("mixed", D2): a dashed indeterminate
+   pill. Clicking it makes a uniform decision across all members. */
+.variation-toggle.mixed {
+    border-style: dashed;
     color: var(--ink-soft);
 }
-.bulk-traits dd { font-size: 15px; color: var(--ink); word-break: break-word; }
 
 /* The orphan sub-tag, beside the state badge in the DETAIL heading (no longer in the
    ledger row — it overflowed the narrow state column onto the word). Names the op + why

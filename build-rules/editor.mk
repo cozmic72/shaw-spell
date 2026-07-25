@@ -87,18 +87,11 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo mkdir -p "$(OPT_ROOT)/external/readlex"; \
 	sudo install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
 	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE), owned by $(SERVICE_USER))"; \
-	DATA_FF_DIVERGED=""; \
 	if [ -e "$(DATA_DIR)/.git" ]; then \
-	  echo "    already a clone — repairing ownership then fetching + fast-forwarding (working tree + patches preserved, no reset)"; \
+	  echo "    already a clone — repairing ownership then rebasing onto origin/main (daemon's local patch-commits replayed on top, working tree + patches preserved, no reset)"; \
 	  sudo chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(DATA_DIR)"; \
-	  sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" -c protocol.file.allow=always fetch --prune origin; \
-	  DATA_UPSTREAM="$$(sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" rev-parse --abbrev-ref --symbolic-full-name '@{u}')"; \
-	  sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" merge --ff-only "$$DATA_UPSTREAM" || { \
-	    DATA_FF_DIVERGED="$$DATA_UPSTREAM"; \
-	    echo "install-editor: WARNING: data clone has local commits that aren't on $$DATA_UPSTREAM;" >&2; \
-	    echo "  fast-forward refused — the clone stays on its current commit. The rest of this" >&2; \
-	    echo "  install (daemon restart) STILL runs; resolve the divergence" >&2; \
-	    echo "  manually in $(DATA_DIR) (push/merge the daemon's patches) when convenient." >&2; }; \
+	  echo "    (a real rebase conflict here is a legitimate stop-and-fix — resolve it in $(DATA_DIR) then re-run)"; \
+	  sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" -c protocol.file.allow=always pull --rebase origin main; \
 	else \
 	  [ -e "$(DATA_DIR)" ] && { \
 	    echo "install-editor: $(DATA_DIR) exists but is not a git clone — refusing" >&2; \
@@ -126,6 +119,7 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)/auth"; \
 	echo "==> Commit+push config -> data clone trusted + daemon git identity ($(SERVICE_USER))"; \
 	sudo git config --system --add safe.directory "$(DATA_DIR)"; \
+	sudo git config --system --add safe.directory "$(DATA_REMOTE)"; \
 	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.name  "$(EDITOR_GIT_NAME)"; \
 	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.email "$(EDITOR_GIT_EMAIL)"; \
 	echo "==> systemd daemon-reload + (re)start"; \
@@ -168,11 +162,4 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "   (the checkout's safe.directory and the daemon's git identity are set by"; \
 	echo "   this target; verify origin with:  git -C $(DATA_DIR) remote -v)"; \
 	echo "============================================================"; \
-	if [ -n "$$DATA_FF_DIVERGED" ]; then \
-	  echo; \
-	  echo "!! UNRESOLVED: the data clone could NOT fast-forward onto $$DATA_FF_DIVERGED"; \
-	  echo "   (it has local commits not yet on the remote). Perms were repaired and the"; \
-	  echo "   daemon restarted, but the clone is still on its old commit — push/merge the"; \
-	  echo "   daemon's patches in $(DATA_DIR), then re-run to advance it."; \
-	fi; \
 	echo "Done."

@@ -1128,16 +1128,26 @@ function syncSelectBar() {
     SELECT_BAR_COUNT.textContent = count === 1 ? "1 selected" : `${count} selected`;
 }
 
-// A record editor's context: the surface a single record is being edited on. It owns
-// its harvest `root` (the container the field inputs live under, queried scoped by
-// data-field), an id `prefix` for those inputs (the detail keeps "field-", the modal
-// uses "modal-" so the two never collide), a per-context `editing` flag, and the
-// `record` and `mode` it renders. The detail panel holds one (state.mainContext, mode
+// A record editor's context: the surface a GROUP of one-or-more records is being
+// edited on. It owns its harvest `root` (the container the field inputs live under,
+// queried scoped by data-field), an id `prefix` for those inputs (the detail keeps
+// "field-", the modal uses "modal-" so the two never collide), a per-context `editing`
+// flag, and the `group` and `mode` it renders. The `group` is always an array; today
+// every editor is single-record, so the group is the singleton `[record]` (N=1 is the
+// degenerate case). The detail panel holds one context (state.mainContext, mode
 // "edit"); the open modal holds another (state.modalEditor) — create mode for a New
 // Entry/Clone, edit mode for a related entry opened for in-place review.
 // activeContext() routes the review flow to whichever owns the screen.
-function makeEditorContext({ scope, root, prefix, record, mode }) {
-    return { scope, root, prefix, editing: false, record, mode };
+function makeEditorContext({ scope, root, prefix, group, mode }) {
+    return { scope, root, prefix, editing: false, group, mode };
+}
+
+// The single record a context describes when its group is a singleton — the N=1
+// accessor every current consumer reads through. Null-safe to mirror the optional
+// `activeContext()?.record` reads it replaces (an absent context, or a context with no
+// group member, yields null).
+function contextRecord(ctx) {
+    return ctx?.group?.[0] ?? null;
 }
 
 // The context whose edit inputs the verdict/harvest flow acts on: the open modal's
@@ -1150,13 +1160,14 @@ function activeContext() {
     return state.modalEditor ?? state.mainContext;
 }
 
-// Build the reusable record editor for `record` — the SINGLE editor renderer for the
-// detail panel and the modal, in both modes. Returns a `.record-editor` container that
-// owns the field inputs (the context's harvest root), context-scoped so its ids and
-// harvest never collide with another instance's. The related section is never part of
-// it (renderDetail appends that separately). Scope "detail" stores the context as
-// state.mainContext; scope "modal" stores it as state.modalEditor. It never shows the
-// related section.
+// Build the reusable record editor for `group` — the SINGLE editor renderer for the
+// detail panel and the modal, in both modes. `group` is the array of records the
+// context edits; today it is always a singleton, and the chrome renders that one member.
+// Returns a `.record-editor` container that owns the field inputs (the context's harvest
+// root), context-scoped so its ids and harvest never collide with another instance's.
+// The related section is never part of it (renderDetail appends that separately). Scope
+// "detail" stores the context as state.mainContext; scope "modal" stores it as
+// state.modalEditor. It never shows the related section.
 //
 // Edit mode renders the review top matter (badges/facts/overridden marks), read-only
 // word/pos identity, the field editors, the verdict bar and the clone bar — the same
@@ -1166,14 +1177,17 @@ function activeContext() {
 // not-yet-created record has no patch state.
 const CREATE_MODE = "create";
 
-function recordEditor(record, opts) {
+function recordEditor(group, opts) {
+    // The context carries the whole group; the single-record chrome below renders its
+    // sole member (N=1 is the only case today — a widened group is a later phase).
+    const record = group[0];
     const container = document.createElement("div");
     container.className = "record-editor";
     const ctx = makeEditorContext({
         scope: opts.scope,
         root: container,
         prefix: opts.scope === "modal" ? MODAL_FIELD_PREFIX : DETAIL_FIELD_PREFIX,
-        record,
+        group,
         mode: opts.mode,
     });
     if (opts.scope === "detail") {
@@ -1392,14 +1406,23 @@ function metadataBadges(record, overridden) {
     return wrap;
 }
 
+// The group the single-record detail editor operates on. Today this is always the
+// focused singleton `[state.records[state.selected]]`; the group carrier makes the
+// detail context group-native (N=1) so a later phase can widen it to the multi-selection
+// without reshaping the render/harvest/verdict flow. Returns [] when nothing is focused.
+function selectedGroup() {
+    const focused = state.records[state.selected];
+    return focused ? [focused] : [];
+}
+
 function renderDetail(record) {
     // A fresh context starts in review mode; but a re-render of the SAME focused record
     // (an undo, a selection re-sync) must not silently drop an active edit — carry the
     // flag over, exactly as the flag survived a renderDetail not preceded by select().
     const wasEditing = Boolean(
-        state.mainContext && state.mainContext.record === record && state.mainContext.editing,
+        state.mainContext && contextRecord(state.mainContext) === record && state.mainContext.editing,
     );
-    const editor = recordEditor(record, { scope: "detail", mode: "edit" });
+    const editor = recordEditor(selectedGroup(), { scope: "detail", mode: "edit" });
     state.mainContext.editing = wasEditing;
     const definitions = definitionsSection();
     const related = relatedSection();
@@ -2369,7 +2392,7 @@ function relatedRow(record, focusedAnchor) {
 // immediately and refreshing the affected main ledger row by anchor without moving the
 // main cursor; dismiss returns to the exact spot the owner left.
 function openRelatedModal(record) {
-    openModal(recordEditor(record, { scope: "modal", mode: "edit" }));
+    openModal(recordEditor([record], { scope: "modal", mode: "edit" }));
 }
 
 // Re-render the open edit-modal from a freshly-written record, so it shows the new
@@ -2382,7 +2405,7 @@ function refreshModalEditor(record) {
     }
     const card = CREATE_MODAL.querySelector(".create-card");
     const editor = card.querySelector(".record-editor");
-    editor.replaceWith(recordEditor(record, { scope: "modal", mode: "edit" }));
+    editor.replaceWith(recordEditor([record], { scope: "modal", mode: "edit" }));
 }
 
 // The dialect column of a related row: the var, plus compact variant/merger
@@ -2867,7 +2890,7 @@ function authoredRecord(ctx) {
 // the inputs (EDITABLE_FIELDS are always present; the read-only word/pos identity
 // carries through from recordFields).
 function editedRecord(ctx) {
-    const result = recordFields(ctx.record);
+    const result = recordFields(contextRecord(ctx));
     for (const name of EDITABLE_FIELDS) {
         const input = ctx.root.querySelector(`[data-field="${name}"]`);
         result[name] = input.value.trim();
@@ -2976,7 +2999,7 @@ function openCloneModal(sourceRecord) {
 // content owns the fields, harvest and Create/Cancel bar; the shell supplies the
 // backdrop, dismiss × and keyboard guards.
 function openCreateModal(seed, submitLabel) {
-    openModal(recordEditor(seed, { scope: "modal", mode: CREATE_MODE, submitLabel }));
+    openModal(recordEditor([seed], { scope: "modal", mode: CREATE_MODE, submitLabel }));
     const first = document.getElementById(`${MODAL_FIELD_PREFIX}word`);
     if (first) {
         first.focus();
@@ -3188,7 +3211,7 @@ async function single(action) {
 // autoSaveMainEdit). Kept as the explicit "save now, don't step" path (⌘Enter in a
 // field) and as the shared writePatch("saved") core the auto-save reuses.
 async function saveSelected() {
-    const selected = activeContext()?.record;
+    const selected = contextRecord(activeContext());
     if (!selected) {
         return;
     }
@@ -3217,16 +3240,16 @@ function autoSaveMainEdit() {
         return;
     }
     const ctx = state.mainContext;
-    if (!ctx || ctx.mode === CREATE_MODE || !ctx.record) {
+    if (!ctx || ctx.mode === CREATE_MODE || !contextRecord(ctx)) {
         return;
     }
-    // Only trust a harvest while the context's inputs still describe ctx.record. After a
-    // write, applyWriteResult replaces state.records[i] but ctx.record/DOM lag behind;
-    // that path runs under verdictInFlight, so it is already excluded above.
+    // Only trust a harvest while the context's inputs still describe its record. After a
+    // write, applyWriteResult replaces state.records[i] but the context's record/DOM lag
+    // behind; that path runs under verdictInFlight, so it is already excluded above.
     if (!mainEditIsDirty(ctx)) {
         return;
     }
-    const selected = ctx.record;
+    const selected = contextRecord(ctx);
     const record = harvestRecord(ctx);
     if (!requireShaw(record)) {
         // An empty/invalid Shavian is not a valid save — leave the edit unsaved (the
@@ -3252,21 +3275,22 @@ function autoSaveMainEdit() {
 
 // Has an editable field (or an additive merger/variant flag) actually diverged from
 // the record the detail is currently showing? The dirty-check that gates auto-save:
-// harvest the live inputs and compare field-for-field against ctx.record's own values,
+// harvest the live inputs and compare field-for-field against the record's own values,
 // so a no-net-change edit saves nothing.
 function mainEditIsDirty(ctx) {
+    const record = contextRecord(ctx);
     const harvested = harvestRecord(ctx);
     for (const name of EDITABLE_FIELDS) {
-        if ((harvested[name] ?? "") !== ((ctx.record[name] ?? "").toString().trim())) {
+        if ((harvested[name] ?? "") !== ((record[name] ?? "").toString().trim())) {
             return true;
         }
     }
-    const wasMergers = ctx.record.mergers ? [...ctx.record.mergers].sort() : [];
+    const wasMergers = record.mergers ? [...record.mergers].sort() : [];
     const nowMergers = harvested.mergers ? [...harvested.mergers].sort() : [];
     if (wasMergers.join(" ") !== nowMergers.join(" ")) {
         return true;
     }
-    if (Boolean(ctx.record.variant) !== Boolean(harvested.variant)) {
+    if (Boolean(record.variant) !== Boolean(harvested.variant)) {
         return true;
     }
     return false;
@@ -3277,7 +3301,7 @@ async function acceptSelected() {
         await runBulk("accept", acceptOne);
         return;
     }
-    const selected = activeContext()?.record;
+    const selected = contextRecord(activeContext());
     if (!selected) {
         return;
     }
@@ -3303,7 +3327,7 @@ async function dropSelected() {
         await runBulk("dropped", dropOne);
         return;
     }
-    const selected = activeContext()?.record;
+    const selected = contextRecord(activeContext());
     if (!selected) {
         return;
     }
@@ -3354,7 +3378,7 @@ async function flagSelected() {
         await runBulk("flagged", flagOne);
         return;
     }
-    const selected = activeContext()?.record;
+    const selected = contextRecord(activeContext());
     if (!selected) {
         return;
     }
@@ -3378,7 +3402,7 @@ async function flagOne(selected, { step = true, toast = true, refocus = true } =
 // Unflag: remove the flag patch, reverting to unreviewed. Distinct from undo — an
 // explicit "actually, back to the pool" on a flagged row.
 async function unflagSelected() {
-    const selected = activeContext()?.record;
+    const selected = contextRecord(activeContext());
     if (!selected || selected.patch_state !== PATCH_STATE.FLAGGED) {
         return;
     }
@@ -3395,7 +3419,7 @@ async function clearSelected() {
         await runBulk("cleared", clearOne);
         return;
     }
-    const selected = activeContext()?.record;
+    const selected = contextRecord(activeContext());
     if (!selected || !selected.reviewed) {
         return;
     }
@@ -3564,7 +3588,7 @@ function findAnchorByPatchId(patchId) {
 // only if that anchor is loaded in the working set; the main cursor stays put.
 function removeRow(anchor, { refocus = true } = {}) {
     if (isModalEditorOpen()) {
-        removeModalRow(state.modalEditor.record.anchor);
+        removeModalRow(contextRecord(state.modalEditor).anchor);
         return;
     }
     const removed = anchor

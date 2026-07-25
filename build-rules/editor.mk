@@ -20,11 +20,14 @@
 #     committed, so it needs no clone.
 #   * DATA  ($(DATA_DIR)) is a STANDALONE `git clone` of $(DATA_REMOTE). This is
 #     the ONLY git checkout on the server; the daemon's Commit button commits the
-#     patch store here and pushes it upstream. It lives under /var/lib (FHS:
-#     mutable state), NOT $(OPT_ROOT)/data — that path belongs to the dictionary
-#     site's install-site. The systemd unit points basis.py's DATA_ROOT at it via
-#     SHAW_SPELL_DATA_DIR; PROJECT_ROOT stays $(OPT_ROOT) for the read-only
-#     external/ basis.
+#     patch store here and pushes it upstream. It is SINGLE-OWNER = $(SERVICE_USER):
+#     only the daemon reads/edits/commits/pushes it (the owner works via the editor
+#     UI or from a separate laptop clone), so the clone AND all fetch/merge run AS
+#     $(SERVICE_USER) — www-data owns its own object store start to finish, no
+#     group-sharing. It lives under /var/lib (FHS: mutable state), NOT
+#     $(OPT_ROOT)/data — that path belongs to the dictionary site's install-site.
+#     The systemd unit points basis.py's DATA_ROOT at it via SHAW_SPELL_DATA_DIR;
+#     PROJECT_ROOT stays $(OPT_ROOT) for the read-only external/ basis.
 #
 # Run from THIS repo (not from /opt):  sudo -v && make install-editor
 # The build never runs as root; only the privileged commands (writing /var/www,
@@ -44,12 +47,6 @@ VAR_LIB ?= /var/lib/shaw-spell
 # The mutable data clone. MUST match the systemd unit's SHAW_SPELL_DATA_DIR.
 DATA_DIR ?= $(VAR_LIB)/data
 SERVICE_USER ?= www-data
-# The group SHARED by you (the invoking user) and $(SERVICE_USER), owning the data
-# clone group-writable so BOTH can commit+push it: you from the invoking account,
-# the daemon as $(SERVICE_USER). Override to whatever group you both belong to,
-# e.g. make install-editor DATA_GROUP=gitshaw (add $(SERVICE_USER) to it first:
-# sudo usermod -aG $(DATA_GROUP) $(SERVICE_USER)).
-DATA_GROUP ?= $(SERVICE_USER)
 # git author on the daemon's commits (the Commit button). Override if you like.
 EDITOR_GIT_NAME ?= Shaw-Spell Editor
 EDITOR_GIT_EMAIL ?= editor@joro.io
@@ -89,25 +86,26 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "==> ReadLex basis -> $(OPT_ROOT)/external/readlex (copied, read-only)"; \
 	sudo mkdir -p "$(OPT_ROOT)/external/readlex"; \
 	sudo install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
-	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE))"; \
+	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE), owned by $(SERVICE_USER))"; \
 	DATA_FF_DIVERGED=""; \
 	if [ -e "$(DATA_DIR)/.git" ]; then \
-	  echo "    already a clone — fetching + fast-forwarding (working tree + patches preserved, no reset)"; \
-	  git -C "$(DATA_DIR)" -c protocol.file.allow=always fetch --prune origin; \
-	  DATA_UPSTREAM="$$(git -C "$(DATA_DIR)" rev-parse --abbrev-ref --symbolic-full-name '@{u}')"; \
-	  git -C "$(DATA_DIR)" merge --ff-only "$$DATA_UPSTREAM" || { \
+	  echo "    already a clone — repairing ownership then fetching + fast-forwarding (working tree + patches preserved, no reset)"; \
+	  sudo chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(DATA_DIR)"; \
+	  sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" -c protocol.file.allow=always fetch --prune origin; \
+	  DATA_UPSTREAM="$$(sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" rev-parse --abbrev-ref --symbolic-full-name '@{u}')"; \
+	  sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" merge --ff-only "$$DATA_UPSTREAM" || { \
 	    DATA_FF_DIVERGED="$$DATA_UPSTREAM"; \
 	    echo "install-editor: WARNING: data clone has local commits that aren't on $$DATA_UPSTREAM;" >&2; \
 	    echo "  fast-forward refused — the clone stays on its current commit. The rest of this" >&2; \
-	    echo "  install (perms repair, daemon restart) STILL runs; resolve the divergence" >&2; \
+	    echo "  install (daemon restart) STILL runs; resolve the divergence" >&2; \
 	    echo "  manually in $(DATA_DIR) (push/merge the daemon's patches) when convenient." >&2; }; \
 	else \
 	  [ -e "$(DATA_DIR)" ] && { \
 	    echo "install-editor: $(DATA_DIR) exists but is not a git clone — refusing" >&2; \
 	    echo "  to overwrite it. Move it aside and re-run." >&2; exit 1; }; \
-	  sudo mkdir -p "$(DATA_DIR)"; \
-	  sudo chown "$$(id -un):$$(id -gn)" "$(DATA_DIR)"; \
-	  git -c protocol.file.allow=always clone --config core.sharedRepository=group "$(DATA_REMOTE)" "$(DATA_DIR)"; \
+	  sudo mkdir -p "$(VAR_LIB)"; \
+	  sudo chown "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)"; \
+	  sudo -u "$(SERVICE_USER)" git -c protocol.file.allow=always clone "$(DATA_REMOTE)" "$(DATA_DIR)"; \
 	fi; \
 	echo "==> Web tier -> $(WWW_ROOT_EDITOR)"; \
 	sudo mkdir -p "$(WWW_ROOT_EDITOR)" "$(WWW_ROOT_EDITOR)/fonts"; \
@@ -126,19 +124,11 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "==> Auth DB dir -> $(VAR_LIB)/auth (created + chowned; data preserved)"; \
 	sudo mkdir -p "$(VAR_LIB)/auth"; \
 	sudo chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)/auth"; \
-	echo "==> Commit+push perms -> data clone group-shared ($(DATA_GROUP), setgid, group-writable)"; \
-	echo "    so BOTH you and $(SERVICE_USER) (the daemon) can commit+push it"; \
-	sudo groupadd -f "$(DATA_GROUP)"; \
-	sudo usermod -aG "$(DATA_GROUP)" "$(SERVICE_USER)"; \
-	sudo usermod -aG "$(DATA_GROUP)" "$$(id -un)"; \
-	sudo chgrp -R "$(DATA_GROUP)" "$(DATA_DIR)"; \
-	sudo chmod -R g+rwX "$(DATA_DIR)"; \
-	sudo find "$(DATA_DIR)" -type d -exec chmod g+s {} +; \
-	git -C "$(DATA_DIR)" config core.sharedRepository group; \
+	echo "==> Commit+push config -> data clone trusted + daemon git identity ($(SERVICE_USER))"; \
 	sudo git config --system --add safe.directory "$(DATA_DIR)"; \
 	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.name  "$(EDITOR_GIT_NAME)"; \
 	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.email "$(EDITOR_GIT_EMAIL)"; \
-	echo "==> systemd daemon-reload + (re)start (picks up new $(DATA_GROUP) membership)"; \
+	echo "==> systemd daemon-reload + (re)start"; \
 	sudo systemctl daemon-reload; \
 	sudo systemctl enable shaw-spell-editord; \
 	sudo systemctl restart shaw-spell-editord; \
@@ -167,14 +157,16 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "          python3 $(WWW_ROOT_EDITOR)/authstore.py --create-user HANDLE"; \
 	echo; \
 	echo "3. The BARE remote $(DATA_REMOTE) — the ONE thing this target won't"; \
-	echo "   touch (it stays owned by YOU so you push from home). Give it"; \
-	echo "   the SAME shared-group treatment the clone got so $(SERVICE_USER) can push to it"; \
-	echo "   too — never chown it to $(SERVICE_USER):"; \
-	echo "        sudo chgrp -R $(DATA_GROUP) $(DATA_REMOTE)"; \
+	echo "   touch. UNLIKE the checkout (single-owner $(SERVICE_USER)), the bare repo is"; \
+	echo "   pushed by BOTH the daemon ($(SERVICE_USER)) and YOU (from your laptop), so it"; \
+	echo "   genuinely needs group-write + setgid + shared-repo. Give it that group"; \
+	echo "   treatment once — never chown it to $(SERVICE_USER) (pick a group you both"; \
+	echo "   belong to, e.g. GROUP=gitshaw, and add $(SERVICE_USER): sudo usermod -aG GROUP $(SERVICE_USER)):"; \
+	echo "        sudo chgrp -R GROUP $(DATA_REMOTE)"; \
 	echo "        sudo chmod -R g+rwX $(DATA_REMOTE) && sudo find $(DATA_REMOTE) -type d -exec chmod g+s {} +"; \
 	echo "        sudo git -C $(DATA_REMOTE) config core.sharedRepository group"; \
-	echo "   (the clone's group perms, safe.directory, and the daemon's git identity are"; \
-	echo "   set by this target; verify origin with:  git -C $(DATA_DIR) remote -v)"; \
+	echo "   (the checkout's safe.directory and the daemon's git identity are set by"; \
+	echo "   this target; verify origin with:  git -C $(DATA_DIR) remote -v)"; \
 	echo "============================================================"; \
 	if [ -n "$$DATA_FF_DIVERGED" ]; then \
 	  echo; \

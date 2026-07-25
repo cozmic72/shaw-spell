@@ -11,6 +11,27 @@ else
 RUN =
 endif
 
+# Idempotent replace of one or more asset subdirs during a privileged deploy.
+# Both install-editor and install-site hand-rolled the same "sudo rm -rf the old
+# copy, then sudo cp -R the new one" idiom to stage web/opt asset trees — it is
+# the single most-duplicated deploy step. This canned recipe factors it (DRY),
+# in the same $(@D)-style parametrised-recipe spirit as virtual-keyboard.mk.
+#
+# It is designed to $(call) INTO a single-shell `@set -eu; \ ...` recipe: every
+# body line is backslash-continued, so the whole loop collapses to one recipe
+# line and splices between the caller's own `; \`-joined statements (put a `; \`
+# after the $(call)). Call as:
+#   $(call replace-dir-tree,SRC_BASE,DEST_BASE,dir1 dir2 ...)
+# where each `dirN` is copied from SRC_BASE/dirN to DEST_BASE/dirN. Pass a shell
+# variable (e.g. $$HERE) for either base to defer it to run time; pass a make
+# path to expand it now.
+define replace-dir-tree
+	for d in $(3); do \
+	  sudo rm -rf "$(2)/$$d"; \
+	  sudo cp -R "$(1)/$$d" "$(2)/$$d"; \
+	done
+endef
+
 # Version from root
 VERSION := $(shell cat current-version | tr -d '\n')
 export VERSION

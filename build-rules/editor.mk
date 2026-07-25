@@ -109,8 +109,7 @@ install-editor: $(VK_EDITOR_STAMP)
 	sudo install -m 644 "$$SITE/editor.css"   "$(WWW_ROOT_EDITOR)/editor.css"; \
 	sudo install -m 644 "$(SRC_FONTS)"/*.woff2 "$(WWW_ROOT_EDITOR)/fonts/"; \
 	sudo install -m 644 "$(SRC_SITE)/js/virtual-keyboard-modal.js" "$(WWW_ROOT_EDITOR)/virtual-keyboard-modal.js"; \
-	sudo rm -rf "$(WWW_ROOT_EDITOR)/virtual-keyboard"; \
-	sudo cp -R "$$SITE/virtual-keyboard" "$(WWW_ROOT_EDITOR)/virtual-keyboard"; \
+	$(call replace-dir-tree,$$SITE,$(WWW_ROOT_EDITOR),virtual-keyboard); \
 	echo "==> systemd unit -> /etc/systemd/system/shaw-spell-editord.service"; \
 	sudo install -m 644 "$$SRC_EDITOR/shaw-spell-editord.service" \
 	                    /etc/systemd/system/shaw-spell-editord.service; \

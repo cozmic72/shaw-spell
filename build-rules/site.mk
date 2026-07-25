@@ -104,16 +104,10 @@ install-site: site
 	sudo install -m 755 "$$HERE/index.cgi" "$(WWW_ROOT_SITE)/index.cgi"; \
 	sudo install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
 	[ -f "$$HERE/.version" ] && sudo install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
-	for d in css js fonts templates virtual-keyboard; do \
-	  sudo rm -rf "$(WWW_ROOT_SITE)/$$d"; \
-	  sudo cp -R "$$HERE/$$d" "$(WWW_ROOT_SITE)/$$d"; \
-	done; \
+	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),css js fonts templates virtual-keyboard); \
 	echo "==> Daemon + data -> $(OPT_ROOT)"; \
 	sudo mkdir -p "$(OPT_ROOT)"; \
-	for d in site-daemon site-data hunspell; do \
-	  sudo rm -rf "$(OPT_ROOT)/$$d"; \
-	  sudo cp -R "$$HERE/$$d" "$(OPT_ROOT)/$$d"; \
-	done; \
+	$(call replace-dir-tree,$$HERE,$(OPT_ROOT),site-daemon site-data hunspell); \
 	sudo install -m 644 "$$HERE/site-daemon/shaw-spell-suggestd.service" \
 	                    /etc/systemd/system/shaw-spell-suggestd.service; \
 	HUNSPELL_OK=1; \

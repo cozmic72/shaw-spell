@@ -1057,8 +1057,31 @@ body {
     font-size: 12px;
     margin-bottom: 18px;
 }
-.act.create { color: var(--state-authored); }
-.act.create:hover { background: var(--state-authored); color: var(--paper); }
+/* The create/clone dialog's verdict bar: [Accept, Flag, Cancel] on one row, with the
+   distinctness-guard message wrapping onto its own line beneath (full width). */
+.create-actions { row-gap: 8px; }
+/* A verdict blocked by the distinctness guard (an exact-anchor collision, or the sibling
+   fetch still in flight): dimmed and inert, so the owner sees at a glance that the entry
+   is not yet clear to author. */
+.act.create-verdict:disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+}
+/* The distinctness-guard line under the verdicts. Silent (no reserved space) while the
+   entry is distinct or incomplete; PENDING (checking) reads quiet, a COLLISION in the
+   dropped tone (hard block), a canonical-conflict WARN in the flagged/amber tone
+   (allowed, but flagged). */
+.create-guard {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+.create-guard[data-state="ok"] { display: none; }
+.create-guard[data-state="pending"] { color: var(--ink-soft); }
+.create-guard[data-state="collision"] { color: var(--state-dropped); }
+.create-guard[data-state="warn"] { color: var(--state-flagged); }
 
 /* ---- group edit — the group-native panel the card shows at 2+ selected ---- */
 /* The banner names how many records the panel edits, so a verdict's or edit's fan-out

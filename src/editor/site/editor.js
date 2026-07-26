@@ -1172,8 +1172,10 @@ function activeContext() {
 // word/pos identity, the field editors, the verdict bar and the clone bar — the same
 // whether it hosts the detail panel or a modal opened on a related entry. Create mode
 // renders a minimal title + hint, EDITABLE word/pos (the author types the anchor), the
-// same field editors, and a [submitLabel, Cancel] bar — no review affordances, since a
-// not-yet-created record has no patch state.
+// same field editors, and an [Accept, Flag, Cancel] verdict bar: the verdict IS the
+// authoring action (Accept authors the record; Flag authors it flagged; Cancel
+// dismisses). No Drop (authoring only to suppress is marginal) and no Clone bar (cloning
+// a not-yet-saved record makes no sense).
 const CREATE_MODE = "create";
 
 function recordEditor(group, opts) {
@@ -1199,10 +1201,18 @@ function recordEditor(group, opts) {
     }
     if (opts.mode === CREATE_MODE) {
         container.append(
-            createTopMatter(record, opts.submitLabel),
+            createTopMatter(opts.seeded),
             createFieldStack(ctx, record),
-            createActionBar(ctx, opts.submitLabel),
+            createActionBar(ctx),
         );
+        // The distinctness guard runs LIVE: an edit to any identity field (word / shaw /
+        // pos / var / mergers / variant) re-evaluates whether the authored anchor already
+        // exists, so the verdict buttons enable/disable as the owner types. Delegated on
+        // the container so it covers the text inputs (input) and the variation toggles
+        // (change) alike.
+        container.addEventListener("input", () => evaluateDistinctness(ctx));
+        container.addEventListener("change", () => evaluateDistinctness(ctx));
+        evaluateDistinctness(ctx);
         return container;
     }
 
@@ -2511,24 +2521,12 @@ function relatedRow(record, focusedAnchor) {
 // Open a related entry in an edit-mode modal for in-place review: the FULL editor
 // (top matter, fields, verdict/clone bar) hosting THIS record, over the workbench. The
 // related op already returned a full serialisable record, so no extra fetch is needed.
-// Verdicts and edits act on this record (activeContext() = the modal), writing patches
-// immediately and refreshing the affected main ledger row by anchor without moving the
-// main cursor; dismiss returns to the exact spot the owner left.
+// Verdicts and edits act on this record (activeContext() = the modal). A verdict is the
+// modal's ONE action: it writes the patch, re-annotates the affected main ledger row by
+// anchor (the main cursor never moves), and dismisses back to the exact spot the owner
+// left — one action, no separate save-then-close.
 function openRelatedModal(record) {
     openModal(recordEditor([record], { scope: "modal", mode: "edit" }));
-}
-
-// Re-render the open edit-modal from a freshly-written record, so it shows the new
-// patch state and edited fields while the owner keeps acting or dismisses — mirroring
-// how the detail card re-renders in place after a verdict. Rebuilds the recordEditor
-// (which re-points state.modalEditor at the fresh record) inside the existing shell.
-function refreshModalEditor(record) {
-    if (!isModalEditorOpen()) {
-        return;
-    }
-    const card = CREATE_MODAL.querySelector(".create-card");
-    const editor = card.querySelector(".record-editor");
-    editor.replaceWith(recordEditor([record], { scope: "modal", mode: "edit" }));
 }
 
 // The dialect column of a related row: the var, plus compact variant/merger
@@ -3194,7 +3192,7 @@ function isAuthored(record) {
     return record.patch_state === PATCH_STATE.AUTHORED;
 }
 
-// ---- create modal (authorship from scratch or cloned across a dialect) ----
+// ---- create/clone modal (authorship from scratch or seeded from a record) ----
 // Author a brand-new manual record with no basis behind it. The daemon's authorship
 // path is a patch with anchor null and a self-contained record (see editord.py
 // handle_patch): {op:"patch", anchor:null, record:{…}, author}. This is the ONLY
@@ -3202,13 +3200,16 @@ function isAuthored(record) {
 // one. The result is an authored entry (patch_state "authored"), which the review
 // flow then treats like any other authored row.
 //
-// ONE dismissable modal serves both entry points: New Entry opens it BLANK, and Clone
-// opens the SAME modal PREPOPULATED with an exact copy of a source record. Its CONTENT
-// is a recordEditor in create mode (scope "modal") — the single editor renderer shared
-// with the detail panel — so create and edit never diverge. The only difference between
-// New Entry and Clone is the seed and the submit label. An unchanged clone is not
-// blocked client-side: it simply submits, and the daemon rejects the duplicate anchor,
-// surfacing the same error toast as any other rejection while the modal stays open.
+// ONE dismissable dialog serves both entry points: New Entry opens it BLANK, and Clone
+// opens the SAME dialog SEEDED with an exact copy of a source record — cloning is just
+// "open the edit dialog seeded from this record". Its CONTENT is a recordEditor in
+// create mode (scope "modal") — the single editor renderer shared with the detail
+// panel — so create and edit never diverge. The verdict buttons ARE the action:
+// [Accept, Flag, Cancel] (D6 — no Drop, no Clear before creation). Accept authors the
+// record, Flag authors it flagged, Cancel dismisses. The distinctness guard (D3) blocks
+// the verdicts LIVE while the authored anchor duplicates an existing live record.
+//
+// The only difference between New Entry and Clone is the seed and the title/hint wording.
 
 // The identity fields a new record must carry — the natural key the daemon anchors
 // it on (RECORD_REQUIRED_FIELDS). ipa/mergers/variant are optional spelling detail.
@@ -3232,17 +3233,17 @@ function blankSeed() {
     return { word: "", pos: "", var: "", ipa: "", shaw: "", mergers: [], variant: false };
 }
 
-// Open the create modal BLANK — the New Entry route. Bulk selection and the review
-// cursor are left as they are: the modal sits OVER the workbench and dismisses back
+// Open the create dialog BLANK — the New Entry route. Bulk selection and the review
+// cursor are left as they are: the dialog sits OVER the workbench and dismisses back
 // to it untouched.
 function openCreateForm() {
-    openCreateModal(blankSeed(), "Create");
+    openCreateModal(blankSeed(), false);
 }
 
-// Open the create modal PREPOPULATED with an exact copy of a source record — the
-// Clone route. EVERY field is seeded verbatim (word/pos/var/ipa/shaw/mergers/variant);
-// the owner then edits whatever makes it a distinct sibling before submitting. An
-// unedited copy is not blocked here — the daemon rejects the duplicate anchor.
+// Open the create dialog SEEDED with an exact copy of a source record — the Clone
+// route. EVERY field is seeded verbatim (word/pos/var/ipa/shaw/mergers/variant); the
+// owner edits whatever makes it a distinct sibling before a verdict. An unedited copy
+// stays blocked by the distinctness guard (its anchor duplicates the source).
 function openCloneModal(sourceRecord) {
     openCreateModal({
         word: sourceRecord.word ?? "",
@@ -3252,14 +3253,18 @@ function openCloneModal(sourceRecord) {
         shaw: sourceRecord.shaw ?? "",
         mergers: sourceRecord.mergers ?? [],
         variant: Boolean(sourceRecord.variant),
-    }, "Clone");
+    }, true);
 }
 
-// Open the create modal: host a create-mode recordEditor in the modal shell. Its
-// content owns the fields, harvest and Create/Cancel bar; the shell supplies the
-// backdrop, dismiss × and keyboard guards.
-function openCreateModal(seed, submitLabel) {
-    openModal(recordEditor([seed], { scope: "modal", mode: CREATE_MODE, submitLabel }));
+// Open the create dialog: host a create-mode recordEditor in the modal shell. Its
+// content owns the fields, harvest and verdict bar; the shell supplies the backdrop,
+// dismiss × and keyboard guards. `seeded` picks the Clone vs New Entry wording.
+function openCreateModal(seed, seeded) {
+    // Each dialog session starts with a fresh guard cache, so a sibling authored or
+    // re-decided since the last open is reflected (the cache is primed lazily per word
+    // as the owner types the identity).
+    relatedGuardCache.clear();
+    openModal(recordEditor([seed], { scope: "modal", mode: CREATE_MODE, seeded }));
     const first = document.getElementById(`${MODAL_FIELD_PREFIX}word`);
     if (first) {
         first.focus();
@@ -3319,20 +3324,19 @@ function closeModal() {
 }
 
 // The create editor's top matter: title + hint (NOT the edit-mode badges/facts —
-// a not-yet-created record has no patch state). Clone and New Entry differ only in
-// wording.
-function createTopMatter(record, submitLabel) {
-    const cloning = submitLabel === "Clone";
+// a not-yet-created record has no patch state). Clone (seeded) and New Entry differ
+// only in wording.
+function createTopMatter(seeded) {
     const wrap = document.createElement("div");
 
     const title = document.createElement("div");
     title.className = "detail-create-title";
     title.id = "create-title";
-    title.textContent = cloning ? "Clone entry" : "New entry";
+    title.textContent = seeded ? "Clone entry" : "New entry";
 
     const hint = document.createElement("p");
     hint.className = "detail-create-hint";
-    hint.textContent = cloning
+    hint.textContent = seeded
         ? "An exact copy of the source. Edit whatever makes it a distinct sibling."
         : "Author a brand-new record. Word, Shavian, POS and Dialect are required.";
 
@@ -3378,15 +3382,26 @@ function createVariantRow(ctx, record) {
     return row;
 }
 
-// The create editor's action bar: [submitLabel → submit, Cancel → dismiss]. No review
-// verdicts — a not-yet-created record has nothing to accept/drop/flag.
-function createActionBar(ctx, submitLabel) {
+// The create/clone dialog's action bar: the VERDICT buttons ARE the authoring action
+// (D6) — [Accept, Flag, Cancel]. Accept authors the record; Flag authors it flagged;
+// Cancel dismisses. No Drop (authoring only to suppress is marginal) and no Clear
+// (meaningless before a record exists). Below the buttons sits the distinctness-guard
+// message, hidden until the guard has something to say. Accept/Flag carry the
+// `create-verdict` hook the guard enables/disables live.
+function createActionBar(ctx) {
     const bar = document.createElement("div");
-    bar.className = "actions";
-    bar.append(
-        actionButton("create", submitLabel, () => submitCreate(ctx)),
-        actionButton("undo", "Cancel", closeModal),
-    );
+    bar.className = "actions create-actions";
+
+    const accept = actionButton("accept", "Accept", () => authorEntry(ctx, { flag: false }));
+    const flag = actionButton("flag", "Flag", () => authorEntry(ctx, { flag: true }));
+    accept.classList.add("create-verdict");
+    flag.classList.add("create-verdict");
+    bar.append(accept, flag, actionButton("undo", "Cancel", closeModal));
+
+    const guard = document.createElement("p");
+    guard.className = "create-guard";
+    guard.dataset.state = "ok";
+    bar.append(guard);
     return bar;
 }
 
@@ -3397,32 +3412,199 @@ function missingRequiredFields(record) {
         .map(([, label]) => label);
 }
 
-// Write a new authored entry (blank New Entry or cloned sibling). Validates the
-// identity fields client-side first (the daemon validates too, but this gives a
-// precise, immediate message), then sends the authorship patch — the same op the
-// re-author path sends, minus `replaces`. On success the returned record is inserted
-// at the top of the working set, the modal closes, and the owner lands on the new row.
-// A daemon rejection (duplicate anchor — including an unedited clone — or a missing
-// field) surfaces as a toast; the modal stays open.
-async function submitCreate(ctx) {
+// The daemon anchors a record on (word_lower, pos, shaw, var) (basis.anchor_key); the
+// distinctness guard compares against the SAME key, so it must lower the word too. The
+// client's anchorKey() is case-sensitive (it keys the bulk-selection Set off a record's
+// own displayed anchor, which is always self-consistent), so the guard uses its own.
+function distinctnessKey(record) {
+    return [
+        (record.word || "").toLowerCase(),
+        record.pos || "",
+        record.shaw || "",
+        record.var || "",
+    ].join("\0");
+}
+
+// The live siblings of `word` the distinctness guard checks against — every annotated
+// record sharing the Latin word (the daemon's `related` read, the SAME set that would
+// collide). Cached by lowercased word so typing does not re-query per keystroke. A cache
+// value of `null` means the fetch is IN FLIGHT (the siblings are not yet known); the
+// guard treats that as "checking", never as "distinct", so a duplicate is never waved
+// through in the fetch window. The fetch re-evaluates the open dialog once it lands.
+const relatedGuardCache = new Map();
+
+// The guard's view of a word's siblings: {pending, siblings}. `pending` true = the
+// fetch is outstanding, so the caller must not conclude "distinct". `siblings` is the
+// LIVE occupants (a dropped / resurfaced-drop sibling has vacated its anchor and never
+// blocks a re-author). An absent word (nothing typed yet) is neither pending nor
+// occupied — an empty, resolved set.
+function guardSiblings(word) {
+    const key = (word || "").toLowerCase();
+    if (!key) {
+        return { pending: false, siblings: [] };
+    }
+    if (relatedGuardCache.has(key)) {
+        const cached = relatedGuardCache.get(key);
+        return cached === null
+            ? { pending: true, siblings: [] }
+            : { pending: false, siblings: cached.filter(isLiveSibling) };
+    }
+    relatedGuardCache.set(key, null);
+    callDaemon({ op: "related", word })
+        .then((result) => {
+            relatedGuardCache.set(key, result.records);
+            if (isCreateMode()) {
+                evaluateDistinctness(state.modalEditor);
+            }
+        })
+        .catch(() => relatedGuardCache.delete(key));
+    return { pending: true, siblings: [] };
+}
+
+// A sibling occupies its anchor only while it is a LIVE record — a dropped or
+// resurfaced-drop row has vacated it, so authoring the same anchor is legitimate.
+function isLiveSibling(record) {
+    return record.patch_state !== PATCH_STATE.DROPPED
+        && !(record.patch_state === PATCH_STATE.ORPHANED
+             && record.orphan_kind === ORPHAN_KIND.RESURFACED_DROP);
+}
+
+// Evaluate the distinctness guard (D3) against the dialog's current fields and paint it
+// LIVE. EXACT-ANCHOR duplication (word_lower, pos, shaw, var already live) HARD-BLOCKS:
+// the verdict buttons disable and the guard names the collision. While the sibling fetch
+// is in flight ("pending") the verdicts are ALSO disabled — the guard never waves an
+// anchor through before it knows the siblings. A CANONICAL conflict (a different-shaw
+// accepted canonical on the same word/pos/var — the daemon's _canonical_conflict) only
+// WARNS: authoring a competing candidate is legitimate, so the verdicts stay live. An
+// anchor still missing a required field is neither blocked nor warned, and the guard
+// stays quiet (submit surfaces the precise "Required: …" message).
+const BLOCKING_GUARD_STATES = new Set(["collision", "pending"]);
+
+function evaluateDistinctness(ctx) {
+    if (!ctx || ctx.mode !== CREATE_MODE) {
+        return;
+    }
+    const record = harvestRecord(ctx);
+    const guard = ctx.root.querySelector(".create-guard");
+    const verdicts = ctx.root.querySelectorAll(".create-verdict");
+    const status = distinctnessStatus(record);
+    guard.dataset.state = status.state;
+    guard.textContent = status.message;
+    const blocked = BLOCKING_GUARD_STATES.has(status.state);
+    for (const button of verdicts) {
+        button.disabled = blocked;
+    }
+}
+
+// Whether the create dialog's verdicts are currently blocked by the distinctness guard
+// — read off the guard element the live evaluation already painted (evaluateDistinctness
+// is the SOLE painter, running synchronously on every input/change and on open), so the
+// keyboard Accept and the buttons share one source of truth. A collision OR a pending
+// fetch blocks both.
+function createVerdictBlocked(ctx) {
+    const guard = ctx?.root?.querySelector(".create-guard");
+    return Boolean(guard) && BLOCKING_GUARD_STATES.has(guard.dataset.state);
+}
+
+// The guard verdict for a harvested record: {state, message}. "collision" (exact live
+// anchor exists) and "pending" (siblings not yet fetched) both block; "warn" (a rival
+// canonical exists) allows; "ok" (distinct, or still incomplete) is silent.
+function distinctnessStatus(record) {
+    if (missingRequiredFields(record).length) {
+        return { state: "ok", message: "" };
+    }
+    const { pending, siblings } = guardSiblings(record.word);
+    if (pending) {
+        return { state: "pending", message: "Checking for an existing entry…" };
+    }
+    const key = distinctnessKey(record);
+    if (siblings.some((sibling) => distinctnessKey(sibling) === key)) {
+        return {
+            state: "collision",
+            message: `This entry already exists (${record.word} · ${record.pos} · ${record.var}). `
+                + "Edit the Shavian, POS or dialect to make it distinct.",
+        };
+    }
+    const rival = canonicalRival(record, siblings);
+    if (rival) {
+        return {
+            state: "warn",
+            message: `A canonical ${record.var} entry already exists for ${record.word}/${record.pos} `
+                + `(${rival.shaw}). Flag one as a variant/merger, or author a competing candidate.`,
+        };
+    }
+    return { state: "ok", message: "" };
+}
+
+// The patch states the daemon treats as an accepted (sanctioned/shipped) entry —
+// mirrors editord ACCEPTED_STATES, for the canonical-conflict check.
+const ACCEPTED_STATES = new Set([PATCH_STATE.ACCEPTED, PATCH_STATE.EDITED, PATCH_STATE.AUTHORED]);
+
+// The daemon's one-canonical-per-(word,pos,var) rival (editord _canonical_conflict),
+// mirrored client-side to WARN before the write: only when the authored record is itself
+// canonical (no merger, not variant) does a different-shaw live canonical sibling on the
+// same (word,pos,var) count. Returns that sibling, or null.
+function canonicalRival(record, siblings) {
+    if (!isCanonicalRecord(record)) {
+        return null;
+    }
+    return siblings.find((sibling) =>
+        sibling.pos === record.pos
+        && (sibling.var || "") === (record.var || "")
+        && sibling.shaw !== record.shaw
+        && isCanonicalRecord(sibling)
+        && ACCEPTED_STATES.has(sibling.patch_state)) ?? null;
+}
+
+// A record is CANONICAL when it carries no additive flag (empty mergers, not variant) —
+// the daemon's _is_canonical. Only canonical accepts contend for the one-per-key slot.
+function isCanonicalRecord(record) {
+    return !(record.mergers && record.mergers.length) && !record.variant;
+}
+
+// Author a new entry from the create dialog (Accept or Flag). Validates the identity
+// fields client-side (the daemon validates too, but this gives a precise, immediate
+// message), then sends the authorship patch: {op:"patch", anchor:null, record, author}.
+// Flag additionally re-authors the fresh record with op flag (the daemon flags an
+// authored entry via `replaces`, so a flagged authorship is author-then-flag). On
+// success the modal closes and the owner lands on the new row; a daemon rejection on the
+// authorship write surfaces as a toast with the dialog left open. The distinctness guard
+// has already disabled the buttons on an exact-anchor collision, so this is the
+// belt-and-braces backstop, not the primary block.
+async function authorEntry(ctx, { flag }) {
     const record = harvestRecord(ctx);
     const missing = missingRequiredFields(record);
     if (missing.length) {
         showToast(`Required: ${missing.join(", ")}.`, true);
         return;
     }
+    let authored;
     try {
-        const result = await callDaemon({
-            op: "patch",
-            anchor: null,
-            record,
-            author: AUTHOR,
-        });
-        closeModal();
-        insertAuthoredRecord(result.records[0]);
-        showToast(`authored · ${result.result}`);
+        authored = await callDaemon({ op: "patch", anchor: null, record, author: AUTHOR });
     } catch (error) {
         showToast(error.message, true);
+        return;
+    }
+    // The record is now live. Surface its row NOW — even if the follow-up flag fails —
+    // so a written entry is never stranded invisibly in the store. The dialog closes
+    // regardless: the row is on the workbench and re-decidable from there.
+    closeModal();
+    insertAuthoredRecord(authored.records[0]);
+    if (!flag) {
+        showToast(`authored · ${authored.result}`);
+        return;
+    }
+    try {
+        const flagged = await callDaemon(
+            { op: "flag", anchor: null, author: AUTHOR, replaces: authored.records[0].patch_id });
+        applyWriteResult(flagged.records, { refocus: false });
+        await refreshCommitStatus();
+        await refreshPatchCounts();
+        showToast(`flagged · ${flagged.result}`);
+    } catch (error) {
+        // The entry was authored but not flagged — a loud, recoverable state: the row is
+        // already on the workbench (authored), so the owner can flag it from there.
+        showToast(`authored, but flag failed: ${error.message}`, true);
     }
 }
 
@@ -3948,12 +4130,11 @@ function applyWriteResult(records, { step: doStep = true, refocus = true } = {})
     }
     refreshPacing();
     if (isModalEditorOpen()) {
-        if (replacement) {
-            refreshModalEditor(replacement);
-        }
-        // The detail behind the modal is not re-rendered, so its related list would
-        // otherwise still show this sibling's pre-write state — refresh it in place so
-        // the owner returns to a current list on dismiss.
+        // In the edit modal the verdict IS the dismiss: applying a verdict closes the
+        // modal in the same action (no separate save-then-close). The affected main row
+        // was already re-annotated in place above; now return to the workbench and
+        // refresh the detail's related list so the re-decided sibling reads current.
+        closeModal();
         reloadRelatedForDetail();
         return;
     }
@@ -4085,12 +4266,15 @@ const NON_REPEAT_KEYS = new Set(["a", "x", "f", "c", "u", "v"]);
 const MODAL_REVIEW_KEYS = new Set(["a", "x", "e", "f", "c"]);
 
 // The keyboard while a modal owns the screen. A create modal takes only Escape
-// (dismiss) and Enter (submit) — its fields carry no listeners, so those keys reach
-// here regardless of focus. An edit modal (a related entry opened for review) behaves
-// like the main review flow but scoped to the modal record: with a field focused the
-// field's own onFieldKey runs (Enter=accept/save, Escape=exit edit), so this leaves it
-// alone — mirroring the main flow, where field-focused keys are never global verdicts;
-// with no field focused, the verdict keys act via activeContext() and Escape dismisses.
+// (dismiss/Cancel) and Enter (Accept — author the entry) — its fields carry no
+// listeners, so those keys reach here regardless of focus. Enter honours the
+// distinctness guard: a collision-blocked dialog does not author on Enter, exactly as
+// the disabled Accept button does not. An edit modal (a related entry opened for review)
+// behaves like the main review flow but scoped to the modal record: with a field focused
+// the field's own onFieldKey runs (Enter=accept/save, Escape=exit edit), so this leaves
+// it alone — mirroring the main flow, where field-focused keys are never global
+// verdicts; with no field focused, the verdict keys act via activeContext() and Escape
+// dismisses.
 function handleModalKey(event) {
     if (isCreateMode()) {
         if (event.key === "Escape") {
@@ -4098,7 +4282,9 @@ function handleModalKey(event) {
             closeModal();
         } else if (event.key === "Enter") {
             event.preventDefault();
-            submitCreate(state.modalEditor);
+            if (!createVerdictBlocked(state.modalEditor)) {
+                authorEntry(state.modalEditor, { flag: false });
+            }
         }
         return;
     }

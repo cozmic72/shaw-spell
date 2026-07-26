@@ -1268,9 +1268,11 @@ function glanceColumn(ctx, group, overridden) {
     // Latin word, exactly as today; divergent (a cross-group hand-pick) → the distinct
     // words rolled up, still read-only (bulk-retagging the anchor would re-anchor).
     const wordConsensus = fieldConsensus(group, "word");
-    const word = wordConsensus.uniform
-        ? cell("latin", record.word)
-        : cell("latin latin-multiple", rollupLabel(wordConsensus));
+    const word = cell("latin", record.word);
+    if (!wordConsensus.uniform) {
+        word.classList.add("latin-multiple");
+        applyDistinctDisplay(word, wordConsensus);
+    }
     markOverridden(word, word, overridden.has("word"));
     // The word wears its verdict as a colour-coded box (state hue border) instead of
     // a separate STATE pill — so state is glanceable right on the word. The state name
@@ -1310,14 +1312,26 @@ function glanceColumn(ctx, group, overridden) {
     return column;
 }
 
-// A read-only "NN1 ·2, NN2 ·1" rollup of a divergent field across a group — the distinct
-// values (commonest first), each with its member count. Used for the anchor-identity
-// fields (word, pos) that must never be bulk-overwritten (§1.2).
-function rollupLabel(consensus) {
-    return [...consensus.distinct]
+// The uniform divergent-field display: the distinct values (commonest first) on ONE
+// line as a comma-separated list, prefixed with `·N` (the distinct-value count).
+// CSS truncates the line with an ellipsis, so an unbounded selection can never wall
+// the panel; the FULL list is the element's `title=` tooltip, reachable on hover.
+// Applied to every divergent slot — the read-only anchor rollups (word/pos) and the
+// editable "multiple" fields (var/shaw/ipa) — so they all read the same way.
+function distinctDisplay(consensus) {
+    const values = [...consensus.distinct]
         .sort((a, b) => b.count - a.count)
-        .map((entry) => `${entry.key || "—"} ·${entry.count}`)
-        .join(", ");
+        .map((entry) => entry.key || "—");
+    const list = values.join(", ");
+    return { text: `·${values.length} ${list}`, title: list };
+}
+
+// Set the truncated one-line divergent display on an element and its full-list tooltip.
+function applyDistinctDisplay(element, consensus) {
+    const { text, title } = distinctDisplay(consensus);
+    element.textContent = text;
+    element.title = title;
+    element.classList.add("distinct-values");
 }
 
 // POS as a read-only glance field. It is anchor identity, never editable — bulk-
@@ -1348,7 +1362,7 @@ function posSpelledOut(group, overridden) {
         value.classList.add("pos-glance-multiple");
         const tag = document.createElement("span");
         tag.className = "pos-glance-tag";
-        tag.textContent = rollupLabel(consensus);
+        applyDistinctDisplay(tag, consensus);
         value.append(tag);
     }
     wrap.append(caption, value);
@@ -2898,9 +2912,10 @@ function fieldInput(name, label, value, extraClass, idPrefix) {
 // Group-native: the field consults the whole group. When every member shares the value
 // the box shows it exactly and editing applies to all (N=1 is the trivial case — this is
 // the byte-identical single-record render). When members differ, the box renders the
-// "multiple" state (D1): empty, a greyed `multiple` placeholder, a `·N values` reveal
-// listing the distinct values, and a marker (`data-consensus="multiple"`) the harvest
-// reads. Typing OVERWRITES the field for every member (no unlock); the first keystroke
+// "multiple" state (D1): empty, a greyed `multiple` placeholder, a one-line truncated
+// `·N a, b, c` list of the distinct values (full list on hover), and a marker
+// (`data-consensus="multiple"`) the harvest reads. Typing OVERWRITES the field for every
+// member (no unlock); the first keystroke
 // flips the box to a pending-overwrite style and marks it touched so the harvest knows
 // to fan the value out (an untouched "multiple" box leaves each member's value alone).
 function editField(ctx, group, name, label, extraClass, overridden) {
@@ -2920,42 +2935,13 @@ function editField(ctx, group, name, label, extraClass, overridden) {
             input.dataset.touched = touched ? "true" : "";
             input.classList.toggle("pending-overwrite", touched);
         });
-        wrap.append(valuesReveal(consensus));
+        const values = document.createElement("span");
+        values.className = "field-multiple-values";
+        applyDistinctDisplay(values, consensus);
+        wrap.append(values);
     }
     markOverridden(wrap, caption, overridden);
     return wrap;
-}
-
-// The `·N values` reveal beside a "multiple" text field: a disclosure that lists the
-// distinct values held across the group, each with the member(s) that hold it, so the
-// owner can inspect the spread before deciding to overwrite. Inspection only — clicking
-// a value does NOT set it (D1: only typing overwrites).
-function valuesReveal(consensus) {
-    const details = document.createElement("details");
-    details.className = "values-reveal";
-    const summary = document.createElement("summary");
-    summary.textContent = `·${consensus.distinct.length} values`;
-    details.append(summary);
-    const list = document.createElement("ul");
-    list.className = "values-reveal-list";
-    for (const entry of consensus.distinct) {
-        const item = document.createElement("li");
-        item.append(
-            cell("values-reveal-value", entry.key || "—"),
-            cell("values-reveal-where", valuesRevealWhere(entry.members)),
-        );
-        list.append(item);
-    }
-    details.append(list);
-    return details;
-}
-
-// A compact "(NN1/RRP)" tag naming where a distinct value lives — the member's pos/var
-// identity, joined for the few members that share the value. Read-only context.
-function valuesRevealWhere(members) {
-    return members
-        .map((member) => `${member.pos || "—"}/${member.var || "—"}`)
-        .join(", ");
 }
 
 // The verdict controls, group-native. Every verdict fans out to one patch per member

@@ -1543,8 +1543,11 @@ function selectedGroup() {
 // focused record and a multi-selection route through. N=1 renders exactly today's
 // single-record card (chrome + the related/definitions evidence for that record); N>=2
 // renders the group-native chrome (common fields editable, divergent fields in the
-// "multiple"/tri-state form) with NO evidence section (a group has no single word to
-// gather evidence for). The verdict bar fans out to one patch per member (§1.3).
+// "multiple"/tri-state form). The evidence pair (related + definitions) shows whenever
+// the selection is Latin-uniform — every real group shares one Latin word, so the
+// evidence is unambiguous and keys off that shared word, exactly as at N=1. Only a
+// hand-picked cross-word selection (mixed Latin words) hides it. The verdict bar fans
+// out to one patch per member (§1.3).
 function renderGroupEditor(group) {
     const record = group[0];
     // A fresh context starts in review mode; but a re-render of the SAME focused record
@@ -1558,7 +1561,11 @@ function renderGroupEditor(group) {
     );
     const editor = recordEditor(group, { scope: "detail", mode: "edit" });
     state.mainContext.editing = wasEditing;
-    if (group.length > 1) {
+    // Evidence keys off the Latin word: a Latin-uniform group (every real group, and
+    // trivially N=1) shares one word, so the related tree + definitions are unambiguous
+    // and gather off the shared word. A cross-word hand-pick has no single word to
+    // gather for, so it renders chrome alone.
+    if (!latinUniform(group)) {
         DETAIL.replaceChildren(editor);
         setDetailMode();
         return;
@@ -1577,6 +1584,15 @@ function renderGroupEditor(group) {
     setDetailMode();
     loadDefinitions(record, definitions);
     loadRelated(record, related);
+}
+
+// True when every member of the selection shares the same Latin word — the condition
+// under which the word-keyed evidence (related + definitions) is unambiguous. Words are
+// compared case-insensitively, mirroring the daemon's natural key (word.lower, per
+// compareAnchors). N=1 is trivially uniform.
+function latinUniform(group) {
+    const first = group[0].word.toLowerCase();
+    return group.every((member) => member.word.toLowerCase() === first);
 }
 
 // The consensus of one field across a group: uniform (every member holds the same

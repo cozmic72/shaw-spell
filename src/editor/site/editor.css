@@ -1092,7 +1092,11 @@ body {
 /* A mixed-state group carries no single hue: the word box keeps the neutral --state-edge
    default (var(--rule)) since .state-multiple sets no state class. */
 .latin.latin-multiple { font-size: 26px; color: var(--ink-soft); }
-.pos-glance-value.pos-glance-multiple .pos-glance-tag { font-size: 15px; }
+/* The rolled-up POS tag sits in the content-sized posvar group (its .pos-glance
+   ancestor is flex:0 0 auto), so the .distinct-values `max-width:100%` has no finite
+   bound to clip against and the line overflows. A concrete ch cap gives the ellipsis
+   something to engage on — matching the ch-based caps the other glance cells use. */
+.pos-glance-value.pos-glance-multiple .pos-glance-tag { font-size: 15px; max-width: 18ch; }
 
 /* Every divergent slot's distinct-value list is one truncated line: an ellipsis keeps
    an unbounded selection from walling the panel, and the full list is on the `title=`
@@ -1123,6 +1127,12 @@ body {
     font-family: var(--mono);
     color: var(--ink-soft);
 }
+/* The var field's "multiple" list lives in the content-sized posvar group (its
+   .edit-field is flex:0 0 auto), so — unlike shaw/ipa, whose fields sit in the
+   width-bounded glance-column — its .distinct-values `max-width:100%` has no finite
+   bound and overflows. Cap it in ch (the posvar idiom, cf. the 11ch var input) so the
+   ellipsis engages; the full list stays on the title tooltip. */
+.glance-posvar .field-multiple-values.distinct-values { max-width: 18ch; }
 
 /* A tri-state variation toggle whose members disagree ("mixed", D2): a dashed indeterminate
    pill. Clicking it makes a uniform decision across all members. */

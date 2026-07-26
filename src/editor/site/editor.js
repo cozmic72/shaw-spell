@@ -1313,17 +1313,19 @@ function glanceColumn(ctx, group, overridden) {
 }
 
 // The uniform divergent-field display: the distinct values (commonest first) on ONE
-// line as a comma-separated list, prefixed with `·N` (the distinct-value count).
-// CSS truncates the line with an ellipsis, so an unbounded selection can never wall
-// the panel; the FULL list is the element's `title=` tooltip, reachable on hover.
+// line as a plain comma-separated list. CSS truncates the line with an ellipsis, so an
+// unbounded selection can never wall the panel; the FULL list is the element's `title=`
+// tooltip, reachable on hover. No count prefix — the list already shows the values and
+// the tooltip the rest; a leading count would carry the Shavian namer dot (`·`), which
+// reads as linguistic content beside Shavian, not a UI count.
 // Applied to every divergent slot — the read-only anchor rollups (word/pos) and the
 // editable "multiple" fields (var/shaw/ipa) — so they all read the same way.
 function distinctDisplay(consensus) {
-    const values = [...consensus.distinct]
+    const list = [...consensus.distinct]
         .sort((a, b) => b.count - a.count)
-        .map((entry) => entry.key || "—");
-    const list = values.join(", ");
-    return { text: `·${values.length} ${list}`, title: list };
+        .map((entry) => entry.key || "—")
+        .join(", ");
+    return { text: list, title: list };
 }
 
 // Set the truncated one-line divergent display on an element and its full-list tooltip.

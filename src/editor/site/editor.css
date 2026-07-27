@@ -711,6 +711,49 @@ body {
 .ledger-row:hover { background: var(--paper-raised); }
 .ledger-row.active { background: var(--paper-raised); }
 .ledger-row.active::before { width: 5px; background: var(--accent); }
+
+/* ---- record-list grouping (Phase 3) ---- */
+/* A collapsed group HEADER is a tightened ledger row previewing the export-winner: a
+   disclosure triangle + a membership chip in the state track, then the winner's
+   columns. Its state track is a compact cluster rather than the verbose stamp pill. */
+.group-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+}
+.group-disclosure {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--accent);
+}
+/* Reuse the shared chevron glyph + open-rotation the related tree uses. */
+.group-disclosure[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+.group-count {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ledger-group-header { font-weight: 600; }
+
+/* A group CHILD row is indented under its header so the tree reads at a glance. The
+   matched children are bright (full opacity); a sibling fetched via `related` that
+   fell outside the active filter is DIMMED (opacity, works in both themes) but stays
+   fully interactive — dimming is de-emphasis, not disable (§3.3, D7). */
+.ledger-row.group-child { padding-left: 32px; }
+.ledger-row.group-child[data-filter-match="false"] {
+    opacity: 0.5;
+    font-weight: 400;
+}
 .col-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-shaw {
     font-family: var(--shaw);

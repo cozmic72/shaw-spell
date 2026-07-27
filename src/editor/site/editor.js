@@ -755,9 +755,10 @@ function renderLedger() {
         }
         LEDGER.append(groupRow(group));
         if (state.groupsExpanded.has(group.key)) {
-            for (const child of groupChildRows(group)) {
-                LEDGER.append(child);
-            }
+            const children = groupChildRows(group);
+            // The last child closes the expanded-group card (bottom rounding).
+            children[children.length - 1].classList.add("group-child-last");
+            LEDGER.append(...children);
         }
     }
 }

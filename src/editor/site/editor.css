@@ -49,6 +49,22 @@
        is indented by the same amount so the roman spelling lines up directly above
        the Shavian glyphs. Kept here as one value so the two never drift apart. */
     --shaw-glyph-inset: 19px;
+
+    /* ---- nest-card vocabulary ---- */
+    /* ONE styling vocabulary for BOTH folded structures — the record list's
+       expanded group card and the related tree's open spelling node — so the two
+       cards share one palette + geometry by construction. The tints are ink-mixed:
+       quiet next to the meaning-bearing state hues, and derived from --ink/--paper
+       so they flip with the theme; children sit a step deeper than the parent so
+       the nesting is legible. --nest-inset is the card's horizontal stand-off from
+       its list's edges (each structure refunds it out of its own row padding to
+       keep grid columns still); --nest-standoff is the vertical breathing room at
+       the card's top and bottom. */
+    --nest-radius: 7px;
+    --nest-inset: 6px;
+    --nest-standoff: 3px;
+    --nest-tint-parent: color-mix(in srgb, var(--ink) 5%, var(--paper));
+    --nest-tint-child: color-mix(in srgb, var(--ink) 10%, var(--paper));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -607,8 +623,15 @@ body {
        child indent) — then the seven data columns. */
     grid-template-columns: 22px 20px 84px 1fr 1.3fr 64px 40px 56px 48px;
     gap: 10px;
+    /* The gutter run's width — both gutter tracks plus the gap between them —
+       where the group-child spine ends. MUST track the template + gap above. */
+    --ledger-gutter: 52px;
     align-items: center;
-    padding: 0 16px;
+    /* One shared row inset (overridden per breakpoint): the expanded-group card
+       spends part of it as margin and refunds the rest as padding, so its grid
+       columns stay aligned with plain rows. */
+    --ledger-inset: 16px;
+    padding: 0 var(--ledger-inset);
 }
 
 /* Touch multi-select bar: the count and the Done affordance that leaves the mode.
@@ -636,9 +659,12 @@ body {
     cursor: pointer;
 }
 /* A picked row wears a quiet accent wash so a scanned selection reads at a glance,
-   distinct from the focused (active) row's edge. */
-.ledger-row.picked { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.ledger-row.picked:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+   distinct from the focused (active) row's edge.
+   The wash mixes over --pick-ground (transparent on a plain row) so rows with a
+   card tint under them can keep it — an accent-over-bare-paper pick inside a
+   tinted card would read LIGHTER than its siblings and punch a hole in the card. */
+.ledger-row.picked { background: color-mix(in srgb, var(--accent) 12%, var(--pick-ground, transparent)); }
+.ledger-row.picked:hover { background: color-mix(in srgb, var(--accent) 18%, var(--pick-ground, transparent)); }
 .ledger-head {
     height: 30px;
     font-size: 10px;
@@ -740,8 +766,53 @@ body {
 }
 .ledger-group-header { font-weight: 600; }
 
+/* An EXPANDED group reads as one nested card, drawn in the shared --nest-*
+   vocabulary (:root) the related tree's open node also wears: parent tint on the
+   header, child tint a step deeper, the card inset from the list edges with the
+   top corners rounded on the header and the bottom on the last child, and the
+   internal row-rules dropped so each row's state edge-bar joins into one
+   continuous bar down the card's left (box-sizing keeps the rows flush at 40px).
+   The padding refunds the card margin out of the shared row inset, so the grid
+   columns stay aligned with plain rows at every breakpoint. Collapsed headers
+   and singletons keep the plain-row look. */
+.ledger-group-header.expanded, .ledger-row.group-child {
+    margin: 0 var(--nest-inset);
+    padding: 0 calc(var(--ledger-inset) - var(--nest-inset));
+    border-bottom: none;
+}
+.ledger-group-header.expanded {
+    margin-top: var(--nest-standoff);
+    border-radius: var(--nest-radius) var(--nest-radius) 0 0;
+}
+.ledger-row.group-child-last {
+    margin-bottom: var(--nest-standoff);
+    border-radius: 0 0 var(--nest-radius) var(--nest-radius);
+}
+/* The edge-bar is a square strip pinned to the row's left; round its outer
+   corner where the card's corner rounds so it doesn't poke past the curve. */
+.ledger-group-header.expanded::before { border-top-left-radius: var(--nest-radius); }
+.ledger-row.group-child-last::before { border-bottom-left-radius: var(--nest-radius); }
+/* The card tints ride at ZERO specificity (:where) so the hover/active/picked
+   washes above (class-level specificity) still take the row when they apply. */
+:where(.ledger-group-header.expanded) {
+    background: var(--nest-tint-parent);
+    --pick-ground: var(--nest-tint-parent);
+}
+/* Child rows carry a parent-hued SPINE down the gutter: the leading chevron +
+   count tracks (empty on children) keep the PARENT tint, tying the children to
+   their header, while the data columns wear the deeper child tint. One gradient
+   background, so a state wash above replaces spine and tint together; the state
+   edge-bar (::before) paints over the spine's left edge. */
+:where(.ledger-row.group-child) {
+    --spine-edge: calc(var(--ledger-inset) - var(--nest-inset) + var(--ledger-gutter));
+    background: linear-gradient(to right,
+        var(--nest-tint-parent) 0 var(--spine-edge),
+        var(--nest-tint-child) var(--spine-edge));
+    --pick-ground: var(--nest-tint-child);
+}
+
 /* A group CHILD row sits under its header with its gutter cells EMPTY — the blank
-   gutter IS the indent (no extra padding, so the grid columns stay aligned). The
+   gutter IS the indent (no per-child padding, so the grid columns stay aligned). The
    matched children are bright (full opacity); a sibling fetched via `related` that
    fell outside the active filter is DIMMED (opacity, works in both themes) but stays
    fully interactive — dimming is de-emphasis, not disable (§3.3, D7). */
@@ -1817,6 +1888,16 @@ body {
     margin-top: 30px;
     padding-top: 22px;
     border-top: 1px solid var(--rule);
+    /* Row geometry shared by the head, the leaf rows and the node summaries:
+       the plain horizontal inset, and the leaf indent that lands the first leaf
+       column past the node chevron. Held as vars so the open-node card (below)
+       can refund its --nest-inset margin out of them and keep the grid columns
+       still — the same refund trick the ledger card plays with --ledger-inset. */
+    --related-inset: 10px;
+    --related-indent: 30px;
+    /* No mobile override (unlike the ledger's --ledger-inset/--ledger-gutter): these
+       drive padding/flex, not a grid-track boundary, so the card refund stays correct
+       at every breakpoint without one. */
 }
 .related-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
 .related-list { list-style: none; }
@@ -1834,7 +1915,7 @@ body {
     grid-template-columns: minmax(90px, 2fr) 34px 50px minmax(90px, 2.4fr) 56px 18px 52px;
     gap: 8px 12px;
     align-items: baseline;
-    padding: 0 10px;
+    padding: 0 var(--related-inset);
 }
 /* The sortable header row, styled like the ledger head (uppercase, tracked, quiet)
    and reusing the .sort-head button look + ▲/▼ carets. The state header spans the
@@ -1874,7 +1955,7 @@ body {
    across all leaves. */
 .related-row {
     align-items: baseline;
-    padding: 8px 10px 8px 30px;
+    padding: 8px var(--related-inset) 8px var(--related-indent);
     border-bottom: 1px solid var(--rule);
     border-left: 3px solid transparent;
 }
@@ -1973,7 +2054,7 @@ body {
     align-items: baseline;
     gap: 8px;
     cursor: pointer;
-    padding: 6px 10px;
+    padding: 6px var(--related-inset);
     border-bottom: 1px solid var(--rule);
     list-style: none;
     user-select: none;
@@ -1990,6 +2071,43 @@ body {
     transition: transform 0.12s ease;
 }
 .related-node[open] > .related-node-summary > .related-chevron { transform: rotate(90deg); }
+
+/* An OPEN node wears the SAME nested card as the ledger's expanded group — the
+   shared --nest-* vocabulary (:root) supplies the tints, radius and inset, so
+   the two structures cannot drift apart. The whole <details> stands off the
+   list edges by the card inset; the summary and leaf paddings refund that
+   margin out of --related-inset/--related-indent so the leaf grid columns do
+   not shift. A collapsed node stays a plain summary row, mirroring a collapsed
+   group header. */
+.related-node[open] {
+    margin: var(--nest-standoff) var(--nest-inset);
+}
+.related-node[open] > .related-node-summary {
+    padding: 6px calc(var(--related-inset) - var(--nest-inset));
+    border-bottom: none;
+    border-radius: var(--nest-radius) var(--nest-radius) 0 0;
+}
+/* Zero specificity so the summary's :hover wash above still takes it. */
+:where(.related-node[open] > .related-node-summary) {
+    background: var(--nest-tint-parent);
+}
+.related-node[open] .related-row {
+    padding: 8px calc(var(--related-inset) - var(--nest-inset))
+             8px calc(var(--related-indent) - var(--nest-inset));
+}
+/* The subtree is the card body: child tint, bottom corners rounded (overflow
+   clips the square row washes to the curve). The leaf indent — the chevron-
+   column area — keeps the PARENT tint: the same parent-hued spine the ledger's
+   child gutter wears, tying the leaves to their header. Row-level washes
+   (hover/here) paint over spine and tint together. */
+.related-node[open] > .related-subtree {
+    --spine-edge: calc(var(--related-indent) - var(--nest-inset));
+    background: linear-gradient(to right,
+        var(--nest-tint-parent) 0 var(--spine-edge),
+        var(--nest-tint-child) var(--spine-edge));
+    border-radius: 0 0 var(--nest-radius) var(--nest-radius);
+    overflow: hidden;
+}
 
 /* The summarising label lays the word, glyphs, and rolled-up POS/VAR tags out on
    one line so the shared spelling and what it covers read at a glance. */
@@ -2389,7 +2507,8 @@ kbd {
         grid-template-columns:
             20px 16px minmax(46px, auto) minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
         gap: 6px;
-        padding: 0 10px;
+        --ledger-gutter: 42px;
+        --ledger-inset: 10px;
     }
     .col-conf { display: none; }
     /* Clip the state pill so long labels (AUTHORED, UNREVIEWED) don't force the

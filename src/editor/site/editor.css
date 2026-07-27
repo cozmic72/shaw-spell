@@ -601,7 +601,10 @@ body {
 }
 .ledger-head, .ledger-row {
     display: grid;
-    grid-template-columns: 84px 1fr 1.3fr 64px 40px 56px 48px;
+    /* Two narrow gutter tracks lead every row — the group-disclosure chevron and the
+       member count (blank on singleton/child rows, so the empty gutter reads as the
+       child indent) — then the seven data columns. */
+    grid-template-columns: 14px 20px 84px 1fr 1.3fr 64px 40px 56px 48px;
     gap: 10px;
     align-items: center;
     padding: 0 16px;
@@ -713,21 +716,15 @@ body {
 .ledger-row.active::before { width: 5px; background: var(--accent); }
 
 /* ---- record-list grouping (Phase 3) ---- */
-/* A collapsed group HEADER is a tightened ledger row previewing the export-winner: a
-   disclosure triangle + a membership chip in the state track, then the winner's
-   columns. Its state track is a compact cluster rather than the verbose stamp pill. */
-.group-state {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-width: 0;
-    overflow: hidden;
-}
+/* A collapsed group HEADER is a tightened ledger row previewing the export-winner:
+   the chevron + member-count gutter tracks filled, then the winner's columns (state
+   pill included, per the members' consensus). */
 .group-disclosure {
-    flex: none;
     display: inline-flex;
     align-items: center;
-    padding: 2px;
+    justify-content: center;
+    padding: 0;
+    font-size: 14px;
     background: none;
     border: none;
     cursor: pointer;
@@ -739,17 +736,14 @@ body {
     font-size: 10px;
     letter-spacing: 0.04em;
     color: var(--ink-soft);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 .ledger-group-header { font-weight: 600; }
 
-/* A group CHILD row is indented under its header so the tree reads at a glance. The
+/* A group CHILD row sits under its header with its gutter cells EMPTY — the blank
+   gutter IS the indent (no extra padding, so the grid columns stay aligned). The
    matched children are bright (full opacity); a sibling fetched via `related` that
    fell outside the active filter is DIMMED (opacity, works in both themes) but stays
    fully interactive — dimming is de-emphasis, not disable (§3.3, D7). */
-.ledger-row.group-child { padding-left: 32px; }
 .ledger-row.group-child[data-filter-match="false"] {
     opacity: 0.5;
     font-weight: 400;
@@ -2384,14 +2378,14 @@ kbd {
     .detail { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 
     /* Drop the confidence pips from the crowded ledger row on narrow screens;
-       the detail card still shows confidence. State, word, shaw, var, freq, pos —
-       six tracks (conf hidden). On a phone the fixed metadata columns starve
+       the detail card still shows confidence. Chevron, count, state, word, shaw,
+       var, freq, pos — eight tracks (conf hidden). On a phone the fixed metadata columns starve
        word + shaw (the things being reviewed), so give those the space: clip the
        state pill and crank the var/freq/pos tracks down to just their short
        content, and tighten the gap + padding to reclaim width. */
     .ledger-head, .ledger-row {
         grid-template-columns:
-            minmax(46px, auto) minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
+            12px 16px minmax(46px, auto) minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
         gap: 6px;
         padding: 0 10px;
     }

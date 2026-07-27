@@ -465,6 +465,8 @@ PAGE = """<!DOCTYPE html>
                 <button type="button" class="select-bar-done" id="selectBarDone">Done</button>
             </div>
             <div class="ledger-head" id="ledgerHead">
+                <span class="col-chevron" aria-hidden="true"></span>
+                <span class="col-count" title="group members">#</span>
                 <button type="button" class="col-state sort-head" data-sort-key="state">state</button>
                 <button type="button" class="col-word sort-head" data-sort-key="word">word</button>
                 <button type="button" class="col-shaw sort-head" data-sort-key="shaw">shaw</button>

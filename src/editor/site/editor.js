@@ -741,7 +741,7 @@ function overriddenFields(record) {
 
 // The ledger folds the flat working set into (word_lower, shaw, variation-set,
 // verdict-state) groups (§3, D5–D7). A group of ONE renders as a plain ledger row —
-// byte-identical to the flat row, no triangle, no chip (the N=1 invariant). A group
+// byte-identical to the flat row, empty gutter cells (the N=1 invariant). A group
 // of 2+ renders a disclosure HEADER (previewing the export-winner) that expands to
 // its member rows. `state.records` stays the flat, daemon-ordered working set; this
 // is a paint-time view transform, so paging, in-place refresh, and anchor-keyed
@@ -916,9 +916,11 @@ function syncSortIndicators() {
     }
 }
 
-// The seven ledger cells for a record (state stamp, word, shaw, var, confidence,
+// The seven data cells for a record (state stamp, word, shaw, var, confidence,
 // freq, pos), in column order. Shared by the flat/child row and the collapsed group
 // header (which shows the export-winner's cells), so a header scans as one ledger row.
+// Every row prepends the two narrow gutter tracks (chevron, count) itself: a header
+// fills them, a flat/child row leaves them empty (the empty gutter is the indent).
 function ledgerCells(record) {
     return [
         cell("stamp col-state " + record.patch_state, record.patch_state),
@@ -960,7 +962,7 @@ function ledgerRow(record, index, filterMatch = null) {
     // no index to look its record up by, but it can still be a picked group member. The
     // key carries NUL separators (not attribute-safe), so it rides on a JS property.
     row._anchorKey = anchorKey(record.anchor);
-    row.append(...ledgerCells(record));
+    row.append(cell("col-chevron", ""), cell("col-count", ""), ...ledgerCells(record));
     bindLongPress(row, record);
     row.addEventListener("click", (event) => onRowClick(record, index, event));
     return row;
@@ -968,10 +970,10 @@ function ledgerRow(record, index, filterMatch = null) {
 
 // A collapsed group HEADER (§3.6, D5): a tightened ledger row previewing the
 // export-winner (the var-hierarchy winner the export will ship), fronted by a
-// disclosure triangle and a `total · N match` count chip. It is NOT a state.records
+// disclosure chevron and a member-count gutter cell. It is NOT a state.records
 // row — it carries no data-index (so index-keyed refresh/highlight skip it) — but it
 // IS a selection target: clicking its select region picks the WHOLE (unfiltered)
-// group (§3.2), while the triangle toggles expansion. Expanding appends every member
+// group (§3.2), while the chevron toggles expansion. Expanding appends every member
 // row below (matched bright, fetched siblings dimmed, §3.3).
 function groupRow(group) {
     const winner = exportWinner(group.members).record;
@@ -987,27 +989,26 @@ function groupRow(group) {
     const expanded = state.groupsExpanded.has(group.key);
     li.classList.toggle("expanded", expanded);
 
-    // The header's state track is a compact cluster — [disclosure ▸] [count chip] —
-    // in place of the verbose stamp pill (the narrow track cannot hold both, and the
-    // edge-bar hue already carries the export-winner's state). The chip states the
-    // membership (`total · N match`); the winner's word/shaw/var/pos fill the rest.
-    const [, ...rest] = ledgerCells(winner);
-    const stateCell = document.createElement("span");
-    stateCell.className = "col-state group-state";
-    stateCell.title = `group state: ${winner.patch_state}`;
-    stateCell.append(groupDisclosure(group, expanded), groupCountChip(group));
-    li.append(stateCell, ...rest);
+    // Gutter tracks: the disclosure chevron, then the member count. The STATE track
+    // shows the members' shared state pill (state is a grouping axis, so members agree
+    // in the normal case) and stays BLANK if they somehow diverge — mirroring how the
+    // group editor renders a divergent field (fieldConsensus/distinctDisplay).
+    const [stamp, ...rest] = ledgerCells(winner);
+    const stateConsensus = fieldConsensus(
+        group.members.map((entry) => entry.record), "patch_state");
+    const stateCell = stateConsensus.uniform ? stamp : cell("col-state", "");
+    li.append(groupDisclosure(group, expanded), groupCountCell(group), stateCell, ...rest);
     li.addEventListener("click", (event) => onGroupHeaderClick(group, event));
     return li;
 }
 
-// The header's disclosure triangle. Its click toggles the group's expansion WITHOUT
-// selecting the group (stopPropagation), so the triangle drills down and the rest of
-// the header row selects/reviews.
+// The header's disclosure chevron, filling the chevron gutter track. Its click
+// toggles the group's expansion WITHOUT selecting the group (stopPropagation), so the
+// chevron drills down and the rest of the header row selects/reviews.
 function groupDisclosure(group, expanded) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "group-disclosure";
+    button.className = "group-disclosure col-chevron";
     button.setAttribute("aria-expanded", String(expanded));
     button.setAttribute("aria-label", expanded ? "Collapse group" : "Expand group");
     const chevron = document.createElement("span");
@@ -1021,19 +1022,14 @@ function groupDisclosure(group, expanded) {
     return button;
 }
 
-// The `total · N match` count chip (§3.6): total members · members matching the
-// active filter. When every member matched, the "· N match" is redundant and drops to
-// a bare `· total`. Total is the FULL membership once fetched (state.groupMembers),
-// else the in-page member count (a group present in the working set has ≥1 matched
-// member; siblings outside the filter are pulled on demand).
-function groupCountChip(group) {
-    const matched = group.members.length;
+// The header's member-count gutter cell (§3.6): the FULL membership once fetched
+// (state.groupMembers), else the in-page member count (a group present in the working
+// set has ≥1 matched member; siblings outside the filter are pulled on demand).
+// Capped at two digits ("99+") to keep the track narrow.
+function groupCountCell(group) {
     const full = state.groupMembers.get(group.key);
-    const total = full ? full.length : matched;
-    const chip = cell("group-count", total === matched
-        ? `· ${total}`
-        : `${total} · ${matched} match`);
-    return chip;
+    const total = full ? full.length : group.members.length;
+    return cell("col-count group-count", total > 99 ? "99+" : String(total));
 }
 
 // A group header was clicked (outside its disclosure triangle): the group is a
@@ -1105,6 +1101,25 @@ function refillExpandedGroups() {
             highlightActiveRow(state.selected);
         })
         .catch((error) => showToast(error.message, true));
+}
+
+// The anchor keys of every member of every currently-expanded group. Captured BEFORE
+// a bulk verdict: anchors are the stable member identity that carries expansion across
+// the re-fold, where the group KEY changes (its verdict-state axis moved). Uses the
+// full membership when fetched, else the in-page members.
+function expandedGroupAnchorKeys() {
+    const anchors = new Set();
+    for (const group of foldLedgerGroups(state.records)) {
+        if (!state.groupsExpanded.has(group.key)) {
+            continue;
+        }
+        const members = state.groupMembers.get(group.key)
+            || group.members.map((entry) => entry.record);
+        for (const record of members) {
+            anchors.add(anchorKey(record.anchor));
+        }
+    }
+    return anchors;
 }
 
 // Select the WHOLE unfiltered group (§3.2, D7): add EVERY member's anchor — matched
@@ -2239,16 +2254,17 @@ function definitionsLoading() {
 }
 
 // Fetch the focused word's senses and fill `section` when it returns. Mirrors
-// loadRelated's staleness discipline: the generation token plus the focused-anchor
+// loadRelated's staleness discipline: the generation token plus the panel-membership
 // and connected checks ensure only the newest fetch for the current word may render.
 async function loadDefinitions(record, section) {
     const generation = ++state.definitionsGeneration;
     const focused = record.anchor;
     try {
         const result = await callDaemon({ op: "definitions", word: record.word });
-        const current = state.records[state.selected];
+        const panel = state.mainContext;
         if (generation !== state.definitionsGeneration
-            || !current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
+            || !panel.group.some((member) => sameAnchor(member.anchor, focused))
+            || !section.isConnected) {
             return;
         }
         renderDefinitions(section, record.word, result.senses);
@@ -2599,17 +2615,21 @@ function relatedHeading(count) {
 // can supersede an in-flight fetch before it resolves: the selection may have stepped
 // on (fast review), or a write may have re-decided a related entry and triggered a
 // fresh reload of THIS record's list. Both are caught by the generation token — only
-// the latest loadRelated may render — backstopped by the anchor/connected checks. So
-// the list always reflects the newest daemon state (e.g. the sibling you just accepted
-// shows accepted), never a slower earlier response.
+// the latest loadRelated may render — backstopped by the panel-membership/connected
+// checks. So the list always reflects the newest daemon state (e.g. the sibling you
+// just accepted shows accepted), never a slower earlier response. The membership check
+// asks the DETAIL PANEL (state.mainContext), not the review cursor: a group
+// header-select gathers evidence off the panel's group[0], which need not be the
+// record state.selected points at.
 async function loadRelated(record, section) {
     const generation = ++state.relatedGeneration;
     const focused = record.anchor;
     try {
         const result = await callDaemon({ op: "related", word: record.word, shaw: record.shaw });
-        const current = state.records[state.selected];
+        const panel = state.mainContext;
         if (generation !== state.relatedGeneration
-            || !current || !sameAnchor(current.anchor, focused) || !section.isConnected) {
+            || !panel.group.some((member) => sameAnchor(member.anchor, focused))
+            || !section.isConnected) {
             return;
         }
         renderRelated(section, result.records, focused);
@@ -4421,6 +4441,10 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
         return;
     }
     const focusedAnchor = state.records[state.selected]?.anchor ?? null;
+    // Capture the expanded groups by member ANCHORS before the writes: verdict-state
+    // is a grouping axis, so the verdict changes the group KEY and the pre-verdict
+    // keys won't match the post-fold groups (see refreshAfterBulk).
+    const expandedAnchors = expandedGroupAnchorKeys();
     let done = 0;
     let skipped = 0;
     const failures = [];
@@ -4443,7 +4467,7 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
     state.multi.clear();
     state.lastToggledKey = null;
     state.touchMulti = false;
-    refreshAfterBulk(focusedAnchor);
+    refreshAfterBulk(focusedAnchor, expandedAnchors);
     reportBulk(verb, done, skipped, failures);
     // One refresh for the whole run, not per record — the store changed.
     await refreshCommitStatus();
@@ -4454,11 +4478,20 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
 // removed) and restore the review cursor to the entry it was on — or its nearest
 // surviving neighbour if that entry was itself dropped. With the selection cleared,
 // select() renders the single-record card, back in the ordinary review flow.
-function refreshAfterBulk(focusedAnchor) {
+function refreshAfterBulk(focusedAnchor, expandedAnchors) {
     // A group run re-decided members whose verdict-state (a grouping axis) moved, so any
     // cached full membership is stale — drop it before the authoritative re-fold; it
     // re-fetches lazily on the next expand / header-select.
     state.groupMembers.clear();
+    // Carry expansion across the verdict's key change: any post-fold multi-member
+    // group holding a member of a pre-verdict expanded group stays expanded (the
+    // just-decided members re-fold under their NEW verdict-state key).
+    for (const group of foldLedgerGroups(state.records)) {
+        if (group.members.length >= 2
+            && group.members.some((entry) => expandedAnchors.has(anchorKey(entry.record.anchor)))) {
+            state.groupsExpanded.add(group.key);
+        }
+    }
     renderLedger();
     let index = focusedAnchor
         ? state.records.findIndex((r) => sameAnchor(r.anchor, focusedAnchor))
@@ -4468,6 +4501,9 @@ function refreshAfterBulk(focusedAnchor) {
     }
     select(index);
     syncSelectBar();
+    // Prune the retired pre-verdict keys and re-warm the surviving expanded groups'
+    // cleared memberships so their dimmed siblings reappear.
+    refillExpandedGroups();
 }
 
 function reportBulk(verb, done, skipped, failures) {

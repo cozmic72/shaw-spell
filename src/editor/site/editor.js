@@ -972,10 +972,12 @@ function ledgerRow(record, index, filterMatch = null) {
 // A collapsed group HEADER (§3.6, D5): a tightened ledger row previewing the
 // export-winner (the var-hierarchy winner the export will ship), fronted by a
 // disclosure chevron and a member-count gutter cell. It is NOT a state.records
-// row — it carries no data-index (so index-keyed refresh/highlight skip it) — but it
-// IS a selection target: clicking its select region picks the WHOLE (unfiltered)
-// group (§3.2), while the chevron toggles expansion. Expanding appends every member
-// row below (matched bright, fetched siblings dimmed, §3.3).
+// row — it carries no data-index (so index-keyed refresh skips it; the selection
+// painter addresses it by _groupKey, lighting a COLLAPSED header when the cursor's
+// record is folded inside) — but it IS a selection target: clicking its select region
+// picks the WHOLE (unfiltered) group (§3.2), while the chevron toggles expansion.
+// Expanding appends every member row below (matched bright, fetched siblings dimmed,
+// §3.3).
 function groupRow(group) {
     const winner = exportWinner(group.members).record;
     const li = document.createElement("li");
@@ -1056,16 +1058,14 @@ function toggleGroupExpanded(key) {
     if (state.groupsExpanded.has(key)) {
         state.groupsExpanded.delete(key);
         renderLedger();
-        syncSelectionUI();
-        highlightActiveRow(state.selected);
+        paintLedgerSelection();
         return;
     }
     state.groupsExpanded.add(key);
     ensureGroupMembers(key)
         .then(() => {
             renderLedger();
-            syncSelectionUI();
-            highlightActiveRow(state.selected);
+            paintLedgerSelection();
         })
         .catch((error) => showToast(error.message, true));
 }
@@ -1098,8 +1098,7 @@ function refillExpandedGroups() {
     Promise.all(toRefill.map((key) => ensureGroupMembers(key)))
         .then(() => {
             renderLedger();
-            syncSelectionUI();
-            highlightActiveRow(state.selected);
+            paintLedgerSelection();
         })
         .catch((error) => showToast(error.message, true));
 }
@@ -1229,7 +1228,6 @@ function reviewOnly(index) {
     state.multi.clear();
     state.lastToggledKey = anchorKey(state.records[index].anchor);
     select(index);
-    syncSelectionUI();
 }
 
 // Set when a long-press fires, to swallow the click the browser synthesises when
@@ -1374,7 +1372,7 @@ function select(index) {
     if (!state.multi.size) {
         revealSelectedInGroup(index);
     }
-    highlightActiveRow(index);
+    paintLedgerSelection();
     // When a multi-selection is live the card shows that GROUP, not the focused record;
     // moving the review cursor still scrolls the row into view but leaves the group
     // panel in place. Otherwise the focused record (or the empty state) renders through
@@ -1391,28 +1389,13 @@ function select(index) {
 }
 
 // The record-bearing rows (flat singletons + expanded group children) carry a
-// data-index keyed to state.records; group headers do not. These helpers address a row
+// data-index keyed to state.records; group headers do not. This helper addresses a row
 // by its working-set index across the now-grouped DOM, so the index-keyed flows
-// (highlight, scroll, in-place refresh) stay index-driven without knowing the fold.
-function recordRows() {
-    return LEDGER.querySelectorAll(".ledger-row[data-index]");
-}
-
+// (scroll, in-place refresh) stay index-driven without knowing the fold.
 function rowByIndex(index) {
     return index >= 0
         ? LEDGER.querySelector(`.ledger-row[data-index="${index}"]`)
         : null;
-}
-
-// Mark the row at `index` as the review cursor, clearing the mark on every other row.
-// Split out so a ledger rebuild that must NOT re-render the detail card (a modal write
-// removing a row) can still restore the highlight the rebuild dropped. A record inside
-// a COLLAPSED group has no row on screen, so no highlight shows there — the group
-// header carries no cursor mark (its click reviews the whole group, not one member).
-function highlightActiveRow(index) {
-    for (const row of recordRows()) {
-        row.classList.toggle("active", Number(row.dataset.index) === index);
-    }
 }
 
 function scrollRowIntoView(index) {
@@ -1442,7 +1425,7 @@ function revealSelectedInGroup(index) {
     }
     state.groupsExpanded.add(key);
     renderLedger();
-    syncSelectionUI();
+    // No repaint here: the caller (select) runs paintLedgerSelection right after.
 }
 
 function renderEmptyDetail() {
@@ -1538,7 +1521,7 @@ function onSelectionChanged() {
     // focused record) without routing through select(); flush an unsaved edit on the
     // record leaving the card first.
     autoSaveMainEdit();
-    syncSelectionUI();
+    paintLedgerSelection();
     const group = selectedGroup();
     if (group.length) {
         renderGroupEditor(group);
@@ -1547,19 +1530,49 @@ function onSelectionChanged() {
     }
 }
 
-function syncSelectionUI() {
-    // Record rows (singletons + children) wash picked by their own anchor. A group
-    // HEADER washes picked when its WHOLE membership is selected — the group is a
-    // selection unit (§3.2); a partial child-pick (the split case, §3.4) leaves the
-    // header unpicked while its picked children wash individually.
+// The SINGLE source of truth for ledger row highlighting. Given the current
+// (state.selected, state.multi), set .selected on exactly the rows that belong to the
+// active selection and clear it on every other row — headers included, so no row can
+// retain a stale highlight across a selection change. A multi-pick wins over the
+// cursor (mirroring selectedGroup()); with no pick, the cursor row (or the collapsed
+// header hiding it) is the selection. Record rows join by their own anchor; a group
+// HEADER joins when its WHOLE membership is selected — the group is a selection unit
+// (§3.2); a partial child-pick (the split case, §3.4) leaves the header unlit while
+// its picked children light individually.
+function paintLedgerSelection() {
+    const multi = state.multi.size > 0;
     for (const row of LEDGER.querySelectorAll(".ledger-row")) {
-        if (row._groupKey) {
-            row.classList.toggle("picked", isGroupFullySelected(row._groupKey));
-        } else if (row._anchorKey) {
-            row.classList.toggle("picked", state.multi.has(row._anchorKey));
+        let on;
+        if (multi) {
+            on = row._groupKey
+                ? isGroupFullySelected(row._groupKey)
+                : Boolean(row._anchorKey) && state.multi.has(row._anchorKey);
+        } else {
+            on = rowIsCursor(row);
         }
+        row.classList.toggle("selected", on);
     }
     syncSelectBar();
+}
+
+// Whether a row carries the review cursor: a record row by its working-set index, a
+// COLLAPSED group header when the cursor's record is folded inside it (select()
+// normally auto-expands that group, so this branch covers the pre-repaint frame and
+// any future no-auto-expand mode). An expanded header never carries the cursor — its
+// child row shows it.
+function rowIsCursor(row) {
+    if (state.selected < 0) {
+        return false;
+    }
+    if (row._anchorKey) {
+        return Number(row.dataset.index) === state.selected;
+    }
+    if (row._groupKey) {
+        const cursor = state.records[state.selected];
+        return Boolean(cursor) && groupKey(cursor) === row._groupKey
+            && !state.groupsExpanded.has(row._groupKey);
+    }
+    return false;
 }
 
 // True when every member of a group's FULL membership is in the selection — the
@@ -2979,7 +2992,7 @@ function relatedRow(record, focusedAnchor) {
     row.className = `related-row state-${provenance.state}`;
     const here = sameAnchor(record.anchor, focusedAnchor);
     if (here) {
-        row.classList.add("here");
+        row.classList.add("selected");
     }
 
     const badge = cell(`related-badge ${provenance.state}`, provenance.glyph);
@@ -4105,7 +4118,6 @@ function insertAuthoredRecord(record) {
     countDecision();
     renderLedger();
     select(0);
-    syncSelectionUI();
     saveSession();
     refreshCommitStatus();
     refreshPatchCounts();
@@ -4606,7 +4618,6 @@ function removeRow(anchor, { refocus = true, deferRender = false } = {}) {
     if (refocus) {
         renderLedger();
         select(Math.min(state.selected, state.records.length - 1));
-        syncSelectionUI();
     }
 }
 
@@ -4625,8 +4636,7 @@ function removeModalRow(anchor) {
         }
         refreshPacing();
         renderLedger();
-        highlightActiveRow(state.selected);
-        syncSelectionUI();
+        paintLedgerSelection();
     }
     closeModal();
     reloadRelatedForDetail();
@@ -4674,8 +4684,7 @@ function applyWriteResult(records, { step: doStep = true, refocus = true, deferR
         state.groupMembers.clear();
         if (!deferRender) {
             renderLedger();
-            syncSelectionUI();
-            highlightActiveRow(state.selected);
+            paintLedgerSelection();
             // Clearing the cache emptied the dimmed-sibling rows of any group left OPEN
             // (they fall back to in-page members only, §3.3). Re-warm those groups so
             // their siblings reappear without waiting for a re-interaction.

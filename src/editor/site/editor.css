@@ -50,27 +50,25 @@
        the Shavian glyphs. Kept here as one value so the two never drift apart. */
     --shaw-glyph-inset: 19px;
 
-    /* ---- etched-groove FRAME vocabulary ---- */
+    /* ---- group-unit vocabulary ---- */
     /* ONE nesting language for BOTH folded structures — the record list's expanded
-       group and the related tree's open spelling node. An expanded group is framed
-       by a subtle rounded etched groove (Logic Pro track group): a low-contrast
-       inset ring plus a soft recess shading inside the top edge and a 1px light
-       rim under the bottom edge, so the group reads as gently recessed from the
-       surrounding rows. The rows INSIDE stay plain — the groove is the only
-       nesting signal. Everything is box-shadow (no layout impact), so each
-       structure's padding refund keeps its grid columns still. --frame-inset is
-       the frame's horizontal stand-off from its list's edges; --frame-standoff
-       the vertical breathing room above and below it. */
+       group and the related tree's open spelling node. The unit is TOP-anchored:
+       the HEADER is the top of the unit and flows straight into its children (its
+       bottom hairline is suppressed), a thin continuous left edge runs from the
+       header down through every child binding them as one vertical run (Logic Pro
+       track group), and the LAST child closes the unit at the bottom — the clean
+       break sits BELOW the group, before the next unrelated row. Children stay
+       full-width, undivided rows; the etched bracket — top groove, left edge,
+       bottom groove — is the only nesting signal, all box-shadow (no layout
+       impact). */
     --frame-radius: 7px;
-    --frame-inset: 6px;
-    --frame-standoff: 3px;
     /* The groove line derives from --rule (softened toward paper) so it flips
-       with the theme; recess + glint are true light/shade, overridden at night. */
+       with the theme. */
     --groove-line: color-mix(in srgb, var(--rule) 80%, var(--paper));
-    --groove-recess: rgba(35, 32, 26, 0.10);
-    --groove-glint: rgba(255, 255, 255, 0.5);
-    /* The frame's two vertical sides, shared by every row of a framed group. */
-    --frame-sides: inset 1px 0 0 var(--groove-line), inset -1px 0 0 var(--groove-line);
+    /* The unit's continuous left edge — worn identically by the header and every
+       child of the ledger's flat run; the related tree's subtree wrapper wears
+       it in one piece. */
+    --frame-edge: inset 1px 0 0 var(--groove-line);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -89,8 +87,6 @@
         --state-orphan-resurfaced: #e0699a;
         --state-orphan-lost: #7fa0d4;
         --state-orphaned: #b590c4;
-        --groove-recess: rgba(0, 0, 0, 0.32);
-        --groove-glint: rgba(255, 255, 255, 0.05);
     }
 }
 
@@ -626,15 +622,14 @@ body {
 }
 .ledger-head, .ledger-row {
     display: grid;
-    /* Two narrow gutter tracks lead every row — the group-disclosure chevron and the
-       member count (blank on singleton/child rows, so the empty gutter reads as the
-       child indent) — then the seven data columns. */
+    /* Two narrow gutter tracks lead every row — the group-disclosure chevron and
+       the member count (blank on singleton and child rows) — then the seven data
+       columns. Every row shares this one template, so an expanded group's
+       children align with the top-level columns. */
     grid-template-columns: 22px 20px 84px 1fr 1.3fr 64px 40px 56px 48px;
     gap: 10px;
     align-items: center;
-    /* One shared row inset (overridden per breakpoint): the expanded-group frame
-       spends part of it as margin and refunds the rest as padding, so its grid
-       columns stay aligned with plain rows. */
+    /* One shared row inset (overridden per breakpoint). */
     --ledger-inset: 16px;
     padding: 0 var(--ledger-inset);
 }
@@ -769,46 +764,41 @@ body {
 }
 .ledger-group-header { font-weight: 600; }
 
-/* An EXPANDED group wears the etched-groove FRAME (:root vocabulary): because the
-   DOM is a flat <li> run with no wrapper, the groove is assembled from per-row
-   box-shadows — the header caps the top (line + soft recess shading), every member
-   draws the two sides, the last child caps the bottom (line + light rim below).
-   Box-shadows cost no layout, so the padding refunds the frame margin out of the
-   shared row inset and the grid columns stay aligned with plain rows at every
-   breakpoint. The rows INSIDE keep the plain-row look — hairlines, paper ground,
-   state edge-bar — the groove is the only nesting signal. Collapsed headers and
-   singletons match no rule here, so they stay plain top-level rows. */
-.ledger-group-header.expanded, .ledger-row.group-child {
-    margin: 0 var(--frame-inset);
-    padding: 0 calc(var(--ledger-inset) - var(--frame-inset));
-    box-shadow: var(--frame-sides);
-}
+/* An EXPANDED group is ONE top-anchored unit (:root group-unit vocabulary): the
+   header is the TOP — top groove + top-left rounding, its bottom hairline
+   suppressed so it flows straight into its first child — and the children run
+   beneath it as plain full-width rows (same tracks and gutter cells as every
+   top-level row: no indent, so they hang under THEIR header, not toward the next
+   record). Because the DOM is a flat <li> run with no wrapper, the continuous
+   left edge is assembled per-row — the header and every child wear --frame-edge,
+   reading as one uninterrupted strip. Child hairlines are suppressed (the unit
+   flows undivided); the LAST child closes it — bottom groove + bottom-left
+   rounding — so the clean break sits below the group. Collapsed headers and
+   singletons carry none of this (the N=1 invariant: frame state is gated on
+   .expanded / .group-child). */
 .ledger-group-header.expanded {
-    margin-top: var(--frame-standoff);
-    border-radius: var(--frame-radius) var(--frame-radius) 0 0;
-    box-shadow: var(--frame-sides),
-        inset 0 1px 0 var(--groove-line),
-        inset 0 5px 6px -4px var(--groove-recess);
+    border-bottom: none;
+    border-radius: var(--frame-radius) 0 0 0;
+    box-shadow: var(--frame-edge), inset 0 1px 0 var(--groove-line);
+}
+.ledger-row.group-child {
+    border-bottom: none;
+    box-shadow: var(--frame-edge);
 }
 .ledger-row.group-child-last {
-    margin-bottom: var(--frame-standoff);
-    /* The groove's bottom line replaces the row hairline. */
-    border-bottom: none;
-    border-radius: 0 0 var(--frame-radius) var(--frame-radius);
-    box-shadow: var(--frame-sides),
-        inset 0 -1px 0 var(--groove-line),
-        0 1px 0 var(--groove-glint);
+    /* The unit's bottom groove replaces the row hairline. */
+    border-radius: 0 0 0 var(--frame-radius);
+    box-shadow: var(--frame-edge), inset 0 -1px 0 var(--groove-line);
 }
-/* The edge-bar is a square strip pinned to the row's left; round its outer
-   corner where the frame's corner rounds so it doesn't poke past the curve. */
+/* The state edge-bar is a square strip pinned to the row's left; round its outer
+   corners where the unit's corners round so it doesn't poke past the curve. */
 .ledger-group-header.expanded::before { border-top-left-radius: var(--frame-radius); }
 .ledger-row.group-child-last::before { border-bottom-left-radius: var(--frame-radius); }
 
-/* A group CHILD row sits under its header with its gutter cells EMPTY — the blank
-   gutter IS the indent (no per-child padding, so the grid columns stay aligned). The
-   matched children are bright (full opacity); a sibling fetched via `related` that
-   fell outside the active filter is DIMMED (opacity, works in both themes) but stays
-   fully interactive — dimming is de-emphasis, not disable (§3.3, D7). */
+/* The matched children of an expanded group are bright (full opacity); a sibling
+   fetched via `related` that fell outside the active filter is DIMMED (opacity,
+   works in both themes) but stays fully interactive — dimming is de-emphasis,
+   not disable (§3.3, D7). */
 .ledger-row.group-child[data-filter-match="false"] {
     opacity: 0.5;
     font-weight: 400;
@@ -1881,16 +1871,10 @@ body {
     margin-top: 30px;
     padding-top: 22px;
     border-top: 1px solid var(--rule);
-    /* Row geometry shared by the head, the leaf rows and the node summaries:
-       the plain horizontal inset, and the leaf indent that lands the first leaf
-       column past the node chevron. Held as vars so the open-node frame (below)
-       can refund its --frame-inset margin out of them and keep the grid columns
-       still — the same refund trick the ledger frame plays with --ledger-inset. */
+    /* The plain horizontal row inset shared by the head, the leaf rows and the
+       node summaries. Leaf nesting comes from the open node's group unit (the
+       :root vocabulary's continuous left edge), not a per-row indent. */
     --related-inset: 10px;
-    --related-indent: 30px;
-    /* No mobile override (unlike the ledger's --ledger-inset): these drive
-       padding/flex, not a grid-track boundary, so the frame refund stays correct
-       at every breakpoint without one. */
 }
 .related-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
 .related-list { list-style: none; }
@@ -1942,13 +1926,11 @@ body {
     text-align: left;
     align-self: center;
 }
-/* Leaf rows nest UNDER their spelling node: a left indent lands the first column
-   just right of the node summary's label (past the chevron) so nothing (state cell
-   included) juts left of the disclosure. The shared grid keeps the columns aligned
-   across all leaves. */
+/* Leaf rows nest UNDER their spelling node inside the open node's group unit; the
+   shared grid keeps the columns aligned across all leaves. */
 .related-row {
     align-items: baseline;
-    padding: 8px var(--related-inset) 8px var(--related-indent);
+    padding: 8px var(--related-inset);
     border-bottom: 1px solid var(--rule);
     border-left: 3px solid transparent;
 }
@@ -2036,9 +2018,10 @@ body {
    folded into a two-level disclosure tree: each (roman word + Shavian spelling) is
    one node whose header (<summary>) SUMMARISES what's inside — the word, the glyphs,
    the rolled-up POS + VAR tags, and the leaf count. Expanding reveals the full flat
-   table (the leaf rows) for that spelling; there is no deeper nesting. Leaf rows
-   carry a fixed left indent (see .related-row) so they nest under their node, the
-   chevron leading the eye down to the aligned leaf columns. */
+   table (the leaf rows) for that spelling; there is no deeper nesting. The open
+   node's group unit (the continuous left edge running from summary through leaves)
+   ties the leaves to their node, the chevron leading the eye down to the aligned
+   leaf columns. */
 .related-node { border: none; }
 .related-node > .related-subtree { list-style: none; }
 .related-list .related-group { list-style: none; }
@@ -2066,37 +2049,27 @@ body {
 }
 .related-node[open] > .related-node-summary > .related-chevron { transform: rotate(90deg); }
 
-/* An OPEN node wears the SAME etched-groove frame as the ledger's expanded group —
-   the shared :root vocabulary supplies the groove, radius and inset, so the two
-   structures cannot drift apart. Unlike the ledger's flat <li> run, the <details>
-   IS a wrapper, so the whole groove rides on it as one box-shadow ring (+ top
-   recess, + bottom glint). It stands off the list edges by the frame inset; the
-   summary and leaf paddings refund that margin out of
-   --related-inset/--related-indent so the leaf grid columns do not shift. The
-   summary and leaves inside stay PLAIN rows — the groove is the only nesting
-   signal. A collapsed node stays a plain summary row, mirroring a collapsed
-   group header. */
-.related-node[open] {
-    margin: var(--frame-standoff) var(--frame-inset);
-    border-radius: var(--frame-radius);
-    box-shadow: inset 0 0 0 1px var(--groove-line),
-        inset 0 5px 6px -4px var(--groove-recess),
-        0 1px 0 var(--groove-glint);
-}
+/* An OPEN node wears the SAME top-anchored group unit as the ledger's expanded
+   group — the shared :root vocabulary supplies the left edge, grooves and radius,
+   so the two structures cannot drift apart. The summary is the TOP of the unit
+   (top groove + top-left rounding, its bottom hairline suppressed so it flows
+   straight into its leaves); unlike the ledger's flat <li> run, the <details>'
+   subtree IS a wrapper, so the rest of the unit rides on it in one piece —
+   continuous left edge + bottom close — its overflow clipping the square row
+   washes (hover/selected) to the curve. Leaf hairlines are suppressed: the unit
+   flows undivided. A collapsed node stays a plain summary row, mirroring a
+   collapsed group header. */
 .related-node[open] > .related-node-summary {
-    padding: 6px calc(var(--related-inset) - var(--frame-inset));
-    border-radius: var(--frame-radius) var(--frame-radius) 0 0;
+    border-bottom: none;
+    border-radius: var(--frame-radius) 0 0 0;
+    box-shadow: var(--frame-edge), inset 0 1px 0 var(--groove-line);
 }
-.related-node[open] .related-row {
-    padding: 8px calc(var(--related-inset) - var(--frame-inset))
-             8px calc(var(--related-indent) - var(--frame-inset));
-}
-/* The subtree is the frame body: bottom corners rounded, overflow clipping the
-   square row washes (hover/selected) to the curve. */
 .related-node[open] > .related-subtree {
-    border-radius: 0 0 var(--frame-radius) var(--frame-radius);
+    border-radius: 0 0 0 var(--frame-radius);
+    box-shadow: var(--frame-edge), inset 0 -1px 0 var(--groove-line);
     overflow: hidden;
 }
+.related-node[open] > .related-subtree .related-row { border-bottom: none; }
 
 /* The summarising label lays the word, glyphs, and rolled-up POS/VAR tags out on
    one line so the shared spelling and what it covers read at a glance. */
@@ -2496,8 +2469,6 @@ kbd {
         grid-template-columns:
             20px 16px minmax(46px, auto) minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
         gap: 6px;
-        /* Keep --ledger-inset above --frame-inset (6px) so the expanded-group
-           frame's padding refund never goes negative on a phone. */
         --ledger-inset: 10px;
     }
     .col-conf { display: none; }

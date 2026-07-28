@@ -756,7 +756,8 @@ function renderLedger() {
         LEDGER.append(groupRow(group));
         if (state.groupsExpanded.has(group.key)) {
             const children = groupChildRows(group);
-            // The last child closes the expanded-group card (bottom rounding).
+            // The last child closes the group unit at the bottom (bottom groove +
+            // corner rounding); the expanded header is its top (see groupRow).
             children[children.length - 1].classList.add("group-child-last");
             LEDGER.append(...children);
         }
@@ -921,7 +922,8 @@ function syncSortIndicators() {
 // freq, pos), in column order. Shared by the flat/child row and the collapsed group
 // header (which shows the export-winner's cells), so a header scans as one ledger row.
 // Every row prepends the two narrow gutter tracks (chevron, count) itself: a header
-// fills them, a flat/child row leaves them empty (the empty gutter is the indent).
+// fills them, flat and child rows leave them blank — children share the top-level
+// template, aligned full-width under their header.
 function ledgerCells(record) {
     return [
         cell("stamp col-state " + record.patch_state, record.patch_state),
@@ -990,7 +992,12 @@ function groupRow(group) {
     // never queried by selector.
     li._groupKey = group.key;
     const expanded = state.groupsExpanded.has(group.key);
-    li.classList.toggle("expanded", expanded);
+    // The expanded header is the TOP of the group unit — the CSS frame state rides
+    // on this row-level class (aria-expanded on the disclosure button carries the
+    // accessibility semantics only).
+    if (expanded) {
+        li.classList.add("expanded");
+    }
 
     // Gutter tracks: the disclosure chevron, then the member count. The STATE track
     // shows the members' shared state pill (state is a grouping axis, so members agree
@@ -4723,6 +4730,27 @@ function step(delta) {
     select(next);
 }
 
+// Keyboard fold control (ArrowRight/+ expand, ArrowLeft/- collapse): acts on the
+// group holding the review cursor's record — the same key a collapsed header lights
+// up under — through the one toggle path the disclosure chevron uses (so an
+// explicit expand fetches the dimmed siblings, §3.3). A no-op when the group is
+// already in the requested state or the record is a singleton, so holding the key
+// is idempotent and the fold set never collects N=1 keys.
+function setCursorGroupExpanded(expand) {
+    const record = state.records[state.selected];
+    if (!record) {
+        return;
+    }
+    const key = groupKey(record);
+    if (state.groupsExpanded.has(key) === expand) {
+        return;
+    }
+    if (expand && state.records.filter((entry) => groupKey(entry) === key).length < 2) {
+        return;
+    }
+    toggleGroupExpanded(key);
+}
+
 // Enter edit mode: mark the card editing so Save works. Acts on the context that owns
 // the screen (detail or an edit-mode modal); the detail-card mode class is toggled only
 // for the main context, never reaching behind a modal backdrop. `focusShaw` moves the
@@ -4784,6 +4812,8 @@ function onFieldKey(event) {
 // Review-mode single-key bindings. These fire ONLY when no field holds focus (the
 // event target is not an input/select/textarea) — so typing Shavian never
 // triggers a verdict. The legacy arrow steppers stay as aliases (J/K mirror them).
+// Left/Right fold the cursor's group (the tree convention), with +/− as aliases
+// (= and _ so the keys work unshifted and shifted alike).
 const REVIEW_KEYS = {
     a: acceptSelected,
     x: dropSelected,
@@ -4796,6 +4826,12 @@ const REVIEW_KEYS = {
     k: () => step(-1),
     arrowdown: () => step(1),
     arrowup: () => step(-1),
+    arrowright: () => setCursorGroupExpanded(true),
+    arrowleft: () => setCursorGroupExpanded(false),
+    "+": () => setCursorGroupExpanded(true),
+    "=": () => setCursorGroupExpanded(true),
+    "-": () => setCursorGroupExpanded(false),
+    _: () => setCursorGroupExpanded(false),
     "?": () => toggleCheatsheet(),
 };
 
@@ -4927,6 +4963,8 @@ const SHORTCUT_GROUPS = [
         rows: [
             { keys: ["J", "K"], state: null, action: "Step next / previous" },
             { keys: ["↑", "↓"], state: null, action: "Step next / previous" },
+            { keys: ["→", "+"], state: null, action: "Expand the focused group" },
+            { keys: ["←", "-"], state: null, action: "Collapse the focused group" },
         ],
     },
     {

@@ -257,6 +257,14 @@ body {
     cursor: pointer;
 }
 .masthead-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
+/* ‹ › record-navigation pair: the ArrowUp/ArrowDown cursor step as buttons. The
+   glyph outgrows the masthead-btn label size for a clear target. */
+.step-btn {
+    font-size: 16px;
+    line-height: 1;
+    padding: 5px 12px;
+    min-width: 40px;
+}
 .new-entry + .help-toggle { margin-left: 0; }
 
 /* ---- filter bar ----
@@ -2435,6 +2443,9 @@ kbd {
     /* Same compaction for the keyboard toggle — collapse to just the glyph. */
     #kbToggle { flex: 0 0 auto; padding: 5px 11px; font-size: 0; }
     #kbToggle::before { content: "⌨"; font-size: 15px; }
+    /* The ‹ › record-navigation pair earns a full touch target on a phone — it is
+       the mobile stand-in for the arrow keys. */
+    .step-btn { flex: 0 0 auto; min-height: 40px; min-width: 40px; padding: 5px 11px; }
 
     /* Mobile chrome: the glance area needs no reflow — its compact base layout (the
        text stack with POS + var beside it, wrapping when too narrow) already fits a

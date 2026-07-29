@@ -295,6 +295,8 @@ const TOAST = document.getElementById("toast");
 const WORKBENCH = document.getElementById("workbench");
 const DRAWER_TOGGLE = document.getElementById("drawerToggle");
 const HELP_TOGGLE = document.getElementById("helpToggle");
+const STEP_PREV = document.getElementById("stepPrev");
+const STEP_NEXT = document.getElementById("stepNext");
 const NEW_ENTRY = document.getElementById("newEntry");
 const COMMIT_DECISIONS = document.getElementById("commitDecisions");
 const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
@@ -5600,6 +5602,10 @@ DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
+// Masthead ‹ › pair: the ArrowUp/ArrowDown cursor step as tappable buttons (phone
+// ergonomics) — same step() path as the keys, so traversal stays single-sourced.
+STEP_PREV.addEventListener("click", () => step(-1));
+STEP_NEXT.addEventListener("click", () => step(1));
 NEW_ENTRY.addEventListener("click", openCreateForm);
 COMMIT_DECISIONS.addEventListener("click", () => commitDecisions());
 // Backdrop click dismisses the modal, like the cheatsheet — only a click on the

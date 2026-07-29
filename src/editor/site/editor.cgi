@@ -326,6 +326,10 @@ PAGE = """<!DOCTYPE html>
                 title="Author a brand-new dictionary entry">+ New entry</button>
         <button type="button" class="help-toggle" id="helpToggle"
                 aria-controls="cheatsheet" title="Keyboard shortcuts (?)">? keys</button>
+        <button type="button" class="masthead-btn step-btn" id="stepPrev"
+                aria-label="Previous record" title="Previous record (↑/k)">‹</button>
+        <button type="button" class="masthead-btn step-btn" id="stepNext"
+                aria-label="Next record" title="Next record (↓/j)">›</button>
         <button type="button" class="masthead-btn" id="kbToggle"
                 onclick="ShawSpellKeyboard.openSettings()"
                 title="Keyboard layout & settings (Cmd/Ctrl+K toggles)">⌨ Keyboard</button>

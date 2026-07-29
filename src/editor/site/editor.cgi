@@ -309,7 +309,6 @@ PAGE = """<!DOCTYPE html>
 <body>
     <header class="masthead">
         <div class="mark">·𐑖𐑷-𐑕𐑐𐑧𐑤</div>
-        <span class="whoami" id="whoami" title="Signed in as"></span>
         <div class="masthead-text">
             <h1>Editorial Workbench</h1>
             <p class="strap">The dictionary as an editable overlay — accept, edit, drop, author.</p>
@@ -321,17 +320,10 @@ PAGE = """<!DOCTYPE html>
                 title="Commit the accumulated editorial decisions to git">Commit</button>
         <button type="button" class="new-entry" id="newEntry"
                 title="Author a brand-new dictionary entry">+ New entry</button>
-        <button type="button" class="help-toggle" id="helpToggle"
-                aria-controls="cheatsheet" title="Keyboard shortcuts (?)">? keys</button>
         <button type="button" class="masthead-btn step-btn" id="stepPrev"
                 aria-label="Previous record" title="Previous record (↑/k)">‹</button>
         <button type="button" class="masthead-btn step-btn" id="stepNext"
                 aria-label="Next record" title="Next record (↓/j)">›</button>
-        <button type="button" class="masthead-btn" id="kbToggle"
-                onclick="ShawSpellKeyboard.openSettings()"
-                title="Keyboard layout & settings (Cmd/Ctrl+K toggles)">⌨ Keyboard</button>
-        <button type="button" class="masthead-btn" id="logout"
-                title="Sign out">Sign out</button>
         <!-- Patch-store counts: total patches banked + how many were edited today
              (server local calendar day). Replaces the batch count the Commit button
              used to carry, so the signal survives on a repo-less tarball deploy where
@@ -339,7 +331,26 @@ PAGE = """<!DOCTYPE html>
              op on boot and after every write. -->
         <div class="patch-counts" id="patchCounts" aria-live="polite"
              title="Patches in the store — total, and edited today"></div>
-        <div class="tally" id="tally" aria-live="polite"></div>
+        <!-- Overflow menu: the occasional controls (identity, shortcut help, keyboard
+             settings, sign-out) behind one ⋯ trigger so the row keeps only the
+             always-in-hand actions. Same .facet-panel popover idiom as the filter
+             pickers; the ids inside are unchanged so the JS wiring still binds. -->
+        <div class="masthead-menu-wrap">
+            <button type="button" class="masthead-btn" id="mastheadMenu"
+                    aria-haspopup="true" aria-expanded="false"
+                    aria-label="More" title="More">⋯</button>
+            <div class="facet-panel masthead-menu" id="mastheadMenuPanel" hidden>
+                <span class="whoami" id="whoami" title="Signed in as"></span>
+                <button type="button" class="menu-item" id="helpToggle"
+                        aria-controls="cheatsheet"
+                        title="Keyboard shortcuts (?)">Keyboard shortcuts</button>
+                <button type="button" class="menu-item" id="kbToggle"
+                        onclick="ShawSpellKeyboard.openSettings()"
+                        title="Keyboard layout & settings (Cmd/Ctrl+K toggles)">Shavian keyboard</button>
+                <button type="button" class="menu-item" id="logout"
+                        title="Sign out">Sign out</button>
+            </div>
+        </div>
     </header>
 
     <!-- The filter bar shows only ACTIVE filters, as composable chips. "+ Add filter"

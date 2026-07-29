@@ -288,7 +288,6 @@ const ADD_FILTER_WRAP = document.getElementById("addFilterWrap");
 const FILTER_META = document.getElementById("filterMeta");
 const FILTERS_TOGGLE = document.getElementById("filtersToggle");
 const REFRESH_RESULTS = document.getElementById("refreshResults");
-const TALLY = document.getElementById("tally");
 const PATCH_COUNTS = document.getElementById("patchCounts");
 const LEDGER = document.getElementById("ledgerList");
 const LEDGER_HEAD = document.getElementById("ledgerHead");
@@ -304,6 +303,8 @@ const SPLITTER = document.getElementById("workbenchSplitter");
 const LEDGER_RAIL = document.getElementById("ledgerRail");
 const DRAWER_TOGGLE = document.getElementById("drawerToggle");
 const HELP_TOGGLE = document.getElementById("helpToggle");
+const MASTHEAD_MENU = document.getElementById("mastheadMenu");
+const MASTHEAD_MENU_PANEL = document.getElementById("mastheadMenuPanel");
 const STEP_PREV = document.getElementById("stepPrev");
 const STEP_NEXT = document.getElementById("stepNext");
 const NEW_ENTRY = document.getElementById("newEntry");
@@ -716,7 +717,6 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     state.groupsExpanded.clear();
     state.groupMembers.clear();
     materialisedSignature = querySignature(state.filters);
-    TALLY.textContent = `${result.total.toLocaleString()} matching`;
     renderLedger();
     renderFoot();
     select(landingIndex(preferredAnchor));
@@ -5610,15 +5610,13 @@ function paintPatchCounts(counts) {
     }
     const total = counts.total.toLocaleString();
     const today = Number.isFinite(counts.today) ? counts.today : 0;
-    PATCH_COUNTS.replaceChildren(
-        document.createTextNode(`${total} patch${counts.total === 1 ? "" : "es"} · `),
-        (() => {
-            const span = document.createElement("span");
-            span.className = "today-count";
-            span.textContent = `${today.toLocaleString()} today`;
-            return span;
-        })(),
-    );
+    // Two stacked lines (CSS column) so the pair costs one label's width, not two.
+    const totalLine = document.createElement("span");
+    totalLine.textContent = `${total} patch${counts.total === 1 ? "" : "es"}`;
+    const todayLine = document.createElement("span");
+    todayLine.className = "today-count";
+    todayLine.textContent = `${today.toLocaleString()} today`;
+    PATCH_COUNTS.replaceChildren(totalLine, todayLine);
 }
 
 // Query the daemon for the store counts and repaint. Non-fatal to the review flow
@@ -5744,6 +5742,16 @@ CREATE_MODAL.addEventListener("click", (event) => {
     }
 });
 ADD_FILTER.addEventListener("click", () => toggleAddMenu());
+// Masthead ⋯ overflow menu: a static .facet-panel holding the occasional controls
+// (whoami, shortcut help, keyboard settings, sign-out). Same open/close machinery
+// as the chip pickers; a click on any item closes the menu after the item's own
+// handler has run (bubbling order).
+MASTHEAD_MENU.addEventListener("click", () => togglePicker(MASTHEAD_MENU_PANEL, MASTHEAD_MENU));
+MASTHEAD_MENU_PANEL.addEventListener("click", (event) => {
+    if (event.target.closest("button")) {
+        closePopovers();
+    }
+});
 
 // Column-header sort: one delegated listener over the head row, so a header added
 // in the markup needs only its data-sort-key to become sortable.
@@ -6173,7 +6181,7 @@ function buildAddMenu() {
 function addMenuItem(spec) {
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "add-menu-item";
+    item.className = "menu-item";
     item.textContent = spec.label;
     item.addEventListener("click", () => addFilter(spec.field));
     return item;
@@ -6212,11 +6220,12 @@ function togglePicker(panel, trigger) {
     }
 }
 
-// Close every open popover: the chip pickers (kept in the DOM) and the +Add menu
+// Close every open popover: the static panels (chip pickers, the masthead ⋯ menu —
+// kept in the DOM, whose trigger is the preceding sibling) and the +Add menu
 // (removed, since it is rebuilt each open to reflect the current inactive set). Their
 // triggers' aria-expanded is reset.
 function closePopovers() {
-    for (const panel of CHIP_STRIP.querySelectorAll(".facet-panel:not([hidden])")) {
+    for (const panel of document.querySelectorAll(".facet-panel:not([hidden])")) {
         panel.hidden = true;
         panel.previousElementSibling.setAttribute("aria-expanded", "false");
     }
@@ -6228,11 +6237,12 @@ function closePopovers() {
 }
 
 // Tap/click outside any open popover closes it (touch-friendly: no hover involved);
-// Esc closes it too. A click on a chip trigger or the +Add button toggles via its own
-// handler, so those are excluded here.
+// Esc closes it too. A click on a chip trigger, the +Add button or the masthead ⋯
+// toggles via its own handler, so those are excluded here.
 document.addEventListener("pointerdown", (event) => {
     if (!event.target.closest(".filter-chip")
-        && !event.target.closest(".add-filter-wrap")) {
+        && !event.target.closest(".add-filter-wrap")
+        && !event.target.closest(".masthead-menu-wrap")) {
         closePopovers();
     }
 });

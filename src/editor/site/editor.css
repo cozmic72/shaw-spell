@@ -122,27 +122,23 @@ body {
     font-size: 12px;
     margin-top: 2px;
 }
-.tally {
-    margin-left: auto;
-    color: var(--ink-soft);
-    font-size: 12px;
-    letter-spacing: 0.04em;
-}
 /* Patch-store counts (total + edited-today): the batch signal the Commit button
-   used to carry, kept alive on a repo-less deploy. Sits just before the .tally in
-   the right cluster; margin-left:auto absorbs the slack before the pair. The
-   today count is tinted the accent when non-zero so a live session shows progress
-   at a glance. */
+   used to carry, kept alive on a repo-less deploy. Two stacked right-aligned lines
+   so the pair costs one label's width; margin-left:auto absorbs the slack before
+   the stats/menu cluster. The today count is tinted the accent when non-zero so a
+   live session shows progress at a glance. */
 .patch-counts {
     margin-left: auto;
+    display: flex;
+    flex-flow: column;
+    align-items: flex-end;
     color: var(--ink-soft);
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.35;
     letter-spacing: 0.04em;
     white-space: nowrap;
 }
 .patch-counts:empty { display: none; }
-.patch-counts + .tally { margin-left: 12px; }
-.patch-counts:empty + .tally { margin-left: auto; }
 .patch-counts .today-count { color: var(--accent); font-weight: 700; }
 /* Chevron toggle (filter panel): a compact affordance whose rotating caret carries
    the collapsed/expanded state (▸ collapsed, ▾ expanded), leaving just a short label
@@ -195,25 +191,6 @@ body {
 .drawer-rail .chevron { transform: rotate(90deg); }                        /* ▾ open it */
 .drawer-rail[aria-expanded="true"] .chevron { transform: rotate(-90deg); } /* ▴ close it */
 .drawer-backdrop { display: none; }
-/* Always-reachable shortcuts trigger, pinned to the masthead's right edge so a
-   mouse or touch user can find the keyboard help without an entry selected. */
-.help-toggle {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    background: none;
-    border: 1px dashed var(--rule);
-    border-radius: 2px;
-    min-height: 34px;
-    padding: 5px 14px;
-    cursor: pointer;
-}
-.help-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
-.help-toggle + .tally { margin-left: 0; }
-
 /* Commit the accumulated editorial decisions to git — the owner's own commit of
    data/patches/patches.jsonl. Tinted the edited green (an accepted decision's
    colour) so it reads as "bank these decisions". Leads the right cluster;
@@ -238,8 +215,10 @@ body {
 
 /* Author a new entry: tinted the authored purple its outcome carries, so the
    action reads as "make a new authored record" at a glance. Sits in the right
-   cluster after Commit, ahead of the help toggle. */
+   cluster after Commit; when Commit is hidden (repo-less deploy) its own
+   margin-left:auto takes over leading the cluster. */
 .new-entry {
+    margin-left: auto;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.08em;
@@ -253,8 +232,9 @@ body {
     cursor: pointer;
 }
 .new-entry:hover { background: var(--state-authored); color: var(--paper); }
+.commit-decisions:not([hidden]) + .new-entry { margin-left: 0; }
 
-/* Signed-in handle, near the front of the masthead. Quiet, mono, uppercase. */
+/* Signed-in handle, heading the ⋯ overflow menu. Quiet, mono, uppercase. */
 .whoami {
     font-family: var(--mono);
     font-size: 11px;
@@ -265,7 +245,8 @@ body {
 }
 .whoami:empty { display: none; }
 
-/* Sign out — a quiet toolbar text button, matching the workbench's look. */
+/* Quiet toolbar buttons (the ‹ › steppers, the ⋯ menu trigger), matching the
+   workbench's look. */
 .masthead-btn {
     font-family: var(--mono);
     font-size: 11px;
@@ -288,7 +269,30 @@ body {
     padding: 5px 12px;
     min-width: 40px;
 }
-.new-entry + .help-toggle { margin-left: 0; }
+/* The ⋯ overflow menu: one trigger for the occasional controls (identity, shortcut
+   help, keyboard settings, sign-out). Reuses the .facet-panel popover, anchored to
+   the trigger's wrap and opening from the masthead's right edge; its rows share
+   .menu-item with the +Add menu. */
+.masthead-menu-wrap { position: relative; flex: 0 0 auto; }
+.masthead-btn[aria-expanded="true"] {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+    border-color: var(--accent);
+}
+.masthead-menu {
+    left: auto;
+    right: 0;
+    min-width: max-content;
+    padding: 4px;
+}
+/* :not(:empty) keeps the .whoami:empty display:none in charge — no ghost header
+   row before the handle resolves (or when ?api=me fails). */
+.masthead-menu .whoami:not(:empty) {
+    display: block;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 4px;
+}
 
 /* ---- filter bar ----
    Only ACTIVE filters show, as composable chips in the strip, followed by the +Add
@@ -318,7 +322,7 @@ body {
     border: 1px solid var(--rule);
     border-radius: 3px;
     padding: 7px 12px;
-    width: min(240px, 40vw);
+    width: min(480px, 40vw);
 }
 .search-field::placeholder { color: var(--ink-soft); }
 .search-field:focus {
@@ -414,10 +418,10 @@ body {
 }
 .add-filter:disabled { opacity: 0.5; cursor: default; }
 
-/* The +Add menu: a flat list of the not-yet-active fields, styled as full-width rows
-   in the shared popover. */
+/* Menu rows in the shared popover — full-width flat buttons, used by both the
+   +Add filter menu and the masthead ⋯ menu. */
 .add-menu { padding: 4px; }
-.add-menu-item {
+.menu-item {
     display: block;
     width: 100%;
     text-align: left;
@@ -431,7 +435,7 @@ body {
     padding: 0 10px;
     cursor: pointer;
 }
-.add-menu-item:hover { background: var(--paper); }
+.menu-item:hover { background: var(--paper); }
 
 /* A text picker: the substring/regex box and its two mode toggles on one line. */
 .text-picker { display: flex; align-items: stretch; gap: 3px; }
@@ -2481,7 +2485,6 @@ kbd {
     .drawer-rail { display: flex; }
 
     .chevron-toggle { display: inline-flex; }
-    .tally { display: none; }
     .patch-counts { display: none; }
 
     /* The filter bar collapses to its chevron on narrow screens so the results own
@@ -2534,8 +2537,9 @@ kbd {
     /* Compact masthead so the right-hand controls always fit: drop the strap,
        shrink the mark, let the title take the middle and truncate. The flex-basis:0
        on the title means it never demands its content width, so the row can never
-       grow past the viewport and push the controls off-screen. */
-    .masthead { padding: 12px 18px; gap: 10px; align-items: center; overflow: hidden; }
+       grow past the viewport and push the controls off-screen. No overflow clip —
+       the ⋯ menu popover must overlay below the row. */
+    .masthead { padding: 12px 18px; gap: 10px; align-items: center; }
     .strap { display: none; }
     .mark { font-size: 22px; flex: 0 0 auto; }
     .masthead-text { flex: 1 1 0; min-width: 0; }
@@ -2547,13 +2551,6 @@ kbd {
         text-overflow: ellipsis;
     }
     .filters-toggle { flex: 0 0 auto; }
-    /* Keep the shortcuts trigger reachable but compact on the tight mobile row —
-       the label collapses to just the "?" glyph. */
-    .help-toggle { flex: 0 0 auto; margin-left: 0; padding: 5px 11px; font-size: 0; }
-    .help-toggle::before { content: "?"; font-size: 13px; }
-    /* Same compaction for the keyboard toggle — collapse to just the glyph. */
-    #kbToggle { flex: 0 0 auto; padding: 5px 11px; font-size: 0; }
-    #kbToggle::before { content: "⌨"; font-size: 15px; }
     /* The ‹ › record-navigation pair earns a full touch target on a phone — it is
        the mobile stand-in for the arrow keys. */
     .step-btn { flex: 0 0 auto; min-height: 40px; min-width: 40px; padding: 5px 11px; }

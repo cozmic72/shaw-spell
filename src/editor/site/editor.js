@@ -1812,8 +1812,8 @@ function recordEditor(group, opts) {
     // fields the owner changed on THIS record's accept); they only apply at N=1.
     const overridden = group.length === 1 ? overriddenFields(record) : new Set();
 
-    // Full-width chrome: the FIVE glance-fields stacked LEFT-ALIGNED down the left
-    // column (Latin word, Shavian, IPA, then POS + var), and on the right the
+    // Full-width chrome: the FIVE glance-fields compact in the left column (the
+    // Latin/Shavian/IPA text stack with POS + var beside it), and on the right the
     // priority rail (state / sources / freq / confidence, fixed slots), the
     // attributes chips, demoted metadata, and the action buttons (the owner uses
     // keyboard shortcuts on desktop, so the buttons ride the rail).
@@ -1850,11 +1850,11 @@ function groupHeader(group) {
     return header;
 }
 
-// The LEFT column of the chrome: the glance-fields left-aligned. The IDENTITY row
-// leads — the big Latin word on the left with POS (code prominent) + var to its
-// RIGHT — then the Shavian and IPA edit fields stack beneath the word. No state
+// The LEFT column of the chrome: two compact sub-columns side by side. The TEXT
+// STACK (Latin word, Shavian, IPA — stacked close) on the left; the categorical
+// POS (code prominent) + var column beside it, using the horizontal room. No state
 // badge on the word: it moved to the rail to keep the left edge clean. On a narrow
-// screen the POS + var group wraps under the word (identity row is flex-wrap).
+// screen the POS + var column wraps below the stack (glance-column is flex-wrap).
 function glanceColumn(ctx, group, overridden) {
     const record = group[0];
     const column = document.createElement("div");
@@ -1895,16 +1895,17 @@ function glanceColumn(ctx, group, overridden) {
         editField(ctx, group, "var", "Dialect (var)", "var-field", overridden.has("var")),
     );
 
-    // Identity row: [ big Latin word | POS + var ], side by side (wrapping on narrow).
-    const identity = document.createElement("div");
-    identity.className = "glance-identity";
-    identity.append(wordGroup, posVar);
-
-    column.append(
-        identity,
+    // Two side-by-side sub-columns: the text stack (word / Shavian / IPA, kept close
+    // together) and the small categorical fields (POS + var) beside it — horizontal
+    // space instead of a scroll. On a too-narrow screen posvar wraps below the stack.
+    const fields = document.createElement("div");
+    fields.className = "glance-fields";
+    fields.append(
+        wordGroup,
         editField(ctx, group, "shaw", "Shavian", "shaw-field", overridden.has("shaw")),
         editField(ctx, group, "ipa", "IPA", "ipa-field", overridden.has("ipa")),
     );
+    column.append(fields, posVar);
     return column;
 }
 

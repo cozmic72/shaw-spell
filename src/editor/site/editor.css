@@ -43,12 +43,6 @@
     --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
     --shaw: 'Bernie Sans Beta', sans-serif;
 
-    /* The horizontal inset of the Shavian glyphs inside the .shaw-field input
-       (its 1px left border + 18px left padding). The detail heading's Latin word
-       is indented by the same amount so the roman spelling lines up directly above
-       the Shavian glyphs. Kept here as one value so the two never drift apart. */
-    --shaw-glyph-inset: 19px;
-
     /* ---- group-unit vocabulary ---- */
     /* ONE nesting language for BOTH folded structures — the record list's expanded
        group and the related tree's open spelling node. The HEADER is a plain row
@@ -957,14 +951,15 @@ body {
    and the evidence grid can use the horizontal room. */
 .detail { max-width: none; }
 
-/* The chrome: the five glance-fields stacked LEFT in one column, the priority
-   rail + attributes + metadata + action buttons in a RIGHT column/rail. One
-   column on narrow screens (glance stacks above the rail). */
+/* The chrome: the five glance-fields compact in the LEFT column (text stack with
+   POS + var beside it), the priority rail + attributes + metadata + action buttons
+   in a RIGHT column/rail. One column on narrow screens (glance stacks above the
+   rail). */
 .detail-chrome {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 22px 34px;
-    margin-bottom: 26px;
+    gap: 16px 34px;
+    margin-bottom: 18px;
 }
 @media (min-width: 900px) {
     .detail-chrome {
@@ -989,26 +984,27 @@ body {
     .evidence-cols > .definitions { margin-top: 0; }
 }
 
-/* ---- glance column: identity row (word | POS+var) then Shavian/IPA below ---- */
-.glance-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-/* The identity row: the big Latin word on the LEFT, the POS + var group snug to the
-   TOP-RIGHT (content-sized, not a wide box). On desktop the row does NOT wrap — POS/var
-   stay to the RIGHT of the word down to genuinely narrow widths; the word group shrinks
-   (and truncates) rather than shoving POS/var underneath it. (The mobile block below
-   switches to a column and ducks POS/var UP, above the word — never below.) The word's
-   baseline sits near the BOTTOM of the row (align-items: end); the POS/var group
-   bottom-aligns to it. */
-.glance-identity {
+/* ---- glance column: text stack (word / Shavian / IPA) with POS + var BESIDE it ---- */
+/* Two compact sub-columns share the row — the editable text stack and the small
+   categorical fields — so the panel uses horizontal room instead of forcing a scroll.
+   flex-wrap lets posvar drop below the stack only when the screen is genuinely too
+   narrow for both (the stack's 200px basis + posvar fit a 375px phone side by side). */
+.glance-column {
     display: flex;
-    flex-wrap: nowrap;
-    align-items: end;
-    justify-content: space-between;
-    gap: 10px 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px 24px;
     min-width: 0;
 }
-/* The word group must be free to shrink so it never forces POS/var to wrap under it;
-   its contents ellipsis inside the state box instead. */
-.glance-identity > .glance-word { flex: 0 1 auto; min-width: 0; }
+/* The text stack: the word's state box, then Shavian and IPA, stacked CLOSE. Each
+   entry stretches to the stack's width so the three read as one aligned column. */
+.glance-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 200px;
+    min-width: 0;
+}
 /* The state box around the Latin word: a left-edge accent + full border in the
    record's state hue (reusing the ledger's --state-* vars), keyed by .state-* class.
    A quiet tinted ground keeps it legible without a garish fill. */
@@ -1016,8 +1012,9 @@ body {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 10px 14px;
-    padding: 6px 12px 6px 10px;
+    gap: 6px 10px;
+    min-width: 0;
+    padding: 4px 10px 4px 8px;
     border: 1px solid var(--state-edge, var(--rule));
     border-left-width: 4px;
     border-radius: 3px;
@@ -1030,7 +1027,7 @@ body {
 .glance-word.authored { --state-edge: var(--state-authored); }
 .glance-word.orphaned { --state-edge: var(--state-orphaned); }
 .glance-word .latin {
-    font-size: 34px;
+    font-size: 17px;
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.1;
@@ -1039,18 +1036,18 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-/* POS (code prominent) + var, snug together, content-sized, at the top-right. */
+/* POS (code prominent) above var, a content-sized categorical column beside the
+   text stack. */
 .glance-posvar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 6px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
     flex: 0 0 auto;
     min-width: 0;
 }
 /* Size the var field to its CONTENT (GenAm/TrapBath are the widest) — no fixed 130px
    box; RRP must not get a wide box. */
-.glance-posvar > .edit-field:has(> .var-field) { flex: 0 0 auto; }
 .glance-posvar .var-field { width: 11ch; min-width: 0; }
 .pos-glance { flex: 0 0 auto; min-width: 0; }
 .pos-glance-value { display: flex; flex-direction: column; gap: 2px; }
@@ -1058,7 +1055,7 @@ body {
    under it, smaller, and may wrap/truncate. */
 .pos-glance-tag {
     font-family: var(--mono);
-    font-size: 22px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.02em;
     line-height: 1.1;
@@ -1232,12 +1229,12 @@ body {
    — the group spans several values the owner cannot bulk-overwrite (that would re-anchor). */
 /* A mixed-state group carries no single hue: the word box keeps the neutral --state-edge
    default (var(--rule)) since .state-multiple sets no state class. */
-.latin.latin-multiple { font-size: 26px; color: var(--ink-soft); }
+.latin.latin-multiple { font-size: 15px; color: var(--ink-soft); }
 /* The rolled-up POS tag sits in the content-sized posvar group (its .pos-glance
    ancestor is flex:0 0 auto), so the .distinct-values `max-width:100%` has no finite
    bound to clip against and the line overflows. A concrete ch cap gives the ellipsis
    something to engage on — matching the ch-based caps the other glance cells use. */
-.pos-glance-value.pos-glance-multiple .pos-glance-tag { font-size: 15px; max-width: 18ch; }
+.pos-glance-value.pos-glance-multiple .pos-glance-tag { max-width: 18ch; }
 
 /* Every divergent slot's distinct-value list is one truncated line: an ellipsis keeps
    an unbounded selection from walling the panel, and the full list is on the `title=`
@@ -1535,7 +1532,7 @@ body {
     gap: 22px;
     margin-bottom: 30px;
 }
-.edit-field { display: flex; flex-direction: column; gap: 8px; }
+.edit-field { display: flex; flex-direction: column; gap: 4px; }
 
 /* Dialect (var) + mergers + variant grouped on ONE row — three independent
    controls laid side by side for glanceability, not merged in the data. They wrap
@@ -1585,13 +1582,13 @@ body {
 .edit-label .edited-tag { margin-left: 0; }
 .edit-input {
     font-family: var(--mono);
-    font-size: 18px;
+    font-size: 14px;
     color: var(--ink);
     background: var(--paper-raised);
     border: 1px solid var(--rule);
     border-bottom: 2px solid var(--rule);
     border-radius: 3px;
-    padding: 12px 14px;
+    padding: 7px 10px;
     width: 100%;
 }
 .edit-input:focus {
@@ -1653,17 +1650,16 @@ body {
     outline-color: var(--state-authored);
 }
 
-/* The Shavian spelling is the dictionary's payload — the biggest thing on the card. */
+/* The Shavian spelling is the dictionary's payload — a touch larger than the Latin
+   type for glyph legibility, but input-sized like every other field. The accent
+   bottom border keeps it read as the primary field. */
 .shaw-field {
     font-family: var(--shaw);
-    font-size: 56px;
-    line-height: 1.25;
-    /* Left padding derives from the shared inset (minus the 1px border) so the
-       glyphs stay aligned with the Latin word in the heading above. */
-    padding: 14px 18px 14px calc(var(--shaw-glyph-inset) - 1px);
+    font-size: 20px;
+    line-height: 1.3;
     border-bottom-color: var(--accent);
 }
-.ipa-field { font-size: 26px; font-style: italic; }
+.ipa-field { font-size: 16px; font-style: italic; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .act {
@@ -2329,13 +2325,14 @@ kbd {
 
 /* ---- edit-mode modal (a related entry opened for review) ---- */
 /* The related/clone edit modal hosts the SAME record editor as the wide detail pane —
-   the glance identity + priority rail chrome. That chrome was laid out for the wide
+   the glance fields + priority rail chrome. That chrome was laid out for the wide
    pane (two side-by-side columns at >=900px viewport). The modal is a NARROW card in a
    wide viewport, so the viewport-keyed grid fired anyway and the two columns collided.
    These rules reflow the chrome for the constrained card: a single stacked column,
-   identity above a horizontal rail, so nothing overlaps and the word stays visible.
-   Scoped to .create-card so the main detail pane is untouched. Create-mode uses the
-   .field-stack form (already narrow-friendly) — only the chrome-hosting card widens. */
+   the glance fields above a horizontal rail, so nothing overlaps and the word stays
+   visible. Scoped to .create-card so the main detail pane is untouched. Create-mode
+   uses the .field-stack form (already narrow-friendly) — only the chrome-hosting card
+   widens. */
 .create-card:has(.detail-chrome) { max-width: min(920px, 92vw); }
 
 /* One stacked column regardless of viewport width — override the >=900px two-column
@@ -2345,18 +2342,9 @@ kbd {
     gap: 20px;
 }
 
-/* Identity stacks: the big word on its own row (POS + var wrap beneath), so the word
-   is never squeezed to an empty ellipsis the way the side-by-side row did. */
-.create-card .glance-identity {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-}
-.create-card .glance-word { align-self: flex-start; max-width: 100%; }
 /* The word may wrap to a second line rather than ellipsing away — in the card there is
    vertical room, and a vanished word is the worse failure. */
 .create-card .glance-word .latin { white-space: normal; overflow: visible; }
-.create-card .glance-posvar { justify-content: flex-start; }
 
 /* The rail becomes a horizontal wrapping strip below the identity/fields (like the
    mobile treatment), not a 2-column grid crammed into half the card. */
@@ -2448,28 +2436,12 @@ kbd {
     #kbToggle { flex: 0 0 auto; padding: 5px 11px; font-size: 0; }
     #kbToggle::before { content: "⌨"; font-size: 15px; }
 
-    .shaw-field { font-size: 46px; }
-    .ipa-field { font-size: 22px; }
-
-    /* Mobile chrome: the glance fields stay LEFT-aligned; the priority rail becomes
-       a single horizontal strip (sources / freq / confidence) sitting BELOW the IPA
-       field — the rail-column follows the glance-column in source order, and the
-       action buttons are pulled OUT of it into the fixed bottom bar (rule below). */
-    .detail-chrome { gap: 18px; }
-    /* Mobile: POS + var stack top-right ABOVE the word row (not wedged between the
-       word and Shavian) — reverse the identity order so posvar leads, the word
-       follows, then Shavian/IPA continue directly under the word. */
-    .glance-identity {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .glance-posvar {
-        order: -1;
-        align-items: flex-start;
-        justify-content: flex-end;
-        align-self: flex-end;
-    }
-    .glance-word { align-self: flex-start; }
+    /* Mobile chrome: the glance area needs no reflow — its compact base layout (the
+       text stack with POS + var beside it, wrapping when too narrow) already fits a
+       phone. The priority rail becomes a single horizontal strip (sources / freq /
+       confidence) sitting BELOW the glance — the rail-column follows the
+       glance-column in source order, and the action buttons are pulled OUT of it
+       into the fixed bottom bar (rule below). */
     /* The variation tiles stay small but regain a full touch target on a phone. */
     .variation-toggle { min-height: 40px; padding: 0 13px; }
     .priority-rail {

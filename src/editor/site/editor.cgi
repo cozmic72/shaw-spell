@@ -467,6 +467,12 @@ PAGE = """<!DOCTYPE html>
                 aria-controls="ledger" aria-expanded="false"
                 title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
         <div class="drawer-backdrop" id="drawerBackdrop"></div>
+        <!-- Collapsed-ledger rail (wide screens only): a thin strip standing in for
+             the hidden list, its chevron pointing into the page to pull it back.
+             Sits BEFORE the ledger so the splitter's siblings stay ledger/detail. -->
+        <button type="button" class="ledger-rail" id="ledgerRail"
+                aria-controls="ledger" aria-label="Show the entry list"
+                title="Show the entry list"><span class="chevron" aria-hidden="true"></span></button>
         <section class="ledger" id="ledger" aria-label="Matching entries">
             <div class="select-bar" id="selectBar" hidden>
                 <span class="select-bar-count" id="selectBarCount"></span>
@@ -486,6 +492,13 @@ PAGE = """<!DOCTYPE html>
             <ul class="ledger-list" id="ledgerList" tabindex="0"></ul>
             <div class="ledger-foot" id="ledgerFoot"></div>
         </section>
+
+        <!-- Ledger / detail divider (wide screens only): drag the handle to resize
+             the split, double-click to collapse the list to the rail above. -->
+        <div class="splitter" id="workbenchSplitter">
+            <div class="splitter-handle"
+                 title="Drag to resize; double-click to hide the entry list"></div>
+        </div>
 
         <section class="detail mode-review" id="detail" aria-label="Focused entry">
             <p class="detail-empty">Select an entry to review it.</p>

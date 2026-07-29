@@ -49,6 +49,12 @@ const ORPHAN_KIND = {
 };
 
 const SESSION_KEY = "shaw-spell.editor.session";
+// Ledger/detail split, kept apart from SESSION_KEY like the section prefs: the
+// splitter's position is the ledger's share of the workbench width (a 0..1
+// fraction, so the split scales with the window), saved on drag end; the
+// collapsed flag remembers the list tucked away behind its rail.
+const SPLIT_FRACTION_KEY = "shaw-spell.editor.splitter.ledger";
+const LEDGER_COLLAPSED_KEY = "shaw-spell.editor.ledger.collapsed";
 // Detail-panel sub-section expansion prefs. Persisted apart from SESSION_KEY (which
 // carries query/selection state) so the owner's "keep related at a glance" choice
 // sticks per section across record selections AND page reloads. Keyed by a stable
@@ -293,6 +299,9 @@ const SELECT_BAR_DONE = document.getElementById("selectBarDone");
 const DETAIL = document.getElementById("detail");
 const TOAST = document.getElementById("toast");
 const WORKBENCH = document.getElementById("workbench");
+const LEDGER_PANE = document.getElementById("ledger");
+const SPLITTER = document.getElementById("workbenchSplitter");
+const LEDGER_RAIL = document.getElementById("ledgerRail");
 const DRAWER_TOGGLE = document.getElementById("drawerToggle");
 const HELP_TOGGLE = document.getElementById("helpToggle");
 const STEP_PREV = document.getElementById("stepPrev");
@@ -5407,6 +5416,118 @@ function toggleDrawer() {
     setDrawer(!WORKBENCH.classList.contains("drawer-open"));
 }
 
+// ---- ledger/detail splitter ----
+// Draggable divider between the list and the detail pane, ported from the shave
+// GUI's splitter idiom: a pointer-captured drag whose position persists as a
+// FRACTION of the container width, so the split scales with window resizes.
+// Adapted to this grid layout — the drag drives --ledger-w on the workbench
+// (whose template reads it for the first column) rather than a flex-basis.
+// Wide screens only: the mobile drawer layout hides the splitter and replaces
+// the grid template in CSS, making a remembered width inert there.
+
+// The remembered ledger share (0..1). An in-memory shadow of SPLIT_FRACTION_KEY
+// (seeded at init, updated at drag end) so resize re-apply never re-parses
+// storage — the same shape as shave's savedFraction and sectionPrefsCache above.
+let splitFraction = null;
+
+function workbenchPx(property) {
+    return parseFloat(getComputedStyle(WORKBENCH).getPropertyValue(property)) || 0;
+}
+
+// Set the ledger column to a pixel width, clamped so neither pane dips below its
+// floor (--ledger-min / --detail-min on .workbench — drag clamps only; the
+// undragged default template is not bound by them). Returns the fraction of the
+// workbench width actually applied, so callers persist what was applied rather
+// than reading the layout back.
+function applyLedgerWidth(width) {
+    const total = WORKBENCH.getBoundingClientRect().width;
+    // Not laid out yet (0-width container) → no meaningful fraction to compute or
+    // persist; bail rather than divide by zero into a NaN/Infinity width.
+    if (total <= 0) {
+        return null;
+    }
+    const splitterWidth = SPLITTER.getBoundingClientRect().width;
+    const widest = total - splitterWidth - workbenchPx("--detail-min");
+    const clamped = Math.max(workbenchPx("--ledger-min"), Math.min(width, widest));
+    WORKBENCH.style.setProperty("--ledger-w", clamped + "px");
+    return clamped / total;
+}
+
+// Re-applied on every window resize: the remembered fraction keeps the panes'
+// proportions, and a narrow-to-wide crossing recomputes from the wide width.
+// Skipped on narrow viewports — the drawer layout ignores --ledger-w, so
+// applying would only thrash layout on the device least able to afford it.
+function applySavedSplit() {
+    if (splitFraction === null || window.innerWidth <= NARROW_BREAKPOINT_PX) {
+        return;
+    }
+    applyLedgerWidth(splitFraction * WORKBENCH.getBoundingClientRect().width);
+}
+
+// Collapse tucks the ledger behind a thin rail (wide screens; CSS scopes it) —
+// double-click the divider to hide the list, the rail's chevron brings it back.
+// Apply and persist are separate so the boot-time restore doesn't write the
+// stored value straight back.
+function applyLedgerCollapsed(collapsed) {
+    WORKBENCH.classList.toggle("ledger-collapsed", collapsed);
+}
+
+function setLedgerCollapsed(collapsed) {
+    applyLedgerCollapsed(collapsed);
+    localStorage.setItem(LEDGER_COLLAPSED_KEY, collapsed ? "1" : "0");
+}
+
+function initWorkbenchSplitter() {
+    const handle = SPLITTER.querySelector(".splitter-handle");
+    let dragPointer = null;
+    let dragStartX = 0;
+    let dragStartWidth = 0;
+    // The last fraction this drag applied; null until the pointer moves, so a
+    // press-and-release without movement never overwrites the stored split.
+    let dragFraction = null;
+
+    handle.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) {
+            return;
+        }
+        dragPointer = event.pointerId;
+        dragStartX = event.clientX;
+        dragStartWidth = LEDGER_PANE.getBoundingClientRect().width;
+        dragFraction = null;
+        SPLITTER.classList.add("dragging");
+        handle.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+    handle.addEventListener("pointermove", (event) => {
+        if (dragPointer !== event.pointerId) {
+            return;
+        }
+        dragFraction = applyLedgerWidth(dragStartWidth + event.clientX - dragStartX);
+    });
+    const endDrag = (event) => {
+        if (dragPointer !== event.pointerId) {
+            return;
+        }
+        dragPointer = null;
+        SPLITTER.classList.remove("dragging");
+        if (dragFraction !== null) {
+            splitFraction = dragFraction;
+            localStorage.setItem(SPLIT_FRACTION_KEY, dragFraction.toFixed(4));
+        }
+    };
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+
+    SPLITTER.addEventListener("dblclick", () => setLedgerCollapsed(true));
+    LEDGER_RAIL.addEventListener("click", () => setLedgerCollapsed(false));
+    window.addEventListener("resize", applySavedSplit);
+
+    const stored = parseFloat(localStorage.getItem(SPLIT_FRACTION_KEY));
+    splitFraction = Number.isFinite(stored) && stored > 0 && stored < 1 ? stored : null;
+    applySavedSplit();
+    applyLedgerCollapsed(localStorage.getItem(LEDGER_COLLAPSED_KEY) === "1");
+}
+
 // The filter bar collapses to a chevron on narrow screens so results dominate; on
 // wide screens it is always shown and the chevron is hidden by CSS. Collapsed state
 // lives as a body class so the CSS can hide #filters; the toggle's aria-expanded
@@ -5600,6 +5721,7 @@ REFRESH_RESULTS.addEventListener("click", () => {
 
 DRAWER_TOGGLE.addEventListener("click", toggleDrawer);
 DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
+initWorkbenchSplitter();
 FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 // Masthead ‹ › pair: the ArrowUp/ArrowDown cursor step as tappable buttons (phone

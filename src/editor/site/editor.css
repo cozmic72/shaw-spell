@@ -631,17 +631,96 @@ body {
     display: grid;
     /* The ledger is a compact fixed-column list (word/shaw/var/conf/freq/pos); it
        needs only ~560px to breathe. Cap it there so on a wide screen it stops
-       growing and hands the extra width to the detail pane rather than sprawling. */
-    grid-template-columns: minmax(360px, min(44%, 560px)) 1fr;
+       growing and hands the extra width to the detail pane rather than sprawling.
+       The middle auto track is the draggable splitter; dragging it sets --ledger-w
+       (a pixel width, clamped in JS to the --*-min floors below), which then owns
+       the first column. Unset, the minmax default holds. The mobile block replaces
+       this template wholesale, so a remembered --ledger-w is inert on a phone. */
+    grid-template-columns: var(--ledger-w, minmax(360px, min(44%, 560px))) auto 1fr;
+    /* Drag clamps: neither pane may be squeezed below these. Low ledger floor on
+       purpose (squish it hard without it bouncing back); collapse covers "gone". */
+    --ledger-min: 240px;
+    --detail-min: 420px;
     overflow: hidden;
 }
 
 /* ---- ledger (left) ---- */
+/* No border-right of its own: on wide screens the splitter track IS the rule
+   between the panes; the mobile drawer draws its own bottom edge instead. */
 .ledger {
     display: grid;
     grid-template-rows: auto 1fr auto;
-    border-right: 1px solid var(--rule);
     overflow: hidden;
+}
+
+/* ---- ledger/detail splitter (ported from the shave GUI's splitter idiom) ----
+   The track is a thin rule; the visible affordance is a circular grab handle
+   pinned near the top, riding the line. Dragging sets --ledger-w on .workbench
+   (see initWorkbenchSplitter in editor.js); the fraction persists per reload. */
+.splitter {
+    position: relative;
+    width: 1px;
+    background: var(--rule);
+    cursor: col-resize;
+}
+.splitter-handle {
+    position: absolute;
+    z-index: 5;
+    top: 42px;
+    left: -11px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 1;
+    cursor: col-resize;
+    user-select: none;
+    opacity: 0.7;
+    transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+    /* The handle owns its pointer gestures — without this a touch drag scrolls
+       the page instead of moving the divider. */
+    touch-action: none;
+}
+.splitter-handle::before { content: "\2194"; }     /* ↔ */
+.splitter-handle:hover,
+.splitter.dragging .splitter-handle {
+    opacity: 1;
+    background: var(--ink-soft);
+    color: var(--paper);
+}
+.splitter.dragging { background: var(--ink-soft); }
+@media (pointer: coarse) {
+    .splitter-handle { width: 28px; height: 28px; left: -14px; opacity: 0.9; font-size: 16px; }
+}
+
+/* Collapsed ledger (wide screens only — the mobile drawer has its own affordance).
+   The list and the splitter vanish; a thin rail with the shared chevron (pointing
+   into the page: pull the list back out) stands in. Scoped to the desktop range so
+   a collapse remembered from a wide window can never eat the mobile drawer. */
+.ledger-rail { display: none; }
+@media (min-width: 861px) {
+    .workbench.ledger-collapsed { grid-template-columns: auto 1fr; }
+    .workbench.ledger-collapsed .ledger,
+    .workbench.ledger-collapsed .splitter { display: none; }
+    .workbench.ledger-collapsed .ledger-rail {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 10px 0 0;
+        background: var(--paper-raised);
+        border: none;
+        border-right: 1px solid var(--rule);
+        cursor: pointer;
+        min-width: 28px;
+    }
+    .ledger-rail .chevron { font-size: 14px; }
+    .ledger-rail:hover .chevron { color: var(--ink); }
 }
 .ledger-head, .ledger-row {
     display: grid;
@@ -2422,12 +2501,14 @@ kbd {
         right: 0;
         height: min(78%, 480px);
         background: var(--paper);
-        border-right: none;
         border-bottom: 1px solid var(--rule);
         transform: translateY(-100%);
         transition: transform 0.22s ease;
     }
     .drawer-open .ledger { transform: translateY(0); }
+
+    /* The panes stack (the list is the drawer): no side-by-side split to drag. */
+    .splitter { display: none; }
 
     .drawer-backdrop {
         display: block;

@@ -23,11 +23,10 @@
     --state-dropped: #a24632;
     --state-flagged: #b07d1a;
     --state-authored: #6b52a8;
-    /* Colour keys on ACCEPTANCE, not editedness. accepted (an explicit sanction,
-       edits or none) reads GREEN like edited; dirty (edited, not yet accepted)
-       reads ORANGE like flagged — "needs attention, not resolved". */
+    /* Colour keys on the VERDICT: accepted (an explicit sanction, edits or none)
+       reads GREEN — the same green the edit affordances wear (--state-edited).
+       edited/dirty are decorations, never row/pill states (verdictState). */
     --state-accepted: var(--state-edited);
-    --state-dirty: var(--state-flagged);
     /* Orphaned is not one state but two, keyed off orphan_kind so the reasons triage
        apart at a glance. Neither reuses another state's hue (was: == dropped, a
        collision — an orphan looked like a plain drop). resurfaced-drop is the URGENT
@@ -52,23 +51,22 @@
 
     /* ---- group-unit vocabulary ---- */
     /* ONE nesting language for BOTH folded structures — the record list's expanded
-       group and the related tree's open spelling node. The unit is TOP-anchored:
-       the HEADER is the top of the unit and flows straight into its children (its
-       bottom hairline is suppressed), a thin continuous left edge runs from the
-       header down through every child binding them as one vertical run (Logic Pro
-       track group), and the LAST child closes the unit at the bottom — the clean
-       break sits BELOW the group, before the next unrelated row. Children stay
-       full-width, undivided rows; the etched bracket — top groove, left edge,
-       bottom groove — is the only nesting signal, all box-shadow (no layout
-       impact). */
+       group and the related tree's open spelling node. The HEADER is a plain row
+       whose BOTTOM hairline is suppressed (dividers ride the TOP of cells, so the
+       parent has no line under it and flows into its children). Its children hang
+       beneath it as an INSET bordered block — indented from the left, ringed by a
+       subtle rounded groove — so they read as subordinate to THEIR header. The
+       block's own top border opens it directly under the header; its bottom border
+       closes it, and the clean break sits BELOW the group before the next row. All
+       box-shadow (no layout impact). */
     --frame-radius: 7px;
+    --frame-indent: 24px;   /* the child block's left indent (its subordination cue) */
+    --frame-inset: 6px;     /* the block's right stand-off */
     /* The groove line derives from --rule (softened toward paper) so it flips
        with the theme. */
     --groove-line: color-mix(in srgb, var(--rule) 80%, var(--paper));
-    /* The unit's continuous left edge — worn identically by the header and every
-       child of the ledger's flat run; the related tree's subtree wrapper wears
-       it in one piece. */
-    --frame-edge: inset 1px 0 0 var(--groove-line);
+    /* The block's two vertical sides, worn by every child row. */
+    --frame-sides: inset 1px 0 0 var(--groove-line), inset -1px 0 0 var(--groove-line);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -698,7 +696,10 @@ body {
 .ledger-row {
     position: relative;
     height: 40px;
-    border-bottom: 1px solid var(--rule);
+    /* The divider rides the TOP of every row (a line starts each row) — so an
+       expanded parent has no line under it and flows into its children, and a
+       group's child block closes cleanly at the bottom before the next row. */
+    border-top: 1px solid var(--rule);
     cursor: pointer;
     /* A list row is a selection target, not prose: shift-click extends a range
        rather than highlighting text, and a long-press must not raise the callout. */
@@ -720,8 +721,6 @@ body {
 }
 .ledger-row.state-unreviewed { --row-edge: transparent; }
 .ledger-row.state-accepted { --row-edge: var(--state-accepted); }
-.ledger-row.state-edited { --row-edge: var(--state-edited); }
-.ledger-row.state-dirty { --row-edge: var(--state-dirty); }
 .ledger-row.state-dropped { --row-edge: var(--state-dropped); }
 .ledger-row.state-flagged { --row-edge: var(--state-flagged); }
 .ledger-row.state-authored { --row-edge: var(--state-authored); }
@@ -764,35 +763,45 @@ body {
 }
 .ledger-group-header { font-weight: 600; }
 
-/* An EXPANDED group is ONE top-anchored unit (:root group-unit vocabulary): the
-   header is the TOP — top groove + top-left rounding, its bottom hairline
-   suppressed so it flows straight into its first child — and the children run
-   beneath it as plain full-width rows (same tracks and gutter cells as every
-   top-level row: no indent, so they hang under THEIR header, not toward the next
-   record). Because the DOM is a flat <li> run with no wrapper, the continuous
-   left edge is assembled per-row — the header and every child wear --frame-edge,
-   reading as one uninterrupted strip. Child hairlines are suppressed (the unit
-   flows undivided); the LAST child closes it — bottom groove + bottom-left
-   rounding — so the clean break sits below the group. Collapsed headers and
-   singletons carry none of this (the N=1 invariant: frame state is gated on
-   .expanded / .group-child). */
-.ledger-group-header.expanded {
-    border-bottom: none;
-    border-radius: var(--frame-radius) 0 0 0;
-    box-shadow: var(--frame-edge), inset 0 1px 0 var(--groove-line);
-}
+/* An EXPANDED group: the header is a PLAIN row whose bottom hairline is suppressed
+   (dividers ride the top of cells, so the parent has no line beneath it) and flows
+   into its children below. The children hang under it as an INSET bordered block —
+   indented from the left, stood off the right, ringed by a subtle rounded groove —
+   so they read as subordinate to THEIR header, not the next record. The DOM is a
+   flat <li> run with no wrapper, so the ring is assembled per-row: every child
+   wears the two sides; the FIRST child opens the block (top border + top corners)
+   directly under the header; the LAST child closes it (bottom border + bottom
+   corners) so the clean break falls below the group. Collapsed headers and
+   singletons carry none of this (N=1 invariant: gated on .expanded / .group-child). */
+/* The expanded header keeps the base top divider (starts the group); nothing to
+   override — dividers already ride the top, so it has no line under it. */
 .ledger-row.group-child {
-    border-bottom: none;
-    box-shadow: var(--frame-edge);
+    /* Children carry no row divider of their own — the groove (below) is the only
+       internal structure, so the block reads as one undivided unit. */
+    margin: 0 var(--frame-inset) 0 var(--frame-indent);
+    border-top: none;
+    box-shadow: var(--frame-sides);
+}
+.ledger-row.group-child-first {
+    border-radius: var(--frame-radius) var(--frame-radius) 0 0;
+    box-shadow: var(--frame-sides), inset 0 1px 0 var(--groove-line);
 }
 .ledger-row.group-child-last {
-    /* The unit's bottom groove replaces the row hairline. */
-    border-radius: 0 0 0 var(--frame-radius);
-    box-shadow: var(--frame-edge), inset 0 -1px 0 var(--groove-line);
+    border-radius: 0 0 var(--frame-radius) var(--frame-radius);
+    box-shadow: var(--frame-sides), inset 0 -1px 0 var(--groove-line);
 }
-/* The state edge-bar is a square strip pinned to the row's left; round its outer
-   corners where the unit's corners round so it doesn't poke past the curve. */
-.ledger-group-header.expanded::before { border-top-left-radius: var(--frame-radius); }
+/* A group of one child is both first and last — open AND close the block. */
+.ledger-row.group-child-first.group-child-last {
+    border-radius: var(--frame-radius);
+    box-shadow: var(--frame-sides),
+        inset 0 1px 0 var(--groove-line), inset 0 -1px 0 var(--groove-line);
+}
+/* The state edge-bar (::before) is a square strip pinned to the row's left; round
+   its outer corners to follow the block so it doesn't square off the rounded
+   corner — and it must not overrun the block's own left inset, so pin it inside
+   the child's left margin. */
+.ledger-row.group-child::before { left: 0; }
+.ledger-row.group-child-first::before { border-top-left-radius: var(--frame-radius); }
 .ledger-row.group-child-last::before { border-bottom-left-radius: var(--frame-radius); }
 
 /* The matched children of an expanded group are bright (full opacity); a sibling
@@ -881,12 +890,10 @@ body {
 }
 .stamp.unreviewed { color: var(--state-unreviewed); }
 .stamp.accepted { color: var(--state-accepted); }
-.stamp.edited { color: var(--state-edited); }
-.stamp.dirty { color: var(--state-dirty); }
 .stamp.dropped { color: var(--state-dropped); }
 
-/* The detail rail's small state pill — restates the exact state WORD (colour alone
-   can't tell accepted from edited, or dirty from flagged). Unobtrusive: small,
+/* The detail rail's small state pill — restates the exact verdict WORD (colour alone
+   can't tell accepted from unreviewed, or dropped from flagged). Unobtrusive: small,
    uppercase, tinted by the record's state hue. */
 .state-pill {
     display: inline-block;
@@ -901,8 +908,6 @@ body {
 }
 .state-pill.unreviewed { --state-pill-hue: var(--state-unreviewed); }
 .state-pill.accepted { --state-pill-hue: var(--state-accepted); }
-.state-pill.edited { --state-pill-hue: var(--state-edited); }
-.state-pill.dirty { --state-pill-hue: var(--state-dirty); }
 .state-pill.dropped { --state-pill-hue: var(--state-dropped); }
 .state-pill.flagged { --state-pill-hue: var(--state-flagged); }
 .state-pill.authored { --state-pill-hue: var(--state-authored); }
@@ -997,8 +1002,6 @@ body {
 }
 .glance-word.unreviewed { --state-edge: var(--state-unreviewed); }
 .glance-word.accepted { --state-edge: var(--state-accepted); }
-.glance-word.edited { --state-edge: var(--state-edited); }
-.glance-word.dirty { --state-edge: var(--state-dirty); }
 .glance-word.dropped { --state-edge: var(--state-dropped); }
 .glance-word.flagged { --state-edge: var(--state-flagged); }
 .glance-word.authored { --state-edge: var(--state-authored); }
@@ -1967,8 +1970,6 @@ body {
 }
 .related-badge.unreviewed { color: var(--state-unreviewed); }
 .related-badge.accepted { color: var(--state-accepted); }
-.related-badge.edited { color: var(--state-edited); }
-.related-badge.dirty { color: var(--state-dirty); }
 .related-badge.dropped { color: var(--state-dropped); }
 .related-badge.flagged { color: var(--state-flagged); }
 .related-badge.authored { color: var(--state-authored); }
@@ -2049,24 +2050,21 @@ body {
 }
 .related-node[open] > .related-node-summary > .related-chevron { transform: rotate(90deg); }
 
-/* An OPEN node wears the SAME top-anchored group unit as the ledger's expanded
-   group — the shared :root vocabulary supplies the left edge, grooves and radius,
-   so the two structures cannot drift apart. The summary is the TOP of the unit
-   (top groove + top-left rounding, its bottom hairline suppressed so it flows
-   straight into its leaves); unlike the ledger's flat <li> run, the <details>'
-   subtree IS a wrapper, so the rest of the unit rides on it in one piece —
-   continuous left edge + bottom close — its overflow clipping the square row
-   washes (hover/selected) to the curve. Leaf hairlines are suppressed: the unit
-   flows undivided. A collapsed node stays a plain summary row, mirroring a
-   collapsed group header. */
+/* An OPEN node wears the SAME nesting as the ledger's expanded group — the shared
+   :root vocabulary supplies the indent, groove and radius, so the two structures
+   cannot drift apart. The summary is a PLAIN row whose bottom hairline is suppressed
+   (it flows into its leaves below); unlike the ledger's flat <li> run, the <details>'
+   subtree IS a wrapper, so the inset bordered block rides on it in one piece —
+   indented from the left, ringed all round, overflow clipping the square row washes
+   (hover/selected) to the curve. A collapsed node stays a plain summary row,
+   mirroring a collapsed group header. */
 .related-node[open] > .related-node-summary {
     border-bottom: none;
-    border-radius: var(--frame-radius) 0 0 0;
-    box-shadow: var(--frame-edge), inset 0 1px 0 var(--groove-line);
 }
 .related-node[open] > .related-subtree {
-    border-radius: 0 0 0 var(--frame-radius);
-    box-shadow: var(--frame-edge), inset 0 -1px 0 var(--groove-line);
+    margin: 0 var(--frame-inset) 0 var(--frame-indent);
+    border-radius: var(--frame-radius);
+    box-shadow: inset 0 0 0 1px var(--groove-line);
     overflow: hidden;
 }
 .related-node[open] > .related-subtree .related-row { border-bottom: none; }
@@ -2235,7 +2233,7 @@ kbd {
 .cheat-list dd { color: var(--ink); font-size: 12px; }
 /* A verdict row's key chip wears the colour the ledger uses for that outcome, so
    the sheet doubles as a legend for the stamps the reviewer reads all day. */
-.cheat-list dt.state-edited kbd { color: var(--state-edited); border-color: var(--state-edited); }
+.cheat-list dt.state-accepted kbd { color: var(--state-accepted); border-color: var(--state-accepted); }
 .cheat-list dt.state-dropped kbd { color: var(--state-dropped); border-color: var(--state-dropped); }
 .cheat-list dt.state-flagged kbd { color: var(--state-flagged); border-color: var(--state-flagged); }
 .cheat-list dt.state-unreviewed kbd { color: var(--state-unreviewed); border-color: var(--state-unreviewed); }

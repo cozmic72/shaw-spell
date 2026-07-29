@@ -24,7 +24,8 @@ const PAGE_LIMIT = 500;
 const ACCEPTED_STATUS = "sanctioned";
 
 // The daemon's patch_state vocabulary — the review-state a record carries, read
-// off record.patch_state (and the Review filter's facet values). A closed set;
+// off record.patch_state. The Review facet offers only the VERDICT subset of it
+// (edited/dirty collapse onto accepted/unreviewed — see verdictState). A closed set;
 // the client compares against it in switches and guards, so it must track the
 // daemon's constants exactly. Single source of truth on the Python side:
 // src/editor/overlay.py (PATCH_STATE_*). A rename there MUST be mirrored here.
@@ -32,6 +33,7 @@ const PATCH_STATE = {
     UNREVIEWED: "unreviewed",
     ACCEPTED: "accepted",
     EDITED: "edited",
+    DIRTY: "dirty",
     DROPPED: "dropped",
     FLAGGED: "flagged",
     AUTHORED: "authored",
@@ -343,6 +345,15 @@ const state = {
     // The last row toggled/clicked by pointer, so a shift-click can range-extend
     // from it — the selection anchor in the file-list sense.
     lastToggledKey: null,
+    // The group whose HEADER the review cursor sits on (a header stop: a keyboard step
+    // onto it, or a plain header click), or null when the cursor is on a record row.
+    // It carries both the cursor's POSITION (currentStopIndex resolves it before the
+    // record search; rowIsCursor lights the header) and the PROVENANCE of the
+    // group-as-unit selection (stepping off the header dissolves the selection the
+    // landing created). Any hand mutation of the pick — toggle, range, select-all,
+    // clear — forfeits the claim, so stepping never dissolves an owner-made selection;
+    // any record landing (select()) takes the cursor off the header.
+    cursorGroupKey: null,
     // Touch multi-select mode (iOS Mail/Photos style): entered by long-press, in
     // which a plain tap toggles rather than reviews. Off = plain tap reviews.
     touchMulti: false,
@@ -568,6 +579,33 @@ function filtersFromState() {
     return filters;
 }
 
+// The Review facet speaks VERDICTS (edited/dirty are decorations, not lifecycle
+// states), but the daemon's _matches_review compares raw patch_state exactly. At the
+// query boundary each selected verdict fans out to every patch_state whose verdict
+// it is — accepted ⊇ edited, unreviewed ⊇ dirty, the rest map to themselves —
+// derived from verdictState so the two can never disagree.
+function reviewStatesForVerdict(verdict) {
+    const states = Object.values(PATCH_STATE).filter(
+        (patchState) => verdictState({ patch_state: patchState }) === verdict);
+    if (!states.length) {
+        throw new Error(`not a review verdict: ${verdict}`);
+    }
+    return states;
+}
+
+// The daemon-facing filters dict: the Review verdicts expanded to their raw
+// patch_states. Only the wire dict differs — state.filters (the query signature,
+// the session, pacing) stays in the verdict vocabulary.
+function daemonFilters(filters) {
+    if (!filters.review) {
+        return filters;
+    }
+    if (!Array.isArray(filters.review)) {
+        throw new Error("review filter must be a value list");
+    }
+    return { ...filters, review: filters.review.flatMap(reviewStatesForVerdict) };
+}
+
 // The inverse map: a saved filters dict → an ordered activeFilters array, so an old
 // session (which persisted only `filters`) migrates to chips, and any dict can seed
 // the chip strip. Registry order is imposed so chips appear in the canonical order.
@@ -610,6 +648,17 @@ function activeFiltersFromDict(filters) {
     return active;
 }
 
+// A restored categorical value list, for sanitizeRestoredEntry (every session
+// restore path funnels through it). Review values collapse to their verdict
+// (verdictState applied value-wise): a session saved when edited/dirty were their
+// own Review chips migrates to the verdict chips that now cover them.
+function restoredFacetValues(field, values) {
+    if (field !== "review") {
+        return [...values];
+    }
+    return [...new Set(values.map((value) => verdictState({ patch_state: value })))];
+}
+
 // Flag the text-filter chips whose regex the daemon could not compile (its response
 // names them in invalid_regex). The chip's text input gets .invalid — a red border —
 // while the query still returns (it simply matched nothing). Chips not named are
@@ -633,7 +682,7 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     state.offset = offset;
     const result = await callDaemon({
         op: "entries",
-        filters: state.filters,
+        filters: daemonFilters(state.filters),
         sort: daemonSort(),
         offset,
         limit: state.limit,
@@ -756,8 +805,10 @@ function renderLedger() {
         LEDGER.append(groupRow(group));
         if (state.groupsExpanded.has(group.key)) {
             const children = groupChildRows(group);
-            // The last child closes the group unit at the bottom (bottom groove +
-            // corner rounding); the expanded header is its top (see groupRow).
+            // The children form an inset bordered block hanging under their header:
+            // the first child opens it (top border + top corners), the last closes it
+            // (bottom border + bottom corners).
+            children[0].classList.add("group-child-first");
             children[children.length - 1].classList.add("group-child-last");
             LEDGER.append(...children);
         }
@@ -767,34 +818,40 @@ function renderLedger() {
 // The child rows of an expanded group (§3.3): every member of the FULL membership,
 // matched children bright (their own working-set index, index-addressable) and
 // siblings outside the active filter dimmed (index -1, selectable by anchor only).
-// Falls back to the in-page matched members until the full membership has been fetched
-// (a group auto-fetches on expand, so this is only the transient pre-fetch frame).
 function groupChildRows(group) {
-    const full = state.groupMembers.get(group.key);
+    return groupDisplayMembers(group).map(({ record, index }) =>
+        ledgerRow(record, index, index >= 0));
+}
+
+// The members an expanded group displays, in RENDERED order: the FULL membership when
+// fetched, else the in-page matched members until the fetch lands (a group auto-fetches
+// on expand, so that is only the transient pre-fetch frame). Each member carries its
+// working-set index, or -1 for a sibling outside the active filter (dimmed, not in
+// state.records). Shared by the row painter and the keyboard cursor (cursorStops), so
+// the two can never disagree on child order.
+function groupDisplayMembers(group) {
     const matchedIndex = new Map(
         group.members.map((entry) => [anchorKey(entry.record.anchor), entry.index]),
     );
-    const members = full || group.members.map((entry) => entry.record);
+    const members = state.groupMembers.get(group.key)
+        || group.members.map((entry) => entry.record);
     return members.map((record) => {
         const index = matchedIndex.get(anchorKey(record.anchor));
-        const matched = index !== undefined;
-        return ledgerRow(record, matched ? index : -1, matched);
+        return { record, index: index === undefined ? -1 : index };
     });
 }
 
-// The verdict-state axis of the group key (§3.1, owner refinement). It collapses the
-// two DECORATION states onto the verdict they decorate — `edited` is an accept
-// carrying edits, so it groups with `accepted` as SANCTIONED; `dirty` is an unshipped
-// persisted edit (reviewed=False), so it groups with `unreviewed`. The remaining
-// states (dropped/flagged/authored/orphaned) are their own verdict. So a record's
-// grouping state is its VERDICT, never its edit decoration (the task's hard rule:
-// 'edited'/'dirty' is not a grouping axis; verdict-state is).
-const VERDICT_STATE_SANCTIONED = "sanctioned";
+// A record's VERDICT — the single source of truth collapsing the two DECORATION
+// states onto the verdict they decorate: `edited` IS an accept (one carrying field
+// edits), `dirty` IS unreviewed (an unshipped persisted edit, reviewed=False). The
+// remaining states are their own verdict. Every state-semantic reader — grouping
+// (§3.1), the row hue/class, the stamp and state pills, the Review filter — routes
+// through this; raw patch_state is read only where the edit decoration itself is
+// meant (overridden-field tags) or the daemon's raw vocabulary is mirrored.
 function verdictState(record) {
     switch (record.patch_state) {
-        case PATCH_STATE.ACCEPTED:
         case PATCH_STATE.EDITED:
-            return VERDICT_STATE_SANCTIONED;
+            return PATCH_STATE.ACCEPTED;
         case PATCH_STATE.DIRTY:
             return PATCH_STATE.UNREVIEWED;
         default:
@@ -925,8 +982,9 @@ function syncSortIndicators() {
 // fills them, flat and child rows leave them blank — children share the top-level
 // template, aligned full-width under their header.
 function ledgerCells(record) {
+    const verdict = verdictState(record);
     return [
-        cell("stamp col-state " + record.patch_state, record.patch_state),
+        cell("stamp col-state " + verdict, verdict),
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
         varCell(record.var),
@@ -944,7 +1002,7 @@ function ledgerCells(record) {
 // its anchor but excluded from index-keyed row refresh.
 function ledgerRow(record, index, filterMatch = null) {
     const row = document.createElement("li");
-    row.className = `ledger-row state-${record.patch_state}`;
+    row.className = `ledger-row state-${verdictState(record)}`;
     // An orphaned row's edge-bar + stamp are coloured by WHICH orphan reason it is
     // (patch_state is just "orphaned" for both), so the two triage apart at a glance
     // in the list. The wide DROP·RESURFACED / ACCEPT·ORPHAN badge is NOT crammed into
@@ -983,7 +1041,7 @@ function ledgerRow(record, index, filterMatch = null) {
 function groupRow(group) {
     const winner = exportWinner(group.members).record;
     const li = document.createElement("li");
-    li.className = `ledger-row ledger-group-header state-${winner.patch_state}`;
+    li.className = `ledger-row ledger-group-header state-${verdictState(winner)}`;
     if (winner.patch_state === PATCH_STATE.ORPHANED && winner.orphan_kind) {
         li.classList.add(`orphan-${winner.orphan_kind}`);
     }
@@ -1000,14 +1058,9 @@ function groupRow(group) {
     }
 
     // Gutter tracks: the disclosure chevron, then the member count. The STATE track
-    // shows the members' shared state pill (state is a grouping axis, so members agree
-    // in the normal case) and stays BLANK if they somehow diverge — mirroring how the
-    // group editor renders a divergent field (fieldConsensus/distinctDisplay).
-    const [stamp, ...rest] = ledgerCells(winner);
-    const stateConsensus = fieldConsensus(
-        group.members.map((entry) => entry.record), "patch_state");
-    const stateCell = stateConsensus.uniform ? stamp : cell("col-state", "");
-    li.append(groupDisclosure(group, expanded), groupCountCell(group), stateCell, ...rest);
+    // shows the members' shared verdict stamp — verdict-state is a grouping axis
+    // (groupKey), so members agree by construction.
+    li.append(groupDisclosure(group, expanded), groupCountCell(group), ...ledgerCells(winner));
     li.addEventListener("click", (event) => onGroupHeaderClick(group, event));
     return li;
 }
@@ -1136,6 +1189,10 @@ function expandedGroupAnchorKeys() {
 // flips the group's members in/out. Needs the full membership, so it fetches first.
 async function selectWholeGroup(group, toggle) {
     const anchors = await groupMemberAnchors(group);
+    // A plain header-select lands the cursor ON the header (the group-as-unit stop),
+    // for keyboard and mouse alike; a toggle is a hand mutation of the pick, which
+    // forfeits any header claim (see state.cursorGroupKey).
+    state.cursorGroupKey = toggle ? null : group.key;
     if (!toggle) {
         state.multi.clear();
     }
@@ -1368,6 +1425,8 @@ function select(index) {
     // state.selected and the main context switch to the new record.
     autoSaveMainEdit();
     state.selected = index;
+    // A record landing takes the cursor off any group header it sat on.
+    state.cursorGroupKey = null;
     if (state.mainContext) {
         state.mainContext.editing = false;
     }
@@ -1410,6 +1469,19 @@ function scrollRowIntoView(index) {
     if (active) {
         active.scrollIntoView({ block: "nearest" });
     }
+}
+
+// A group HEADER row addressed by its group key — the header counterpart of
+// rowByIndex. The key carries NUL separators (not attribute-safe), so it rides on the
+// row's _groupKey JS property and cannot be querySelected; scan the rows instead (the
+// ledger is one page, so this is cheap).
+function rowByGroupKey(key) {
+    for (const row of LEDGER.querySelectorAll(".ledger-row")) {
+        if (row._groupKey === key) {
+            return row;
+        }
+    }
+    return null;
 }
 
 // Expand the collapsed group holding the record at `index` so the review cursor is
@@ -1463,6 +1535,9 @@ function toggleSelection(anchor) {
         state.multi.add(key);
     }
     state.lastToggledKey = key;
+    // A hand mutation of the pick: the selection is the owner's now, so stepping off
+    // a header must no longer dissolve it (see state.cursorGroupKey).
+    state.cursorGroupKey = null;
     onSelectionChanged();
 }
 
@@ -1486,6 +1561,7 @@ function extendSelection(toIndex) {
         state.multi.add(anchorKey(state.records[i].anchor));
     }
     state.lastToggledKey = anchorKey(state.records[toIndex].anchor);
+    state.cursorGroupKey = null;
     onSelectionChanged();
 }
 
@@ -1503,6 +1579,7 @@ function selectAll() {
     for (const record of state.records) {
         state.multi.add(anchorKey(record.anchor));
     }
+    state.cursorGroupKey = null;
     onSelectionChanged();
 }
 
@@ -1510,6 +1587,7 @@ function clearSelection() {
     state.multi.clear();
     state.lastToggledKey = null;
     state.touchMulti = false;
+    state.cursorGroupKey = null;
     onSelectionChanged();
 }
 
@@ -1563,18 +1641,23 @@ function paintLedgerSelection() {
 }
 
 // Whether a row carries the review cursor: a record row by its working-set index, a
-// COLLAPSED group header when the cursor's record is folded inside it (select()
-// normally auto-expands that group, so this branch covers the pre-repaint frame and
-// any future no-auto-expand mode). An expanded header never carries the cursor — its
-// child row shows it.
+// group HEADER when the cursor sits ON it (state.cursorGroupKey — a header stop
+// landing, before its whole-group selection resolves and the multi wash takes over),
+// or a COLLAPSED header when the cursor's record is folded inside it (a non-stepping
+// landing — refocus, undo — that reveals no row). While a header holds the claim its
+// members' record rows do NOT light by index — the header IS the cursor.
 function rowIsCursor(row) {
     if (state.selected < 0) {
         return false;
     }
     if (row._anchorKey) {
-        return Number(row.dataset.index) === state.selected;
+        return state.cursorGroupKey === null
+            && Number(row.dataset.index) === state.selected;
     }
     if (row._groupKey) {
+        if (row._groupKey === state.cursorGroupKey) {
+            return true;
+        }
         const cursor = state.records[state.selected];
         return Boolean(cursor) && groupKey(cursor) === row._groupKey
             && !state.groupsExpanded.has(row._groupKey);
@@ -1762,13 +1845,13 @@ function glanceColumn(ctx, group, overridden) {
     // a separate STATE pill — so state is glanceable right on the word. The state name
     // is on title/aria-label since the pill text is gone. A group with a mixed state
     // carries no single hue, so its box is neutral.
-    const stateConsensus = fieldConsensus(group, "patch_state");
+    const stateConsensus = verdictConsensus(group);
     const wordGroup = document.createElement("div");
     wordGroup.className = stateConsensus.uniform
-        ? `glance-word state-box ${record.patch_state}`
+        ? `glance-word state-box ${stateConsensus.value}`
         : "glance-word state-box state-multiple";
     if (stateConsensus.uniform) {
-        const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
+        const stateName = STATE_LABELS[stateConsensus.value] ?? stateConsensus.value;
         wordGroup.title = `state: ${stateName}`;
         wordGroup.setAttribute("aria-label", `${record.word} — state: ${stateName}`);
     } else {
@@ -1894,15 +1977,15 @@ function priorityRail(group) {
     const rail = document.createElement("div");
     rail.className = "priority-rail";
 
-    // The word-box carries state by COLOUR; this rail slot restates the exact state
-    // WORD as a small, unobtrusive pill (so accepted/edited/dirty/flagged read apart
-    // — colour alone can't). An orphaned record also gets its sub-tag (op + why). A
-    // group of mixed state tallies each state instead.
+    // The word-box carries state by COLOUR; this rail slot restates the exact verdict
+    // WORD as a small, unobtrusive pill (so accepted/dropped/flagged read apart —
+    // colour alone can't). An orphaned record also gets its sub-tag (op + why). A
+    // group of mixed verdicts tallies each verdict instead.
     const state = railSlot("state");
-    const stateConsensus = fieldConsensus(group, "patch_state");
+    const stateConsensus = verdictConsensus(group);
     if (stateConsensus.uniform) {
-        const stateName = STATE_LABELS[record.patch_state] ?? record.patch_state;
-        state.append(cell(`state-pill ${record.patch_state}`, stateName));
+        const stateName = STATE_LABELS[stateConsensus.value] ?? stateConsensus.value;
+        state.append(cell(`state-pill ${stateConsensus.value}`, stateName));
         const orphanKind = orphanKindBadge(record);
         if (orphanKind.childElementCount) {
             state.append(orphanKind);
@@ -2121,6 +2204,15 @@ function fieldValueKey(value) {
         return [...value].sort().join(" ");
     }
     return value == null ? "" : String(value);
+}
+
+// The verdict consensus across a (possibly hand-picked, cross-group) selection:
+// fieldConsensus over each member's verdictState rather than a stored field. Members
+// are projected onto {verdict} shells so the generic keying/count machinery applies
+// unchanged; callers read uniform/value/distinct only.
+function verdictConsensus(group) {
+    return fieldConsensus(
+        group.map((record) => ({ verdict: verdictState(record) })), "verdict");
 }
 
 // The Clone action: open the shared create modal PREPOPULATED with an exact copy of
@@ -2924,8 +3016,7 @@ const RELATED_STATE_ORDER = new Map([
     ["flagged", 2],
     ["authored", 3],
     ["dropped", 4],
-    ["edited", 5],
-    ["accepted", 6],
+    ["accepted", 5],
 ]);
 
 // Compare two related records on one header column. Returns <0/0/>0 for the
@@ -3065,11 +3156,12 @@ function relatedSource(record) {
 }
 
 // Provenance + review state of a related record, from the fields the view already
-// carries. patch_state decides first (a patch's verdict overrides origin); an
-// untouched row falls back to its origin. `state` is a --state-* class so the
-// badge reuses the ledger palette; `glyph` is the non-colour channel.
+// carries. The verdict decides first (a patch's verdict overrides origin; edited
+// reads as its accept, dirty as unreviewed); an untouched row falls back to its
+// origin. `state` is a --state-* class so the badge reuses the ledger palette;
+// `glyph` is the non-colour channel.
 function relatedProvenance(record) {
-    switch (record.patch_state) {
+    switch (verdictState(record)) {
         case PATCH_STATE.AUTHORED:
             return { state: "authored", glyph: "✎", label: "manual" };
         case PATCH_STATE.DROPPED:
@@ -3082,12 +3174,6 @@ function relatedProvenance(record) {
                 : { state: "orphaned", glyph: "⚠", label: "accept-orphan" };
         case PATCH_STATE.ACCEPTED:
             return { state: "accepted", glyph: "✓", label: "sanctioned" };
-        case PATCH_STATE.EDITED:
-            return {
-                state: "edited",
-                glyph: "✓",
-                label: record.status === ACCEPTED_STATUS ? "sanctioned" : "edited",
-            };
         default:
             return record.source.includes("readlex")
                 ? { state: "unreviewed", glyph: "✓", label: "upstream" }
@@ -3103,7 +3189,7 @@ function setDetailMode() {
     DETAIL.classList.toggle("mode-review", !editing && state.selected >= 0);
 }
 
-// Display text per patch_state — the internal value stays as-is (CSS class,
+// Display text per (verdict) state — the internal value stays as-is (CSS class,
 // filter value, daemon), only the human label differs. "authored" reads as
 // "manual" (a human hand-added it) since every entry is authored by someone.
 const STATE_LABELS = { authored: "manual" };
@@ -4426,11 +4512,14 @@ async function clearSelected() {
 // from the writes so the summary count is honest.
 const GROUP_SKIPPED = Symbol("bulk-skipped");
 
-// Clear one record. An unreviewed record has no patch to clear — a no-op the bulk
-// run counts as skipped, not done. An authored record clears by patch id and its row
-// is dropped; a basis record clears by anchor and reverts in place.
+// Clear one record. Only a truly unreviewed record holds no patch to clear — a
+// no-op the bulk run counts as skipped, not done. A dirty record is unreviewed BY
+// VERDICT but carries an unshipped edit patch, which Clear deletes like any other
+// (so C reverts an unwanted edit — the reviewed bit would wrongly skip it). An
+// authored record clears by patch id and its row is dropped; a basis record clears
+// by anchor and reverts in place.
 async function clearOne(selected, options = {}) {
-    if (!selected.reviewed) {
+    if (selected.patch_state === PATCH_STATE.UNREVIEWED) {
         return GROUP_SKIPPED;
     }
     if (selected.patch_state === PATCH_STATE.AUTHORED) {
@@ -4719,15 +4808,120 @@ function applyWriteResult(records, { step: doStep = true, refocus = true, deferR
     }
 }
 
-function step(delta) {
-    if (!state.records.length) {
+// The keyboard cursor's stops, in RENDER order — one stop per visible selectable row,
+// derived from the SAME fold renderLedger paints (foldLedgerGroups + groupsExpanded +
+// groupDisplayMembers), so stepping can never disagree with the screen. A singleton is
+// one record stop. EVERY multi-member group's HEADER is a group stop that selects the
+// whole group as a unit: a collapsed group is that one stop (its hidden members are
+// not stops), an expanded group is its header stop followed by each matched child as
+// a record stop, in rendered child order. A dimmed off-filter sibling is not a stop
+// (no working-set index, so it cannot be the review cursor, §3.3).
+function cursorStops() {
+    const stops = [];
+    for (const group of foldLedgerGroups(state.records)) {
+        if (group.members.length === 1) {
+            stops.push({ index: group.members[0].index });
+            continue;
+        }
+        stops.push({ group });
+        if (state.groupsExpanded.has(group.key)) {
+            for (const member of groupDisplayMembers(group)) {
+                if (member.index >= 0) {
+                    stops.push({ index: member.index });
+                }
+            }
+        }
+    }
+    return stops;
+}
+
+// The stop the review cursor sits on, or -1 when no cursor is set. A claimed header
+// (state.cursorGroupKey) wins — it is what distinguishes "on the header" from "on the
+// first child" of an EXPANDED group, where both stops exist for one working-set index.
+// Otherwise the cursor's record resolves to its own record stop when visible, else to
+// the group stop swallowing it (its record is folded inside a collapsed group).
+function currentStopIndex(stops) {
+    if (state.cursorGroupKey !== null) {
+        const at = stops.findIndex(
+            (stop) => stop.group && stop.group.key === state.cursorGroupKey);
+        if (at >= 0) {
+            return at;
+        }
+        // The claimed group no longer folds (re-keyed by a write, or re-queried
+        // away) — fall through to the record search.
+    }
+    if (state.selected < 0) {
+        return -1;
+    }
+    const recordAt = stops.findIndex(
+        (stop) => !stop.group && stop.index === state.selected);
+    if (recordAt >= 0) {
+        return recordAt;
+    }
+    return stops.findIndex((stop) => stop.group
+        && stop.group.members.some((entry) => entry.index === state.selected));
+}
+
+// Land the cursor on a stop through the path the equivalent mouse gesture uses. A
+// record stop is a plain select() (a live pick survives the cursor move — select()'s
+// contract). A group stop lands on the HEADER — collapsed or expanded, WITHOUT
+// touching the fold: with no pick live it mirrors a plain header click
+// (selectWholeGroup — the group reviewed as a unit, full membership fetched once then
+// cached), painting the header as the cursor immediately while the fetch resolves;
+// with a live pick it is a pure cursor move instead, claiming nothing, so stepping
+// never clobbers a hand-made selection. state.selected anchors on the group's first
+// (fold-anchor) member so index-keyed flows stay valid, and the header — which has no
+// data-index — scrolls into view by group key.
+function selectStop(stop) {
+    if (!stop.group) {
+        select(stop.index);
         return;
     }
-    const next = Math.min(
-        state.records.length - 1,
-        Math.max(0, state.selected + delta),
-    );
-    select(next);
+    state.selected = stop.group.members[0].index;
+    if (state.multi.size) {
+        autoSaveMainEdit();
+        if (state.mainContext) {
+            state.mainContext.editing = false;
+        }
+        paintLedgerSelection();
+    } else {
+        state.cursorGroupKey = stop.group.key;
+        paintLedgerSelection();
+        selectWholeGroup(stop.group, false).catch((error) => showToast(error.message, true));
+    }
+    const header = rowByGroupKey(stop.group.key);
+    if (header) {
+        header.scrollIntoView({ block: "nearest" });
+    }
+    saveSession();
+}
+
+// Step the review cursor to the adjacent VISIBLE row in render order, clamped at the
+// ends: a collapsed group counts once; an expanded group counts its header, then each
+// child. With no cursor the first stop is the landing (the old from−1 clamp's
+// behaviour); at a clamped end the step is a no-op, so holding the key is idempotent.
+function step(delta) {
+    const stops = cursorStops();
+    if (!stops.length) {
+        return;
+    }
+    const at = currentStopIndex(stops);
+    const target = at < 0
+        ? stops[0]
+        : stops[Math.min(stops.length - 1, Math.max(0, at + delta))];
+    const departed = at >= 0 ? stops[at] : null;
+    if (target === departed) {
+        return;
+    }
+    // Stepping OFF a header the cursor claimed dissolves the group-as-unit selection
+    // that landing created — it was the cursor's own, not an owner pick (a hand-made
+    // pick clears the claim at mutation time, so it rides through untouched).
+    if (departed && departed.group && state.cursorGroupKey === departed.group.key) {
+        state.multi.clear();
+        state.lastToggledKey = null;
+        state.cursorGroupKey = null;
+    }
+    selectStop(target);
 }
 
 // Keyboard fold control (ArrowRight/+ expand, ArrowLeft/- collapse): acts on the
@@ -4951,7 +5145,7 @@ const SHORTCUT_GROUPS = [
     {
         heading: "Review actions",
         rows: [
-            { keys: ["A"], state: "edited", action: "Accept — promote & step on" },
+            { keys: ["A"], state: "accepted", action: "Accept — promote & step on" },
             { keys: ["X"], state: "dropped", action: "Drop — reject & step on" },
             { keys: ["F"], state: "flagged", action: "Flag — looked at, no verdict yet" },
             { keys: ["E"], state: null, action: "Edit — focus the Shavian field (auto-saves on leave)" },
@@ -5158,10 +5352,14 @@ function sanitizeRestoredEntry(entry) {
     if (spec.kind !== "categorical") {
         return entry;
     }
+    // Review values MIGRATE before the vocabulary filter: a session saved when
+    // edited/dirty were their own chips collapses onto the verdict chips that now
+    // cover them, instead of being dropped as retired vocabulary.
     const vocabulary = new Set(spec.entries.map((option) => option.value));
     return {
         ...entry,
-        value: entry.value.filter((value) => vocabulary.has(value)),
+        value: restoredFacetValues(entry.field, entry.value)
+            .filter((value) => vocabulary.has(value)),
         mode: entry.mode === "all" ? "all" : "any",
     };
 }

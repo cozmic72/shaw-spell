@@ -388,12 +388,13 @@ PAGE = """<!DOCTYPE html>
              data-inline="true" data-placeholder="latin or 𐑖𐑷 (regex)"></div>
         <!-- AXIS 1 — Review: the review-lifecycle verdicts (mutually exclusive; a
              record is in exactly one). authored/orphaned are origins, not verdicts —
-             they live in Data as manual/orphaned (see editord _matches_review). -->
+             they live in Data as manual/orphaned (see editord _matches_review).
+             edited/dirty are DECORATIONS, not verdicts: accepted covers edited and
+             unreviewed covers dirty (the client fans each verdict out to its raw
+             patch_states on the wire — editor.js reviewStatesForVerdict). -->
         <div data-field="review" data-kind="categorical" data-label="Review" data-pinned="true">
             <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
             <label class="chip"><input value="accepted"><span>accepted</span></label>
-            <label class="chip"><input value="edited"><span>edited</span></label>
-            <label class="chip"><input value="dirty"><span>dirty</span></label>
             <label class="chip"><input value="dropped"><span>dropped</span></label>
             <label class="chip"><input value="flagged"><span>flagged</span></label>
         </div>

@@ -27,7 +27,6 @@ from dialect_display import (
     var_label, is_british, is_american, variations_label, rssb_role,
     BRITISH_BASE_VAR,
 )
-from inflection_rules import derive_noun_index_pairs
 # Dialect detection now uses comprehensive cache only
 
 
@@ -394,50 +393,97 @@ def add_namer_dot_if_proper_noun(text, pos_code):
     return text
 
 
-def form_index_pairs(form, index_key, plural_slot_open):
-    """
-    (value, twin) d:index pairs for one form: the base index value plus
-    namer-dot / capitalization variants and derived noun inflections
-    (see inflection_rules), each paired with its counterpart-script twin.
-    """
-    latin = form['latn']
-    shaw = form['shaw']
-    pos = form['pos']
-    if not latin or not shaw:
-        raise ValueError(
-            f"form lacks a counterpart script for d:twin: "
-            f"latn={latin!r} pos={pos!r}"
-        )
+# Voicing classes for the Shavian sibilant suffix (used by plural and
+# canonical apostrophe-free possessive). Last char of the stem decides:
+#   sibilant ending → 𐑩𐑟
+#   voiceless non-sibilant → 𐑕
+#   anything else (voiced consonant or vowel) → 𐑟
+_SHAVIAN_VOICELESS_NON_SIBILANT = set('𐑐𐑑𐑒𐑓𐑔')
+_SHAVIAN_SIBILANT = set('𐑕𐑟𐑖𐑠𐑗𐑡')
 
-    pairs = []
-    if index_key == 'shaw':
-        # Bare and namer-dotted stems both seed indices so the entry is
-        # findable from either spelling convention; the Latin twin is the
-        # stored Latin either way.
-        stems = [shaw]
-        dotted = add_namer_dot_if_proper_noun(shaw, pos)
-        if dotted != shaw:
-            stems.append(dotted)
-        for stem in stems:
-            pairs.append((stem, latin))
-            for derived_latin, derived_shaw in derive_noun_index_pairs(
-                    latin, stem, pos, plural_slot_open):
-                pairs.append((derived_shaw, derived_latin))
-    else:
-        # Lowercase plus capitalized for proper nouns; the Shavian twin is
-        # the same either way (capitalization is a Latin-only marker).
-        # Derivation uses the Shavian as a phonemic oracle for the sibilant
-        # decision, so 'box' (𐑚𐑪𐑒𐑕) → 'boxes' lands correctly.
-        value = latin.lower()
-        pairs.append((value, shaw))
-        if is_proper_noun(pos):
-            pairs.append((value.capitalize(), shaw))
-        for derived_latin, derived_shaw in derive_noun_index_pairs(
-                value, shaw, pos, plural_slot_open):
-            pairs.append((derived_latin, derived_shaw))
-            if is_proper_noun(pos):
-                pairs.append((derived_latin.capitalize(), derived_shaw))
-    return pairs
+
+def _shavian_sibilant_suffix(shaw):
+    """Pick the voicing-correct sibilant suffix (𐑩𐑟 / 𐑕 / 𐑟) for a stem."""
+    if not shaw:
+        return ''
+    last = shaw[-1]
+    if last in _SHAVIAN_SIBILANT:
+        return '𐑩𐑟'
+    if last in _SHAVIAN_VOICELESS_NON_SIBILANT:
+        return '𐑕'
+    return '𐑟'
+
+
+def derive_shavian_noun_indices(shaw, pos):
+    """
+    Generate the additional Shavian d:index forms for a noun.
+
+    For singular nouns (NN1/NP0):
+      - plural / apostrophe-free possessive (homograph): 𐑛𐑪𐑜 → 𐑛𐑪𐑜𐑟
+      - apostrophe-singular-possessive:                  𐑛𐑪𐑜 → 𐑛𐑪𐑜'𐑟
+      - apostrophe-plural-possessive:                    𐑛𐑪𐑜 → 𐑛𐑪𐑜𐑟'
+
+    For plural-only NN2 entries (alms, antipodes, …):
+      - apostrophe-plural-possessive only: 𐑭𐑥𐑟 → 𐑭𐑥𐑟'
+
+    Returns a set of derived Shavian forms (excluding the input itself).
+    """
+    if not shaw:
+        return set()
+
+    derived = set()
+    is_singular_noun = pos == 'NN1' or is_proper_noun(pos)
+    is_plural_noun = pos == 'NN2'
+
+    if is_singular_noun:
+        plural = shaw + _shavian_sibilant_suffix(shaw)
+        derived.add(plural)
+        derived.add(plural + "'")
+        derived.add(shaw + "'𐑟")
+    elif is_plural_noun:
+        derived.add(shaw + "'")
+
+    return derived
+
+
+def derive_latin_noun_indices(latin, shaw, pos):
+    """
+    Generate the additional Latin d:index forms for a noun, using the
+    Shavian form as a phonemic oracle for the sibilant decision.
+
+    For singular nouns (NN1/NP0):
+      - plural:               dog → dogs, box → boxes, baby → babies
+      - singular possessive:  dog → dog's
+      - plural possessive:    dog → dogs'
+
+    For plural-only NN2 entries:
+      - plural possessive only: alms → alms'
+
+    Returns a set of derived Latin forms (excluding the input itself).
+    """
+    if not latin:
+        return set()
+
+    derived = set()
+    is_singular_noun = pos == 'NN1' or is_proper_noun(pos)
+    is_plural_noun = pos == 'NN2'
+
+    if is_singular_noun:
+        # Sibilant decision uses the Shavian last char (phonemic). Falls
+        # back to a Latin-side check if no Shavian form is available.
+        if shaw and shaw[-1] in _SHAVIAN_SIBILANT:
+            plural = latin + ('s' if latin.endswith('e') else 'es')
+        elif len(latin) >= 2 and latin[-1] == 'y' and latin[-2] not in 'aeiou':
+            plural = latin[:-1] + 'ies'
+        else:
+            plural = latin + 's'
+        derived.add(plural)
+        derived.add(plural + "'")
+        derived.add(latin + "'s")
+    elif is_plural_noun:
+        derived.add(latin + "'")
+
+    return derived
 
 
 def process_readlex_with_lemmas(readlex_data):
@@ -1299,41 +1345,82 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     entry_data = merged_entries[entry_key]
                     lemma_data = {'forms': entry_data['forms'], 'definitions': entry_data['definitions']}
 
-                    # Collect all index forms for d:index tags: this lemma's
-                    # own forms plus foreign-dialect cross-refs (e.g. in the
-                    # GB dictionary, "color" indices point to the "colour"
-                    # entry). Each index value maps to its counterpart-script
-                    # d:twin.
-                    indexed_forms = list(lemma_data['forms'])
+                    # Collect all index words for d:index tags (all forms from this lemma)
+                    lemma_forms_indices = set()
+                    for form in lemma_data['forms']:
+                        form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
+
+                        # Apply proper noun formatting to index values
+                        if config['index_key'] == 'shaw':
+                            # Add namer dot version for proper nouns
+                            if is_proper_noun(form['pos']):
+                                # Add both with and without namer dot for flexibility
+                                lemma_forms_indices.add(form_index)
+                                lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
+                            else:
+                                lemma_forms_indices.add(form_index)
+
+                            # Derived noun forms: plural + possessive variants.
+                            # Bare and namer-dotted stems both seed indices so the
+                            # entry is findable from either spelling convention.
+                            for stem in (form_index, add_namer_dot_if_proper_noun(form_index, form['pos'])):
+                                lemma_forms_indices.update(
+                                    derive_shavian_noun_indices(stem, form['pos'])
+                                )
+                        else:
+                            # For Latin, add both lowercase and capitalized versions for proper nouns
+                            lemma_forms_indices.add(form_index)  # lowercase version
+                            if is_proper_noun(form['pos']):
+                                lemma_forms_indices.add(form_index.capitalize())
+
+                            # Derived Latin noun forms (plural + possessives).
+                            # Uses the Shavian as a phonemic oracle for the sibilant
+                            # decision, so 'box' (𐑚𐑪𐑒𐑕) → 'boxes' lands correctly.
+                            derived_latin = derive_latin_noun_indices(
+                                form_index, form.get('shaw', ''), form['pos']
+                            )
+                            lemma_forms_indices.update(derived_latin)
+                            if is_proper_noun(form['pos']):
+                                for d in derived_latin:
+                                    lemma_forms_indices.add(d.capitalize())
+
+                    # Add foreign dialect forms as cross-references
+                    # E.g., in GB dictionary, add "color" indices pointing to "colour" entry
                     for foreign_key, home_key in foreign_to_home.items():
                         if home_key == entry_key:
-                            indexed_forms.extend(readlex_entries[foreign_key]['forms'])
-
-                    # Explicit-slot gate: derive a default plural only when no
-                    # explicit plural record (NN2) occupies this lemma's slot
-                    # and the lemma is not invariant (NN0 closes the slot) —
-                    # dog has a real "dogs" record, sheep takes no plural.
-                    plural_slot_open = not any(
-                        form['pos'] in ('NN0', 'NN2') for form in indexed_forms
-                    )
-
-                    # First twin wins on duplicate index values (homographic
-                    # forms within one entry); form order is deterministic.
-                    lemma_forms_indices = {}
-                    for form in indexed_forms:
-                        for value, twin in form_index_pairs(
-                                form, config['index_key'], plural_slot_open):
-                            lemma_forms_indices.setdefault(value, twin)
+                            # This home entry has foreign variants - add their forms as indices
+                            foreign_data = readlex_entries[foreign_key]
+                            for form in foreign_data['forms']:
+                                form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
+                                if config['index_key'] == 'shaw':
+                                    if is_proper_noun(form['pos']):
+                                        lemma_forms_indices.add(form_index)
+                                        lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
+                                    else:
+                                        lemma_forms_indices.add(form_index)
+                                    for stem in (form_index, add_namer_dot_if_proper_noun(form_index, form['pos'])):
+                                        lemma_forms_indices.update(
+                                            derive_shavian_noun_indices(stem, form['pos'])
+                                        )
+                                else:
+                                    lemma_forms_indices.add(form_index)
+                                    if is_proper_noun(form['pos']):
+                                        lemma_forms_indices.add(form_index.capitalize())
+                                    derived_latin = derive_latin_noun_indices(
+                                        form_index, form.get('shaw', ''), form['pos']
+                                    )
+                                    lemma_forms_indices.update(derived_latin)
+                                    if is_proper_noun(form['pos']):
+                                        for d in derived_latin:
+                                            lemma_forms_indices.add(d.capitalize())
 
                     # Write entry for this readlex key
                     entry_id = f"{config['index_key']}_{index_word}_{entry_idx}"
                     f.write(f'  <d:entry id="{escape(entry_id)}" d:title="{escape(index_word)}">\n')
 
-                    # Add d:index for each form in this lemma, with its
-                    # counterpart-script transliteration as d:twin
-                    for value in sorted(lemma_forms_indices):
-                        twin = lemma_forms_indices[value]
-                        f.write(f'    <d:index d:value="{escape(value)}" d:twin="{escape(twin)}"/>\n')
+                    # Add d:index for each form in this lemma
+                    for form_index in sorted(lemma_forms_indices):
+                        f.write(f'    <d:index d:value="{escape(form_index)}"/>\n')
 
                     # Apply proper noun formatting to h1 title based on first lemma form's POS
                     lemma_forms = [f for f in lemma_data['forms'] if f['is_lemma']]

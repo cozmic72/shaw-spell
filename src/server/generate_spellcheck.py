@@ -36,7 +36,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 from dialect_display import (
     spellcheck_vars, is_american, US_GAP_FALLBACK_VARS,
 )
-from inflection_rules import SIBILANT, VOICELESS_NON_SIBILANT
 
 
 # ---- Confusion rules ----
@@ -68,8 +67,12 @@ from inflection_rules import SIBILANT, VOICELESS_NON_SIBILANT
 #       a sibilant, so the possessive just adds '). Applied to NN2 stems
 #       directly and to P-generated plurals via the SFX P /R chain.
 #
-# Voicing classes (SIBILANT / VOICELESS_NON_SIBILANT) are shared with the
-# dictionary generator — see src/tools/inflection_rules.py.
+# Voicing classes (last char of stem, Shavian script):
+#   voiceless non-sibilant: 𐑐 𐑑 𐑒 𐑓 𐑔   (p t k f θ)
+#   sibilant:               𐑕 𐑟 𐑖 𐑠 𐑗 𐑡  (s z ʃ ʒ tʃ dʒ)
+#   else (voiced consonant or vowel) takes plain 𐑟
+VOICELESS_NON_SIBILANT = '𐑐𐑑𐑒𐑓𐑔'
+SIBILANT = '𐑕𐑟𐑖𐑠𐑗𐑡'
 ELSE_NEGATED = VOICELESS_NON_SIBILANT + SIBILANT  # used in [^...] for the catchall
 
 PH_CAP = 8

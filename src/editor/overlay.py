@@ -85,6 +85,20 @@ PATCH_STATE_FLAGGED = "flagged"
 PATCH_STATE_AUTHORED = "authored"
 PATCH_STATE_ORPHANED = "orphaned"
 
+# edited/dirty are decorations on a verdict, not verdicts of their own: the UI
+# stamps an edited row ACCEPTED and a dirty row UNREVIEWED (the client's
+# verdictState). Anything ordering or grouping rows by their DISPLAYED verdict
+# must collapse the same way, or identically-stamped rows split apart.
+_VERDICT_COLLAPSE = {
+    PATCH_STATE_EDITED: PATCH_STATE_ACCEPTED,
+    PATCH_STATE_DIRTY: PATCH_STATE_UNREVIEWED,
+}
+
+
+def verdict_state(record):
+    state = record["patch_state"]
+    return _VERDICT_COLLAPSE.get(state, state)
+
 UPSTREAM_STATUS = "sanctioned"
 SUPPLEMENT_STATUS = "supplement"
 AUTHORED_STATUS = "manual"

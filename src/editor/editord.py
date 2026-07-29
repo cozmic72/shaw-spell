@@ -177,7 +177,7 @@ from overlay import (AUTHORED_STATUS, NOVELTY_NEW_POS,           # noqa: E402
                      PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
                      PATCH_STATE_DIRTY, PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
                      PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
-                     PATCH_STATE_UNREVIEWED, load_view)
+                     PATCH_STATE_UNREVIEWED, load_view, verdict_state)
 from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
     replace_authored_patch, upsert_patch)
@@ -682,8 +682,12 @@ def _field_sort(field, descending):
 
 
 def _text_primary(record, field):
-    # The word column collates case-insensitively (its natural-key tail is already
+    # The state column sorts by the DISPLAYED verdict (edited/dirty collapse onto
+    # accepted/unreviewed), so identically-stamped rows stay adjacent; the word
+    # column collates case-insensitively (its natural-key tail is already
     # lowercased); the rest compare on their raw field, mirroring the client.
+    if field == STATE_FIELD:
+        return verdict_state(record)
     value = record[field]
     return value.lower() if field == "word" else value
 

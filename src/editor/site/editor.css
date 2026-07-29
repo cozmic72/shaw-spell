@@ -144,9 +144,9 @@ body {
 .patch-counts + .tally { margin-left: 12px; }
 .patch-counts:empty + .tally { margin-left: auto; }
 .patch-counts .today-count { color: var(--accent); font-weight: 700; }
-/* Chevron toggles (filter panel, ledger drawer): a compact affordance whose rotating
-   caret carries the collapsed/expanded state (▸ collapsed, ▾ expanded), leaving just
-   a short label beside it. Only shown once the layout collapses (see mobile block). */
+/* Chevron toggle (filter panel): a compact affordance whose rotating caret carries
+   the collapsed/expanded state (▸ collapsed, ▾ expanded), leaving just a short label
+   beside it. Only shown once the layout collapses (see mobile block). */
 .chevron-toggle {
     display: none;
     font-family: var(--mono);
@@ -171,6 +171,29 @@ body {
 .chevron::before { content: "\25B8"; }             /* ▸ collapsed */
 .chevron-toggle[aria-expanded="true"] .chevron { transform: rotate(90deg); }
 .filters-toggle { margin-left: auto; }
+/* Reveal rail for the mobile ledger drawer: a thin strip across the workbench top
+   that the drawer drops down from, so the affordance sits where the drawer appears.
+   Reuses the chevron glyph, rotated to point down (pull the list down) when closed
+   and up (tuck it away) when open. Hidden until the layout collapses (mobile block);
+   opaque and stacked above the drawer so the list visibly slides out from under it. */
+.drawer-rail {
+    display: none;
+    z-index: 25;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--paper-raised);
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+}
+.drawer-rail .chevron { transform: rotate(90deg); }                        /* ▾ open it */
+.drawer-rail[aria-expanded="true"] .chevron { transform: rotate(-90deg); } /* ▴ close it */
 .drawer-backdrop { display: none; }
 /* Always-reachable shortcuts trigger, pinned to the masthead's right edge so a
    mouse or touch user can find the keyboard help without an entry selected. */
@@ -2366,11 +2389,17 @@ kbd {
 
 /* ---- mobile: one big detail card, ledger tucked into a drawer ---- */
 @media (max-width: 860px) {
-    /* The detail card fills the screen; the ledger is a full-height panel that
-       slides in from the left over a backdrop, summoned by the header toggle.
-       minmax(0,1fr) lets the column shrink below its content's min width so a long
-       word or wide field can't push the whole layout past the viewport. */
-    .workbench { grid-template-columns: minmax(0, 1fr); }
+    /* The detail card fills the screen; the ledger is a full-width panel that drops
+       down from the reveal rail over a backdrop. minmax(0,1fr) lets the column
+       shrink below its content's min width so a long word or wide field can't push
+       the whole layout past the viewport; the rail leads and the detail takes the
+       remaining height. */
+    .workbench {
+        --drawer-rail-h: 40px;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: var(--drawer-rail-h) 1fr;
+    }
+    .drawer-rail { display: flex; }
 
     .chevron-toggle { display: inline-flex; }
     .tally { display: none; }
@@ -2381,19 +2410,24 @@ kbd {
        expanded (rule below). */
     body.filters-collapsed .filters { display: none; }
 
+    /* Hidden, the drawer sits translated up by its own height: its bottom edge
+       rests exactly under the (opaque, higher-stacked) rail, and the workbench's
+       overflow:hidden clips the rest, so opening reads as the list sliding out
+       from under the rail. */
     .ledger {
         position: absolute;
         z-index: 20;
-        top: 0;
-        bottom: 0;
+        top: var(--drawer-rail-h);
         left: 0;
-        width: min(86vw, 420px);
+        right: 0;
+        height: min(78%, 480px);
         background: var(--paper);
-        border-right: 1px solid var(--rule);
-        transform: translateX(-100%);
+        border-right: none;
+        border-bottom: 1px solid var(--rule);
+        transform: translateY(-100%);
         transition: transform 0.22s ease;
     }
-    .drawer-open .ledger { transform: translateX(0); }
+    .drawer-open .ledger { transform: translateY(0); }
 
     .drawer-backdrop {
         display: block;
@@ -2416,10 +2450,10 @@ kbd {
     .add-filter-wrap { flex: 1 1 auto; }
     .add-filter { width: 100%; }
 
-    /* Compact masthead so the drawer toggle always fits: drop the strap, shrink the
-       mark, let the title take the middle and truncate, toggle pinned right. The
-       flex-basis:0 on the title means it never demands its content width, so the
-       row can never grow past the viewport and push the toggle off-screen. */
+    /* Compact masthead so the right-hand controls always fit: drop the strap,
+       shrink the mark, let the title take the middle and truncate. The flex-basis:0
+       on the title means it never demands its content width, so the row can never
+       grow past the viewport and push the controls off-screen. */
     .masthead { padding: 12px 18px; gap: 10px; align-items: center; overflow: hidden; }
     .strap { display: none; }
     .mark { font-size: 22px; flex: 0 0 auto; }
@@ -2431,11 +2465,7 @@ kbd {
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    /* The chevron toggles pack together at the row's right; masthead-text's flex
-       basis:0 already claims the slack, so no auto-margin is needed (and two would
-       fight). */
-    .chevron-toggle { flex: 0 0 auto; margin-left: 0; }
-    .filters-toggle { margin-left: auto; }
+    .filters-toggle { flex: 0 0 auto; }
     /* Keep the shortcuts trigger reachable but compact on the tight mobile row —
        the label collapses to just the "?" glyph. */
     .help-toggle { flex: 0 0 auto; margin-left: 0; padding: 5px 11px; font-size: 0; }

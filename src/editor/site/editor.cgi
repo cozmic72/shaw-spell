@@ -317,9 +317,6 @@ PAGE = """<!DOCTYPE html>
         <button type="button" class="filters-toggle chevron-toggle" id="filtersToggle"
                 aria-controls="filters" aria-expanded="true"
                 title="Filters"><span class="chevron" aria-hidden="true"></span>Filters</button>
-        <button type="button" class="drawer-toggle chevron-toggle" id="drawerToggle"
-                aria-controls="ledger" aria-expanded="false"
-                title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
         <button type="button" class="commit-decisions" id="commitDecisions" disabled hidden
                 title="Commit the accumulated editorial decisions to git">Commit</button>
         <button type="button" class="new-entry" id="newEntry"
@@ -463,6 +460,12 @@ PAGE = """<!DOCTYPE html>
     </div>
 
     <main class="workbench" id="workbench">
+        <!-- Reveal rail for the mobile ledger drawer: a thin full-width strip the
+             drawer drops down from, so the affordance and the drawer share an edge.
+             Same id the old masthead toggle carried — the JS wiring is unchanged. -->
+        <button type="button" class="drawer-rail" id="drawerToggle"
+                aria-controls="ledger" aria-expanded="false"
+                title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
         <div class="drawer-backdrop" id="drawerBackdrop"></div>
         <section class="ledger" id="ledger" aria-label="Matching entries">
             <div class="select-bar" id="selectBar" hidden>

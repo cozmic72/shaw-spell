@@ -1055,6 +1055,7 @@ function groupRow(group) {
     // accessibility semantics only).
     if (expanded) {
         li.classList.add("expanded");
+        bindParentGutter(li);
     }
 
     // Gutter tracks: the disclosure chevron, then the member count. The STATE track
@@ -1063,6 +1064,25 @@ function groupRow(group) {
     li.append(groupDisclosure(group, expanded), groupCountCell(group), ...ledgerCells(winner));
     li.addEventListener("click", (event) => onGroupHeaderClick(group, event));
     return li;
+}
+
+// The indent strip left of an expanded group's child block belongs to the HEADER
+// (one continuous shape: hovering the header washes it AND the strip beside its
+// children). The children are later SIBLINGS in the flat <li> run — CSS cannot reach
+// "the children up to the next header" from the header's :hover — so the header's
+// hover walks its child rows and toggles the class the strip's wash keys on
+// (.parent-hover; the selected twin is painted by paintLedgerSelection).
+function bindParentGutter(headerRow) {
+    headerRow.addEventListener("mouseenter", () => setParentGutterHover(headerRow, true));
+    headerRow.addEventListener("mouseleave", () => setParentGutterHover(headerRow, false));
+}
+
+function setParentGutterHover(headerRow, on) {
+    for (let row = headerRow.nextElementSibling;
+        row && row.classList.contains("group-child");
+        row = row.nextElementSibling) {
+        row.classList.toggle("parent-hover", on);
+    }
 }
 
 // The header's disclosure chevron, filling the chevron gutter track. Its click
@@ -1623,9 +1643,13 @@ function onSelectionChanged() {
 // header hiding it) is the selection. Record rows join by their own anchor; a group
 // HEADER joins when its WHOLE membership is selected — the group is a selection unit
 // (§3.2); a partial child-pick (the split case, §3.4) leaves the header unlit while
-// its picked children light individually.
+// its picked children light individually. The same pass carries a selected header's
+// wash onto its children's parent-owned indent strip (.parent-selected): children
+// directly follow their header in the flat run, so the sweep just remembers whether
+// the last header lit — the split case leaves the strip dark by construction.
 function paintLedgerSelection() {
     const multi = state.multi.size > 0;
+    let headerSelected = false;
     for (const row of LEDGER.querySelectorAll(".ledger-row")) {
         let on;
         if (multi) {
@@ -1636,6 +1660,11 @@ function paintLedgerSelection() {
             on = rowIsCursor(row);
         }
         row.classList.toggle("selected", on);
+        if (row.classList.contains("group-child")) {
+            row.classList.toggle("parent-selected", headerSelected);
+        } else {
+            headerSelected = Boolean(row._groupKey) && on;
+        }
     }
     syncSelectBar();
 }

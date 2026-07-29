@@ -709,7 +709,7 @@ body {
 }
 /* State edge-bar: a coloured rule down the left of each row, a redundant channel
    alongside the stamp text and the pip meter so state never rides on colour
-   alone. Width, not just hue, distinguishes the active row. */
+   alone. STATE is its only job — selection never touches it. */
 .ledger-row::before {
     content: "";
     position: absolute;
@@ -731,13 +731,12 @@ body {
 .ledger-row.state-orphaned.orphan-resurfaced-drop { --row-edge: var(--state-orphan-resurfaced); }
 .ledger-row.state-orphaned.orphan-lost-accept { --row-edge: var(--state-orphan-lost); }
 .ledger-row:hover { background: var(--paper-raised); }
-/* The selected row: raised paper + a heavier accent edge-bar. ONE treatment for the
-   review cursor, a single pick, a picked child and a fully-picked header alike —
-   painted by the one-pass paintLedgerSelection. Hover pins to the same raised ground
-   so hovering a selected row never reads as a state change. */
+/* The selected row: the raised-paper wash ALONE — no accent strip (the ::before
+   edge-bar stays the STATE channel only). ONE treatment for the review cursor, a
+   single pick, a picked child and a fully-picked header alike — painted by the
+   one-pass paintLedgerSelection. Hover shares the same raised ground, so hovering
+   a selected row never reads as a state change. */
 .ledger-row.selected { background: var(--paper-raised); }
-.ledger-row.selected:hover { background: var(--paper-raised); }
-.ledger-row.selected::before { width: 5px; background: var(--accent); }
 
 /* ---- record-list grouping (Phase 3) ---- */
 /* A collapsed group HEADER is a tightened ledger row previewing the export-winner:
@@ -804,13 +803,37 @@ body {
 .ledger-row.group-child-first::before { border-top-left-radius: var(--frame-radius); }
 .ledger-row.group-child-last::before { border-bottom-left-radius: var(--frame-radius); }
 
+/* The indent strip LEFT of the child block is the PARENT header's territory — it
+   wears the header's background in every interactive state, so header + strip read
+   as one continuous shape bracketing the children. The GEOMETRY rides on each child
+   (::after painting the row's left-margin column); the STATE rides on the
+   parent-hover / parent-selected classes, because the flat <li> run offers CSS no
+   selector for "the children up to the next header" from the header's own
+   :hover/.selected — the header's hover handler and paintLedgerSelection toggle
+   them (see bindParentGutter / paintLedgerSelection). DEFAULT needs no paint: an
+   idle header is transparent over the same paper the margin already shows. A child's
+   own hover/selected wash stays on its box and never lights the strip. */
+.ledger-row.group-child.parent-hover::after,
+.ledger-row.group-child.parent-selected::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--frame-indent));
+    width: var(--frame-indent);
+    background: var(--paper-raised);
+}
+
 /* The matched children of an expanded group are bright (full opacity); a sibling
    fetched via `related` that fell outside the active filter is DIMMED (opacity,
    works in both themes) but stays fully interactive — dimming is de-emphasis,
-   not disable (§3.3, D7). */
-.ledger-row.group-child[data-filter-match="false"] {
+   not disable (§3.3, D7). The dimming rides on the row's CELLS and state bar, not
+   the <li> box, so the parent-owned indent strip (::after) beside a dimmed sibling
+   carries the header's wash at full strength — the bracket never breaks. */
+.ledger-row.group-child[data-filter-match="false"] { font-weight: 400; }
+.ledger-row.group-child[data-filter-match="false"] > *,
+.ledger-row.group-child[data-filter-match="false"]::before {
     opacity: 0.5;
-    font-weight: 400;
 }
 .col-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-shaw {
@@ -1935,7 +1958,6 @@ body {
     align-items: baseline;
     padding: 8px var(--related-inset);
     border-bottom: 1px solid var(--rule);
-    border-left: 3px solid transparent;
 }
 .related-row:last-child { border-bottom: none; }
 /* A sibling row opens in a modal for in-place review — hint it is a target. The
@@ -1943,13 +1965,10 @@ body {
 .related-row.clickable { cursor: pointer; }
 .related-row.clickable:hover { background: var(--paper-raised); }
 /* The focused entry is the DEFAULT-SELECTED row: it wears the editor's unified
-   selection highlight (raised paper + accent edge, mirroring .ledger-row.selected),
+   selection highlight (the raised-paper wash alone, mirroring .ledger-row.selected),
    tying it to the detail card above. The selection IS "you are here" — no separate
    label. */
-.related-row.selected {
-    background: var(--paper-raised);
-    border-left-color: var(--accent);
-}
+.related-row.selected { background: var(--paper-raised); }
 .related-badge {
     justify-self: center;
     font-size: 13px;
@@ -2068,6 +2087,19 @@ body {
     overflow: hidden;
 }
 .related-node[open] > .related-subtree .related-row { border-bottom: none; }
+
+/* The indent gutter beside an open node's leaves belongs to the node HEADER — the
+   ledger's gutter-follows-parent rule, but trivial here: the <details> IS the
+   wrapper the ledger's flat run lacks, so hovering the summary washes the indent
+   column via :has() on the node's own background. A hard-stop gradient confines
+   the wash to the indent width; an element background paints under every
+   descendant, so the summary's and the leaves' own washes stay on top. Summaries
+   carry no selected background (.on-path tints text only), so hover is the only
+   header state with a wash to mirror. */
+.related-node[open]:has(> .related-node-summary:hover) {
+    background: linear-gradient(to right,
+        var(--paper-raised) var(--frame-indent), transparent var(--frame-indent));
+}
 
 /* The summarising label lays the word, glyphs, and rolled-up POS/VAR tags out on
    one line so the shared spelling and what it covers read at a glance. */

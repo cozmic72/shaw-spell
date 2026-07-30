@@ -4626,8 +4626,11 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
 
 // Rebuild the ledger once after a group run (rows may have been re-annotated or
 // removed) and restore the review cursor to the entry it was on — or its nearest
-// surviving neighbour if that entry was itself dropped. With the selection cleared,
-// select() renders the single-record card, back in the ordinary review flow.
+// surviving neighbour if that entry was itself dropped. A cursor whose record re-folds
+// into a COLLAPSED multi-member group is restored as that group's HEADER stop (a
+// collapsed group is ONE cursor stop; select() would auto-expand the fold to reveal
+// the record). Otherwise select() renders the single-record card, back in the
+// ordinary review flow.
 function refreshAfterBulk(focusedAnchor, expandedAnchors) {
     // A group run re-decided members whose verdict-state (a grouping axis) moved, so any
     // cached full membership is stale — drop it before the authoritative re-fold; it
@@ -4649,7 +4652,17 @@ function refreshAfterBulk(focusedAnchor, expandedAnchors) {
     if (index < 0) {
         index = Math.min(state.selected, state.records.length - 1);
     }
-    select(index);
+    // "collapsed here" ⇔ "was collapsed before the verdict": for the verdicted group
+    // the carry loop reconstructs its expansion under the new key; a neighbour the
+    // cursor falls back to was never touched. Either way, a whole-group verdict
+    // on a collapsed group lands back on its header, fold untouched.
+    const fold = foldLedgerGroups(state.records).find(
+        (group) => group.members.some((entry) => entry.index === index));
+    if (fold && fold.members.length >= 2 && !state.groupsExpanded.has(fold.key)) {
+        selectStop({ group: fold });
+    } else {
+        select(index);
+    }
     syncSelectBar();
     // Prune the retired pre-verdict keys and re-warm the surviving expanded groups'
     // cleared memberships so their dimmed siblings reappear.

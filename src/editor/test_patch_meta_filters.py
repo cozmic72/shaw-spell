@@ -16,6 +16,8 @@ Covers:
     calendar day counts; a two-day-old one does not)
   - _patch_counts over a synthetic store (total + today)
   - _distinct_authors ignores patchless rows
+  - group-aware filter_records (a matching member serves its whole group; the
+    group_key partitions mirror the client's groupKey)
 
 Standalone (no test framework): exits 0 on pass, non-zero on fail.
 """
@@ -216,6 +218,56 @@ class _StubView:
         import threading
         self._lock = threading.Lock()
         self.by_anchor_index = {i: group for i, group in enumerate(groups)}
+
+
+# ---- group-aware filtering (filter_records / group_key) ----
+
+def _grouped(**kw):
+    """A group-key-complete record: group_key needs patch_state (the verdict
+    axis) on top of the _annotated basics."""
+    base = _annotated(patch_state=editord.PATCH_STATE_UNREVIEWED)
+    base.update(kw)
+    return base
+
+
+def test_filter_serves_whole_group_when_one_member_matches():
+    # Same group (word+shaw+variation+verdict), different pos: a pos filter
+    # hitting ONE member must serve BOTH, in the incoming order; the unrelated
+    # group is excluded entirely.
+    sibling_hit = _grouped(word="run", pos="NN")
+    sibling_miss = _grouped(word="run", pos="VB")
+    unrelated = _grouped(word="walk", pos="JJ")
+    query = editord.QueryFilters({"pos": ["NN"]})
+    result = editord.filter_records(
+        [sibling_hit, sibling_miss, unrelated], query, None)
+    assert result == [sibling_hit, sibling_miss]
+
+
+def test_filter_no_filters_is_identity():
+    records = [_grouped(word="run", pos="NN"), _grouped(word="walk", pos="JJ")]
+    result = editord.filter_records(records, editord.QueryFilters({}), None)
+    assert result == records
+
+
+def test_group_key_splits_on_verdict_and_variation():
+    base = _grouped(word="run", pos="NN")
+    assert editord.group_key(base) != editord.group_key(
+        _grouped(word="run", pos="NN", patch_state=editord.PATCH_STATE_ACCEPTED))
+    assert editord.group_key(base) != editord.group_key(
+        _grouped(word="run", pos="NN", mergers=["trap-bath"]))
+    assert editord.group_key(base) != editord.group_key(
+        _grouped(word="run", pos="NN", variant=True))
+
+
+def test_group_key_collapses_verdict_like_client():
+    # edited folds onto accepted, dirty onto unreviewed — the same collapse the
+    # client's verdictState applies, so daemon groups and client folds agree.
+    assert editord.group_key(
+        _grouped(patch_state=editord.PATCH_STATE_EDITED)) == editord.group_key(
+        _grouped(patch_state=editord.PATCH_STATE_ACCEPTED))
+    assert editord.group_key(
+        _grouped(patch_state=editord.PATCH_STATE_DIRTY)) == editord.group_key(
+        _grouped(patch_state=editord.PATCH_STATE_UNREVIEWED))
 
 
 if __name__ == "__main__":

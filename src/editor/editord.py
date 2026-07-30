@@ -28,6 +28,8 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # re.search pattern instead of a plain substring) and "<field>_ci"
                 # (case-insensitive). Absent flags = plain substring, word
                 # case-insensitive / shaw case-sensitive (backward-compatible).
+                # Filtering is GROUP-AWARE: a group (group_key) whose ANY member
+                # matches is served whole, non-matching siblings included.
     Response:  {"total": 1234, "offset": 0, "limit": 50, "records": [...],
                 "invalid_regex": ["word"]}
                 # invalid_regex names the substring field(s) whose regex value
@@ -641,8 +643,29 @@ def _parse_iso_utc(ts):
     return calendar.timegm(time.strptime(ts, "%Y-%m-%dT%H:%M:%SZ"))
 
 
+# The record-list group identity — the daemon-side twin of the client's groupKey
+# (editor.js): Latin word (lowercased) + Shavian + variation set (the mergers plus
+# the "variant" pseudo-member, i.e. _record_attributes) + verdict state (edited/
+# dirty collapsed onto accepted/unreviewed). The two MUST partition records
+# identically, or a sibling served for one group would fold into another
+# client-side.
+def group_key(record):
+    return (record["word"].lower(), record["shaw"],
+            frozenset(_record_attributes(record)), verdict_state(record))
+
+
 def filter_records(records, query, established):
-    return [r for r in records if matches(r, query, established)]
+    """Group-aware filtering: a group (group_key) is served WHOLE when at least
+    one member matches the active filters — a matching record pulls its
+    non-matching siblings into the result, so the whole group reaches the
+    client together (subject to paging: a group larger than the page can still
+    straddle a page boundary — the sort has no group-affinity — so the client
+    folds whatever members the current page carries). Record order is preserved
+    (the caller sorts). With no active filters every record matches, so this degenerates to the identity."""
+    keyed = [(group_key(record), record) for record in records]
+    matched_groups = {key for key, record in keyed
+                      if matches(record, query, established)}
+    return [record for key, record in keyed if key in matched_groups]
 
 
 # The list's natural key — the deterministic tiebreak under every sort, and the

@@ -279,10 +279,13 @@ body {
     outline-offset: 0;
     border-color: var(--accent);
 }
-.masthead-menu {
+/* The compound selector outranks the later .facet-panel base rule, whose left: 0
+   would otherwise win the cascade and open the menu rightward off-screen. Right-
+   aligned to the ⋯ trigger it grows inward, and the base max-width viewport cap
+   keeps it on-screen at any width. */
+.facet-panel.masthead-menu {
     left: auto;
     right: 0;
-    min-width: max-content;
     padding: 4px;
 }
 /* :not(:empty) keeps the .whoami:empty display:none in charge — no ghost header

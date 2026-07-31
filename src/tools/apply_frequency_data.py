@@ -16,7 +16,8 @@ non-zero ReadLex freq keeps it in `freq_readlex` before we overwrite `freq`;
 records that never had a ReadLex freq gain no such field. Corpus-sourced freq is
 tagged `freq_source` so provenance is never ambiguous. Both are RUNTIME
 bookkeeping: main() serializes through the publish whitelist (basis.
-PUBLISH_FIELDS, the same shape the editor's commit path emits), so neither —
+PUBLISH_FIELDS, the same shape the editor's commit path emits) and the
+ReadLex-compatibility collapse (basis.collapse_readlex), so neither —
 nor the pass-2 info annotations — ever reaches data/readlex.json.
 
 UK/US variants: the corpus is a single mixed-dialect "en" list holding both
@@ -90,7 +91,8 @@ import json
 import sys
 from pathlib import Path
 
-from basis import DATA_ROOT, INFO_FIELD, PROJECT_ROOT, published_entry
+from basis import (DATA_ROOT, INFO_FIELD, PROJECT_ROOT, collapse_readlex,
+                   published_entry)
 from lrw_frequencies import C5_TO_LRW, UNINFORMATIVE_LRW_TAGS, load_lrw, lrw_key
 from spelling_variants import spelling_variants
 
@@ -436,12 +438,14 @@ def main():
 
     # The CLI writes the production artifact, so it ships ONLY the publish
     # whitelist (basis.PUBLISH_FIELDS) — the same shape the editor's commit
-    # path emits. Enrichment bookkeeping (freq_source/freq_readlex) and the
-    # info annotations stay in-memory runtime state; the input's own
+    # path emits — then the ReadLex-compatibility collapse, exactly as the
+    # commit path does. Enrichment bookkeeping (freq_source/freq_readlex) and
+    # the info annotations stay in-memory runtime state; the input's own
     # `supplement: true` flags pass through the shaper untouched.
     published = {
         bucket_key: [published_entry(entry) for entry in entries]
         for bucket_key, entries in readlex.items()}
+    published, collapse_stats = collapse_readlex(published)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(published, f, ensure_ascii=False, indent=4)
 
@@ -457,6 +461,11 @@ def main():
     print(f"Overlap-conflict words:       {stats['overlap_conflict_words']:,}")
     print(f"Split words with leftover:    {stats['split_words_with_leftover']:,} "
           f"({stats['leftover_records']:,} records keep the whole count)")
+
+    if collapse_stats:
+        print("\nReadLex-compatibility collapse:")
+        for action, count in sorted(collapse_stats.items()):
+            print(f"  {action}: {count:,}")
 
     report = stats["high_freq_report"]
     if report:

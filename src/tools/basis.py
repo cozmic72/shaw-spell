@@ -48,6 +48,7 @@ Two record shapes meet here, and the mapping between them lives in one place:
 import json
 import os
 import sys
+from collections import Counter
 from pathlib import Path
 
 from dialect_mergers import MERGER_TRAP_BATH
@@ -452,14 +453,19 @@ def output_to_record(entry):
     return record
 
 
-# The published record schema: exactly these keys, nothing else. Everything a
-# record carries internally (freq_readlex/freq_source, has_definition, orig_*,
+# The publish-shape record schema: exactly these keys, nothing else. Everything
+# a record carries internally (freq_readlex/freq_source, has_definition, orig_*,
 # info, confidence/source/status and the rest of the provenance) is editorial
-# working state and is deliberately NOT shipped. The ONE definition of what
-# data/readlex.json contains, shared by both producers — the editor's publish
-# path (editord.to_published_entry) and the offline frequency CLI
-# (apply_frequency_data.main) — so they can never drift. Tuple order is the
+# working state and is deliberately NOT shipped. Shared by both producers — the
+# editor's publish path (editord.to_published_entry) and the offline frequency
+# CLI (apply_frequency_data.main) — so they can never drift. Tuple order is the
 # construction order of published_entry, which is the serialization order.
+#
+# This is stage ONE of the export boundary: the per-record whitelist. Stage TWO
+# is collapse_readlex below, which both producers run over the whole shaped
+# dict; it consumes the mergers/variant fields (reversing them into upstream's
+# var vocabulary) and strips them, so data/readlex.json itself carries only
+# Latn/Shaw/pos/ipa/freq/var (+ supplement when truthy).
 PUBLISH_FIELDS = ("Latn", "Shaw", "pos", "ipa", "freq", "var",
                   "mergers", "variant", "supplement")
 
@@ -485,6 +491,119 @@ def published_entry(entry):
     if entry.get("supplement"):
         published["supplement"] = True
     return published
+
+
+# ReadLex's own var vocabulary — the only vars data/readlex.json may carry.
+# TrapBath and RRPVar never occur internally: import reinterpreted upstream's
+# TrapBath as var=RRP + mergers=[trap-bath] and RRPVar as var=RRP +
+# variant=true; collapse_readlex reverses that reinterpretation at export.
+# (Upstream's own casing/spacing typos — "RRPvar", "Gen Am" — are NOT
+# replicated; the normalised spellings are canonical.)
+READLEX_VARS = frozenset(("RRP", "TrapBath", "RRPVar", "GenAm", "GenAus",
+                          "SSB"))
+
+# Our regional lanes with no upstream ReadLex counterpart: held back from
+# publication entirely. Held back, not lost — the records stay in the internal
+# pool and the editor keeps seeing them.
+UNPUBLISHED_VARS = frozenset(("NZ", "IrEng", "SthAfr", "GenCan"))
+
+# Our own var, unknown upstream: collapses into the RRP lane (see
+# collapse_readlex) rather than publishing or being held back.
+_COLLAPSED_VAR = "RSSB"
+
+
+def _reversed_var(var, mergers, variant):
+    """The upstream-vocabulary var for one shaped record: the exact inverse of
+    the import reinterpretation (trap-bath merger on RRP → TrapBath, taking
+    precedence over the variant flag, which on RRP/RSSB → RRPVar). Variation
+    with no upstream counterpart — a merger on a non-RRP record, a variant flag
+    on a dialect record, any non-trap-bath merger — is held back: the record
+    falls back to its plain var."""
+    if var == "RRP" and MERGER_TRAP_BATH in mergers:
+        return "TrapBath"
+    if variant and var in ("RRP", _COLLAPSED_VAR):
+        return "RRPVar"
+    return var
+
+
+def collapse_readlex(published):
+    """ReadLex-compatibility collapse — stage TWO of the export boundary (stage
+    one is published_entry), run by both producers over the whole shaped
+    {group_key: [record]} dict immediately before serialization. Returns
+    (collapsed, stats): the same dict shape restricted to READLEX_VARS, plus a
+    Counter of actions for the caller's report. Raises ValueError on a var
+    outside the known vocabulary.
+
+    Within each (word, pos) slot — the editor's grouping notion, spanning
+    group_key buckets — our richer lane model collapses to upstream ReadLex's
+    exceptions model:
+      - mergers/variant reverse into upstream's var vocabulary (_reversed_var)
+        and the fields themselves are stripped;
+      - UNPUBLISHED_VARS records drop;
+      - RSSB drops where the slot already has an RRP record and relabels to RRP
+        where it is the slot's canonical (production has always normalised
+        RSSB → RRP);
+      - GenAm/GenAus survive alongside RRP exactly as upstream ships them
+        (exceptions differing in Shaw); a non-RRP record duplicating an RRP
+        sibling's Shaw is informationally empty in ReadLex's shape and drops.
+
+    Deterministic and idempotent: input order is preserved, already-collapsed
+    records pass through unchanged, so re-running the frequency CLI over its
+    own output is stable."""
+    stats = Counter()
+    shaped = {}
+    slots = {}
+    for group_key, records in published.items():
+        kept = []
+        for record in records:
+            record = dict(record)
+            mergers = record.pop("mergers", None) or ()
+            variant = record.pop("variant", None)
+            var = _reversed_var(record["var"], mergers, variant)
+            if var != record["var"]:
+                stats[f"reversed to {var}"] += 1
+            elif mergers or variant:
+                stats["variation held back"] += 1
+            record["var"] = var
+            if var in UNPUBLISHED_VARS:
+                stats[f"pruned {var}"] += 1
+                continue
+            if var not in READLEX_VARS and var != _COLLAPSED_VAR:
+                raise ValueError(
+                    f"unpublishable var {var!r} on "
+                    f"{record['Latn']!r} {record['pos']}")
+            kept.append(record)
+            slot = (record["Latn"].lower(), record["pos"])
+            slots.setdefault(slot, []).append(record)
+        shaped[group_key] = kept
+
+    dropped = set()
+    for slot_records in slots.values():
+        slot_has_rrp = any(r["var"] == "RRP" for r in slot_records)
+        for record in slot_records:
+            if record["var"] != _COLLAPSED_VAR:
+                continue
+            if slot_has_rrp:
+                dropped.add(id(record))
+                stats[f"{_COLLAPSED_VAR} dropped for slot RRP"] += 1
+            else:
+                record["var"] = "RRP"
+                stats[f"{_COLLAPSED_VAR} collapsed to RRP"] += 1
+        rrp_shaws = {r["Shaw"] for r in slot_records if r["var"] == "RRP"}
+        for record in slot_records:
+            if (id(record) not in dropped and record["var"] != "RRP"
+                    and record["Shaw"] in rrp_shaws):
+                dropped.add(id(record))
+                stats["redundant RRP duplicate dropped"] += 1
+
+    collapsed = {}
+    for group_key, records in shaped.items():
+        remaining = [r for r in records if id(r) not in dropped]
+        if remaining:
+            collapsed[group_key] = remaining
+        else:
+            stats["emptied groups dropped"] += 1
+    return collapsed, stats
 
 
 def effective_record(base_entry, changes, source):

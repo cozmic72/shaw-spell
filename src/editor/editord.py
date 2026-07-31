@@ -170,7 +170,7 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import (ACCEPTED_STATUS, INTRINSIC_FIELDS, OP_ACCEPT,  # noqa: E402
                    OP_DROP, OP_EDIT, OP_FLAG, PROJECT_ROOT, UPSTREAM_SOURCE,
-                   anchor_key, published_entry)
+                   anchor_key, collapse_readlex, published_entry)
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
@@ -1371,10 +1371,11 @@ def _publish_readlex(view):
     frequency pass) run over the daemon's RESIDENT basis (view.basis_index /
     basis_source, built once at startup) instead of a fresh minutes-long
     build_basis(), then serialised through the publish whitelist
-    (to_published_entry). Orphaned patches soft-fail exactly as in the offline
-    applicator: skipped, retained in the store, summarised in one log line —
-    never a blocked publish. Raises on any genuine derivation error (the caller
-    aborts the commit)."""
+    (to_published_entry) and the ReadLex-compatibility collapse
+    (basis.collapse_readlex). Orphaned patches soft-fail exactly as in the
+    offline applicator: skipped, retained in the store, summarised in one log
+    line — never a blocked publish. Raises on any genuine derivation error (the
+    caller aborts the commit)."""
     from apply_patches import OUTPUT_PATH, apply_patches, load_patches
     from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
     from basis import anchor_of, load_upstream
@@ -1426,6 +1427,12 @@ def _publish_readlex(view):
                 entry, view.basis_source.get(anchor_of(entry), ()))
             for entry in entries]
         for bucket_key, entries in output.items()}
+    published, collapse_stats = collapse_readlex(published)
+    if collapse_stats:
+        logging.info(
+            "publish: readlex-compat collapse: %s",
+            ", ".join(f"{action}={count}"
+                      for action, count in sorted(collapse_stats.items())))
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(published, f, ensure_ascii=False, indent=4)
 

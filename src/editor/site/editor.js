@@ -370,7 +370,7 @@ const state = {
     // which a plain tap toggles rather than reviews. Off = plain tap reviews.
     touchMulti: false,
     // Record-list grouping (Phase 3). The ledger folds state.records into
-    // (word_lower, shaw, variation-set, verdict-state) groups at paint time; a
+    // (word_lower, shaw, variation-set) groups at paint time; a
     // multi-member group is a disclosure. `groupsExpanded` holds the keys of the
     // groups the owner has opened (transient view state — a re-query rebuilds the
     // fold, so it is cleared with the working set). `groupMembers` caches the FULL
@@ -799,8 +799,8 @@ function overriddenFields(record) {
     return new Set(Object.keys(patch.changes));
 }
 
-// The ledger folds the flat working set into (word_lower, shaw, variation-set,
-// verdict-state) groups (§3, D5–D7). A group of ONE renders as a plain ledger row —
+// The ledger folds the flat working set into (word_lower, shaw, variation-set)
+// groups (§3, D5–D7). A group of ONE renders as a plain ledger row —
 // byte-identical to the flat row, empty gutter cells (the N=1 invariant). A group
 // of 2+ renders a disclosure HEADER (previewing the export-winner) that expands to
 // its member rows. `state.records` stays the flat, daemon-ordered working set; this
@@ -855,8 +855,8 @@ function groupDisplayMembers(group) {
 // A record's VERDICT — the single source of truth collapsing the two DECORATION
 // states onto the verdict they decorate: `edited` IS an accept (one carrying field
 // edits), `dirty` IS unreviewed (an unshipped persisted edit, reviewed=False). The
-// remaining states are their own verdict. Every state-semantic reader — grouping
-// (§3.1), the row hue/class, the stamp and state pills, the Review filter — routes
+// remaining states are their own verdict. Every state-semantic reader — the row
+// hue/class, the stamp and state pills, the Review filter — routes
 // through this; raw patch_state is read only where the edit decoration itself is
 // meant (overridden-field tags) or the daemon's raw vocabulary is mirrored.
 function verdictState(record) {
@@ -884,7 +884,9 @@ function variationSetKey(record) {
 }
 
 // The record-list group key (§3.1): Latin word (lowercased, mirroring the daemon's
-// natural key) + Shavian spelling + variation set + verdict state. The NUL separators
+// natural key) + Shavian spelling + variation set. Identity ONLY — editorial state
+// (verdict, origin) never partitions: a manual record and a reviewed one with the same
+// Latin+Shaw+variations are the same thing and group together. The NUL separators
 // cannot occur in any component (a word may contain spaces), so distinct groups never
 // collide.
 function groupKey(record) {
@@ -892,7 +894,6 @@ function groupKey(record) {
         (record.word || "").toLowerCase(),
         record.shaw,
         variationSetKey(record),
-        verdictState(record),
     ].join("\0");
 }
 
@@ -1070,8 +1071,8 @@ function groupRow(group) {
     }
 
     // Gutter tracks: the disclosure chevron, then the member count. The STATE track
-    // shows the members' shared verdict stamp — verdict-state is a grouping axis
-    // (groupKey), so members agree by construction.
+    // shows the export-winner's (var-hierarchy) verdict stamp — members may hold
+    // different verdicts (state is not identity); expand for each member's own stamp.
     li.append(groupDisclosure(group, expanded), groupCountCell(group), ...ledgerCells(winner));
     li.addEventListener("click", (event) => onGroupHeaderClick(group, event));
     return li;
@@ -1194,25 +1195,6 @@ function refillExpandedGroups() {
         .catch((error) => showToast(error.message, true));
 }
 
-// The anchor keys of every member of every currently-expanded group. Captured BEFORE
-// a bulk verdict: anchors are the stable member identity that carries expansion across
-// the re-fold, where the group KEY changes (its verdict-state axis moved). Uses the
-// full membership when fetched, else the in-page members.
-function expandedGroupAnchorKeys() {
-    const anchors = new Set();
-    for (const group of foldLedgerGroups(state.records)) {
-        if (!state.groupsExpanded.has(group.key)) {
-            continue;
-        }
-        const members = state.groupMembers.get(group.key)
-            || group.members.map((entry) => entry.record);
-        for (const record of members) {
-            anchors.add(anchorKey(record.anchor));
-        }
-    }
-    return anchors;
-}
-
 // Select the WHOLE unfiltered group (§3.2, D7): add EVERY member's anchor — matched
 // and the siblings outside the active filter alike — to the selection, so a group
 // verdict never silently leaves a sibling unreviewed (the export collapses the whole
@@ -1253,8 +1235,8 @@ async function groupMemberAnchors(group) {
 
 // Ensure state.groupMembers holds a group's FULL membership, fetching it once via the
 // `related` op (keyed on the group's word + shaw) and narrowing the result to this
-// group's variation set AND verdict state (variations + verdict are identity, §3.1 —
-// a related record differing on either belongs to a DIFFERENT group). The union of the
+// group's variation set (variations are identity, §3.1 — a related record with a
+// different variation set belongs to a DIFFERENT group). The union of the
 // in-page matched members and the fetched siblings, deduped by anchor, is the full
 // membership. Returns the cached membership on a repeat call.
 async function ensureGroupMembers(key) {
@@ -4043,13 +4025,16 @@ function missingRequiredFields(record) {
         .map(([, label]) => label);
 }
 
-// The daemon anchors a record on (word_lower, pos, shaw, var) (basis.anchor_key); the
-// distinctness guard compares against the SAME key, so it must lower the word too. The
-// client's anchorKey() is case-sensitive (it keys the bulk-selection Set off a record's
-// own displayed anchor, which is always self-consistent), so the guard uses its own.
+// The distinctness guard's identity: (word, pos, shaw, var), word CASE-SENSITIVE —
+// "I" and "i" are distinct records, so a case-changed clone is legitimate. The daemon's
+// anchor_key lowercases the word, so case-variants share an anchor key there; that is a
+// read-side grouping (by_anchor holds a list; a manual record is keyed by its patch
+// id), not a uniqueness constraint the guard must mirror. The one daemon uniqueness
+// gate — one CANONICAL entry per (word_lower, pos, var) — is case-folded and still
+// applies; canonicalRival mirrors it below.
 function distinctnessKey(record) {
     return [
-        (record.word || "").toLowerCase(),
+        record.word || "",
         record.pos || "",
         record.shaw || "",
         record.var || "",
@@ -4057,8 +4042,9 @@ function distinctnessKey(record) {
 }
 
 // The live siblings of `word` the distinctness guard checks against — every annotated
-// record sharing the Latin word (the daemon's `related` read, the SAME set that would
-// collide). Cached by lowercased word so typing does not re-query per keystroke. A cache
+// record sharing the Latin word case-insensitively (the daemon's `related` read; a
+// SUPERSET of what can collide, since the comparison itself is case-sensitive). Cached
+// by lowercased word so typing does not re-query per keystroke. A cache
 // value of `null` means the fetch is IN FLIGHT (the siblings are not yet known); the
 // guard treats that as "checking", never as "distinct", so a duplicate is never waved
 // through in the fetch window. The fetch re-evaluates the open dialog once it lands.
@@ -4101,7 +4087,8 @@ function isLiveSibling(record) {
 }
 
 // Evaluate the distinctness guard (D3) against the dialog's current fields and paint it
-// LIVE. EXACT-ANCHOR duplication (word_lower, pos, shaw, var already live) HARD-BLOCKS:
+// LIVE. EXACT duplication (word, pos, shaw, var already live — word case-sensitive)
+// HARD-BLOCKS:
 // the verdict buttons disable and the guard names the collision. While the sibling fetch
 // is in flight ("pending") the verdicts are ALSO disabled — the guard never waves an
 // anchor through before it knows the siblings. A CANONICAL conflict (a different-shaw
@@ -4153,7 +4140,7 @@ function distinctnessStatus(record) {
         return {
             state: "collision",
             message: `This entry already exists (${record.word} · ${record.pos} · ${record.var}). `
-                + "Edit the Shavian, POS or dialect to make it distinct.",
+                + "Edit the Shavian, POS, dialect or letter case to make it distinct.",
         };
     }
     const rival = canonicalRival(record, siblings);
@@ -4218,17 +4205,20 @@ async function authorEntry(ctx, { flag }) {
     }
     // The record is now live. Surface its row NOW — even if the follow-up flag fails —
     // so a written entry is never stranded invisibly in the store. The dialog closes
-    // regardless: the row is on the workbench and re-decidable from there.
+    // regardless: the row is on the workbench and re-decidable from there. The response
+    // carries EVERY record on the daemon's (case-folded) anchor key — a case-variant
+    // sibling may ride along — so the new entry is picked by its own patch id.
     closeModal();
-    insertAuthoredRecord(authored.records[0]);
+    const created = authored.records.find((r) => r.patch_id === authored.id);
+    insertAuthoredRecord(created);
     if (!flag) {
         showToast(`authored · ${authored.result}`);
         return;
     }
     try {
         const flagged = await callDaemon(
-            { op: "flag", anchor: null, author: AUTHOR, replaces: authored.records[0].patch_id });
-        applyWriteResult(flagged.records, { refocus: false });
+            { op: "flag", anchor: null, author: AUTHOR, replaces: authored.id });
+        applyWriteResult(flagged.records, created.anchor, { refocus: false });
         await refreshCommitStatus();
         await refreshPatchCounts();
         showToast(`flagged · ${flagged.result}`);
@@ -4500,7 +4490,7 @@ async function writePatch(anchor, record, verb, selected, { step = true, toast =
     const result = await callDaemon(request);
     pushUndo(anchor, priorReviewed);
     countDecision();
-    applyWriteResult(result.records, { step, refocus, deferRender });
+    applyWriteResult(result.records, anchor, { step, refocus, deferRender });
     if (toast) {
         showToast(`${verb} · ${result.result}`);
     }
@@ -4521,7 +4511,7 @@ async function flagOne(selected, { step = true, toast = true, refocus = true, de
         : { op: "flag", anchor: anchorOf(selected), author: AUTHOR };
     const result = await callDaemon(request);
     pushUndo(anchorOf(selected), priorReviewed);
-    applyWriteResult(result.records, { step, refocus, deferRender });
+    applyWriteResult(result.records, anchorOf(selected), { step, refocus, deferRender });
     if (toast) {
         showToast(`flagged · ${result.result}`);
     }
@@ -4591,10 +4581,6 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
         return;
     }
     const focusedAnchor = state.records[state.selected]?.anchor ?? null;
-    // Capture the expanded groups by member ANCHORS before the writes: verdict-state
-    // is a grouping axis, so the verdict changes the group KEY and the pre-verdict
-    // keys won't match the post-fold groups (see refreshAfterBulk).
-    const expandedAnchors = expandedGroupAnchorKeys();
     let done = 0;
     let skipped = 0;
     const failures = [];
@@ -4617,7 +4603,7 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
     state.multi.clear();
     state.lastToggledKey = null;
     state.touchMulti = false;
-    refreshAfterBulk(focusedAnchor, expandedAnchors);
+    refreshAfterBulk(focusedAnchor);
     reportBulk(verb, done, skipped, failures);
     // One refresh for the whole run, not per record — the store changed.
     await refreshCommitStatus();
@@ -4631,20 +4617,13 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
 // collapsed group is ONE cursor stop; select() would auto-expand the fold to reveal
 // the record). Otherwise select() renders the single-record card, back in the
 // ordinary review flow.
-function refreshAfterBulk(focusedAnchor, expandedAnchors) {
-    // A group run re-decided members whose verdict-state (a grouping axis) moved, so any
-    // cached full membership is stale — drop it before the authoritative re-fold; it
-    // re-fetches lazily on the next expand / header-select.
+function refreshAfterBulk(focusedAnchor) {
+    // A group run re-annotated members (and its harvested edits may have moved
+    // grouping-axis fields), so any cached full membership is stale — drop it before
+    // the authoritative re-fold; it re-fetches lazily on the next expand /
+    // header-select. Expansion needs no carrying: the group key is pure identity, so
+    // a verdict never re-keys a group and state.groupsExpanded stays valid.
     state.groupMembers.clear();
-    // Carry expansion across the verdict's key change: any post-fold multi-member
-    // group holding a member of a pre-verdict expanded group stays expanded (the
-    // just-decided members re-fold under their NEW verdict-state key).
-    for (const group of foldLedgerGroups(state.records)) {
-        if (group.members.length >= 2
-            && group.members.some((entry) => expandedAnchors.has(anchorKey(entry.record.anchor)))) {
-            state.groupsExpanded.add(group.key);
-        }
-    }
     renderLedger();
     let index = focusedAnchor
         ? state.records.findIndex((r) => sameAnchor(r.anchor, focusedAnchor))
@@ -4652,10 +4631,9 @@ function refreshAfterBulk(focusedAnchor, expandedAnchors) {
     if (index < 0) {
         index = Math.min(state.selected, state.records.length - 1);
     }
-    // "collapsed here" ⇔ "was collapsed before the verdict": for the verdicted group
-    // the carry loop reconstructs its expansion under the new key; a neighbour the
-    // cursor falls back to was never touched. Either way, a whole-group verdict
-    // on a collapsed group lands back on its header, fold untouched.
+    // "collapsed here" ⇔ "was collapsed before the verdict" (a verdict never re-keys
+    // a group), so a whole-group verdict on a collapsed group lands back on its
+    // header, fold untouched.
     const fold = foldLedgerGroups(state.records).find(
         (group) => group.members.some((entry) => entry.index === index));
     if (fold && fold.members.length >= 2 && !state.groupsExpanded.has(fold.key)) {
@@ -4664,8 +4642,9 @@ function refreshAfterBulk(focusedAnchor, expandedAnchors) {
         select(index);
     }
     syncSelectBar();
-    // Prune the retired pre-verdict keys and re-warm the surviving expanded groups'
-    // cleared memberships so their dimmed siblings reappear.
+    // Prune expanded keys that no longer fold (edits may have regrouped members)
+    // and re-warm the surviving expanded groups' cleared memberships so their
+    // dimmed siblings reappear.
     refillExpandedGroups();
 }
 
@@ -4718,7 +4697,7 @@ async function unpatch(anchor, verb, { step = true, uncount = false, patchId = n
     if (!result.records.length) {
         removeRow(anchor ?? findAnchorByPatchId(patchId), { refocus, deferRender });
     } else {
-        applyWriteResult(result.records, { step, refocus, deferRender });
+        applyWriteResult(result.records, anchor, { step, refocus, deferRender });
     }
     if (toast) {
         showToast(`${verb} · ${result.result}`);
@@ -4801,19 +4780,21 @@ function countDecision() {
     refreshPacing();
 }
 
-// The write response returns the anchor re-annotated (one record — the anchor is
-// a full natural key). Update the row IN PLACE: it keeps its index, so it stays
-// put in the working set showing its new content and stamp, even if it no longer
-// matches the active filter. By default step to the next entry; a re-render in
-// place (unflag/undo) stays put. `refocus:false` (a group run) updates the row but
-// leaves the review cursor where it was — the loop restores focus once at the end.
+// The write response returns EVERY record on the daemon's (case-folded) anchor key —
+// a case-variant sibling may ride along — so the written row is picked by `anchor`
+// (the client's case-sensitive natural key). Update that row IN PLACE: it keeps its
+// index, so it stays put in the working set showing its new content and stamp, even
+// if it no longer matches the active filter. By default step to the next entry; a
+// re-render in place (unflag/undo) stays put. `refocus:false` (a group run) updates
+// the row but leaves the review cursor where it was — the loop restores focus once
+// at the end.
 //
 // A write from an edit-modal is always a re-annotate-in-place against the modal
 // record: the affected main row (if that anchor is loaded) is refreshed by anchor,
 // but the MAIN cursor/scroll never moves and the modal re-renders from the fresh
 // record — so stepping/re-selecting is skipped whatever the caller passed.
-function applyWriteResult(records, { step: doStep = true, refocus = true, deferRender = false } = {}) {
-    const replacement = records[0];
+function applyWriteResult(records, anchor, { step: doStep = true, refocus = true, deferRender = false } = {}) {
+    const replacement = records.find((r) => sameAnchor(r.anchor, anchor));
     // Place the re-annotated record on its OWN row (matched by anchor), not
     // blindly on state.selected — the affected row may not be the selected one
     // (e.g. an undo after the filter was re-run moved the selection elsewhere).
@@ -4822,15 +4803,16 @@ function applyWriteResult(records, { step: doStep = true, refocus = true, deferR
         : state.selected;
     if (replacement && index >= 0) {
         state.records[index] = replacement;
-        // A verdict changes the record's state, which is a GROUPING axis (§3.1): the
-        // record may move to a different group, so the fold must be recomputed — a
-        // surgical single-row patch cannot express regrouping. The on-demand
-        // full-membership cache is now stale for the affected groups (the record's
-        // verdict-state moved), so drop it — it re-fetches lazily on the next expand /
-        // header-select. A group run (deferRender) defers ITS one authoritative rebuild
-        // to refreshAfterBulk; every other write re-folds now and restores the cursor +
-        // selection wash (the modal path re-renders too, so the main row behind the
-        // backdrop reflects the modal's verdict before it dismisses).
+        // A write carrying field edits can move a GROUPING axis (§3.1: shaw, or the
+        // variation set): the record may move to a different group, so the fold must
+        // be recomputed — a surgical single-row patch cannot express regrouping. The
+        // on-demand full-membership cache holds pre-write copies of the affected
+        // records (stale stamps/content), so drop it — it re-fetches lazily on the
+        // next expand / header-select. A group run (deferRender) defers ITS one
+        // authoritative rebuild to refreshAfterBulk; every other write re-folds now
+        // and restores the cursor + selection wash (the modal path re-renders too, so
+        // the main row behind the backdrop reflects the modal's verdict before it
+        // dismisses).
         state.groupMembers.clear();
         if (!deferRender) {
             renderLedger();

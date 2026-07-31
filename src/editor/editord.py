@@ -645,13 +645,12 @@ def _parse_iso_utc(ts):
 
 # The record-list group identity — the daemon-side twin of the client's groupKey
 # (editor.js): Latin word (lowercased) + Shavian + variation set (the mergers plus
-# the "variant" pseudo-member, i.e. _record_attributes) + verdict state (edited/
-# dirty collapsed onto accepted/unreviewed). The two MUST partition records
-# identically, or a sibling served for one group would fold into another
-# client-side.
+# the "variant" pseudo-member, i.e. _record_attributes). Identity ONLY — editorial
+# state never partitions. The two MUST partition records identically, or a sibling
+# served for one group would fold into another client-side.
 def group_key(record):
     return (record["word"].lower(), record["shaw"],
-            frozenset(_record_attributes(record)), verdict_state(record))
+            frozenset(_record_attributes(record)))
 
 
 def filter_records(records, query, established):

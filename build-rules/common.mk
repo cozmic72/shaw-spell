@@ -97,6 +97,15 @@ SRC_TEST := src/test
 READLEX_PATH := data/readlex.json
 WORDNET_CACHE := data/wordnet-comprehensive.json
 
+# The editor daemon's RUNTIME frequency inputs — the publish step (the Commit
+# button) refuses to run without them, so any target that needs them at build
+# time or deploys the daemon must police them. The corpus is repo-relative
+# (lean-checkout submodule; `make setup` materialises it — rule in
+# supplements.mk). The LRW list is DATA-ROOT-relative: it ships INSIDE the data
+# clone, so it resolves under data/ here and under DATA_DIR on a deployed box.
+FREQUENCY_CORPUS := external/frequency-words/content/2018/en/en_full.txt
+LRW_LIST := bncfreq/1_1_all_fullalpha.txt
+
 # Common tools
 SIGN_BUNDLE := $(SRC_TOOLS)/sign-bundle.sh
 BUILD_DMG_TOOL := $(SRC_TOOLS)/build-dmg.sh

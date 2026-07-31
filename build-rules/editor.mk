@@ -18,6 +18,14 @@
 #     no git. Upgrades come from re-running this target with fresh files.
 #   * ReadLex (external/readlex/readlex.json) is COPIED — a read-only basis, never
 #     committed, so it needs no clone.
+#   * The frequency corpus ($(FREQUENCY_CORPUS)) is COPIED the same way — the
+#     daemon REFUSES TO PUBLISH without it at its runtime path under $(OPT_ROOT).
+#     It is a prerequisite of this target, so a fresh checkout auto-runs
+#     `make setup` to materialise it (rule in build-rules/supplements.mk).
+#   * Everything else the daemon hard-requires ships INSIDE the data clone
+#     ($(EDITOR_DATA_RUNTIME_FILES)), so it needs no copy — but the daemon dies
+#     (startup) or refuses to publish (LRW list) without it, so this target
+#     verifies each is reachable in $(DATA_DIR) after the clone/pull.
 #   * DATA  ($(DATA_DIR)) is a STANDALONE `git clone` of $(DATA_REMOTE). This is
 #     the ONLY git checkout on the server; the daemon's Commit button commits the
 #     patch store here and pushes it upstream. It is SINGLE-OWNER = $(SERVICE_USER):
@@ -55,10 +63,21 @@ AUTH_DB = $(VAR_LIB)/auth/users.sqlite
 # local to the server (the daemon has no ssh keys for ssh://joro.io), reached over
 # file:// (needs protocol.file.allow=always for CVE-2022-39253).
 DATA_REMOTE ?= /var/git/shaw-spell-data.git
+# The files the DAEMON hard-requires from the data clone, DATA-ROOT-relative.
+# Startup dies without the basis pool (basis.py SUPPLEMENT_PATHS), the
+# definitions caches (definitions.py) and the patch store (patchstore.py);
+# publish refuses without the LRW list (lrw_frequencies.py). All are committed
+# to the data repo — reachability in $(DATA_DIR) is verified after the
+# clone/pull below.
+EDITOR_DATA_RUNTIME_FILES = $(LRW_LIST) supplement-combined-filtered.json \
+  definitions-latin-gb.json definitions-shavian-gb.json \
+  definitions-shavian-us.json patches/patches.jsonl
 
-# install-editor builds only the virtual-keyboard assets (needed for the web tier);
-# it needs NO dictionary/basis build — the basis is the cloned data + copied readlex.
-install-editor: $(VK_EDITOR_STAMP)
+# install-editor builds only the virtual-keyboard assets (needed for the web tier)
+# and the frequency corpus checkout (a publish-time runtime requirement — see the
+# model above); it needs NO dictionary/basis build — the basis is the cloned data
+# + copied readlex.
+install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
 	@set -eu; \
 	SRC_EDITOR="$(SRC_EDITOR)"; SITE="$(SRC_EDITOR)/site"; \
 	for f in "$$SITE/editor.cgi" "$$SITE/editor.js" "$$SITE/editor.css" \
@@ -75,6 +94,7 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "    web:      $(WWW_ROOT_EDITOR)"; \
 	echo "    code:     $(OPT_ROOT)/src  (copied)"; \
 	echo "    readlex:  $(OPT_ROOT)/external/readlex  (copied, read-only basis)"; \
+	echo "    corpus:   $(OPT_ROOT)/$(FREQUENCY_CORPUS)  (copied — publish needs it)"; \
 	echo "    data:     $(DATA_DIR)  (git clone of $(DATA_REMOTE) — daemon commits+pushes this)"; \
 	echo "    auth db:  $(VAR_LIB)/auth  (owner: $(SERVICE_USER))"; \
 	echo; \
@@ -86,6 +106,9 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "==> ReadLex basis -> $(OPT_ROOT)/external/readlex (copied, read-only)"; \
 	sudo mkdir -p "$(OPT_ROOT)/external/readlex"; \
 	sudo install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
+	echo "==> Frequency corpus -> $(OPT_ROOT)/$(FREQUENCY_CORPUS) (copied, read-only)"; \
+	sudo mkdir -p "$(OPT_ROOT)/$(dir $(FREQUENCY_CORPUS))"; \
+	sudo install -m 644 "$(FREQUENCY_CORPUS)" "$(OPT_ROOT)/$(FREQUENCY_CORPUS)"; \
 	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE), owned by $(SERVICE_USER))"; \
 	if [ -e "$(DATA_DIR)/.git" ]; then \
 	  echo "    already a clone — repairing ownership then rebasing onto origin/main (daemon's local patch-commits replayed on top, working tree + patches preserved, no reset)"; \
@@ -100,6 +123,12 @@ install-editor: $(VK_EDITOR_STAMP)
 	  sudo chown "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)"; \
 	  sudo -u "$(SERVICE_USER)" git -c protocol.file.allow=always clone "$(DATA_REMOTE)" "$(DATA_DIR)"; \
 	fi; \
+	for f in $(EDITOR_DATA_RUNTIME_FILES); do \
+	  [ -e "$(DATA_DIR)/$$f" ] || { \
+	    echo "install-editor: daemon runtime file missing from the data clone: $(DATA_DIR)/$$f" >&2; \
+	    echo "  the daemon cannot run/publish without it — push the data commit providing it to $(DATA_REMOTE), then re-run" >&2; \
+	    exit 1; }; \
+	done; \
 	echo "==> Web tier -> $(WWW_ROOT_EDITOR)"; \
 	sudo mkdir -p "$(WWW_ROOT_EDITOR)" "$(WWW_ROOT_EDITOR)/fonts"; \
 	sudo install -m 755 "$$SITE/editor.cgi"   "$(WWW_ROOT_EDITOR)/editor.cgi"; \
@@ -131,6 +160,8 @@ install-editor: $(VK_EDITOR_STAMP)
 	echo "  web tier   -> $(WWW_ROOT_EDITOR) (editor.cgi, index.cgi, authstore.py, js/css/fonts, keyboard)"; \
 	echo "  code       -> $(OPT_ROOT)/src/{editor,tools} (copied) + the systemd unit"; \
 	echo "  readlex    -> $(OPT_ROOT)/external/readlex (copied, read-only basis)"; \
+	echo "  corpus     -> $(OPT_ROOT)/$(FREQUENCY_CORPUS) (copied; publish-time frequency source)"; \
+	echo "  data files -> daemon runtime files verified present in $(DATA_DIR)"; \
 	echo "  data       -> $(DATA_DIR) (git clone of $(DATA_REMOTE); daemon commits+pushes)"; \
 	echo "  patches    -> $(DATA_DIR)/patches/ (IN the clone → Commit button can commit+push)"; \
 	echo "  auth db    -> $(VAR_LIB)/auth (owned by $(SERVICE_USER); existing data preserved)"; \

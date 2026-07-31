@@ -39,9 +39,12 @@ import sys
 import unicodedata
 from collections import namedtuple
 
-from basis import PROJECT_ROOT
+from basis import DATA_ROOT
 
-LRW_PATH = PROJECT_ROOT / "data" / "bncfreq" / "1_1_all_fullalpha.txt"
+# In the DATA clone (it is committed to the data repo), so it must resolve under
+# DATA_ROOT: a deploy relocates the clone via SHAW_SPELL_DATA_DIR and the file
+# is NOT under PROJECT_ROOT there.
+LRW_PATH = DATA_ROOT / "bncfreq" / "1_1_all_fullalpha.txt"
 
 # Columns of a well-formed row (leading tab yields an empty first field).
 _LRW_COLUMNS = 7

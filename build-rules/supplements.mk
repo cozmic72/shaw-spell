@@ -258,9 +258,10 @@ SUPPLEMENT_DEPS := data/supplement-combined-filtered.json
 # checkpoint above: a committed file make never rebuilds.
 #
 # The frequency corpus is still needed at RUNTIME by the editor (its basis and
-# the publish step enrich freq from it), so its lean checkout stays in setup.
-FREQUENCY_CORPUS := external/frequency-words/content/2018/en/en_full.txt
-
+# the publish step enrich freq from it), so its lean checkout stays in setup —
+# and install-editor installs it to the daemon's runtime path ($(FREQUENCY_CORPUS)
+# is defined in common.mk, shared with build-rules/editor.mk).
+#
 # frequency-words is a ~1.4 GB all-languages submodule; setup checks it out lean
 # (sparse-checkout, only content/2018/en) so a fresh clone stays ~30 MB.
 $(FREQUENCY_CORPUS):

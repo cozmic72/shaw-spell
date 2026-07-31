@@ -452,6 +452,41 @@ def output_to_record(entry):
     return record
 
 
+# The published record schema: exactly these keys, nothing else. Everything a
+# record carries internally (freq_readlex/freq_source, has_definition, orig_*,
+# info, confidence/source/status and the rest of the provenance) is editorial
+# working state and is deliberately NOT shipped. The ONE definition of what
+# data/readlex.json contains, shared by both producers — the editor's publish
+# path (editord.to_published_entry) and the offline frequency CLI
+# (apply_frequency_data.main) — so they can never drift. Tuple order is the
+# construction order of published_entry, which is the serialization order.
+PUBLISH_FIELDS = ("Latn", "Shaw", "pos", "ipa", "freq", "var",
+                  "mergers", "variant", "supplement")
+
+
+def published_entry(entry):
+    """The PUBLISHED shape of one record (see PUBLISH_FIELDS): the whitelisted
+    core fields, then the additive variation fields (mergers/variant) and the
+    `supplement` flag only when truthy. Pure shaping — any supplement VERDICT
+    (vetted-status/upstream logic) is the caller's business and arrives as the
+    entry's own `supplement` value."""
+    published = {
+        "Latn": entry["Latn"],
+        "Shaw": entry["Shaw"],
+        "pos": entry["pos"],
+        "ipa": entry.get("ipa", ""),
+        "freq": entry.get("freq", 0),
+        "var": entry.get("var", ""),
+    }
+    if entry.get("mergers"):
+        published["mergers"] = entry["mergers"]
+    if entry.get("variant"):
+        published["variant"] = entry["variant"]
+    if entry.get("supplement"):
+        published["supplement"] = True
+    return published
+
+
 def effective_record(base_entry, changes, source):
     """The resolved UI-shape record for an ACCEPTED anchor: the basis record
     (`base_entry`, canonical shape) turned back into a record, with the patch's
@@ -521,27 +556,39 @@ def resolve_patch(patch, basis_index, basis_source):
 
 def enrich_basis_frequency(index):
     """Put every basis record on the corpus frequency scale, in place — the SAME
-    replace-all pass the production build applies to readlex.json (see
-    apply_frequency_data.enrich_entry), so a review-pool candidate carries the
-    exact freq the record it becomes will ship with. Reuses the corpus + UK/US
-    variant logic rather than reimplementing it.
+    passes the production build applies to readlex.json (the replace-all corpus
+    pass plus the LRW POS split; see apply_frequency_data), so a review-pool
+    candidate carries the exact freq the record it becomes will ship with.
+    Reuses the corpus + UK/US variant logic rather than reimplementing it.
 
     The imports are function-local: apply_frequency_data imports PROJECT_ROOT from
     this module, so a module-level import here would be a cycle.
 
-    Corpus-absent is the ONE justified graceful skip: the editor must start on a
-    fresh clone (before `make setup`) even without frequency data. Production's
-    apply_frequency_data still fails loud on a missing corpus — this skip only
-    spares the editor, and is logged so a silent freq-0 basis is never a mystery.
+    Missing frequency data is the ONE justified graceful skip, and only HERE:
+    this runs at editor-daemon STARTUP, and a fresh clone (no `make setup`
+    corpus yet) or a data checkout that hasn't pulled bncfreq must not
+    crash-loop the editor. The skip covers the WHOLE enrichment, never half of
+    it, so enrich_all's contract stays strict (it always receives both
+    corpora), and is logged so a silent freq-0 basis is never a mystery. The
+    publish path (_publish_readlex) and the offline CLI still hard-require
+    both files — this grace is startup-only.
     """
     from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
+    from lrw_frequencies import LRW_PATH, load_lrw
 
+    missing = []
     if not CORPUS_PATH.exists():
-        print(f"basis: frequency corpus absent ({CORPUS_PATH.name}); "
-              "review-pool candidates carry no freq. Run `make setup`.",
-              file=sys.stderr)
+        missing.append(f"{CORPUS_PATH.name} (run `make setup`)")
+    if not LRW_PATH.exists():
+        missing.append(
+            f"{LRW_PATH.name} (pull the data submodule, or download "
+            "https://ucrel.lancs.ac.uk/bncfreq/lists/1_1_all_fullalpha.zip "
+            f"and unzip into {LRW_PATH.parent})")
+    if missing:
+        print("basis: frequency data absent; review-pool candidates carry no "
+              "freq. Missing: " + "; ".join(missing), file=sys.stderr)
         return
-    enrich_all({None: list(index.values())}, load_corpus())
+    enrich_all({None: list(index.values())}, load_corpus(), load_lrw())
 
 
 def build_basis(enrich_freq=False):

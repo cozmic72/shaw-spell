@@ -170,7 +170,7 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import (ACCEPTED_STATUS, INTRINSIC_FIELDS, OP_ACCEPT,  # noqa: E402
                    OP_DROP, OP_EDIT, OP_FLAG, PROJECT_ROOT, UPSTREAM_SOURCE,
-                   anchor_key)
+                   anchor_key, published_entry)
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
@@ -1340,13 +1340,6 @@ class PublishError(Exception):
     (not a raw stack/sys.exit). handle_commit surfaces it as the commit error."""
 
 
-# The published record schema: exactly these keys, nothing else. Everything the
-# editor carries internally (freq_readlex/freq_source, has_definition, orig_*,
-# info, confidence/source/status and the rest of the provenance) is editorial
-# working state and is deliberately NOT shipped.
-PUBLISH_FIELDS = ("Latn", "Shaw", "pos", "ipa", "freq", "var",
-                  "supplement", "mergers", "variant")
-
 # The provenance statuses that mean "vetted": an accept's sanction and an
 # authored (owner-minted) record. Anything else — including the absent status of
 # an unvetted supplement-pool record — publishes as supplement=true.
@@ -1354,30 +1347,22 @@ _VETTED_STATUSES = (ACCEPTED_STATUS, AUTHORED_STATUS)
 
 
 def to_published_entry(entry, sources):
-    """The PUBLISHED shape of one applicator output entry: the whitelisted core
-    fields, the additive variation fields (mergers/variant) when set, and a bare
-    `supplement: true` flag on a not-yet-vetted record — one neither sanctioned/
-    authored by a patch (status, see basis.ACCEPTED_STATUS / overlay
-    AUTHORED_STATUS) nor attested by upstream ReadLex core (`sources`, the basis
-    origin list for its anchor — the same derivation as the overlay's
-    UPSTREAM_STATUS/SUPPLEMENT_STATUS split). Used ONLY by _publish_readlex; the
-    editor's internal round-trip shapes (basis.record_to_output) are untouched."""
-    published = {
-        "Latn": entry["Latn"],
-        "Shaw": entry["Shaw"],
-        "pos": entry["pos"],
-        "ipa": entry.get("ipa", ""),
-        "freq": entry.get("freq", 0),
-        "var": entry.get("var", ""),
-    }
-    if entry.get("mergers"):
-        published["mergers"] = entry["mergers"]
-    if entry.get("variant"):
-        published["variant"] = entry["variant"]
+    """The PUBLISHED shape of one applicator output entry: the shared whitelist
+    shaping (basis.PUBLISH_FIELDS / basis.published_entry) plus the daemon-side
+    supplement VERDICT — a bare `supplement: true` flag on a not-yet-vetted
+    record: one neither sanctioned/authored by a patch (status, see
+    basis.ACCEPTED_STATUS / overlay AUTHORED_STATUS) nor attested by upstream
+    ReadLex core (`sources`, the basis origin list for its anchor — the same
+    derivation as the overlay's UPSTREAM_STATUS/SUPPLEMENT_STATUS split). Any
+    `supplement` value already on the entry is discarded: the verdict computed
+    here is authoritative. Used ONLY by _publish_readlex; the editor's internal
+    round-trip shapes (basis.record_to_output) are untouched."""
+    verdict_entry = dict(entry)
+    verdict_entry.pop("supplement", None)
     if (entry.get("status") not in _VETTED_STATUSES
             and UPSTREAM_SOURCE not in sources):
-        published["supplement"] = True
-    return published
+        verdict_entry["supplement"] = True
+    return published_entry(verdict_entry)
 
 
 def _publish_readlex(view):
@@ -1393,6 +1378,7 @@ def _publish_readlex(view):
     from apply_patches import OUTPUT_PATH, apply_patches, load_patches
     from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
     from basis import anchor_of, load_upstream
+    from lrw_frequencies import load_lrw
 
     # The frequency corpus is REQUIRED to publish: a published readlex.json must
     # match production, so a freq-less fallback (which basis.py deliberately
@@ -1430,7 +1416,9 @@ def _publish_readlex(view):
     # uniform pass (cheap: ~1s) is simpler and exactly production's semantics. The
     # freq_readlex/freq_source bookkeeping it leaves behind is stripped by the
     # whitelist below.
-    enrich_all(output, load_corpus())
+    # Unlike the corpus, the LRW list (POS split, pass 2) has no graceful
+    # skip: load_lrw fails loud with download instructions if it is missing.
+    enrich_all(output, load_corpus(), load_lrw())
 
     published = {
         bucket_key: [

@@ -21,6 +21,15 @@ headword's spelling variants (see spelling_variants.py) and take the maximum
 count across the headword and its variants — the dominant attested form, without
 double-counting when both spellings coexist.
 
+Contractions: the corpus tokeniser split on the apostrophe, so whole
+contractions (don't, it's) never appear — only the halves do (don + 't). When
+the direct lookup misses and the headword has an internal apostrophe, we derive
+freq = min(stem, clitic): a contraction cannot occur more often than either
+half, so the min is an UPPER bound — tight when one half is dominated by the
+contraction (don't ≈ don's count), inflated when both halves are independently
+common (a shared clitic like 're hands its whole count to every rare member of
+its family).
+
 The enrichment logic (enrich_all) is shared: the editor's basis (src/tools/basis.py)
 applies the SAME replace-all pass to its review-pool candidates, so a candidate and
 the readlex record it eventually becomes carry an identical freq.
@@ -51,8 +60,10 @@ FREQ_SOURCE_TAG = "opensubtitles-2018"
 # enormous counts ('s = 14.3M, 't = 9.6M, isn = 429K, ...) that our freq join
 # would otherwise hand to any record whose headword literally spells the fragment
 # (isn, ain, shan, the 's/'d pseudo-headwords, and 'em -> Em) — floating pure junk
-# to the top of the frequency-sorted review. We drop these tokens from the corpus
-# in-memory BEFORE the join so they contribute no frequency to any record.
+# to the top of the frequency-sorted review. The blocklist is enforced at the
+# JOIN (corpus_frequency) so no record receives a fragment's count as its own;
+# the tokens stay loaded in the corpus because contraction_frequency reads them
+# deliberately to derive min-of-parts bounds for whole contractions.
 #
 # Only PURE non-words are listed. Real English words that merely collide with a
 # fragment are deliberately KEPT with their (over-counted) frequency:
@@ -78,8 +89,9 @@ assert all(t == t.lower() for t in FRAGMENT_BLOCKLIST), "blocklist tokens must b
 def load_corpus():
     """Load the subtitle frequency list as {lowercase_word: count}.
 
-    Contraction-fragment tokens (see FRAGMENT_BLOCKLIST) are dropped so they
-    contribute no inflated frequency to the join.
+    Contraction-fragment tokens (see FRAGMENT_BLOCKLIST) are kept — they are
+    barred from the headword join in corpus_frequency, but contraction_frequency
+    needs their counts to derive whole-contraction frequencies.
     """
     if not CORPUS_PATH.exists():
         sys.exit(
@@ -95,8 +107,6 @@ def load_corpus():
             if len(parts) != 2:
                 continue
             word, count = parts
-            if word in FRAGMENT_BLOCKLIST:
-                continue
             corpus[word] = int(count)
     if not corpus:
         sys.exit(f"Corpus at {CORPUS_PATH.relative_to(PROJECT_ROOT)} is empty.")
@@ -106,12 +116,45 @@ def load_corpus():
 def corpus_frequency(word, corpus):
     """Best corpus count for a lowercase word, consulting UK/US variants.
 
-    Returns 0 when neither the word nor any variant appears in the corpus.
+    Returns 0 when neither the word nor any variant appears in the corpus, and
+    for blocklisted contraction fragments — a fragment's inflated count must
+    never become a headword's own frequency.
     """
+    if word in FRAGMENT_BLOCKLIST:
+        return 0
     best = corpus.get(word, 0)
     for variant in spelling_variants(word):
         best = max(best, corpus.get(variant, 0))
     return best
+
+
+def contraction_frequency(word, corpus):
+    """Derived count for a contraction the corpus never saw whole.
+
+    The corpus tokeniser split on the apostrophe, so `don't` exists only as
+    `don` + `'t`. A contraction cannot occur more often than either half, so
+    min(stem, clitic) is an upper bound (tight only when one half is dominated
+    by the contraction; see the module docstring). Both halves are read
+    straight from the corpus — including blocklisted fragments, intentionally:
+    the blocklist stops a fragment becoming a headword's OWN freq, not this
+    deliberate derivation.
+
+    Applies only to a single INTERNAL apostrophe. Leading/trailing-apostrophe
+    forms ('cause, goin') survived tokenisation whole and match directly, and
+    multi-apostrophe shapes have no whole half to look up. If either half is
+    unattested there is no evidence to bound with — returns 0 rather than
+    inventing a number from half the parts.
+    """
+    if word.count("'") != 1:
+        return 0
+    stem, _, tail = word.partition("'")
+    if not stem or not tail:
+        return 0
+    stem_count = corpus.get(stem, 0)
+    clitic_count = corpus.get("'" + tail, 0)
+    if stem_count == 0 or clitic_count == 0:
+        return 0
+    return min(stem_count, clitic_count)
 
 
 def enrich_entry(entry, corpus, stats):
@@ -129,7 +172,12 @@ def enrich_entry(entry, corpus, stats):
     if was_readlex and prior > 0 and "freq_readlex" not in entry:
         entry["freq_readlex"] = prior
 
-    frequency = corpus_frequency(entry["Latn"].lower(), corpus)
+    word = entry["Latn"].lower()
+    frequency = corpus_frequency(word, corpus)
+    if frequency == 0:
+        # The corpus never saw whole contractions (tokenised split on the
+        # apostrophe) — derive a min-of-parts bound for them instead.
+        frequency = contraction_frequency(word, corpus)
     entry["freq"] = frequency
     if frequency > 0:
         entry["freq_source"] = FREQ_SOURCE_TAG

@@ -5571,8 +5571,15 @@ function showToast(message, isError = false) {
     TOAST.classList.toggle("error", isError);
     TOAST.classList.add("show");
     clearTimeout(toastTimer);
+    if (isError) return; // errors stay up (readable, copyable) until tapped away
     toastTimer = setTimeout(() => TOAST.classList.remove("show"), 2400);
 }
+
+TOAST.addEventListener("click", () => {
+    // A click that ends a text selection is a copy, not a dismissal.
+    if (window.getSelection().toString()) return;
+    TOAST.classList.remove("show");
+});
 
 // ---- commit ----
 // The owner banks their accumulated decisions (data/patches/patches.jsonl) as a git

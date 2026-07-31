@@ -2290,6 +2290,7 @@ kbd {
     padding: 10px 20px;
     border-radius: 3px;
     font-size: 12px;
+    max-width: min(560px, calc(100vw - 32px));
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.18s, transform 0.18s;
@@ -2299,6 +2300,14 @@ kbd {
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.error { background: var(--state-dropped); }
+/* An error toast persists until tapped away, so it must take the tap — and its
+   text must stay selectable so the owner can copy the message. */
+.toast.error.show {
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: text;
+    -webkit-user-select: text;
+}
 
 @media (prefers-reduced-motion: reduce) {
     .toast { transition: none; }

@@ -1560,6 +1560,8 @@ def handle_commit(state, _request):
     except PublishError as exc:
         return {"error": str(exc)}
     except (SystemExit, Exception) as exc:
+        # Unexpected: the client message alone is undiagnosable — keep the traceback.
+        logging.exception("commit: readlex publish failed")
         return {"error": f"readlex publish failed, nothing committed: {exc}"}
 
     pathspecs = [pathspec] if published is None else [pathspec, published]
@@ -1591,6 +1593,8 @@ def handle_commit(state, _request):
         result["pushed"] = False
         result["push_error"] = (pushed.stderr.strip() or pushed.stdout.strip()
                                 or "git push failed")
+        logging.warning("commit: committed %s but push failed: %s",
+                        sha, result["push_error"])
     return result
 
 
@@ -1647,6 +1651,10 @@ class RequestHandler(socketserver.StreamRequestHandler):
 
         elapsed_ms = (time.perf_counter() - start) * 1000.0
         op = (request or {}).get("op", "?") if isinstance(request, dict) else "?"
+        if "error" in response:
+            # Every error response aborts something the owner attempted; the
+            # transient client toast must never be the only trace of it.
+            logging.error("%s error: %s", op, response["error"])
         total = response.get("total")
         logging.info("%s total=%s %.1fms", op, total, elapsed_ms)
 

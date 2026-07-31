@@ -122,14 +122,17 @@ def remove_anchored(output, key, locations=None):
             return
 
 
-def insert_entry(output, entry, locations=None):
+def insert_entry(output, entry, stats, locations=None):
     """Insert an output record under its ReadLex key, skipping an exact-identity
-    duplicate already present (e.g. the same natural key from two sources).
+    duplicate already present (e.g. the same natural key from two sources, or a
+    word edit that moved a record onto an existing identity). A skip DROPS the
+    entry, so it is tallied (skipped_duplicate) — never a silent vanish.
     `locations` (see bucket_locations), when given, is kept in step."""
     key = f"{entry['Latn']}_{entry['pos']}_{entry['Shaw']}"
     bucket = output.setdefault(key, [])
     identity = anchor_of(entry)
     if any(anchor_of(existing) == identity for existing in bucket):
+        stats["skipped_duplicate"] += 1
         return
     bucket.append(entry)
     if locations is not None:
@@ -199,7 +202,7 @@ def weak_reanchor_patch(patch, weak_map):
 def apply_patches(output, basis_index, basis_source, patches):
     stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
              "reanchored": 0, "reanchored_var": 0,
-             "skipped_numeral": 0, "skipped_shaw": 0}
+             "skipped_numeral": 0, "skipped_shaw": 0, "skipped_duplicate": 0}
     orphans = []
 
     # The auto-re-anchor lookup: an OLD natural key a key-moving transform rewrote
@@ -275,7 +278,7 @@ def apply_patches(output, basis_index, basis_source, patches):
         if patch["anchor"] is None:
             # Authorship: a standalone record no source attests.
             if is_emittable(entry["Latn"], entry["Shaw"], stats):
-                insert_entry(output, entry, locations)
+                insert_entry(output, entry, stats, locations)
                 stats["authorship"] += 1
             continue
 
@@ -287,7 +290,7 @@ def apply_patches(output, basis_index, basis_source, patches):
             continue
 
         if is_emittable(entry["Latn"], entry["Shaw"], stats):
-            insert_entry(output, entry, locations)
+            insert_entry(output, entry, stats, locations)
         stats["update"] += 1
 
     return stats, orphans
@@ -349,6 +352,10 @@ def main():
              if stats['orphaned'] else ""))
     print(f"  skipped (numeral):   {stats['skipped_numeral']:,}")
     print(f"  skipped (bad shaw):  {stats['skipped_shaw']:,}")
+    print(f"  skipped (dup identity): {stats['skipped_duplicate']:,}"
+          + ("  — an emitted record's identity already exists in the output "
+             "(e.g. a word edit landed on an existing record); the entry was dropped"
+             if stats['skipped_duplicate'] else ""))
     print(f"\nWrote {out_path}")
 
 

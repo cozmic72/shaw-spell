@@ -1393,8 +1393,13 @@ def _publish_readlex(view):
             f"production. Run `make setup` to fetch the corpus, then retry.")
 
     output = load_upstream()
-    _stats, orphans = apply_patches(output, view.basis_index, view.basis_source,
-                                    load_patches())
+    stats, orphans = apply_patches(output, view.basis_index, view.basis_source,
+                                   load_patches())
+    if stats["skipped_duplicate"]:
+        logging.warning(
+            "publish: dropped %d record(s) whose emitted identity duplicates an "
+            "existing output record (e.g. a word edit landed on an existing entry)",
+            stats["skipped_duplicate"])
     if orphans:
         accepts = sum(1 for p in orphans if p.get("op") == OP_ACCEPT)
         drops = sum(1 for p in orphans if p.get("op") == OP_DROP)

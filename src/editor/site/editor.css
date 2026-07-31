@@ -1777,6 +1777,11 @@ body {
     border-bottom-color: var(--accent);
 }
 .ipa-field { font-size: 16px; font-style: italic; }
+/* The single-record editable Latin word (inside the state box): input-sized like
+   the other fields but bold and a step larger, mirroring the old big-word heading.
+   The field flexes to the box's width so the input does not collapse. */
+.glance-word .edit-field { flex: 1 1 auto; min-width: 0; }
+.latin-field { font-size: 17px; font-weight: 700; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .act {

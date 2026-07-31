@@ -247,7 +247,7 @@ class ZombieDropReanchorApplyTest(unittest.TestCase):
         index, source = build_index(entries)
         output = {}
         for e in entries:            # seed the output as the basis would appear
-            apply_patches.insert_entry(output, e)
+            apply_patches.insert_entry(output, e, {"skipped_duplicate": 0})
         stats, orphans = apply_patches.apply_patches(output, index, source, patches)
         emitted = [r for v in output.values() for r in v]
         return stats, emitted, orphans

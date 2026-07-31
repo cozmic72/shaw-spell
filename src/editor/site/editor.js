@@ -109,8 +109,11 @@ const RRP_VAR = "RRP";
 // The edit surface: the fields the reviewer types or toggles. status is NOT here —
 // it is read-only (shown in the top matter) and set only by the verdict actions
 // (accept/drop/flag), never typed. recordFields carries the record's own status
-// forward so a plain Save preserves it.
-const EDITABLE_FIELDS = ["shaw", "var", "ipa"];
+// forward so a plain Save preserves it. word is SINGLE-RECORD-ONLY: a patch is
+// written against the stored anchor, so editing the Latin never re-anchors, but a
+// group renders no word input and its overlay skips it (fanning ONE word across N
+// members is never right — see glanceColumn / harvestGroupOverlay).
+const EDITABLE_FIELDS = ["word", "shaw", "var", "ipa"];
 
 // The within-accent vowel mergers a record's spelling reflects (additive, empty
 // == canonical). A closed vocabulary mirroring src/tools/dialect_mergers.py; the
@@ -1747,8 +1750,9 @@ function activeContext() {
 // "detail" stores the context as state.mainContext; scope "modal" stores it as
 // state.modalEditor. It never shows the related section.
 //
-// Edit mode renders the review top matter (badges/facts/overridden marks), read-only
-// word/pos identity, the field editors, the verdict bar and the clone bar — the same
+// Edit mode renders the review top matter (badges/facts/overridden marks), the field
+// editors (word editable on a single record, pos read-only), the verdict bar and the
+// clone bar — the same
 // whether it hosts the detail panel or a modal opened on a related entry. Create mode
 // renders a minimal title + hint, EDITABLE word/pos (the author types the anchor), the
 // same field editors, and an [Accept, Flag, Cancel] verdict bar: the verdict IS the
@@ -1853,16 +1857,23 @@ function glanceColumn(ctx, group, overridden) {
     const column = document.createElement("div");
     column.className = "glance-column";
 
-    // The word is anchor identity (read-only). Common across the group → the single big
-    // Latin word, exactly as today; divergent (a cross-group hand-pick) → the distinct
-    // words rolled up, still read-only (bulk-retagging the anchor would re-anchor).
-    const wordConsensus = fieldConsensus(group, "word");
-    const word = cell("latin", record.word);
-    if (!wordConsensus.uniform) {
-        word.classList.add("latin-multiple");
-        applyDistinctDisplay(word, wordConsensus);
+    // The word: EDITABLE for a single record — a patch is written against the stored
+    // anchor, so a word edit is an ordinary `changes.word`, never a re-anchor. A GROUP
+    // renders it read-only (common → the single big word; divergent, a cross-group
+    // hand-pick → the distinct words rolled up): a group edit fans ONE value across N
+    // members, which is never right for the word (see harvestGroupOverlay).
+    let word;
+    if (group.length === 1) {
+        word = editField(ctx, group, "word", "Word (latin)", "latin-field",
+            overridden.has("word"));
+    } else {
+        const wordConsensus = fieldConsensus(group, "word");
+        word = cell("latin", record.word);
+        if (!wordConsensus.uniform) {
+            word.classList.add("latin-multiple");
+            applyDistinctDisplay(word, wordConsensus);
+        }
     }
-    markOverridden(word, word, overridden.has("word"));
     // The word wears its verdict as a colour-coded box (state hue border) instead of
     // a separate STATE pill — so state is glanceable right on the word. The state name
     // is on title/aria-label since the pill text is gone. A group with a mixed state
@@ -1926,11 +1937,12 @@ function applyDistinctDisplay(element, consensus) {
     element.classList.add("distinct-values");
 }
 
-// POS as a read-only glance field. It is anchor identity, never editable — bulk-
-// retagging N anchors would re-anchor them, not edit them. Common across the group →
-// the CLAWS CODE (e.g. NN1) big, the spelled-out English beneath it, the full expansion
-// as the hover title (byte-identical to the single-record render). Divergent (a group
-// spanning several POS) → a compact "NN1 ·2, NN2 ·1" rollup so the owner sees the span.
+// POS as a read-only glance field (editable only on create — the patch model would
+// carry a `changes.pos` fine, it is just not offered in the edit surface). Common
+// across the group → the CLAWS CODE (e.g. NN1) big, the spelled-out English beneath it,
+// the full expansion as the hover title (byte-identical to the single-record render).
+// Divergent (a group spanning several POS) → a compact "NN1 ·2, NN2 ·1" rollup so the
+// owner sees the span.
 function posSpelledOut(group, overridden) {
     const consensus = fieldConsensus(group, "pos");
     const wrap = document.createElement("div");
@@ -3658,7 +3670,6 @@ function actionButton(kind, label, handler) {
 // record verdicts overlay the live inputs on top of this (editedRecord, via harvestRecord).
 function recordFields(record) {
     const result = {
-        word: record.word,
         pos: record.pos,
         freq: record.freq,
         status: record.status,
@@ -3708,8 +3719,9 @@ function authoredRecord(ctx) {
 }
 
 // An edit-mode harvest: the record's own fields with the edit surface overlaid from
-// the inputs (EDITABLE_FIELDS are always present; the read-only word/pos identity
-// carries through from recordFields).
+// the inputs. Only run on a single-record context (save/auto-save guard on N=1), so
+// every EDITABLE_FIELDS input — including word — is present; the read-only pos
+// carries through from recordFields.
 function editedRecord(ctx) {
     const result = recordFields(contextRecord(ctx));
     for (const name of EDITABLE_FIELDS) {
@@ -3742,7 +3754,7 @@ function applyAdditiveFields(ctx, record) {
 // The group's touched edits: ONLY the fields the owner actually changed, to overlay onto
 // each member so untouched fields keep each member's own value (§1.3). A verdict on a
 // group fans this overlay across every member. The rules per field kind:
-// - text (shaw/var/ipa): a COMMON field always contributes its (possibly edited) input
+// - text (shaw/var/ipa, plus word at N=1 only): a COMMON field always contributes its (possibly edited) input
 //   value — at N=1 every field is common, so this reproduces editedRecord's overlay
 //   exactly (the N=1 invariant). A "multiple" field contributes ONLY if the owner typed
 //   into it (data-touched), overwriting all members; left blank it is omitted.
@@ -3752,6 +3764,12 @@ function applyAdditiveFields(ctx, record) {
 function harvestGroupOverlay(ctx) {
     const overlay = {};
     for (const name of EDITABLE_FIELDS) {
+        // The word is single-record-only: a group renders no word input
+        // (glanceColumn), so skip it — fanning ONE word across N members is
+        // never right. At N=1 the input exists and harvests like any field.
+        if (name === "word" && ctx.group.length > 1) {
+            continue;
+        }
         const input = ctx.root.querySelector(`[data-field="${name}"]`);
         if (input.dataset.consensus === "multiple" && input.dataset.touched !== "true") {
             continue;
@@ -3958,9 +3976,9 @@ function createTopMatter(seeded) {
 }
 
 // The create editor's field stack: word/shaw/ipa each on their own row, then Dialect
-// (var) + POS + mergers + variant grouped on one row. word AND pos are EDITABLE here
-// (the author types the anchor's Latin identity), unlike the detail editor where they
-// are the fixed read-only anchor shown in the heading.
+// (var) + POS + mergers + variant grouped on one row. POS is EDITABLE here (the
+// author types the anchor), unlike the detail editor where it is read-only; word is
+// editable in both.
 function createFieldStack(ctx, record) {
     const stack = document.createElement("div");
     stack.className = "field-stack";
@@ -3980,8 +3998,8 @@ function createField(ctx, name, label, value, extraClass = "") {
 }
 
 // Dialect (var) + POS + mergers + variant on one row, mirroring the detail editor's
-// variantRow. POS lives here (not a read-only heading) because on a new entry it is
-// an editable identity field, not a fixed anchor.
+// variantRow. POS lives here (not a read-only glance) because on a new entry the
+// author types it.
 function createVariantRow(ctx, record) {
     const row = document.createElement("div");
     row.className = "field-row";

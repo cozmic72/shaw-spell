@@ -19,7 +19,7 @@ HUNSPELL_FILES = $(HUNSPELL_GB) $(BUILD_HUNSPELL)/io.joro.shaw-spell.shavian-gb.
 
 # Shavian Hunspell dictionaries (both GB and US generated together)
 # Pick GB .dic as canonical target, others depend on it
-$(HUNSPELL_GB): $(READLEX_PATH) $(SRC_SERVER)/generate_spellcheck.py $(SRC_SERVER)/hunspell-replacements.txt | $(BUILD_HUNSPELL)
+$(HUNSPELL_GB): $(READLEX_PATH) $(SRC_SERVER)/generate_spellcheck.py $(SRC_SERVER)/hunspell-replacements.txt | $(BUILD_HUNSPELL) check-readlex
 	@echo "Generating Shavian Hunspell dictionaries..."
 	@# Script currently writes to build/ - need to update it to write to BUILD_HUNSPELL
 	@# For now, generate to build/ and move
@@ -33,7 +33,7 @@ $(BUILD_HUNSPELL)/io.joro.shaw-spell.shavian-gb.aff $(HUNSPELL_US) $(BUILD_HUNSP
 
 # Latin Hunspell dictionaries (from WordNet)
 # Each generates a .dic and .aff file - use .dic as canonical target
-$(HUNSPELL_EN_GB): $(SRC_DICTIONARIES)/generate_hunspell.py $(WORDNET_CACHE) | $(BUILD_HUNSPELL)
+$(HUNSPELL_EN_GB): $(SRC_DICTIONARIES)/generate_hunspell.py $(WORDNET_CACHE) | $(BUILD_HUNSPELL) check-readlex
 	@echo "Generating English (GB) Hunspell dictionary from WordNet..."
 	@# Script currently writes to build/ - need to update it
 	$(RUN) $(SRC_DICTIONARIES)/generate_hunspell.py --dialect gb
@@ -43,7 +43,7 @@ $(HUNSPELL_EN_GB): $(SRC_DICTIONARIES)/generate_hunspell.py $(WORDNET_CACHE) | $
 # .aff file generated alongside .dic
 $(BUILD_HUNSPELL)/io.joro.shaw-spell.en_GB.aff: $(HUNSPELL_EN_GB)
 
-$(HUNSPELL_EN_US): $(SRC_DICTIONARIES)/generate_hunspell.py $(WORDNET_CACHE) | $(BUILD_HUNSPELL)
+$(HUNSPELL_EN_US): $(SRC_DICTIONARIES)/generate_hunspell.py $(WORDNET_CACHE) | $(BUILD_HUNSPELL) check-readlex
 	@echo "Generating English (US) Hunspell dictionary from WordNet..."
 	$(RUN) $(SRC_DICTIONARIES)/generate_hunspell.py --dialect us
 	@mv build/io.joro.shaw-spell.en_US.dic build/io.joro.shaw-spell.en_US.aff $(BUILD_HUNSPELL)/

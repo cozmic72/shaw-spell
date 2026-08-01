@@ -55,6 +55,7 @@ help:
 	@echo ""
 	@echo "Supplement targets:"
 	@echo "  supplements         Ensure merged readlex is up to date"
+	@echo "  check-readlex       Verify readlex.json publish isn't behind patches.jsonl"
 	@echo "  supplements-from-source  Rebuild all supplements from source data"
 	@echo "  rescore-full        Re-score confidence with full shave consultation"
 	@echo "  review-files        Generate review TSVs for human inspection"

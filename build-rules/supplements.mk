@@ -258,6 +258,48 @@ SUPPLEMENT_DEPS := data/supplement-combined-filtered.json
 # targets depend on $(READLEX_PATH) exactly as they depend on the supplement
 # checkpoint above: a committed file make never rebuilds.
 #
+# check-readlex guards that invariant. The editor's Commit publishes
+# readlex.json and patches/patches.jsonl together, but a hand-edit once
+# advanced the patches alone (data commit b3d434b) and nothing noticed. git
+# does not preserve mtimes, so the signal is provenance inside the data clone:
+# the last commit touching readlex.json must be at-or-after (ancestor test —
+# a lone repair commit to readlex.json is legitimate) the last commit touching
+# the patches. A definite STALE fails hard naming the remedy; undecidable
+# states (no git / shallow clone / dirty files / no history) skip soft — the
+# rule NEVER rebuilds the file, that would create a second publisher. Wired
+# order-only into every target whose recipe reads $(READLEX_PATH), so it runs
+# there without dirtying their up-to-date checks.
+.PHONY: check-readlex
+check-readlex:
+	@set -eu; \
+	if ! git -C data rev-parse --is-inside-work-tree >/dev/null 2>&1; then \
+	  echo "check-readlex: skipped — git unavailable or data/ is not a git checkout"; exit 0; \
+	fi; \
+	if [ "$$(git -C data rev-parse --is-shallow-repository)" = true ]; then \
+	  echo "check-readlex: skipped — data/ is a shallow clone, provenance incomplete"; exit 0; \
+	fi; \
+	dirty=$$(git -C data status --porcelain -- patches/patches.jsonl readlex.json); \
+	if [ -n "$$dirty" ]; then \
+	  echo "check-readlex: skipped — uncommitted changes in data/, provenance undecidable:"; \
+	  echo "$$dirty"; exit 0; \
+	fi; \
+	last_patches=$$(git -C data log -1 --format=%H -- patches/patches.jsonl 2>/dev/null || true); \
+	last_readlex=$$(git -C data log -1 --format=%H -- readlex.json 2>/dev/null || true); \
+	if [ -z "$$last_patches" ] || [ -z "$$last_readlex" ]; then \
+	  echo "check-readlex: skipped — no commit history for one of the files"; exit 0; \
+	fi; \
+	if git -C data merge-base --is-ancestor "$$last_patches" "$$last_readlex"; then \
+	  echo "✓ readlex.json publish is current with patches/patches.jsonl"; \
+	else \
+	  status=$$?; \
+	  [ "$$status" -eq 1 ] || { echo "check-readlex: skipped — merge-base failed ($$status), provenance undecidable"; exit 0; }; \
+	  echo "check-readlex: STALE — patches/patches.jsonl has commits ($$last_patches)" >&2; \
+	  echo "  after the last publish of readlex.json ($$last_readlex)." >&2; \
+	  echo "  Press Commit in the editor to republish readlex.json; the editor is its" >&2; \
+	  echo "  sole publisher — make will NOT rebuild it." >&2; \
+	  exit 1; \
+	fi
+
 # The frequency corpus is still needed at RUNTIME by the editor (its basis and
 # the publish step enrich freq from it), so its lean checkout stays in setup —
 # and install-editor installs it to the daemon's runtime path ($(FREQUENCY_CORPUS)
@@ -302,7 +344,7 @@ phrase-divergence: data/phrase-divergence.tsv
 
 # COMMITTED checkpoint (feeds the gap-fill). ORDER-ONLY prerequisites: rebuilt
 # only when MISSING, not on incidental mtime churn. rm to re-baseline.
-data/definitions-wiktionary.json: | $(SRC_TOOLS)/extract_wiktionary_definitions.py $(READLEX_PATH) $(WIKTIONARY_JSONL)
+data/definitions-wiktionary.json: | $(SRC_TOOLS)/extract_wiktionary_definitions.py $(READLEX_PATH) $(WIKTIONARY_JSONL) check-readlex
 	@echo "Extracting Wiktionary definitions..."
 	$(RUN) python3 $(SRC_TOOLS)/extract_wiktionary_definitions.py
 
@@ -320,7 +362,7 @@ review-files: $(SUPPLEMENT_DEPS) $(READLEX_PATH)
 ###########################################
 
 .PHONY: supplements supplements-from-source
-supplements: $(READLEX_PATH)
+supplements: $(READLEX_PATH) check-readlex
 	@echo "✓ All supplements and merged readlex up to date"
 
 supplements-from-source: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json

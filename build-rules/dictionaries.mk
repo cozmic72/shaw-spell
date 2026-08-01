@@ -98,28 +98,28 @@ complete-definitions: $(WORDNET_CACHE)
 DICT_SCRIPT := $(SRC_DICTIONARIES)/generate_dictionaries.py
 
 # GB dictionary XMLs
-$(BUILD_DICT_XML)/shavian-english-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-latin-gb.json | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-english-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-latin-gb.json | $(BUILD_DICT_XML) check-readlex
 	@echo "Generating Shavian-English XML (GB)..."
 	$(RUN) $(DICT_SCRIPT) --gb --dict shavian-english
 
-$(BUILD_DICT_XML)/english-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/english-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json | $(BUILD_DICT_XML) check-readlex
 	@echo "Generating English-Shavian XML (GB)..."
 	$(RUN) $(DICT_SCRIPT) --gb --dict english-shavian
 
-$(BUILD_DICT_XML)/shavian-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-shavian-gb.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-gb.json | $(BUILD_DICT_XML) check-readlex
 	@echo "Generating Shavian-Shavian XML (GB)..."
 	$(RUN) $(DICT_SCRIPT) --gb --dict shavian-shavian
 
 # US dictionary XMLs
-$(BUILD_DICT_XML)/shavian-english-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-latin-us.json | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-english-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-latin-us.json | $(BUILD_DICT_XML) check-readlex
 	@echo "Generating Shavian-English XML (US)..."
 	$(RUN) $(DICT_SCRIPT) --us --dict shavian-english
 
-$(BUILD_DICT_XML)/english-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/english-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json | $(BUILD_DICT_XML) check-readlex
 	@echo "Generating English-Shavian XML (US)..."
 	$(RUN) $(DICT_SCRIPT) --us --dict english-shavian
 
-$(BUILD_DICT_XML)/shavian-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json | $(BUILD_DICT_XML)
+$(BUILD_DICT_XML)/shavian-shavian-us.xml: $(READLEX_PATH) $(DICT_SCRIPT) $(WORDNET_CACHE) data/definitions-shavian-us.json | $(BUILD_DICT_XML) check-readlex
 	@echo "Generating Shavian-Shavian XML (US)..."
 	$(RUN) $(DICT_SCRIPT) --us --dict shavian-shavian
 

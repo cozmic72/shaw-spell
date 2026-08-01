@@ -984,13 +984,14 @@ function syncSortIndicators() {
 // The seven data cells for a record (state stamp, word, shaw, var, confidence,
 // freq, pos), in column order. Shared by the flat/child row and the collapsed group
 // header (which shows the export-winner's cells), so a header scans as one ledger row.
+// `verdict` defaults to the record's own; a group header passes the group's shared
+// verdict — or null when members disagree, leaving the stamp blank.
 // Every row prepends the two narrow gutter tracks (chevron, count) itself: a header
 // fills them, flat and child rows leave them blank — children share the top-level
 // template, aligned full-width under their header.
-function ledgerCells(record) {
-    const verdict = verdictState(record);
+function ledgerCells(record, verdict = verdictState(record)) {
     return [
-        cell("stamp col-state " + verdict, verdict),
+        cell(verdict ? "stamp col-state " + verdict : "stamp col-state", verdict ?? ""),
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
         varCell(record.var),
@@ -1038,8 +1039,14 @@ function ledgerRow(record, index, isChild = false) {
 // appends every member row below (§3.3).
 function groupRow(group) {
     const winner = exportWinner(group.members).record;
+    // The header stamps a verdict (state class + STATE-track stamp) only when EVERY
+    // member shares it — a group verdict is unconditional, so a header must never
+    // advertise one member's verdict as the group's. Mixed verdicts render blank
+    // (no state class: --row-edge falls back to transparent, the unreviewed frame).
+    const consensus = verdictConsensus(group.members.map((member) => member.record));
+    const verdict = consensus.uniform ? consensus.value : null;
     const li = document.createElement("li");
-    li.className = `ledger-row ledger-group-header state-${verdictState(winner)}`;
+    li.className = "ledger-row ledger-group-header" + (verdict ? ` state-${verdict}` : "");
     if (winner.patch_state === PATCH_STATE.ORPHANED && winner.orphan_kind) {
         li.classList.add(`orphan-${winner.orphan_kind}`);
     }
@@ -1056,10 +1063,10 @@ function groupRow(group) {
         bindParentGutter(li);
     }
 
-    // Gutter tracks: the disclosure chevron, then the member count. The STATE track
-    // shows the export-winner's (var-hierarchy) verdict stamp — members may hold
-    // different verdicts (state is not identity); expand for each member's own stamp.
-    li.append(groupDisclosure(group, expanded), groupCountCell(group), ...ledgerCells(winner));
+    // Gutter tracks: the disclosure chevron, then the member count. The data cells
+    // preview the export-winner; the STATE track stamps the group's shared verdict,
+    // blank when members disagree — expand for each member's own stamp.
+    li.append(groupDisclosure(group, expanded), groupCountCell(group), ...ledgerCells(winner, verdict));
     li.addEventListener("click", (event) => onGroupHeaderClick(group, event));
     return li;
 }

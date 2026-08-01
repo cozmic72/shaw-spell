@@ -152,6 +152,8 @@ def rescore_file(filepath: Path, ml_model, full_shave: bool) -> dict:
     # Phase 2: shave consultation — British for RSSB/RRP, American for GenAm/GAM
     shave_threshold = 100 if full_shave else 89
 
+    # Which accent shave is asked to weigh in as — a classification of the var,
+    # not an inventory of what the current files happen to contain.
     british_vars = {"RSSB", "RRP", "UNC", "SSB"}
     american_vars = {"GenAm", "GAM"}
 

@@ -178,9 +178,9 @@ const NOVELTY_LABELS = new Map([
 // An orphaned row's op + sub-kind (overlay.orphan_kind), so the owner can triage the
 // two apart: a lost-accept is a stranded sanction (re-anchor or clear), a
 // resurfaced-drop is URGENT — a suppression the basis EVADED, the junk returned under
-// a relabelled var. `label` names it, `title` explains it; the class hangs off the
-// kind for the palette (resurfaced-drop reads as a warning). Shown only on `orphaned`
-// rows, beside the state badge.
+// a relabelled var. `label` names it, `title` explains it — the kind lives in WORDS
+// (detail rail badge, note, stamp tooltip), never in a colour of its own. Shown only
+// on `orphaned` rows, beside the state pill.
 const ORPHAN_KIND_TAGS = new Map([
     [ORPHAN_KIND.LOST_ACCEPT, {
         label: "accept-orphan",
@@ -1011,17 +1011,48 @@ function ledgerCells(record, verdict = verdictState(record)) {
     ];
 }
 
-// The STATE stamp: the verdict WORD in the verdict's colour — colour is ONLY ever
-// one of the four acceptance states (or the group-level mixed blue). A manual
-// record keeps its verdict colour; its manual-ness rides the label TEXT as a ✎
-// mark (colour and word are orthogonal). GROUP_MIXED is a group statement, so the
-// mark is dropped there — expand for each member's own stamp.
+// The verdict → stamp glyph vocabulary, one glyph language with the related
+// panel's badges (relatedProvenance). Monochrome text characters ONLY, inheriting
+// currentColor — colour is the verdict's own channel, so no emoji. Closed over the
+// verdictState range + GROUP_MIXED; stampCell throws on anything else.
+const STAMP_GLYPHS = new Map([
+    [PATCH_STATE.UNREVIEWED, "?"],
+    [PATCH_STATE.ACCEPTED, "✓"],
+    [PATCH_STATE.DROPPED, "✕"],
+    [PATCH_STATE.FLAGGED, "⚑"],
+    [GROUP_MIXED, "…"],
+]);
+
+// An orphaned patch is still its original verdict — a lost accept is an ACCEPT, a
+// resurfaced drop is a DROP — so the stamp keeps the op's glyph and the orphaned
+// YELLOW alone says "this no longer resolves". Shape = what was decided, colour =
+// whether it still holds. (Flags never orphan — see overlay._orphan_kind.)
+const ORPHAN_GLYPHS = new Map([
+    [ORPHAN_KIND.LOST_ACCEPT, STAMP_GLYPHS.get(PATCH_STATE.ACCEPTED)],
+    [ORPHAN_KIND.RESURFACED_DROP, STAMP_GLYPHS.get(PATCH_STATE.DROPPED)],
+]);
+
+// The STATE stamp: the verdict's GLYPH in the verdict's colour — colour is ONLY ever
+// one of the four acceptance states, the group-level mixed blue, or the orphaned
+// yellow. A manual record keeps its verdict colour; its manual-ness rides beside the
+// verdict glyph as a ✎ mark (origin and verdict are separate channels). The tooltip
+// restates the words the glyph compresses (plus the orphan kind and what to do); the
+// detail rail's state pill keeps the words visible without hover. GROUP_MIXED is a
+// group statement, so the mark is dropped there — expand for each member's own stamp.
 function stampCell(record, verdict) {
-    const marked = Boolean(record.manual) && verdict !== GROUP_MIXED;
-    const stamp = cell(`stamp col-state ${verdict}`, marked ? `✎ ${verdict}` : verdict);
-    if (marked) {
-        stamp.title = "manual entry";
+    const orphaned = verdict === PATCH_STATE.ORPHANED;
+    const glyph = orphaned
+        ? ORPHAN_GLYPHS.get(record.orphan_kind)
+        : STAMP_GLYPHS.get(verdict);
+    if (!glyph) {
+        throw new Error(`no stamp glyph for verdict: ${verdict} (orphan_kind: ${record.orphan_kind})`);
     }
+    const marked = Boolean(record.manual) && verdict !== GROUP_MIXED;
+    const stamp = cell(`stamp col-state ${verdict}`, marked ? `✎ ${glyph}` : glyph);
+    const words = orphaned
+        ? `orphaned — ${ORPHAN_KIND_TAGS.get(record.orphan_kind).title}`
+        : verdict;
+    stamp.title = marked ? `manual entry · ${words}` : words;
     return stamp;
 }
 
@@ -1031,14 +1062,6 @@ function stampCell(record, verdict) {
 function ledgerRow(record, index, isChild = false) {
     const row = document.createElement("li");
     row.className = `ledger-row state-${verdictState(record)}`;
-    // An orphaned row's edge-bar + stamp are coloured by WHICH orphan reason it is
-    // (patch_state is just "orphaned" for both), so the two triage apart at a glance
-    // in the list. The wide DROP·RESURFACED / ACCEPT·ORPHAN badge is NOT crammed into
-    // the narrow state column any more (it overflowed onto the word); it lives in the
-    // detail panel, where there is room. Here the hue alone carries the distinction.
-    if (record.patch_state === PATCH_STATE.ORPHANED && record.orphan_kind) {
-        row.classList.add(`orphan-${record.orphan_kind}`);
-    }
     if (isChild) {
         row.classList.add("group-child");
     }
@@ -1072,9 +1095,6 @@ function groupRow(group) {
     const verdict = consensus.uniform ? consensus.value : GROUP_MIXED;
     const li = document.createElement("li");
     li.className = `ledger-row ledger-group-header state-${verdict}`;
-    if (winner.patch_state === PATCH_STATE.ORPHANED && winner.orphan_kind) {
-        li.classList.add(`orphan-${winner.orphan_kind}`);
-    }
     // The group key carries NUL separators (anchor-safe, not attribute-safe), so it
     // rides on a JS property rather than a data-* attribute — it is read back directly,
     // never queried by selector.
@@ -3142,15 +3162,20 @@ function relatedSource(record) {
 function relatedProvenance(record) {
     switch (verdictState(record)) {
         case PATCH_STATE.DROPPED:
-            return { state: "dropped", glyph: "✕", label: "dropped" };
+            return { state: "dropped", glyph: STAMP_GLYPHS.get(PATCH_STATE.DROPPED), label: "dropped" };
         case PATCH_STATE.FLAGGED:
-            return { state: "flagged", glyph: "⚑", label: "flagged" };
-        case PATCH_STATE.ORPHANED:
-            return record.orphan_kind === ORPHAN_KIND.RESURFACED_DROP
-                ? { state: "dropped", glyph: "⚠", label: "drop — resurfaced" }
-                : { state: "orphaned", glyph: "⚠", label: "accept-orphan" };
+            return { state: "flagged", glyph: STAMP_GLYPHS.get(PATCH_STATE.FLAGGED), label: "flagged" };
+        case PATCH_STATE.ORPHANED: {
+            // Same rule as the ledger stamp: the op's glyph in the orphaned yellow —
+            // shape says what was decided, the yellow says it no longer resolves.
+            const kind = record.orphan_kind === ORPHAN_KIND.RESURFACED_DROP
+                ? ORPHAN_KIND.RESURFACED_DROP
+                : ORPHAN_KIND.LOST_ACCEPT;
+            return { state: "orphaned", glyph: ORPHAN_GLYPHS.get(kind),
+                     label: ORPHAN_KIND_TAGS.get(kind).label };
+        }
         case PATCH_STATE.ACCEPTED:
-            return { state: "accepted", glyph: "✓", label: "sanctioned" };
+            return { state: "accepted", glyph: STAMP_GLYPHS.get(PATCH_STATE.ACCEPTED), label: "sanctioned" };
         default:
             // An unreviewed-verdict row: upstream, a manual record awaiting review
             // (the word says manual, the colour stays the verdict grey), or a
@@ -3186,17 +3211,17 @@ function orphanKindBadge(record) {
     if (!tag) {
         return wrap;
     }
-    const badge = cell(`orphan-kind-badge ${record.orphan_kind}`, tag.label);
+    const badge = cell("orphan-kind-badge", tag.label);
     badge.title = tag.title;
     wrap.append(badge);
     return wrap;
 }
 
 // The detail-panel explanation of an orphaned record: the kind, WHY it orphaned, and
-// the action the owner should take. The ledger row shows only the coloured "orphaned"
-// tag (room is tight there); this note — shown where there is room — spells the reason
-// and action out in words rather than hiding them in a tooltip. Non-orphan records, or
-// an orphan of an unrecognised kind, render nothing.
+// the action the owner should take. The ledger row shows only the op's glyph in the
+// orphaned yellow (room is tight there); this note — shown where there is room —
+// spells the reason and action out in words rather than hiding them in a tooltip.
+// Non-orphan records, or an orphan of an unrecognised kind, render nothing.
 function orphanReasonNote(record) {
     if (record.patch_state !== PATCH_STATE.ORPHANED) {
         return null;
@@ -3206,7 +3231,7 @@ function orphanReasonNote(record) {
         return null;
     }
     const note = document.createElement("div");
-    note.className = `orphan-note orphan-${record.orphan_kind}`;
+    note.className = "orphan-note";
     const head = cell("orphan-note-kind", tag.label);
     const reason = cell("orphan-note-reason", tag.reason);
     const action = document.createElement("div");

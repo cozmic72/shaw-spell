@@ -36,18 +36,13 @@
     /* The authoring accent: New Entry / Clone / create-modal chrome. An origin
        tint, NOT a verdict colour — no ledger row, stamp or pill may wear it. */
     --accent-manual: #6b52a8;
-    /* Orphaned is not one state but two, keyed off orphan_kind so the reasons triage
-       apart at a glance. Neither reuses another state's hue (was: == dropped, a
-       collision — an orphan looked like a plain drop). resurfaced-drop is the URGENT
-       case (suppressed junk RETURNED) → a hot raspberry-crimson, loud and distinct
-       from the brick-red of a deliberate drop. lost-accept is the quieter "needs
-       attention" case (a stranded sanction) → a slate-blue, distinct from
-       flagged-amber, dropped-red, manual-purple and the teal accent. */
-    --state-orphan-resurfaced: #b02a5b;
-    --state-orphan-lost: #4a6fa5;
-    /* Generic orphan tone for a bare `.orphaned` badge that has no kind to hand
-       (e.g. a relation badge). The kind-aware ledger row + detail note override it. */
-    --state-orphaned: #7a5a86;
+    /* Orphaned — the patch survived but its anchor didn't. ONE yellow for every
+       orphan: the stamp keeps the op's own glyph (check for a lost accept, cross
+       for a resurfaced drop), so the shape says what was decided and the yellow
+       alone says "it no longer resolves". A true yellow, kept apart from flagged's
+       amber-orange; the KIND rides in words (detail badge, note, tooltip), never
+       in a hue of its own. */
+    --state-orphaned: #a08f00;
 
     --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
     --shaw: 'Bernie Sans Beta', sans-serif;
@@ -86,9 +81,7 @@
         --state-flagged: #e0aa4e;
         --state-mixed: #9bc4dd;
         --accent-manual: #a690e0;
-        --state-orphan-resurfaced: #e0699a;
-        --state-orphan-lost: #7fa0d4;
-        --state-orphaned: #b590c4;
+        --state-orphaned: #e3cf5a;
     }
 }
 
@@ -745,9 +738,11 @@ body {
        the member count (blank on singleton and child rows) — then the seven data
        columns. Every row shares this one template, so an expanded group's
        children align with the top-level columns. The STATE track fits the widest
-       stamp, "✎ unreviewed" (a manual record's ✎ origin mark beside its verdict
-       word). */
-    grid-template-columns: 22px 20px 100px 1fr 1.3fr 64px 40px 56px 48px;
+       stamp, "✎ ✓" (a manual record's ✎ origin mark beside its verdict glyph),
+       and the "state" head label; the width the glyphs freed (the track held the
+       word "unreviewed") flows to the fr columns — word and shaw, the things
+       being reviewed. */
+    grid-template-columns: 22px 20px 44px 1fr 1.3fr 64px 40px 56px 48px;
     gap: 10px;
     align-items: center;
     /* One shared row inset (overridden per breakpoint). */
@@ -831,7 +826,7 @@ body {
     -webkit-touch-callout: none;
 }
 /* State edge-bar: a coloured rule down the left of each row, a redundant channel
-   alongside the stamp text and the pip meter so state never rides on colour
+   alongside the stamp glyph and the pip meter so state never rides on colour
    alone. STATE is its only job — selection never touches it. */
 .ledger-row::before {
     content: "";
@@ -847,12 +842,7 @@ body {
 .ledger-row.state-dropped { --row-edge: var(--state-dropped); }
 .ledger-row.state-flagged { --row-edge: var(--state-flagged); }
 .ledger-row.state-mixed { --row-edge: var(--state-mixed); }
-/* Orphaned rows: the edge-bar hue is keyed off the orphan REASON, not the shared
-   "orphaned" state, so a resurfaced drop (urgent) and a lost accept read apart in the
-   list at a glance. */
 .ledger-row.state-orphaned { --row-edge: var(--state-orphaned); }
-.ledger-row.state-orphaned.orphan-resurfaced-drop { --row-edge: var(--state-orphan-resurfaced); }
-.ledger-row.state-orphaned.orphan-lost-accept { --row-edge: var(--state-orphan-lost); }
 .ledger-row:hover { background: var(--paper-raised); }
 /* The selected row: the raised-paper wash ALONE — no accent strip (the ::before
    edge-bar stays the STATE channel only). ONE treatment for the review cursor, a
@@ -1013,11 +1003,13 @@ body {
 .ledger-foot button:disabled { opacity: 0.4; cursor: default; }
 
 /* ---- decision stamp ---- */
+/* A glyph, not a word (?, ✓, ✕, ⚑, …, with ✎ prefixed on manual records) — the
+   words live in the tooltip and the detail rail's state pill. Plain text glyphs
+   inheriting currentColor, so the verdict hue drives them. */
 .stamp {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1;
+    padding: 3px 6px;
     border: 1px solid currentColor;
     border-radius: 2px;
     justify-self: start;
@@ -1049,10 +1041,6 @@ body {
 .stamp.flagged { color: var(--state-flagged); }
 .stamp.mixed { color: var(--state-mixed); }
 .stamp.orphaned { color: var(--state-orphaned); }
-/* The orphaned stamp text takes the reason's hue too (the class lives on the row),
-   so tag colour matches the edge-bar. */
-.ledger-row.orphan-resurfaced-drop .stamp.orphaned { color: var(--state-orphan-resurfaced); }
-.ledger-row.orphan-lost-accept .stamp.orphaned { color: var(--state-orphan-lost); }
 
 /* ---- detail (right) — the card the editor stares at while deciding ---- */
 .detail {
@@ -1403,12 +1391,10 @@ body {
     color: var(--ink-soft);
 }
 
-/* The orphan sub-tag, beside the state badge in the DETAIL heading (no longer in the
-   ledger row — it overflowed the narrow state column onto the word). Names the op + why
-   it orphaned. A lost-accept (a stranded sanction) reads in the quiet slate tone; a
-   resurfaced-drop (the URGENT case — a suppressed record that RETURNED under a
-   relabelled var) reads loud, with a filled raspberry-crimson ground so it cannot be
-   missed. Non-orphan records render nothing. */
+/* The orphan sub-tag, beside the state pill in the DETAIL rail (never in the ledger
+   row — the row carries only the yellow op glyph). Names the op + why it orphaned in
+   WORDS; the kind is not colour-coded (one orphan yellow for both). Non-orphan
+   records render nothing. */
 .orphan-kind-badges {
     align-self: center;
     display: inline-flex;
@@ -1423,18 +1409,13 @@ body {
     border: 1px solid currentColor;
     border-radius: 2px;
     white-space: nowrap;
-}
-.orphan-kind-badge.lost-accept { color: var(--state-orphan-lost); }
-.orphan-kind-badge.resurfaced-drop {
-    color: var(--paper);
-    background: var(--state-orphan-resurfaced);
-    border-color: var(--state-orphan-resurfaced);
+    color: var(--state-orphaned);
 }
 
 /* The orphan reason + action note, shown in the detail card under the heading (where
    there is room, unlike the ledger row). Spells out WHY the record orphaned and WHAT to
-   do, in words rather than a tooltip. A left edge-bar in the reason's hue ties it to the
-   ledger row's edge for the same record. */
+   do, in words rather than a tooltip. A left edge-bar in the orphaned yellow ties it to
+   the ledger row's edge for the same record. */
 .orphan-note {
     margin: 10px 0 4px;
     padding: 10px 14px;
@@ -1442,23 +1423,14 @@ body {
     border-radius: 2px;
     background: color-mix(in srgb, var(--state-orphaned) 8%, transparent);
 }
-.orphan-note.orphan-resurfaced-drop {
-    border-left-color: var(--state-orphan-resurfaced);
-    background: color-mix(in srgb, var(--state-orphan-resurfaced) 9%, transparent);
-}
-.orphan-note.orphan-lost-accept {
-    border-left-color: var(--state-orphan-lost);
-    background: color-mix(in srgb, var(--state-orphan-lost) 9%, transparent);
-}
 .orphan-note-kind {
     display: block;
     font-size: 10px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-weight: 600;
+    color: var(--state-orphaned);
 }
-.orphan-note.orphan-resurfaced-drop .orphan-note-kind { color: var(--state-orphan-resurfaced); }
-.orphan-note.orphan-lost-accept .orphan-note-kind { color: var(--state-orphan-lost); }
 .orphan-note-reason {
     display: block;
     margin-top: 4px;
@@ -2617,19 +2589,16 @@ kbd {
     /* Drop the confidence pips from the crowded ledger row on narrow screens;
        the detail card still shows confidence. Chevron, count, state, word, shaw,
        var, freq, pos — eight tracks (conf hidden). On a phone the fixed metadata columns starve
-       word + shaw (the things being reviewed), so give those the space: clip the
-       state pill and crank the var/freq/pos tracks down to just their short
-       content, and tighten the gap + padding to reclaim width. */
+       word + shaw (the things being reviewed), so give those the space: crank the
+       var/freq/pos tracks down to just their short content, and tighten the gap +
+       padding to reclaim width. The glyph stamp fits its 44px track outright. */
     .ledger-head, .ledger-row {
         grid-template-columns:
-            20px 16px minmax(46px, auto) minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
+            20px 16px 44px minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
         gap: 6px;
         --ledger-inset: 10px;
     }
     .col-conf { display: none; }
-    /* Clip the state pill so long labels (✎ UNREVIEWED) don't force the
-       state column wide; the color already carries the meaning. */
-    .stamp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .col-var, .col-freq, .col-pos {
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }

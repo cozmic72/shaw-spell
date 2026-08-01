@@ -6,7 +6,7 @@ with a `mergers` list before it reaches the editorial basis.
 The supplement candidates carry a scalar base-accent `var` (a multi-spelling
 group pairs a merged GenAm form against a non-merged RSSB/RRP form). This stage
 layers the merger axis on top: a GenAm spelling that is an exact vowel-merger
-swap (trap-bath 𐑭->𐑨, cot-caught 𐑷->𐑪, or lot-palm 𐑭->𐑪) of a non-merged
+swap (trap-bath 𐑭->𐑨, cot-caught 𐑷->𐑪, or lot-palm 𐑪->𐑭) of a non-merged
 sibling in the same (word, pos) group is tagged with that merger. Its base `var`
 is unchanged — the flag is additive.
 
@@ -20,13 +20,12 @@ see the `mergers` flag so it can HOLD BACK a merged form (spelt differently from
 its RRP sibling) from canonicalization, rather than collapsing it to RRP and
 erasing the merger relationship this stage detected.
 
-The non-merged sibling is drawn from TWO attestations (see non_merged_spellings):
-an RSSB spelling within the supplement pool, OR a non-merged ReadLex/RRP spelling
-for the same (word, pos). The ReadLex attestation is what lets a GenAm candidate
-be flagged trap-bath even when its own supplement group has no RSSB sibling — the
-common case for names / GenAm-sourced imports. A candidate with no non-merged
-sibling in EITHER source is the sole (canonical) spelling of its (word, pos): the
-pairing cannot fire, so an isolated form is never flagged.
+The non-merged sibling must be RP/SSB-ATTESTED: it is drawn solely from upstream
+ReadLex entries with a non-merged base var (see non_merged_spellings). A
+supplement candidate never attests another candidate — with two unverified
+spellings, which one is "the merged mutant" is arbitrary, and that heuristic
+produced the false and reversed flags this rule replaced. A candidate with no
+RP/SSB-attested counterpart for its (word, pos) is never flagged.
 
 A record's `mergers` is emitted only when non-empty, keeping the field additive:
 absent means the empty list. See dialect_mergers.py for the swap detection and
@@ -62,13 +61,8 @@ from dialect_mergers import MERGER_SWAPS, merger_of
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-deduped.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
 
-# The non-merged base spellings a GenAm merger swap is measured against, and
-# which are themselves never tagged. RSSB is the non-merged British standard; a
-# supplement RRP form (e.g. an IPA-rescued copied-homograph, or — should the RRP
-# reclassifier ever precede this stage — a canonicalized sibling) is equally a
-# non-merged base. Including both is directional-safe: merger_of only ever treats
-# an RSSB/RRP form as the non-merged SIBLING, never as the merged target (the
-# merged form is GenAm). Verified net-neutral vs the RSSB-only pool on live data.
+# The non-merged base vars: an upstream entry attests only under one of these,
+# and a candidate carrying one is itself never tagged.
 BASE_NON_MERGED = ("RSSB", "RRP")
 
 SAMPLE_LIMIT = 12
@@ -79,61 +73,36 @@ def load_json(path):
         return json.load(f)
 
 
-def non_merged_spellings(supplement, upstream=None):
-    """(word_lower, pos) -> the set of non-merged spellings attesting it. These are
-    the canonical forms a candidate's merger swap is measured against.
-
-    The attestation pool is the union of two sources:
-
-      1. RSSB siblings WITHIN the supplement pool — the original within-supplement
-         pairing (an {RSSB, GenAm} group's non-merged British spelling).
-      2. Non-merged ReadLex/RRP spellings for the same (word, pos) — every ReadLex
-         entry NOT already carrying a merger flag (see reinterpret_upstream: a
-         `TrapBath` record is the MERGED 𐑨 form and is excluded here, so it can
-         never masquerade as the non-merged attestation it is measured against).
-
-    This index is merger-agnostic: it holds the non-merged spellings, and
-    merger_for/merger_of decide per-candidate which known merger (if any) the swap
-    is — so the ReadLex attestation feeds BOTH trap-bath (𐑭→𐑨) and cot-caught
-    (𐑷→𐑪) uniformly, no merger is privileged.
-
-    Adding (2) lets a supplement candidate be flagged off an attested ReadLex
-    sibling (a 𐑭 form for trap-bath, a 𐑷 form for cot-caught) even when its own
-    supplement group has no RSSB sibling — the common case for names / GenAm-sourced
-    imports. It is still a pure PAIRING claim against an attested sibling; a
-    candidate with no non-merged sibling in EITHER source is the sole (canonical)
-    spelling of its (word, pos) and is never flagged."""
+def non_merged_spellings(upstream=None):
+    """(word_lower, pos) -> the set of RP/SSB-attested non-merged spellings a
+    candidate's merger swap is measured against: every upstream ReadLex entry
+    under a non-merged base var that carries no merger flag itself (a
+    reinterpreted TrapBath entry IS the merged 𐑨 form and must not attest).
+    Deliberately upstream-only and RP/SSB-only — never a supplement candidate,
+    never a merged-accent var (the module docstring says why)."""
+    if upstream is None:
+        upstream = load_upstream()
     index = defaultdict(set)
-    for entries in supplement.values():
+    for entries in upstream.values():
         for entry in entries:
             if entry.get("var") in BASE_NON_MERGED and not entry.get("mergers"):
                 index[(entry["Latn"].lower(), entry["pos"])].add(entry["Shaw"])
-    if upstream is None:
-        upstream = load_upstream()
-    for entries in upstream.values():
-        for entry in entries:
-            # Only NON-merged ReadLex forms attest: a reinterpreted TrapBath entry
-            # already carries mergers=[trap-bath] and is itself a merged 𐑨 form.
-            if entry.get("mergers"):
-                continue
-            key = (entry.get("Latn", "").lower(), entry.get("pos", ""))
-            index[key].add(entry.get("Shaw", ""))
     return index
 
 
 def merger_for(entry, non_merged_index):
     """The (merger, non_merged_sibling) `entry` is tagged with, or (None, None).
-    Only a merged spelling that is an exact merger swap of some non-merged sibling
-    (an RSSB supplement sibling OR a non-merged ReadLex/RRP form) in its (word, pos)
-    group is tagged; RSSB (and unmatched) forms carry none.
+    Only a merged spelling that is an exact merger swap of some RP/SSB-attested
+    upstream sibling for its (word, pos) is tagged; RSSB/RRP (and unmatched)
+    forms carry none.
 
     A single (sibling, entry) pair is never ambiguous — merger_of returns at most
-    one merger. But a word can carry SEVERAL non-merged siblings, and a merged 𐑪
-    form can be a cot-caught swap of a 𐑷 sibling AND a lot-palm swap of a 𐑭 sibling
-    (e.g. `vase`: 𐑝𐑷𐑟 and 𐑝𐑭𐑟 both attested, GenAm 𐑝𐑪𐑟). The two candidate
-    tags then compete. We resolve by MERGER declaration precedence, not by sibling
-    sort order: try each merger over the whole sibling set in MERGER_SWAPS order
-    and take the first that fires. This is deterministic and keeps the pre-existing
+    one merger. But a word can carry SEVERAL non-merged siblings, and one merged
+    spelling can be a valid swap of different siblings under different mergers.
+    The candidate tags then compete. We resolve by MERGER declaration precedence,
+    not by sibling sort order: try each merger over the whole sibling set in
+    MERGER_SWAPS order and take the first that fires. This is deterministic and
+    keeps the pre-existing
     mergers' tags stable when a later merger is added (a newly-added merger can only
     claim records that matched NOTHING before). Which sibling is the "true" one is a
     data question the tag doesn't settle — every tagged record is a review
@@ -161,7 +130,7 @@ def classify_supplement(supplement, tallies, samples, upstream=None):
     TrapBath flag) is ReadLex's own data and is neither stripped nor added to
     (basis.is_upstream: never flag-mutate core). `upstream` (the reinterpreted
     ReadLex) is threaded in by the orchestrator; None loads it."""
-    non_merged_index = non_merged_spellings(supplement, upstream)
+    non_merged_index = non_merged_spellings(upstream)
     classified = {}
     for key, entries in supplement.items():
         annotated = []
@@ -198,8 +167,6 @@ def report(tallies, samples):
     for merger in MERGER_SWAPS:
         print(f"\nSample [{merger}]:")
         for entry, sibling in samples[merger]:
-            # The sibling may be an RSSB supplement form OR a non-merged ReadLex/RRP
-            # form — both attest — so it is labelled generically, not "RSSB".
             print(f"  {entry['Latn']} [{entry['pos']}]: "
                   f"non-merged {sibling} -> {entry.get('var', '')} {entry['Shaw']}")
 

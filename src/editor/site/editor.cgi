@@ -206,7 +206,9 @@ def asset_version(name):
     serves editor.css/editor.js by plain filename, so browsers cache them hard
     and an edit only shows after a manual hard-reload. Stamping the href with the
     file's mtime makes every edit a fresh URL — no stale CSS/JS. Fails soft to
-    a constant if the file is missing (the browser just caches; no crash)."""
+    a constant if the file is missing (the browser just caches; no crash).
+    The stamps only work because the PAGE embedding them is no-store (see
+    serve_page): a cached document would keep referencing old stamped URLs."""
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
     try:
         return str(int(os.path.getmtime(path)))
@@ -217,7 +219,11 @@ def asset_version(name):
 def serve_page():
     """GATED. Logged-out callers get the standalone login page (the editor
     HTML/JS is NOT shipped to them — front gate); logged-in callers get the
-    editor."""
+    editor. Both documents are no-store: the page is regenerated per request
+    (login-state gate + fresh asset stamps), so a cached copy is always wrong —
+    stale stamped URLs, or the login page shown to a logged-in user. The
+    stamped ASSETS stay cacheable; that is the point of the stamps."""
+    sys.stdout.write("Cache-Control: no-store\r\n")
     if resolve_user() is None:
         sys.stdout.write("Content-Type: text/html; charset=utf-8\r\n\r\n")
         sys.stdout.write(LOGIN_PAGE)

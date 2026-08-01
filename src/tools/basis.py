@@ -191,12 +191,14 @@ OP_FLAG = "flag"
 OP_EDIT = "edit"
 
 # The intrinsic, human-editable fields — the ONLY keys a patch's `changes` may
-# carry. Everything else (source, confidence, freq, status) is DERIVED at apply:
-# source from the basis origin map, confidence from the basis record, freq from
-# the stage-2 frequency pass, and status is implied by the op (accept ->
-# "sanctioned"). Storing any of them in `changes` would freeze a value the
-# pipeline recomputes.
-INTRINSIC_FIELDS = ("word", "shaw", "pos", "ipa", "var", "mergers", "variant")
+# carry. Everything else (source, confidence, status) is DERIVED at apply:
+# source from the basis origin map, confidence from the basis record, and
+# status is implied by the op (accept -> "sanctioned"). Storing any of them in
+# `changes` would freeze a value the pipeline recomputes. freq is intrinsic:
+# the corpus derivation is an UPSTREAM stage that runs BEFORE the overlay, so
+# nothing recomputes it after apply — a patched freq is simply the last word.
+INTRINSIC_FIELDS = ("word", "shaw", "pos", "ipa", "var", "mergers", "variant",
+                    "freq")
 
 # The status every accepted record carries. An accept IS a sanction; the old
 # finer statuses (new / pos-gap / supplement / pos-gap-shifted) collapse to this
@@ -457,8 +459,8 @@ def output_to_record(entry):
 # a record carries internally (freq_readlex/freq_source, has_definition, orig_*,
 # info, confidence/source/status and the rest of the provenance) is editorial
 # working state and is deliberately NOT shipped. Shared by both producers — the
-# editor's publish path (editord.to_published_entry) and the offline frequency
-# CLI (apply_frequency_data.main) — so they can never drift. Tuple order is the
+# editor's publish path (editord.to_published_entry) and the offline
+# applicator (apply_patches.main) — so they can never drift. Tuple order is the
 # construction order of published_entry, which is the serialization order.
 #
 # This is stage ONE of the export boundary: the per-record whitelist. Stage TWO
@@ -635,6 +637,8 @@ def resolve_patch(patch, basis_index, basis_source):
                               emitted — a flag is "no verdict yet" either way.
       anchor null (authored)  record_to_output(changes): `changes` is the whole
                               self-contained record (no basis to diff against).
+                              The applicator then lays the pool-derived freq
+                              under it (authored_pool / authored_freq).
       op drop                 None: emit nothing for the anchored key.
       op accept               record_to_output(effective_record(...)): the basis
                               record with the intrinsic `changes` laid over it,
@@ -673,12 +677,46 @@ def resolve_patch(patch, basis_index, basis_source):
         effective_record(base_entry, patch["changes"], basis_source[key]))
 
 
-def enrich_basis_frequency(index):
-    """Put every basis record on the corpus frequency scale, in place — the SAME
-    passes the production build applies to readlex.json (the replace-all corpus
-    pass plus the LRW POS split; see apply_frequency_data), so a review-pool
-    candidate carries the exact freq the record it becomes will ship with.
-    Reuses the corpus + UK/US variant logic rather than reimplementing it.
+def authored_pool(patches):
+    """The AUTHORED WING of the record pool: natural key -> the canonical-shape
+    base record of each authorship patch (anchor null). Manual records enter the
+    pipeline here — attested by no source, they are absent from the basis, so
+    this index is what lets the ONE pre-patch frequency pass cover them (the
+    live #115 fix: without it a manual record carries freq 0 everywhere).
+
+    The base is `changes` as a canonical entry, built BEFORE the overlay applies;
+    the derivation enriches it, then the patch content is the last word on top
+    (see authored_freq). Consumed by both producers (the applicator's authorship
+    branch) and the overlay (authored-row display), so display and shipped freq
+    come from the same derivation."""
+    return {anchor_of(entry): entry
+            for entry in (record_to_output(patch["changes"])
+                          for patch in patches if patch["anchor"] is None)}
+
+
+def authored_freq(changes, base):
+    """The freq an AUTHORED record shows and ships: the patch's own freq when it
+    asserts one, else the pool-derived value from its enriched `base` (None when
+    no derivation ran — a session-authored record before the next startup/publish
+    pass). freq 0/absent means "no data" — it is the system-wide default and the
+    value every pre-freq-patchable client baked into authored records — so only a
+    NON-ZERO stored freq is an owner override. Anchored records never come here:
+    their `changes` carry freq only when the owner actually edited it, so an
+    anchored freq 0 IS an explicit zero and wins via the ordinary overlay."""
+    if changes.get("freq"):
+        return changes["freq"]
+    return base.get("freq", 0) if base else 0
+
+
+def enrich_pool_frequency(basis_index, authored_bases):
+    """Put the WHOLE record pool — every basis record plus the authored wing —
+    on the corpus frequency scale, in one enrich_all pass, in place: the SAME
+    passes the publish path applies pre-patch (the replace-all corpus pass plus
+    the LRW POS split; see apply_frequency_data), so a review-pool candidate
+    carries the exact freq the record it becomes will ship with. Reuses the
+    corpus + UK/US variant logic rather than reimplementing it. Returns True
+    when the pool was enriched, False on the graceful skip below — the publish
+    path refuses to ship an unenriched basis.
 
     The imports are function-local: apply_frequency_data imports PROJECT_ROOT from
     this module, so a module-level import here would be a cycle.
@@ -689,8 +727,8 @@ def enrich_basis_frequency(index):
     crash-loop the editor. The skip covers the WHOLE enrichment, never half of
     it, so enrich_all's contract stays strict (it always receives both
     corpora), and is logged so a silent freq-0 basis is never a mystery. The
-    publish path (_publish_readlex) and the offline CLI still hard-require
-    both files — this grace is startup-only.
+    publish path (_publish_readlex) and the offline applicator still
+    hard-require both files — this grace is startup-only.
     """
     from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
     from lrw_frequencies import LRW_PATH, load_lrw
@@ -706,11 +744,21 @@ def enrich_basis_frequency(index):
     if missing:
         print("basis: frequency data absent; review-pool candidates carry no "
               "freq. Missing: " + "; ".join(missing), file=sys.stderr)
-        return
-    enrich_all({None: list(index.values())}, load_corpus(), load_lrw())
+        return False
+    enrich_all(frequency_pool(basis_index, authored_bases),
+               load_corpus(), load_lrw())
+    return True
 
 
-def build_basis(enrich_freq=False):
+def frequency_pool(basis_index, authored_bases):
+    """The full pre-overlay record pool in the {bucket: entries} shape
+    enrich_all consumes — basis records and the authored wing together, so the
+    POS-split pass sees a word's WHOLE group. The single pool assembly shared
+    by the startup pass above and the offline applicator."""
+    return {None: [*basis_index.values(), *authored_bases.values()]}
+
+
+def build_basis():
     """Traverse the basis once, returning both the record index and the origins
     of each anchor.
 
@@ -725,11 +773,10 @@ def build_basis(enrich_freq=False):
               record contributes the readlex label this way — the multi-source
               agreement signal, preserved for filtering.
 
-    With enrich_freq, every record is put on the corpus frequency scale so the
-    editor's freq-desc sort triages the review pool by real frequency, uniformly
-    with production. The applicator does not emit basis freq (it enriches its
-    merged output separately) so it leaves this off — paying neither the corpus
-    load nor the pass.
+    Frequency is NOT derived here: the pool pass needs the authored wing too
+    (see enrich_pool_frequency / frequency_pool), so each pool owner — the
+    editor's load_view, the offline applicator — runs it over basis + authored
+    together after loading the patch store.
     """
     index = {}
     source = {}
@@ -743,8 +790,6 @@ def build_basis(enrich_freq=False):
                 for label in entry.get("source", []):
                     if label not in sources:
                         sources.append(label)
-    if enrich_freq:
-        enrich_basis_frequency(index)
     return index, source
 
 

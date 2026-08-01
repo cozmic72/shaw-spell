@@ -15,10 +15,9 @@ cover drop to freq 0. To honour "don't throw away data", a record that HAD a
 non-zero ReadLex freq keeps it in `freq_readlex` before we overwrite `freq`;
 records that never had a ReadLex freq gain no such field. Corpus-sourced freq is
 tagged `freq_source` so provenance is never ambiguous. Both are RUNTIME
-bookkeeping: main() serializes through the publish whitelist (basis.
-PUBLISH_FIELDS, the same shape the editor's commit path emits) and the
-ReadLex-compatibility collapse (basis.collapse_readlex), so neither —
-nor the pass-2 info annotations — ever reaches data/readlex.json.
+bookkeeping: the producers serialize through the publish whitelist (basis.
+PUBLISH_FIELDS) and the ReadLex-compatibility collapse (basis.collapse_readlex),
+so neither — nor the pass-2 info annotations — ever reaches data/readlex.json.
 
 UK/US variants: the corpus is a single mixed-dialect "en" list holding both
 spellings of a transatlantic pair, each with its own count. We consult a
@@ -73,30 +72,27 @@ HIGH-FREQUENCY SAFETY: OS<->LRW POS agreement INVERTS with frequency (80.3% at
 >=1M OS count vs 96.6% at 1k-10k). We do NOT blanket-ban top-end multiplexing
 (the flagship i/a/may/us cases live there); the protection is structural — only
 readings that individually resolve against LRW get split, everything else keeps
-its value — plus reporting: main() prints every multiplexed word at >= 1M so no
-shaky top-end split is ever silent.
+its value — plus reporting: report_enrichment prints every multiplexed word at
+>= 1M so no shaky top-end split is ever silent.
 
-The enrichment logic (enrich_all) is shared: the editor's basis (src/tools/basis.py)
-applies the SAME passes to its review-pool candidates, so a candidate and the
-readlex record it eventually becomes carry an identical freq.
+This module is the enrichment LIBRARY, not a pipeline stage of its own: the
+frequency derivation is UPSTREAM processing that runs BEFORE the editorial
+patch overlay (patches are the last word — a patched freq must never be
+recomputed away). The producers run enrich_all over the pre-patch record pool:
+the editor at startup and publish (basis.enrich_pool_frequency /
+editord._publish_readlex) and the offline applicator (apply_patches.main), so
+a review-pool candidate and the readlex record it eventually becomes carry an
+identical freq.
 
 Idempotent and deterministic: the value written depends only on the two fixed
 corpora, so identical inputs yield an identical readlex.json.
-
-Usage:
-    python3 src/tools/apply_frequency_data.py
 """
 
-import json
 import sys
-from pathlib import Path
 
-from basis import (DATA_ROOT, INFO_FIELD, PROJECT_ROOT, collapse_readlex,
-                   published_entry)
-from lrw_frequencies import C5_TO_LRW, UNINFORMATIVE_LRW_TAGS, load_lrw, lrw_key
+from basis import INFO_FIELD, PROJECT_ROOT
+from lrw_frequencies import C5_TO_LRW, UNINFORMATIVE_LRW_TAGS, lrw_key
 from spelling_variants import spelling_variants
-
-READLEX_PATH = DATA_ROOT / "readlex.json"
 CORPUS_PATH = PROJECT_ROOT / "external" / "frequency-words" / "content" / "2018" / "en" / "en_full.txt"
 FREQ_SOURCE_TAG = "opensubtitles-2018"
 
@@ -416,41 +412,11 @@ def enrich_all(readlex, corpus, lrw):
     return stats
 
 
-def main():
-    import argparse
-    ap = argparse.ArgumentParser(
-        description="Set freq from the subtitle corpus (replace-all), "
-                    "then split each word's count per POS from the LRW list")
-    ap.add_argument("--in", dest="in_path", default=str(READLEX_PATH),
-                    help="merged readlex to read (default: data/readlex.json)")
-    ap.add_argument("--out", dest="out_path", default=str(READLEX_PATH),
-                    help="enriched readlex to write (default: data/readlex.json)")
-    args = ap.parse_args()
-    in_path, out_path = Path(args.in_path), Path(args.out_path)
-
-    corpus = load_corpus()
-    lrw = load_lrw()
-
-    with open(in_path, "r", encoding="utf-8") as f:
-        readlex = json.load(f)
-
-    stats = enrich_all(readlex, corpus, lrw)
-
-    # The CLI writes the production artifact, so it ships ONLY the publish
-    # whitelist (basis.PUBLISH_FIELDS) — the same shape the editor's commit
-    # path emits — then the ReadLex-compatibility collapse, exactly as the
-    # commit path does. Enrichment bookkeeping (freq_source/freq_readlex) and
-    # the info annotations stay in-memory runtime state; the input's own
-    # `supplement: true` flags pass through the shaper untouched.
-    published = {
-        bucket_key: [published_entry(entry) for entry in entries]
-        for bucket_key, entries in readlex.items()}
-    published, collapse_stats = collapse_readlex(published)
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(published, f, ensure_ascii=False, indent=4)
-
-    print(f"Corpus entries loaded:        {len(corpus):,}")
-    print(f"LRW surfaces loaded:          {len(lrw.surface_readings):,}")
+def report_enrichment(stats):
+    """Print one enrichment run's tally — including the mandatory audit of
+    every split at >= HIGH_FREQUENCY_REPORT_THRESHOLD (the weakest OS<->LRW
+    agreement band; no shaky top-end split may pass silently). Used by the
+    offline applicator (apply_patches.main)."""
     print(f"ReadLex freq replaced:        {stats['replaced']:,}")
     print(f"Newly gained (was freq 0):    {stats['gained']:,}")
     print(f"Dropped to 0 (had ReadLex):   {stats['dropped_to_zero']:,}")
@@ -462,19 +428,9 @@ def main():
     print(f"Split words with leftover:    {stats['split_words_with_leftover']:,} "
           f"({stats['leftover_records']:,} records keep the whole count)")
 
-    if collapse_stats:
-        print("\nReadLex-compatibility collapse:")
-        for action, count in sorted(collapse_stats.items()):
-            print(f"  {action}: {count:,}")
-
     report = stats["high_freq_report"]
     if report:
         print(f"\nSplit words at >= {HIGH_FREQUENCY_REPORT_THRESHOLD:,} "
               f"pre-split count (weakest OS<->LRW agreement band — audit these):")
         for word, pos, before, after in report:
             print(f"  {word:20s} {pos or '-':8s} {before:>12,} -> {after:>12,}")
-    print(f"\nWrote {out_path}")
-
-
-if __name__ == "__main__":
-    main()

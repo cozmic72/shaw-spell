@@ -73,7 +73,8 @@ decision for the owner; the overlay only surfaces the problem.
 import threading
 
 from basis import (INFO_FIELD, OP_ACCEPT, OP_DROP, OP_EDIT, ORIG_FIELDS,
-                   UPSTREAM_SOURCE, anchor_key, build_basis, effective_record,
+                   UPSTREAM_SOURCE, anchor_key, authored_freq, authored_pool,
+                   build_basis, effective_record, enrich_pool_frequency,
                    is_dirty_patch, is_flag_patch, output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
@@ -259,11 +260,18 @@ def annotate_basis_record(candidate, source, patch, established):
                       established)
 
 
-def annotate_authored_record(patch, established):
+def annotate_authored_record(patch, established, authored_bases):
     """One annotated row from an authorship patch (anchor is null): the record a
     human invented, which has no basis anchor. Its displayed content IS the record
     (the patch's `changes`, self-contained — no basis to diff against); its stable
     anchor is that record's own natural key.
+
+    Its freq is the pool-derived value from `authored_bases` (the authored wing,
+    enriched at startup alongside the basis — see basis.authored_pool) unless the
+    patch asserts its own; basis.authored_freq is the same rule the applicator
+    ships, so display and production can never disagree. A record authored in
+    THIS session has no enriched base yet (no corpus resident) and shows 0 until
+    the next startup or publish derives it.
 
     An authored record's source is a single origin (the author), a scalar in the
     patch. It is normalised to a one-element LIST here so the whole UI/daemon sees
@@ -271,6 +279,9 @@ def annotate_authored_record(patch, established):
     record = patch["changes"]
     anchor = {"word": record["word"], "pos": record["pos"],
               "shaw": record["shaw"], "var": record.get("var", "")}
+    record = {**record,
+              "freq": authored_freq(record,
+                                    authored_bases.get(anchor_key(anchor)))}
     ui = _ui_record(record, anchor, [AUTHORED_STATUS], AUTHORED_STATUS, True,
                     PATCH_STATE_AUTHORED, patch, established)
     if not isinstance(ui["source"], list):
@@ -328,13 +339,24 @@ class AnnotatedView:
     every read that touches the structure. Readers hand back a snapshot, never a
     live reference the caller would iterate after releasing the lock."""
 
-    def __init__(self, basis_index, basis_source, patches):
+    def __init__(self, basis_index, basis_source, patches, authored_bases,
+                 freq_enriched=False):
         self.basis_index = basis_index
         self.basis_source = basis_source
+        # The authored wing of the pool (basis.authored_pool), enriched by the
+        # startup pool pass alongside the basis — read-only here: it supplies the
+        # derived freq an authored row displays (see annotate_authored_record).
+        # A record authored during this session gains its base at next startup.
+        self.authored_bases = authored_bases
+        # Whether the startup pool pass actually ran (False = frequency data was
+        # absent and the graceful skip fired). The publish path refuses to ship
+        # an unenriched basis, so it checks this before deriving readlex.json.
+        self.freq_enriched = freq_enriched
         self.anchored, self.authored = _index_patches_by_anchor(patches)
         self.established = EstablishedIndex(basis_index, basis_source)
         self.by_anchor_index = _build_records(
-            basis_index, basis_source, self.anchored, self.authored, self.established)
+            basis_index, basis_source, self.anchored, self.authored,
+            self.established, authored_bases)
         self.by_word_index = _build_word_index(self.by_anchor_index)
         self.by_shaw_index = _build_shaw_index(self.by_anchor_index)
         self._lock = threading.Lock()
@@ -457,7 +479,8 @@ class AnnotatedView:
 
     def _apply_authored_patch(self, patch):
         self.authored[patch["id"]] = patch
-        annotated = annotate_authored_record(patch, self.established)
+        annotated = annotate_authored_record(patch, self.established,
+                                             self.authored_bases)
         key = anchor_key(patch["changes"])
         self._replace_record(
             key, annotated,
@@ -522,7 +545,8 @@ def _index_patches_by_anchor(patches):
     return anchored, authored
 
 
-def _build_records(basis_index, basis_source, anchored, authored, established):
+def _build_records(basis_index, basis_source, anchored, authored, established,
+                   authored_bases):
     """The per-anchor record index: anchor key -> its annotated rows, built once
     from the basis and overlay. Basis anchors come first (in basis order), then
     authored rows, then ORPHANED anchored patches (those whose anchor key is absent
@@ -550,7 +574,7 @@ def _build_records(basis_index, basis_source, anchored, authored, established):
                                   established))
 
     for patch in authored.values():
-        record = annotate_authored_record(patch, established)
+        record = annotate_authored_record(patch, established, authored_bases)
         index.setdefault(anchor_key(record["anchor"]), []).append(record)
 
     for key, patch in anchored.items():
@@ -660,8 +684,20 @@ class EstablishedIndex:
 
 
 def load_view():
-    """Build the annotated view from the current basis and patch store."""
+    """Build the annotated view from the current basis and patch store.
+
+    Frequency is derived here, ONCE, over the whole pre-patch pool — the basis
+    plus the authored wing (manual records, absent from the basis) — so every
+    row the editor shows carries the same corpus-scale freq production ships
+    (the #115 fix: manual records used to display 0). enrich_pool_frequency
+    gracefully skips when the frequency data is absent (startup must not
+    crash-loop a fresh clone); the view records whether it ran so the publish
+    path can refuse to ship an unenriched basis."""
     from patchstore import load_patches
 
-    basis_index, basis_source = build_basis(enrich_freq=True)
-    return AnnotatedView(basis_index, basis_source, load_patches())
+    basis_index, basis_source = build_basis()
+    patches = load_patches()
+    authored_bases = authored_pool(patches)
+    freq_enriched = enrich_pool_frequency(basis_index, authored_bases)
+    return AnnotatedView(basis_index, basis_source, patches, authored_bases,
+                         freq_enriched)

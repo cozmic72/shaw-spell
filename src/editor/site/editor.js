@@ -109,11 +109,14 @@ const RRP_VAR = "RRP";
 // The edit surface: the fields the reviewer types or toggles. status is NOT here —
 // it is read-only (shown in the top matter) and set only by the verdict actions
 // (accept/drop/flag), never typed. recordFields carries the record's own status
-// forward so a plain Save preserves it. word is SINGLE-RECORD-ONLY: a patch is
-// written against the stored anchor, so editing the Latin never re-anchors, but a
-// group renders no word input and its overlay skips it (fanning ONE word across N
-// members is never right — see glanceColumn / harvestGroupOverlay).
-const EDITABLE_FIELDS = ["word", "shaw", "var", "ipa"];
+// forward so a plain Save preserves it. word and freq are SINGLE-RECORD-ONLY: a
+// patch is written against the stored anchor, so editing the Latin never
+// re-anchors, but a group renders no word or freq input and its overlay skips
+// them (fanning ONE word across N members is never right, and freq is
+// POS-specific — a group's members differ exactly by POS — see glanceColumn /
+// harvestGroupOverlay). freq is an INTEGER: harvest parses it (parsedFreq) and
+// an invalid value is rejected loudly, never silently coerced.
+const EDITABLE_FIELDS = ["word", "shaw", "var", "ipa", "freq"];
 
 // The within-accent vowel mergers a record's spelling reflects (additive, empty
 // == canonical). A closed vocabulary mirroring src/tools/dialect_mergers.py; the
@@ -1779,6 +1782,15 @@ function glanceColumn(ctx, group, overridden) {
         posSpelledOut(group, overridden.has("pos")),
         editField(ctx, group, "var", "Dialect (var)", "var-field", overridden.has("var")),
     );
+    // freq: EDITABLE for a single record (an override of the corpus-derived value —
+    // the derivation runs before the patch overlay, so a patched freq is the last
+    // word). A GROUP renders no freq input: freq is POS-specific and a group's
+    // members differ exactly by POS, so fanning ONE freq across N members is wrong;
+    // the priority rail already shows the group's min–max spread.
+    if (group.length === 1) {
+        posVar.append(editField(ctx, group, "freq", "Frequency", "freq-field",
+            overridden.has("freq")));
+    }
 
     // Two side-by-side sub-columns: the text stack (word / Shavian / IPA, kept close
     // together) and the small categorical fields (POS + var) beside it — horizontal
@@ -2691,14 +2703,19 @@ function renderRelated(section, records, focusedAnchor) {
 // click can rebuild just the list against the records stashed on the section.
 //
 // A flat sibling list hides the key fact — that several entries share ONE spelling
-// — so it is folded into a TWO-level tree: each distinct (roman word + Shavian
-// spelling) is one collapsible node. The node HEADER summarises what's inside — the
-// distinct POS tags and distinct VAR tags rolled up, plus the leaf count — so the
-// shared spelling reads at a glance. EXPANDING a node reveals the full flat table
-// (every pos × var × source row) for that spelling; there is no deeper nesting. The
-// node holding the focused entry is the default selection: it auto-expands and its
-// focused leaf wears the selected-row highlight. Sorting orders the nodes (by their
-// first leaf) and the leaves within them (see sortedRelated); it never flattens.
+// — so it is folded into a TWO-level tree whose nodes ARE the daemon's ledger groups
+// (group_key: word + Shavian + variation set — nearly always one node per spelling;
+// a spelling splits only where the ledger itself keeps variation-distinct groups
+// apart, and the header's variation markers tell those apart). The node HEADER
+// summarises what's inside — the distinct POS tags and distinct VAR tags rolled up,
+// plus the leaf count — so the shared spelling reads at a glance; clicking it opens
+// the group editor over the node's members (the same modal, and the same fan-out, as
+// a main-ledger group edit), while its chevron toggles the fold. EXPANDING a node
+// reveals the full flat table (every pos × var × source row) for that spelling; there
+// is no deeper nesting. The node holding the focused entry is the default selection:
+// it auto-expands and its focused leaf wears the selected-row highlight. Sorting
+// orders the nodes (by their first leaf) and the leaves within them (see
+// sortedRelated); it never flattens.
 function relatedListEl(records, focusedAnchor) {
     const list = document.createElement("ul");
     list.className = "related-list";
@@ -2709,16 +2726,22 @@ function relatedListEl(records, focusedAnchor) {
     return list;
 }
 
-// Fold the (already sorted) leaf records into roman-word + Shavian-spelling nodes.
-// Node order follows the incoming leaf order (the active sort): a node appears where
-// its first leaf falls, so sorting the leaves sorts the nodes too. Each node collects
-// its leaves plus the distinct POS and VAR tags they carry (order of first appearance),
-// for the summarised header.
+// Fold the (already sorted) leaf records into the daemon's ledger groups: the node
+// key IS the served group_key (word + Shavian + variation set), so a related node
+// always matches the group the main ledger edits as a unit — the client never
+// computes grouping. Node order follows the incoming leaf order (the active sort): a
+// node appears where its first leaf falls, so sorting the leaves sorts the nodes too.
+// Each node collects its leaves plus the distinct POS and VAR tags they carry (order
+// of first appearance), for the summarised header. A record without its group token
+// is a daemon contract violation — fold nothing rather than fold wrongly.
 function groupRelated(sortedRecords, focusedAnchor) {
     const nodes = [];
     const index = new Map();
     for (const record of sortedRecords) {
-        const key = `${(record.word || "").toLowerCase()}\0${record.shaw}`;
+        const key = record.group_key;
+        if (!key) {
+            throw new Error("related record carries no group key.");
+        }
         let node = index.get(key);
         if (!node) {
             node = {
@@ -2757,7 +2780,10 @@ function shawNode(node, focusedAnchor) {
 
 // The node's summarising header: word, Shavian spelling, the distinct POS tags and
 // VAR tags rolled up from its leaves (so a glance shows what the spelling covers),
-// and the " · N" leaf count. A focused node is tinted to tie it to the detail card.
+// the group's variation markers, and the " · N" leaf count. A focused node is tinted
+// to tie it to the detail card. Clicking the header (outside the chevron, which keeps
+// the native disclosure toggle) opens the group editor over the node's members — the
+// ledger group, edited as a unit.
 function shawSummary(node) {
     const summary = document.createElement("summary");
     summary.className = "related-node-summary";
@@ -2785,9 +2811,25 @@ function shawSummary(node) {
         vars.append(cell("related-group-var-tag", value));
     }
     label.append(vars);
+    // The variation set is part of the group key, so it is node-uniform and the first
+    // leaf speaks for all: its markers distinguish same-spelling sibling nodes the
+    // ledger deliberately keeps apart.
+    label.append(...variationMarkers(node.leaves[0]));
 
     const count = cell("related-node-count", `${node.leaves.length}`);
     summary.append(chevron, label, count);
+    // A node that is the focused record ALONE is fully the detail card above — its
+    // summary keeps the plain disclosure toggle, mirroring the focused leaf's inert
+    // rule. Every other node opens the group editor.
+    if (!(node.here && node.leaves.length === 1)) {
+        summary.addEventListener("click", (event) => {
+            if (event.target.closest(".related-chevron")) {
+                return;
+            }
+            event.preventDefault();
+            openRelatedModal(node.leaves);
+        });
+    }
     return summary;
 }
 
@@ -3001,20 +3043,22 @@ function relatedRow(record, focusedAnchor) {
     // the detail card above (it wears the selected-row highlight), so it is inert.
     if (!here) {
         row.classList.add("clickable");
-        row.addEventListener("click", () => openRelatedModal(record));
+        row.addEventListener("click", () => openRelatedModal([record]));
     }
     return row;
 }
 
-// Open a related entry in an edit-mode modal for in-place review: the FULL editor
-// (top matter, fields, verdict/clone bar) hosting THIS record, over the workbench. The
-// related op already returned a full serialisable record, so no extra fetch is needed.
-// Verdicts and edits act on this record (activeContext() = the modal). A verdict is the
-// modal's ONE action: it writes the patch, re-annotates the affected main ledger row by
-// anchor (the main cursor never moves), and dismisses back to the exact spot the owner
-// left — one action, no separate save-then-close.
-function openRelatedModal(record) {
-    openModal(recordEditor([record], { scope: "modal", mode: "edit" }));
+// Open related records in an edit-mode modal for in-place review: the FULL editor
+// (top matter, fields, verdict/clone bar) hosting the given records — one for a leaf
+// row, the whole ledger group for a node header — over the workbench. The related op
+// already returned full serialisable records, so no extra fetch is needed. Verdicts
+// and edits act on these records (activeContext() = the modal), fanning out per
+// member exactly as a main-ledger group edit. A verdict is the modal's ONE action:
+// it writes the patch(es), re-annotates the affected main ledger rows by anchor (the
+// main cursor never moves), and dismisses back to the exact spot the owner left —
+// one action, no separate save-then-close.
+function openRelatedModal(records) {
+    openModal(recordEditor(records, { scope: "modal", mode: "edit" }));
 }
 
 // The dialect column of a related row: the var, plus compact variant/merger
@@ -3026,14 +3070,21 @@ function openRelatedModal(record) {
 function relatedDialect(record) {
     const wrap = document.createElement("span");
     wrap.className = "related-dialect";
-    wrap.append(varCell(record.var));
+    wrap.append(varCell(record.var), ...variationMarkers(record));
+    return wrap;
+}
+
+// The compact variant/merger marker cells for a record, shared by the dialect column
+// and the node header (where the variation set is part of the group identity).
+function variationMarkers(record) {
+    const markers = [];
     if (record.variant) {
-        wrap.append(cell("related-variant", VARIATION_OTHER_LABEL));
+        markers.push(cell("related-variant", VARIATION_OTHER_LABEL));
     }
     for (const value of record.mergers || []) {
-        wrap.append(cell("related-merger", MERGER_LABELS.get(value) ?? value));
+        markers.push(cell("related-merger", MERGER_LABELS.get(value) ?? value));
     }
-    return wrap;
+    return markers;
 }
 
 // The source column of a related row: the collapsed provenance combo as one tag,
@@ -3393,11 +3444,14 @@ function fieldInput(name, label, value, extraClass, idPrefix) {
     input.id = `${idPrefix}${name}`;
     input.className = `edit-input ${extraClass}`.trim();
     input.dataset.field = name;
-    input.value = value ?? "";
+    // The initial value as a STRING: freq arrives as a number, and the dirty
+    // toggle below compares against input.value, which is always a string.
+    const initial = String(value ?? "");
+    input.value = initial;
     input.spellcheck = false;
     input.autocomplete = "off";
     input.addEventListener("input", () => {
-        input.classList.toggle("dirty", input.value !== (value ?? ""));
+        input.classList.toggle("dirty", input.value !== initial);
     });
 
     wrap.append(caption, input);
@@ -3529,7 +3583,6 @@ function actionButton(kind, label, handler) {
 function recordFields(record) {
     const result = {
         pos: record.pos,
-        freq: record.freq,
         status: record.status,
     };
     if (record.source) {
@@ -3584,7 +3637,7 @@ function editedRecord(ctx) {
     const result = recordFields(contextRecord(ctx));
     for (const name of EDITABLE_FIELDS) {
         const input = ctx.root.querySelector(`[data-field="${name}"]`);
-        result[name] = input.value.trim();
+        result[name] = name === "freq" ? parsedFreq(input.value) : input.value.trim();
     }
     applyAdditiveFields(ctx, result);
     return result;
@@ -3622,17 +3675,18 @@ function applyAdditiveFields(ctx, record) {
 function harvestGroupOverlay(ctx) {
     const overlay = {};
     for (const name of EDITABLE_FIELDS) {
-        // The word is single-record-only: a group renders no word input
-        // (glanceColumn), so skip it — fanning ONE word across N members is
-        // never right. At N=1 the input exists and harvests like any field.
-        if (name === "word" && ctx.group.length > 1) {
+        // word and freq are single-record-only: a group renders no input for
+        // them (glanceColumn), so skip both — fanning ONE word or ONE
+        // POS-specific freq across N members is never right. At N=1 the inputs
+        // exist and harvest like any field.
+        if ((name === "word" || name === "freq") && ctx.group.length > 1) {
             continue;
         }
         const input = ctx.root.querySelector(`[data-field="${name}"]`);
         if (input.dataset.consensus === "multiple" && input.dataset.touched !== "true") {
             continue;
         }
-        overlay[name] = input.value.trim();
+        overlay[name] = name === "freq" ? parsedFreq(input.value) : input.value.trim();
     }
     const variations = ctx.root.querySelector(".variations-field");
     if (variations && (variations.dataset.mixed !== "true" || variations.dataset.touched === "true")) {
@@ -3668,6 +3722,23 @@ function groupMemberRecord(member, overlay, ctx) {
 function requireShaw(record) {
     if (!record.shaw) {
         showToast("Shavian cannot be empty.", true);
+        return false;
+    }
+    return true;
+}
+
+// freq harvested from its input: a whole non-negative number, or null for
+// anything else (including an emptied box — the input is prefilled, so blank is
+// not a value). null is rejected loudly by requireFreq / the daemon validator;
+// nothing is ever silently coerced.
+function parsedFreq(text) {
+    const trimmed = text.trim();
+    return /^\d+$/.test(trimmed) ? Number(trimmed) : null;
+}
+
+function requireFreq(record) {
+    if (record.freq === null) {
+        showToast("Frequency must be a whole number.", true);
         return false;
     }
     return true;
@@ -4185,7 +4256,7 @@ async function saveSelected() {
         return;
     }
     const record = harvestRecord(ctx);
-    if (!requireShaw(record)) {
+    if (!requireShaw(record) || !requireFreq(record)) {
         return;
     }
     // Saving persists the edit but does NOT accept it — a save is DIRTY, exactly
@@ -4227,9 +4298,10 @@ function autoSaveMainEdit() {
     }
     const selected = contextRecord(ctx);
     const record = harvestRecord(ctx);
-    if (!requireShaw(record)) {
-        // An empty/invalid Shavian is not a valid save — leave the edit unsaved (the
-        // toast says why) rather than shipping a blank shaw. Navigation still proceeds.
+    if (!requireShaw(record) || !requireFreq(record)) {
+        // An empty/invalid Shavian or frequency is not a valid save — leave the edit
+        // unsaved (the toast says why) rather than shipping a bad value. Navigation
+        // still proceeds.
         return;
     }
     // Fire-and-forget: navigation is synchronous and must not block on the daemon. The
@@ -4257,7 +4329,7 @@ function mainEditIsDirty(ctx) {
     const record = contextRecord(ctx);
     const harvested = harvestRecord(ctx);
     for (const name of EDITABLE_FIELDS) {
-        if ((harvested[name] ?? "") !== ((record[name] ?? "").toString().trim())) {
+        if (String(harvested[name] ?? "") !== String(record[name] ?? "").trim()) {
             return true;
         }
     }
@@ -4280,10 +4352,11 @@ function verdictGroup(ctx) {
     if (!ctx || !ctx.group) {
         return [];
     }
-    // A modal edit acts on its own single record, which may not sit in state.records
-    // (a related entry); trust the context group directly there. The main context's
-    // group is drawn from the working set — which carries every member of every
-    // served group (§3.2, D7) — so narrow it to what is still live.
+    // A modal edit acts on its own group — a related entry or a related node's
+    // members — which need not sit in state.records; trust the context group directly
+    // there. The main context's group is drawn from the working set — which carries
+    // every member of every served group (§3.2, D7) — so narrow it to what is still
+    // live.
     if (ctx === state.modalEditor) {
         return ctx.group;
     }
@@ -4323,6 +4396,9 @@ async function acceptOne(selected, options = {}) {
     record.status = ACCEPTED_STATUS;
     if (!record.shaw) {
         throw new Error(`${selected.word}: Shavian cannot be empty.`);
+    }
+    if (record.freq === null) {
+        throw new Error(`${selected.word}: frequency must be a whole number.`);
     }
     return writePatch(anchorOf(selected), record, "accepted", selected, options);
 }
@@ -4470,9 +4546,13 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
     }
     // Clear the set silently — the DOM may be out of step with state.records mid-run
     // (deferred re-render), so the one authoritative rebuild is refreshAfterBulk.
-    state.multi.clear();
-    state.lastToggledKey = null;
-    state.touchMulti = false;
+    // A modal-scope run (a related group) triaged the MODAL's group, not the main
+    // selection: the workbench pick stays, matching the single related modal.
+    if (ctx.scope !== "modal") {
+        state.multi.clear();
+        state.lastToggledKey = null;
+        state.touchMulti = false;
+    }
     refreshAfterBulk(focusedAnchor);
     reportBulk(verb, done, skipped, failures);
     // One refresh for the whole run, not per record — the store changed.

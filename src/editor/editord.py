@@ -1051,6 +1051,19 @@ def _validate_patch(anchor, record):
         variant_error = _validate_variant(record.get("variant"))
         if variant_error:
             return variant_error
+        if "freq" in record:
+            freq_error = _validate_freq(record["freq"])
+            if freq_error:
+                return freq_error
+    return None
+
+
+# freq is an INTEGER count (patchable — the corpus derivation runs before the
+# overlay, so a patched freq is the last word). A string, float, bool or
+# negative is rejected at the write, never silently coerced.
+def _validate_freq(freq):
+    if isinstance(freq, bool) or not isinstance(freq, int) or freq < 0:
+        return f"patch record freq must be a non-negative integer, got {freq!r}"
     return None
 
 
@@ -1163,15 +1176,17 @@ def _compute_changes(record, basis):
     return changes
 
 
-# mergers defaults to [] and variant to False when absent; the other intrinsics
-# default to "" — so an absent field on one side and its default on the other are
-# NOT a change. This mirrors record_to_output/output_to_record, which emit these
-# only when non-default.
+# mergers defaults to [] and variant to False when absent, freq to 0; the other
+# intrinsics default to "" — so an absent field on one side and its default on
+# the other are NOT a change. This mirrors record_to_output/output_to_record,
+# which emit these defaults for absent fields.
 def _intrinsic_value(record, field):
     if field == "mergers":
         return record.get("mergers") or []
     if field == "variant":
         return bool(record.get("variant"))
+    if field == "freq":
+        return record.get("freq", 0)
     return record.get(field, "")
 
 
@@ -1415,18 +1430,20 @@ def to_published_entry(entry, sources):
 
 def _publish_readlex(view):
     """Derive readlex.json from the on-disk patch store and write it to its
-    canonical path — the offline applicator chain (apply_patches, then the corpus
-    frequency pass) run over the daemon's RESIDENT basis (view.basis_index /
-    basis_source, built once at startup) instead of a fresh minutes-long
+    canonical path — the offline applicator's derivation (the pre-patch corpus
+    frequency stage, then apply_patches; see apply_patches.main) run over the
+    daemon's RESIDENT basis (view.basis_index / basis_source, built and
+    freq-enriched once at startup) instead of a fresh minutes-long
     build_basis(), then serialised through the publish whitelist
     (to_published_entry) and the ReadLex-compatibility collapse
     (basis.collapse_readlex). Orphaned patches soft-fail exactly as in the
     offline applicator: skipped, retained in the store, summarised in one log
     line — never a blocked publish. Raises on any genuine derivation error (the
     caller aborts the commit)."""
-    from apply_patches import OUTPUT_PATH, apply_patches, load_patches
-    from apply_frequency_data import CORPUS_PATH, enrich_all, load_corpus
-    from basis import anchor_of, load_upstream
+    from apply_patches import (OUTPUT_PATH, apply_patches, enrich_upstream,
+                               load_patches)
+    from apply_frequency_data import CORPUS_PATH, load_corpus
+    from basis import anchor_of, authored_pool, load_upstream
     from lrw_frequencies import load_lrw
 
     # The frequency corpus is REQUIRED to publish: a published readlex.json must
@@ -1440,10 +1457,30 @@ def _publish_readlex(view):
             f"({CORPUS_PATH.name}). The editor can run without it, but "
             f"committing requires it so the published dictionary matches "
             f"production. Run `make setup` to fetch the corpus, then retry.")
+    # Anchored accepts inherit the RESIDENT basis's freq, so that basis must
+    # actually be on the corpus scale — a daemon that started before the
+    # frequency data existed skipped the startup pool pass and must restart.
+    if not view.freq_enriched:
+        raise PublishError(
+            "Cannot publish readlex.json: the daemon started without frequency "
+            "data, so its basis carries no corpus freq. Run `make setup` and "
+            "restart the editor, then retry.")
 
     output = load_upstream()
+    patches = load_patches()
+    authored_bases = authored_pool(patches)
+
+    # FREQUENCY BEFORE PATCHES — the corpus derivation is an upstream stage, so
+    # it runs over the PRE-PATCH record set (the upstream output plus the
+    # authored wing; anchored accepts inherit the startup-enriched basis) and
+    # the patch overlay is the last word: a patched freq ships verbatim because
+    # nothing recomputes it afterwards.
+    # Unlike the corpus, the LRW list (POS split, pass 2) has no graceful
+    # skip: load_lrw fails loud with download instructions if it is missing.
+    enrich_upstream(output, authored_bases, load_corpus(), load_lrw())
+
     stats, orphans = apply_patches(output, view.basis_index, view.basis_source,
-                                   load_patches())
+                                   patches, authored_bases)
     if stats["skipped_duplicate"]:
         logging.warning(
             "publish: dropped %d record(s) whose emitted identity duplicates an "
@@ -1463,16 +1500,6 @@ def _publish_readlex(view):
                     "publish: orphaned patch skipped: %r pos=%s shaw=%s var=%s "
                     "(id=%s)", anchor["word"], anchor["pos"], anchor["shaw"],
                     anchor["var"], patch["id"])
-
-    # Corpus freq for EVERY emitted record, recomputed from each record's current
-    # Latn — the view's basis freq covers anchored records, but an authored entry
-    # or an accept whose edit changed the word is keyed off the basis, so the one
-    # uniform pass (cheap: ~1s) is simpler and exactly production's semantics. The
-    # freq_readlex/freq_source bookkeeping it leaves behind is stripped by the
-    # whitelist below.
-    # Unlike the corpus, the LRW list (POS split, pass 2) has no graceful
-    # skip: load_lrw fails loud with download instructions if it is missing.
-    enrich_all(output, load_corpus(), load_lrw())
 
     published = {
         bucket_key: [

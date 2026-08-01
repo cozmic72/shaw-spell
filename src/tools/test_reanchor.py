@@ -25,7 +25,7 @@ from pathlib import Path
 
 import apply_patches
 import basis
-from basis import anchor_of, mark_original, reanchor_index
+from basis import anchor_of, authored_pool, mark_original, reanchor_index
 
 
 def entry(latn, pos, shaw, var, **extra):
@@ -135,7 +135,8 @@ class AutoReanchorApplyTest(unittest.TestCase):
     def apply(self, entries, patches):
         index, source = build_index(entries)
         output = {}
-        stats, _orphans = apply_patches.apply_patches(output, index, source, patches)
+        stats, _orphans = apply_patches.apply_patches(
+            output, index, source, patches, authored_pool(patches))
         return stats, output
 
     def test_auto_reanchor_preserves_verdict(self):
@@ -248,7 +249,8 @@ class ZombieDropReanchorApplyTest(unittest.TestCase):
         output = {}
         for e in entries:            # seed the output as the basis would appear
             apply_patches.insert_entry(output, e, {"skipped_duplicate": 0})
-        stats, orphans = apply_patches.apply_patches(output, index, source, patches)
+        stats, orphans = apply_patches.apply_patches(
+            output, index, source, patches, authored_pool(patches))
         emitted = [r for v in output.values() for r in v]
         return stats, emitted, orphans
 
@@ -366,7 +368,7 @@ class EndToEndTempStoreTest(unittest.TestCase):
 
             output = {}
             stats, orphans = apply_patches.apply_patches(
-                output, index, source, loaded)
+                output, index, source, loaded, authored_pool(loaded))
 
             # The covered decision auto-re-anchored onto the RRP record; the
             # dangling one soft-failed and is retained for surfacing.

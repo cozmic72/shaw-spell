@@ -11,19 +11,23 @@ two halves:
 1. **Supplement build** — one in-memory orchestrator, `src/tools/build_supplement.py`, that loads
    the sources once, composes every transform stage in memory, and writes
    `data/supplement-combined-filtered.json` once.
-2. **Merge + frequency** — published by the EDITOR, not `make`: on Commit the editor daemon
-   derives `data/readlex.json` in-process (`apply_patches` over the live basis, then
-   `apply_frequency_data`'s corpus pass) and commits it alongside `data/patches/patches.jsonl`,
-   so the published artifact is never out of sync with the patches that produced it. `make`
+2. **Frequency + merge** — published by the EDITOR, not `make`: on Commit the editor daemon
+   derives `data/readlex.json` in-process (the corpus frequency pass over the PRE-PATCH
+   record set, then `apply_patches` over the live basis — the frequency derivation is
+   upstream processing, so the editorial overlay is the last word and a patched freq is
+   never recomputed away) and commits it alongside `data/patches/patches.jsonl`, so the
+   published artifact is never out of sync with the patches that produced it. `make`
    just depends on the committed file.
 
 ```
 sources ─► build_supplement.py ─► supplement-combined-filtered.json
                                         │
-              apply_patches ◄───────────┘  (+ data/patches/patches.jsonl, the editorial decisions)
+       apply_frequency_data ◄───────────┘  (the pre-patch corpus pass: basis + authored records)
                      │
                      ▼
-          apply_frequency_data ─► readlex.json   (both run in-process by the editor on Commit)
+              apply_patches ─► readlex.json   (+ data/patches/patches.jsonl, the editorial
+                                               decisions — the LAST word; both run in-process
+                                               by the editor on Commit)
 ```
 
 ## Sources (the inputs)

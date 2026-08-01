@@ -46,8 +46,10 @@ filter, and sort the review pool; recomputed by the pipeline, never stored in a 
 | `generated_shaw` `generated_tier` `generated_method` `generated_from` `generated_flags` | `generate_rrp.py` | RRP generator's *propose-alongside* provenance: a minted RRP spelling proposed BESIDE the record's own `shaw` (never overwriting), its tier, method, lineage, gated site |
 | `merger_gate` | collapse (D3) | records a flag-strip: which flag was removed and why the canonical counterpart was not high-confidence |
 
-`freq` is stamped wholesale by the frequency pass (`apply_frequency_data.py`),
-so it is never carried in a patch either.
+`freq` is derived by the corpus frequency pass (`apply_frequency_data.py`) —
+an UPSTREAM stage that runs BEFORE the patch overlay, so `freq` is also an
+intrinsic (patchable) field: a patch's `changes.freq` is an override the
+derivation never recomputes away.
 
 ## orig_* — original-value provenance (derived)
 

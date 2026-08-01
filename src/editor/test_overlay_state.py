@@ -6,7 +6,7 @@ These LOCK IN the current (correct) behaviour so a future edit can't silently
 break a subtle invariant. Everything runs over SMALL SYNTHETIC basis dicts and
 patch dicts built by hand — no basis load, no build, no live store, no Shavian
 bulk. AnnotatedView is constructed directly from (basis_index, basis_source,
-patches), exactly as load_view assembles it.
+patches, authored_bases), exactly as load_view assembles it.
 
 Covers:
   - every patch_state: unreviewed, accepted, edited, dirty, dropped, flagged,
@@ -38,6 +38,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
 import overlay
+from basis import authored_pool
 from overlay import (PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
                      PATCH_STATE_DIRTY, PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
                      PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
@@ -93,9 +94,11 @@ def authored_patch(record, pid="p_auth"):
 
 
 def view_of(entries, patches):
-    """A fresh AnnotatedView (full rebuild) over synthetic entries + patches."""
+    """A fresh AnnotatedView (full rebuild) over synthetic entries + patches.
+    The authored wing is built by the real helper (basis.authored_pool), exactly
+    as load_view assembles it — unenriched here (no corpus in these tests)."""
     index, source = basis_of(*entries)
-    return AnnotatedView(index, source, patches)
+    return AnnotatedView(index, source, patches, authored_pool(patches))
 
 
 def only_record_for(view, word):
@@ -168,6 +171,33 @@ def test_authored_state_for_record_with_null_anchor():
     assert rec["reviewed"] is True
     # An authored source is normalised to a one-element list.
     assert isinstance(rec["source"], list)
+
+
+def test_authored_row_displays_pool_derived_freq():
+    """The #115 fix: an authored row shows the freq the pool pass derived onto
+    its base (the authored wing), not the 0 a pre-fix client baked into the
+    patch — display and the applicator share basis.authored_freq."""
+    record = {"word": "zebra", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
+              "freq": 0}
+    patches = [authored_patch(record)]
+    index, source = basis_of(entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"]))
+    bases = authored_pool(patches)
+    # Simulate the startup pool pass having enriched the authored base.
+    bases[("zebra", "NN", SHAW_B, "RRP")]["freq"] = 4321
+    view = AnnotatedView(index, source, patches, bases)
+    assert only_record_for(view, "zebra")["freq"] == 4321
+
+
+def test_authored_row_own_nonzero_freq_wins_over_derived():
+    """A patch that asserts its own freq is the last word over the derivation."""
+    record = {"word": "zebra", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
+              "freq": 9}
+    patches = [authored_patch(record)]
+    index, source = basis_of(entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"]))
+    bases = authored_pool(patches)
+    bases[("zebra", "NN", SHAW_B, "RRP")]["freq"] = 4321
+    view = AnnotatedView(index, source, patches, bases)
+    assert only_record_for(view, "zebra")["freq"] == 9
 
 
 # ---- accept layering: accept = basis record + intrinsic changes ----
@@ -279,7 +309,7 @@ def test_incremental_apply_equals_full_rebuild_over_same_patches():
     rebuilt = view_of(copy.deepcopy(entries), copy.deepcopy(final_patches))
 
     index, source = basis_of(*copy.deepcopy(entries))
-    incremental = AnnotatedView(index, source, [])
+    incremental = AnnotatedView(index, source, [], {})
     for patch in copy.deepcopy(final_patches):
         incremental.apply_patch(patch)
 
@@ -298,7 +328,7 @@ def test_incremental_reversal_matches_rebuild_without_the_patch():
     clean_rebuild = view_of(copy.deepcopy(entries), [])
 
     index, source = basis_of(*copy.deepcopy(entries))
-    live = AnnotatedView(index, source, [])
+    live = AnnotatedView(index, source, [], {})
     live.apply_patch(copy.deepcopy(patch))
     live.apply_unpatch_anchor(patch["anchor"])
 

@@ -37,6 +37,13 @@ docs/editorial-overlay-design.md, "The patch record (settled model)"):
     it. An orphan is a recoverable, visible state — never a fatal error, and never
     a silent lost verdict.
 
+  - FREQUENCY IS UPSTREAM PROCESSING, applied BEFORE the patches: the corpus
+    derivation (apply_frequency_data.enrich_all) runs over the pre-patch record
+    set — the upstream output plus the authored wing of the pool (see
+    enrich_upstream / basis.authored_pool) — and anchored accepts inherit the
+    basis pool's enriched freq. Nothing recomputes freq after the overlay, so a
+    patched freq is simply the last word, like any other intrinsic field.
+
 Determinism: patches are applied in a total order over their anchor identity and
 id, so identical inputs yield an identical readlex.json.
 
@@ -56,12 +63,19 @@ from basis import (
     anchor_from_key,
     anchor_key,
     anchor_of,
+    authored_freq,
+    authored_pool,
     build_basis,
+    collapse_readlex,
+    frequency_pool,
     load_upstream,
+    published_entry,
     reanchor_index,
     reanchor_patch,
     resolve_patch,
 )
+from apply_frequency_data import enrich_all, load_corpus, report_enrichment
+from lrw_frequencies import load_lrw
 
 DEFAULT_PATCHES_PATH = DATA_ROOT / "patches" / "patches.jsonl"
 OUTPUT_PATH = DATA_ROOT / "readlex.json"
@@ -199,7 +213,21 @@ def weak_reanchor_patch(patch, weak_map):
     return {**patch, "anchor": anchor_from_key(matches[0])}
 
 
-def apply_patches(output, basis_index, basis_source, patches):
+def enrich_upstream(output, authored_bases, corpus, lrw):
+    """The UPSTREAM frequency stage of a publish: every record the overlay will
+    act on — the upstream `output` plus the authored wing of the pool — put on
+    the corpus scale in ONE enrich_all pass, BEFORE any patch applies. Nothing
+    recomputes freq after the overlay, so a patched freq is the last word.
+    Anchored accepts are not enriched here: they resolve through the basis,
+    which the pool pass (basis.enrich_pool_frequency) already put on the same
+    scale. Returns the enrichment tally. Shared by both producers (the editor's
+    _publish_readlex and main below)."""
+    entries = [entry for bucket in output.values() for entry in bucket]
+    entries.extend(authored_bases.values())
+    return enrich_all({None: entries}, corpus, lrw)
+
+
+def apply_patches(output, basis_index, basis_source, patches, authored_bases):
     stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
              "reanchored": 0, "reanchored_var": 0,
              "skipped_numeral": 0, "skipped_shaw": 0, "skipped_duplicate": 0}
@@ -276,7 +304,11 @@ def apply_patches(output, basis_index, basis_source, patches):
                 stats["reanchored_var"] += 1
 
         if patch["anchor"] is None:
-            # Authorship: a standalone record no source attests.
+            # Authorship: a standalone record no source attests. Its freq is
+            # derived pre-overlay on its enriched pool base (the authored wing);
+            # the patch's own non-zero freq is the last word (see authored_freq).
+            entry["freq"] = authored_freq(
+                patch["changes"], authored_bases[anchor_of(entry)])
             if is_emittable(entry["Latn"], entry["Shaw"], stats):
                 insert_entry(output, entry, stats, locations)
                 stats["authorship"] += 1
@@ -298,7 +330,10 @@ def apply_patches(output, basis_index, basis_source, patches):
 
 def main():
     import argparse
-    ap = argparse.ArgumentParser(description="Apply the patch store to produce merged readlex")
+    ap = argparse.ArgumentParser(
+        description="Derive readlex.json offline: the corpus frequency stage "
+                    "over the pre-patch pool, then the patch store, then the "
+                    "publish shape")
     ap.add_argument("--out", dest="out_path", default=str(OUTPUT_PATH),
                     help="where to write the merged readlex (default: data/readlex.json)")
     out_path = Path(ap.parse_args().out_path)
@@ -313,7 +348,20 @@ def main():
     patches = load_patches()
     print(f"Patches:  {len(patches):,}")
 
-    stats, orphans = apply_patches(output, basis_index, basis_source, patches)
+    # FREQUENCY BEFORE PATCHES. Both corpora load loud (sys.exit with fetch
+    # instructions when absent). Two pool passes, mirroring the editor daemon
+    # exactly: the basis pool (what an anchored accept inherits — the daemon's
+    # startup pass), then the pre-patch output (what upstream pass-throughs and
+    # authored records ship — the daemon's publish pass; the authored wing rides
+    # in both, the second pass idempotently settling it on the publish value).
+    authored_bases = authored_pool(patches)
+    corpus = load_corpus()
+    lrw = load_lrw()
+    enrich_all(frequency_pool(basis_index, authored_bases), corpus, lrw)
+    enrich_stats = enrich_upstream(output, authored_bases, corpus, lrw)
+
+    stats, orphans = apply_patches(output, basis_index, basis_source, patches,
+                                   authored_bases)
 
     # Soft-fail on orphaned decisions: an anchor that no longer resolves means
     # upstream drifted out from under an editorial decision. LOG each one (so it is
@@ -331,11 +379,26 @@ def main():
             print(f"    {anchor['word']!r} pos={anchor['pos']} shaw={anchor['shaw']} "
                   f"var={anchor['var']} (id={patch['id']})", file=sys.stderr)
 
+    # The publish shape: the per-record whitelist (basis.PUBLISH_FIELDS) then
+    # the ReadLex-compatibility collapse — the same export boundary the editor's
+    # commit path runs, so the offline artifact matches the committed one.
+    published = {
+        bucket_key: [published_entry(entry) for entry in entries]
+        for bucket_key, entries in output.items()}
+    published, collapse_stats = collapse_readlex(published)
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=4)
+        json.dump(published, f, ensure_ascii=False, indent=4)
 
-    print(f"\nMerged:   {len(output):,} keys, {sum(len(v) for v in output.values()):,} entries")
+    print()
+    report_enrichment(enrich_stats)
+    if collapse_stats:
+        print("\nReadLex-compatibility collapse:")
+        for action, count in sorted(collapse_stats.items()):
+            print(f"  {action}: {count:,}")
+
+    print(f"\nMerged:   {len(published):,} keys, {sum(len(v) for v in published.values()):,} entries")
     print(f"  authorship (added):  {stats['authorship']:,}")
     print(f"  update/respell:      {stats['update']:,}")
     print(f"  removal:             {stats['removal']:,}")

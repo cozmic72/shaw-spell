@@ -77,14 +77,16 @@ Shaw-Spell supplements the core ReadLex dictionary with pronunciation and defini
 
 The supplement build is a single in-memory orchestrator (`build_supplement.py`) that loads
 the sources once and writes `data/supplement-combined-filtered.json`. The shipping
-`data/readlex.json` is then produced by `apply_patches.py` (patch store + supplements →
-`readlex-merged.json`) followed by `apply_frequency_data.py` (→ `readlex.json`).
+`data/readlex.json` is published by the EDITOR on Commit; the offline equivalent is the
+single command `apply_patches.py`, which runs the corpus frequency pass over the
+pre-patch record set (frequency is upstream processing), then applies the patch store
+(the editorial last word), then writes the publish shape.
 
 ```bash
 # Regenerate the supplement pool, re-score, apply editorial patches, build review files
 make supplements-from-source
 
-# Just bring the shipping readlex.json up to date (runs apply_patches + apply_frequency_data)
+# Check the shipping readlex.json is present (a committed file the editor publishes)
 make supplements
 
 # Generate review files for human inspection

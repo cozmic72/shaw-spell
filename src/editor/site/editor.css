@@ -1155,6 +1155,14 @@ body {
 /* Size the var field to its CONTENT (GenAm/TrapBath are the widest) — no fixed 130px
    box; RRP must not get a wide box. */
 .glance-posvar .var-field { width: 11ch; min-width: 0; }
+/* The single-record editable corpus frequency: an integer, so digits line up in a
+   tabular monospace box wide enough for the top counts (8 digits). */
+.glance-posvar .freq-field {
+    width: 10ch;
+    min-width: 0;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
 .pos-glance { flex: 0 0 auto; min-width: 0; }
 .pos-glance-value { display: flex; flex-direction: column; gap: 2px; }
 /* The CLAWS CODE (e.g. NN1) is the prominent text; the spelled-out English sits
@@ -2140,15 +2148,18 @@ body {
     white-space: nowrap;
 }
 
-/* ---- related-entries TREE — roman + shaw spelling node → flat rows ---- */
+/* ---- related-entries TREE — ledger-group node → flat rows ---- */
 /* The flat sibling list hides that several entries share ONE spelling, so it is
-   folded into a two-level disclosure tree: each (roman word + Shavian spelling) is
-   one node whose header (<summary>) SUMMARISES what's inside — the word, the glyphs,
-   the rolled-up POS + VAR tags, and the leaf count. Expanding reveals the full flat
-   table (the leaf rows) for that spelling; there is no deeper nesting. The open
-   node's group unit (the continuous left edge running from summary through leaves)
-   ties the leaves to their node, the chevron leading the eye down to the aligned
-   leaf columns. */
+   folded into a two-level disclosure tree: each served ledger group (group_key —
+   word + Shavian + variation set) is one node whose header (<summary>) SUMMARISES
+   what's inside — the word, the glyphs, the rolled-up POS + VAR tags, the group's
+   variation markers, and the leaf count. The chevron strip toggles the fold; the
+   rest of the header opens the group editor over the node's members (the ledger
+   idiom: chevron drills down, the row acts). Expanding reveals the full flat table
+   (the leaf rows) for that spelling; there is no deeper nesting. The open node's
+   group unit (the continuous left edge running from summary through leaves) ties
+   the leaves to their node, the chevron leading the eye down to the aligned leaf
+   columns. */
 .related-node { border: none; }
 .related-node > .related-subtree { list-style: none; }
 .related-list .related-group { list-style: none; }
@@ -2167,11 +2178,18 @@ body {
 .related-node-summary:hover { background: var(--paper-raised); }
 
 /* The disclosure chevron reuses the project chevron; it rotates when its own
-   <details> is open. */
+   <details> is open. It is the node's TOGGLE tap target (the rest of the summary
+   opens the group editor), so it pads out to a finger-sized strip filling the
+   summary's left inset — negative margins pull the padding back into the
+   summary's own box, keeping the glyph where it always sat. */
 .related-chevron {
     flex: none;
-    align-self: center;
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
     font-size: 18px;
+    padding: 0 12px;
+    margin: -6px 0 -6px calc(-1 * var(--related-inset));
     transition: transform 0.12s ease;
 }
 .related-node[open] > .related-node-summary > .related-chevron { transform: rotate(90deg); }

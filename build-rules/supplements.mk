@@ -251,8 +251,9 @@ SUPPLEMENT_DEPS := data/supplement-combined-filtered.json
 
 # readlex.json ($(READLEX_PATH)) is a COMMITTED INPUT with NO recipe — the
 # EDITOR is its sole publisher. On Commit the editor daemon derives it
-# in-process (apply_patches over the live basis, then the corpus frequency
-# pass) and commits+pushes it alongside patches/patches.jsonl, so the published
+# in-process (the corpus frequency pass over the pre-patch record set, then
+# apply_patches over the live basis — patches are the last word) and
+# commits+pushes it alongside patches/patches.jsonl, so the published
 # artifact is never out of sync with the patches that produced it. Downstream
 # targets depend on $(READLEX_PATH) exactly as they depend on the supplement
 # checkpoint above: a committed file make never rebuilds.

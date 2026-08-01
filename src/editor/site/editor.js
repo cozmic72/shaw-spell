@@ -91,10 +91,7 @@ function setSectionExpanded(id, open) {
 const DEFAULT_QUERY_SORT = "confidence_desc";
 const RRP_VAR = "RRP";
 
-// The edit surface. status is NOT here — read-only, set only by the verdict
-// actions. word and freq are SINGLE-RECORD-ONLY: fanning ONE word across N group
-// members is never right, and freq is POS-specific — a group's members differ
-// exactly by POS (see glanceColumn / harvestGroupOverlay).
+// The edit surface. status is NOT here — read-only, set only by the verdict actions.
 const EDITABLE_FIELDS = ["word", "shaw", "var", "ipa", "freq"];
 
 // A closed vocabulary mirroring src/tools/dialect_mergers.py; additive, empty == canonical.
@@ -1136,9 +1133,6 @@ function select(index) {
     state.selected = index;
     // A record landing takes the cursor off any group header it sat on.
     state.cursorGroupKey = null;
-    if (state.mainContext) {
-        state.mainContext.editing = false;
-    }
     // Make the cursor visible: a landing inside a COLLAPSED group expands it so its
     // child row shows. Only when no multi-selection is live — a group selection
     // deliberately keeps the fold as-is.
@@ -1201,7 +1195,6 @@ function renderEmptyDetail() {
         ? "Select an entry to review it."
         : "No entries match these filters.";
     DETAIL.replaceChildren(message);
-    setDetailMode();
 }
 
 // ---- group selection ----
@@ -1354,7 +1347,7 @@ function syncSelectBar() {
 // collide), a per-context `editing` flag, and the `group`/`mode` it renders.
 // activeContext() routes the review flow to whichever owns the screen.
 function makeEditorContext({ scope, root, prefix, group, mode }) {
-    return { scope, root, prefix, editing: false, group, mode };
+    return { scope, root, prefix, group, mode };
 }
 
 function contextRecord(ctx) {
@@ -1428,16 +1421,19 @@ function recordEditor(group, opts) {
 
 // The records bar tops every render — single record and group alike — with the
 // same geometry, so stepping never reflows the panel. It carries the count, the
-// verdict pill(s), and (detail scope only — a modal has no list position) the
-// step-prev/next buttons.
+// verdict glyph (its border also carries the panel's ONE verdict tint — see
+// stampCell/GROUP_MIXED), and (detail scope only — a modal has no list position)
+// the step-prev/next buttons.
 function recordsBar(ctx, group) {
+    const consensus = verdictConsensus(group);
+    const verdict = consensus.uniform ? consensus.value : GROUP_MIXED;
     const bar = document.createElement("div");
-    bar.className = "records-bar";
+    bar.className = `records-bar state-${verdict}`;
     const summary = document.createElement("div");
     summary.className = "records-summary";
     summary.append(
         cell("records-count", `${group.length} record${group.length === 1 ? "" : "s"}`),
-        ...statePills(group),
+        stampCell(group[0], verdict),
     );
     if (ctx.scope === "detail") {
         bar.append(stepNavButton(-1), summary, stepNavButton(1));
@@ -1445,23 +1441,6 @@ function recordsBar(ctx, group) {
         bar.append(summary);
     }
     return bar;
-}
-
-function statePills(group) {
-    const consensus = verdictConsensus(group);
-    if (!consensus.uniform) {
-        return consensus.distinct.map((entry) =>
-            cell(`state-pill ${entry.value}`, `${entry.value} ·${entry.count}`));
-    }
-    const name = group.every((member) => member.manual)
-        ? `${consensus.value} · manual`
-        : consensus.value;
-    const pills = [cell(`state-pill ${consensus.value}`, name)];
-    const orphanKind = orphanKindBadge(group[0]);
-    if (orphanKind.childElementCount) {
-        pills.push(orphanKind);
-    }
-    return pills;
 }
 
 function stepNavButton(delta) {
@@ -1493,57 +1472,21 @@ function stepExhausted(delta) {
 }
 
 function glanceColumn(ctx, group, overridden) {
-    const record = group[0];
     const column = document.createElement("div");
     column.className = "glance-column";
-
-    // The word: EDITABLE for a single record — a patch is written against the stored
-    // anchor, so a word edit never re-anchors. A GROUP renders it read-only: fanning
-    // ONE word across N members is never right (see harvestGroupOverlay).
-    let word;
-    if (group.length === 1) {
-        word = editField(ctx, group, "word", "Word (latin)", "latin-field",
-            overridden.has("word"));
-    } else {
-        const wordConsensus = fieldConsensus(group, "word");
-        word = cell("latin", record.word);
-        if (!wordConsensus.uniform) {
-            word.classList.add("latin-multiple");
-            applyDistinctDisplay(word, wordConsensus);
-        }
-    }
-    const stateConsensus = verdictConsensus(group);
-    const wordGroup = document.createElement("div");
-    wordGroup.className = stateConsensus.uniform
-        ? `glance-word state-box ${stateConsensus.value}`
-        : "glance-word state-box state-multiple";
-    if (stateConsensus.uniform) {
-        wordGroup.title = `state: ${stateConsensus.value}`;
-        wordGroup.setAttribute("aria-label",
-            `${record.word} — state: ${stateConsensus.value}`);
-    } else {
-        wordGroup.title = "state: mixed";
-    }
-    wordGroup.append(word, editedSummary(overridden));
 
     const posVar = document.createElement("div");
     posVar.className = "glance-posvar";
     posVar.append(
         posSpelledOut(group, overridden.has("pos")),
         editField(ctx, group, "var", "Dialect (var)", "var-field", overridden.has("var")),
+        editField(ctx, group, "freq", "Frequency", "freq-field", overridden.has("freq")),
     );
-    // freq: EDITABLE for a single record (the corpus derivation runs before the patch
-    // overlay, so a patched freq is the last word). A GROUP renders no freq input —
-    // freq is POS-specific; the rail shows the group's min–max spread.
-    if (group.length === 1) {
-        posVar.append(editField(ctx, group, "freq", "Frequency", "freq-field",
-            overridden.has("freq")));
-    }
 
     const fields = document.createElement("div");
     fields.className = "glance-fields";
     fields.append(
-        wordGroup,
+        editField(ctx, group, "word", "Word (latin)", "latin-field", overridden.has("word")),
         editField(ctx, group, "shaw", "Shavian", "shaw-field", overridden.has("shaw")),
         editField(ctx, group, "ipa", "IPA", "ipa-field", overridden.has("ipa")),
     );
@@ -1622,11 +1565,10 @@ function railColumn(ctx, group, overridden) {
     return column;
 }
 
-// Three FIXED slots — sources, freq, confidence — each keeping its geometry: an
-// absent value's slot goes invisible IN PLACE (.empty) and the others do NOT
-// reflow, so the glance loop never re-scans. Divergent groups roll up (tallies /
-// min–max / "mixed") rather than pretending uniformity. The verdict lives in the
-// records bar above, not here.
+// Two FIXED slots — sources, confidence — each keeping its geometry: an absent
+// value's slot goes invisible IN PLACE (.empty) and the other does NOT reflow, so
+// the glance loop never re-scans. Freq lives in the glance editField now (it fans
+// like any other field). The verdict lives in the records bar above, not here.
 function priorityRail(group) {
     const record = group[0];
     const rail = document.createElement("div");
@@ -1640,9 +1582,6 @@ function priorityRail(group) {
         sources.classList.add("empty");
     }
 
-    const freq = railSlot("freq");
-    freqSlotContent(group, freq);
-
     const conf = railSlot("confidence");
     const confConsensus = fieldConsensus(group, "confidence");
     if (!confConsensus.uniform) {
@@ -1653,7 +1592,7 @@ function priorityRail(group) {
         conf.classList.add("empty");
     }
 
-    rail.append(sources, freq, conf);
+    rail.append(sources, conf);
     return rail;
 }
 
@@ -1669,20 +1608,7 @@ function groupSources(group) {
     return union;
 }
 
-function freqSlotContent(group, slot) {
-    const freqs = group
-        .map((member) => member.freq)
-        .filter((freq) => freq !== null && freq !== undefined);
-    if (!freqs.length) {
-        slot.classList.add("empty");
-        return;
-    }
-    const min = Math.min(...freqs);
-    const max = Math.max(...freqs);
-    slot.append(cell("rail-value", min === max ? String(min) : `${min}–${max}`));
-}
-
-const RAIL_SLOT_LABELS = { sources: "sources", freq: "freq", confidence: "confidence" };
+const RAIL_SLOT_LABELS = { sources: "sources", confidence: "confidence" };
 
 function railSlot(kind) {
     const slot = document.createElement("div");
@@ -1733,18 +1659,9 @@ function selectedGroup() {
 // only a hand-picked cross-word selection hides it.
 function renderGroupEditor(group) {
     const record = group[0];
-    // A re-render of the SAME focused record (undo, selection re-sync) must not
-    // silently drop an active edit — carry the flag over. N=1 only.
-    const wasEditing = Boolean(
-        group.length === 1
-        && state.mainContext && contextRecord(state.mainContext) === record
-        && state.mainContext.editing,
-    );
     const editor = recordEditor(group, { scope: "detail", mode: "edit" });
-    state.mainContext.editing = wasEditing;
     if (!latinUniform(group)) {
         DETAIL.replaceChildren(editor);
-        setDetailMode();
         return;
     }
     const definitions = definitionsSection();
@@ -1753,7 +1670,6 @@ function renderGroupEditor(group) {
     evidence.className = "evidence-cols";
     evidence.append(related, definitions);
     DETAIL.replaceChildren(editor, evidence);
-    setDetailMode();
     syncEvidenceSections();
     loadDefinitions(record, definitions);
     loadRelated(record, related);
@@ -1820,18 +1736,6 @@ function markOverridden(wrap, label, overridden) {
     }
     wrap.classList.add("overridden");
     label.append(cell("edited-tag", EDITED_TAG_TEXT));
-    return wrap;
-}
-
-function editedSummary(overridden) {
-    const wrap = document.createElement("span");
-    wrap.className = "edited-summary";
-    if (overridden.size) {
-        wrap.append(
-            cell("edited-summary-label", EDITED_TAG_TEXT),
-            cell("edited-summary-fields", [...overridden].join(", ")),
-        );
-    }
     return wrap;
 }
 
@@ -2658,28 +2562,6 @@ function relatedProvenance(record) {
     }
 }
 
-function setDetailMode() {
-    const editing = Boolean(state.mainContext && state.mainContext.editing);
-    DETAIL.classList.toggle("mode-edit", editing);
-    DETAIL.classList.toggle("mode-review", !editing && state.selected >= 0);
-}
-
-function orphanKindBadge(record) {
-    const wrap = document.createElement("span");
-    wrap.className = "orphan-kind-badges";
-    if (record.patch_state !== PATCH_STATE.ORPHANED) {
-        return wrap;
-    }
-    const tag = ORPHAN_KIND_TAGS.get(record.orphan_kind);
-    if (!tag) {
-        return wrap;
-    }
-    const badge = cell("orphan-kind-badge", tag.label);
-    badge.title = tag.title;
-    wrap.append(badge);
-    return wrap;
-}
-
 function orphanReasonNote(record) {
     if (record.patch_state !== PATCH_STATE.ORPHANED) {
         return null;
@@ -3093,11 +2975,6 @@ function applyAdditiveFields(ctx, record) {
 function harvestGroupOverlay(ctx) {
     const overlay = {};
     for (const name of EDITABLE_FIELDS) {
-        // word and freq render no group input (see EDITABLE_FIELDS); at N=1 the
-        // inputs exist and harvest like any field.
-        if ((name === "word" || name === "freq") && ctx.group.length > 1) {
-            continue;
-        }
         const input = ctx.root.querySelector(`[data-field="${name}"]`);
         if (input.dataset.consensus === "multiple" && input.dataset.touched !== "true") {
             continue;
@@ -4068,9 +3945,6 @@ function selectStop(stop) {
     state.selected = stop.group.members[0].index;
     if (state.multi.size) {
         autoSaveMainEdit();
-        if (state.mainContext) {
-            state.mainContext.editing = false;
-        }
         paintLedgerSelection();
     } else {
         state.cursorGroupKey = stop.group.key;
@@ -4157,10 +4031,6 @@ function enterEdit(ctx, { focusShaw = false } = {}) {
     if (isCreateMode(ctx) || (ctx === state.mainContext && state.selected < 0)) {
         return;
     }
-    ctx.editing = true;
-    if (ctx === state.mainContext) {
-        setDetailMode();
-    }
     if (!focusShaw) {
         return;
     }
@@ -4173,12 +4043,8 @@ function enterEdit(ctx, { focusShaw = false } = {}) {
 }
 
 function exitEdit(ctx) {
-    ctx.editing = false;
     if (ctx.root.contains(document.activeElement)) {
         document.activeElement.blur();
-    }
-    if (ctx === state.mainContext) {
-        setDetailMode();
     }
 }
 

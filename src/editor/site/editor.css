@@ -37,6 +37,12 @@
        what was decided, yellow says it no longer resolves). A true yellow, kept
        apart from flagged's amber-orange. */
     --state-orphaned: #a08f00;
+    /* A field carrying an explicit patch override (markOverridden) — distinct from
+       --accent-manual (authoring origin, never a field state) so the two purples
+       don't collide in meaning. Focus reads as intensity: same hue, washed-out at
+       rest, full saturation focused — never green/red/amber, those are verdicts. */
+    --field-edited: #9d4edb;
+    --field-edited-rest: color-mix(in srgb, var(--field-edited) 35%, var(--rule));
 
     --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
     --shaw: 'Bernie Sans Beta', sans-serif;
@@ -70,6 +76,8 @@
         --state-mixed: #9bc4dd;
         --accent-manual: #a690e0;
         --state-orphaned: #e3cf5a;
+        --field-edited: #bd8af0;
+        --field-edited-rest: color-mix(in srgb, var(--field-edited) 40%, var(--rule));
     }
 }
 
@@ -878,22 +886,6 @@ body {
 .stamp.accepted { color: var(--state-accepted); }
 .stamp.dropped { color: var(--state-dropped); }
 
-.state-pill {
-    display: inline-block;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 1px 7px;
-    border-radius: 999px;
-    color: var(--state-pill-hue, var(--state-unreviewed));
-    border: 1px solid var(--state-pill-hue, var(--state-unreviewed));
-    background: color-mix(in srgb, var(--state-pill-hue, var(--state-unreviewed)) 8%, transparent);
-}
-.state-pill.unreviewed { --state-pill-hue: var(--state-unreviewed); }
-.state-pill.accepted { --state-pill-hue: var(--state-accepted); }
-.state-pill.dropped { --state-pill-hue: var(--state-dropped); }
-.state-pill.flagged { --state-pill-hue: var(--state-flagged); }
-.state-pill.orphaned { --state-pill-hue: var(--state-orphaned); }
 .stamp.flagged { color: var(--state-flagged); }
 .stamp.mixed { color: var(--state-mixed); }
 .stamp.orphaned { color: var(--state-orphaned); }
@@ -962,33 +954,6 @@ body {
     gap: 10px;
     flex: 1 1 200px;
     min-width: 0;
-}
-.glance-word {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 6px 10px;
-    min-width: 0;
-    padding: 4px 10px 4px 8px;
-    border: 1px solid var(--state-edge, var(--rule));
-    border-left-width: 4px;
-    border-radius: 3px;
-    background: color-mix(in srgb, var(--state-edge, var(--rule)) 7%, transparent);
-}
-.glance-word.unreviewed { --state-edge: var(--state-unreviewed); }
-.glance-word.accepted { --state-edge: var(--state-accepted); }
-.glance-word.dropped { --state-edge: var(--state-dropped); }
-.glance-word.flagged { --state-edge: var(--state-flagged); }
-.glance-word.orphaned { --state-edge: var(--state-orphaned); }
-.glance-word .latin {
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    line-height: 1.1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 .glance-posvar {
     display: flex;
@@ -1072,32 +1037,6 @@ body {
     gap: 6px 8px;
 }
 .metadata-badges:empty { display: none; }
-.detail.mode-review::after {
-    content: "REVIEW";
-    position: absolute;
-    top: 14px;
-    right: 18px;
-    font-size: 9px;
-    letter-spacing: 0.18em;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 2px;
-    padding: 2px 6px;
-    pointer-events: none;
-}
-.detail.mode-edit::after {
-    content: "EDITING";
-    position: absolute;
-    top: 14px;
-    right: 18px;
-    font-size: 9px;
-    letter-spacing: 0.18em;
-    color: var(--state-edited);
-    border: 1px solid var(--state-edited);
-    border-radius: 2px;
-    padding: 2px 6px;
-    pointer-events: none;
-}
 .detail-empty { color: var(--ink-soft); font-style: italic; }
 
 .detail-create-title {
@@ -1132,17 +1071,24 @@ body {
 .create-guard[data-state="warn"] { color: var(--state-flagged); }
 
 /* ---- records bar — count + verdict + stepping, one geometry at any N ---- */
+/* The verdict tints this bar's bottom rule — the ONE colour cue for the whole
+   panel (a property of the record, not of any one field). */
 .records-bar {
     display: flex;
     align-items: center;
     gap: 12px;
     min-height: 36px;
-    /* Clears the REVIEW/EDITING stamp pinned to the panel's top-right corner. */
     margin-top: 4px;
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 2px solid var(--state-edge, var(--rule));
 }
+.records-bar.state-unreviewed { --state-edge: var(--state-unreviewed); }
+.records-bar.state-accepted { --state-edge: var(--state-accepted); }
+.records-bar.state-dropped { --state-edge: var(--state-dropped); }
+.records-bar.state-flagged { --state-edge: var(--state-flagged); }
+.records-bar.state-orphaned { --state-edge: var(--state-orphaned); }
+.records-bar.state-mixed { --state-edge: var(--state-mixed); }
 .records-summary {
     display: flex;
     align-items: center;
@@ -1174,9 +1120,6 @@ body {
 .records-nav:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-soft); }
 .records-nav:disabled { opacity: 0.25; cursor: default; }
 
-/* A mixed-state group carries no single hue: the word box keeps the neutral
-   --state-edge default since .state-multiple sets no state class. */
-.latin.latin-multiple { font-size: 15px; color: var(--ink-soft); }
 /* The rolled-up POS tag sits in the content-sized posvar group (its .pos-glance
    ancestor is flex:0 0 auto), so the .distinct-values `max-width:100%` has no finite
    bound to clip against and the line overflows. A concrete ch cap gives the ellipsis
@@ -1198,10 +1141,6 @@ body {
     opacity: 0.7;
     font-style: italic;
 }
-.edit-input.pending-overwrite {
-    border-left: 3px solid var(--state-edited);
-    border-bottom-color: var(--state-edited);
-}
 .field-multiple-values {
     margin-top: 6px;
     font-size: 12px;
@@ -1218,23 +1157,6 @@ body {
 .variation-toggle.mixed {
     border-style: dashed;
     color: var(--ink-soft);
-}
-
-.orphan-kind-badges {
-    align-self: center;
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.orphan-kind-badge {
-    font-size: 10px;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border: 1px solid currentColor;
-    border-radius: 2px;
-    white-space: nowrap;
-    color: var(--state-orphaned);
 }
 
 .orphan-note {
@@ -1378,24 +1300,6 @@ body {
     white-space: nowrap;
 }
 
-.edited-summary {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 6px;
-    color: var(--state-edited);
-}
-.edited-summary:empty { display: none; }
-.edited-summary-label {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-}
-.edited-summary-label::after { content: ":"; }
-.edited-summary-fields {
-    font-size: 12px;
-    font-family: var(--mono);
-}
-
 .references {
     display: flex;
     flex-wrap: wrap;
@@ -1471,7 +1375,25 @@ body {
     outline-offset: 1px;
     border-bottom-color: var(--accent);
 }
+
+/* A field carrying an explicit patch override: purple border, never on an
+   unoverridden field (even focused) so the cursor alone can't read as "patched".
+   Ordered ahead of .dirty/.pending-overwrite below so live unsaved typing (green)
+   still wins the cascade over a stale override tint. */
+.edit-field.overridden .edit-input {
+    border-color: var(--field-edited-rest);
+    border-bottom-color: var(--field-edited-rest);
+}
+.edit-field.overridden .edit-input:focus {
+    border-color: var(--field-edited);
+    border-bottom-color: var(--field-edited);
+    outline-color: var(--field-edited);
+}
 .edit-input.dirty { border-bottom-color: var(--state-edited); }
+.edit-input.pending-overwrite {
+    border-left: 3px solid var(--state-edited);
+    border-bottom-color: var(--state-edited);
+}
 
 /* ---- variations: always-visible toggle buttons (mergers + "other" unified) ---- */
 .variations-field { min-width: 0; }
@@ -2123,10 +2045,6 @@ kbd {
    chrome keeps its single-column base layout. */
 .create-card:has(.detail-chrome) { max-width: min(920px, 92vw); }
 
-/* The word may wrap — in the card there is vertical room, and a vanished word is
-   the worse failure. */
-.create-card .glance-word .latin { white-space: normal; overflow: visible; }
-
 .create-card .priority-rail {
     display: flex;
     flex-wrap: wrap;
@@ -2248,8 +2166,6 @@ kbd {
     }
     .detail .act { flex: 1 1 0; text-align: center; padding: 10px 8px; }
     .detail .act.act-icon { gap: 0; padding: 10px 8px; min-width: 0; }
-
-    .detail.mode-review::after, .detail.mode-edit::after { top: 10px; right: 12px; }
 
     .pacing { gap: 20px; padding: 8px 18px; }
 

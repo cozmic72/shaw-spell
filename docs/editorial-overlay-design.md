@@ -1,236 +1,78 @@
 # Editorial Overlay System — Design
 
-**Status:** design settled (2026-07-16); implementation phased, not yet built.
+**Status:** design record (settled 2026-07-16; built). The live patch schema is
+[record-schema.md](record-schema.md) (minimal-diff `{anchor, op, changes, meta}` —
+this doc's original full-record patch model was superseded); the live editor is
+`src/editor/` (see its README for the daemon protocol). What remains here is the
+rationale that does not live anywhere else.
 
-This replaces the spreadsheet/CSV editorial process with a **patch overlay** on top
-of a live-computed dictionary, backed by a UI (eventually online). It supersedes the
-`editorial*.csv` + `generate_merged_readlex.py` + `merge_editorial_edits.py` machinery.
+This replaced the spreadsheet/CSV editorial process (`editorial*.csv` +
+`generate_merged_readlex.py` + `merge_editorial_edits.py`) with a **patch overlay**
+on top of a live-computed dictionary.
 
 ## The core idea
 
 Two clean inputs, nothing frozen in between:
 
 1. **The basis** — the raw combination of *all* upstream sources (upstream ReadLex +
-   wordnet + wiktionary supplements), computed **on-demand**. Every candidate,
-   including provisional/supplemental ones, is already a record *in the basis*,
-   flagged with its origin, source, status, and confidence. The basis is never
+   supplements), computed **on-demand**. Every candidate is already a record *in the
+   basis*, flagged with its origin, source, status, and confidence. The basis is never
    persisted as an editorial artifact; it is "whatever the sources currently say"
    and may grow/change freely.
 
 2. **The patches** — the *only* persisted editorial artifact. One patch per record a
-   human has ruled on. Nothing else is stored. The ~85K unreviewed candidates have
+   human has ruled on. Nothing else is stored. The unreviewed candidates have
    **zero persistence footprint** — they are simply the parts of the basis that no
    patch touches, so upstream churn touches them for free.
 
 The old CSV world froze a *snapshot* mixing raw candidates and human decisions, which
-rotted whenever upstream/supplements changed (hence `merge_editorial_edits.py`'s fuzzy
-re-join, "lost verdicts", and audits). The new world never freezes the basis, so there
-is nothing to re-join.
+rotted whenever upstream/supplements changed (hence the fuzzy re-join, "lost
+verdicts", and audits). The new world never freezes the basis, so there is nothing
+to re-join.
 
-## The natural key (record identity)
+Corollaries (all live in code today):
+- **Reviewed** = a patch exists for the anchor; no stored flag.
+- **Rollback** = delete the patch; the intact basis *is* the undo.
+- The **anchor never changes when you edit** — an entry never moves or disappears
+  as a consequence of being edited; only its displayed content changes.
+- **Fail loud** on a patch whose anchor no longer resolves (upstream drifted out
+  from under the decision) rather than silently dropping it.
+- Deterministic: same inputs → same `readlex.json`.
 
-Determined empirically against `data/readlex.json` (112,385 entries):
+## The natural key (record identity) — empirical derivation
+
+Determined against `data/readlex.json` (112,385 entries at the time):
 
 **`(word, pos, shaw, var)`** is the identity of a dictionary record.
 
 - `word` (Latn), `pos` — identifying.
 - `shaw` — the Shavian spelling *is* the dictionary's payload; a different spelling is
   a different record.
-- `var` (dialect: RRP / GenAm / TrapBath / …) — **in the key.** Records identical but
-  for `var` are distinct facts ("this spelling applies to this dialect"). This is why
-  a spelling correction is dialect-specific: fixing the RRP spelling does not touch the
-  GenAm entry; you patch each.
+- `var` — **in the key.** Records identical but for `var` are distinct facts ("this
+  spelling applies to this dialect"), so a spelling fix is dialect-specific.
 - `ipa`, `freq` — **NOT in the key.** They are derivation/provenance. Of the 64
-  collisions on `(word,pos,shaw,var)`, 50 are exact duplicates and 14 differ *only* in
-  `ipa`/`freq` (stress-mark re-notation of the same pronunciation → same Shavian).
+  collisions on `(word,pos,shaw,var)`, 50 were exact duplicates and 14 differed *only*
+  in `ipa`/`freq` (stress-mark re-notation of the same pronunciation → same Shavian).
   Putting `ipa` in the key would enshrine upstream notation noise as identity and
-  orphan patches on trivial upstream re-notation. Zero collisions differ in anything
+  orphan patches on trivial upstream re-notation. Zero collisions differed in anything
   semantically load-bearing.
 
 Identity must stay **minimal** — every field in the key is a field whose upstream drift
-can orphan a patch.
+can orphan a patch. (The `orig_*` convention in record-schema.md is the later answer
+to transforms that legitimately move a key field.)
 
-## The patch record (settled model — 2026-07-16)
+## Store model
 
-A patch is `{ anchor, record | null, meta }`:
+Git JSONL (`data/patches/patches.jsonl`) is the source of truth — single file,
+provenance is a field, not a filename. A SQLite cache would appear only in a
+multi-user online phase, as a derived coordination layer; git stays authoritative.
 
-```jsonc
-{
-  "id": "p_…",
-  "anchor": {"word","pos","shaw","var"} | null,   // the source record's natural key; null = authorship
-  "record": {                                     // the COMPLETE record you want, or null to drop
-    "word","pos","shaw","var","ipa","freq","status", "…"
-  } | null,
-  "meta": {"author","ts","note"}
-}
-```
+## History
 
-**The anchor is the record's immutable identity.** It is the natural key
-`(word, pos, shaw, var)` of the source record the patch reviews, assigned once at first
-touch and **never changed when you edit** — even if you edit the `shaw` or `var`. The
-system tracks entries by anchor, so **an entry never moves or disappears as a consequence
-of being edited**; only its displayed content changes. (Authorship — a brand-new word no
-source attests — has `anchor: null`; the patch simply *is* the record.)
-
-**The `record` is the complete record you want**, self-contained — every field editable
-(`shaw`, `var`, `ipa`, `status`, …). Not an edits-diff: what is stored is what is shown is
-what ships, with no source+patch merge step to get subtly wrong (that merge was the source
-of the "edit invisible in the UI" bug). `record: null` means drop. `status` lives **in**
-the record because downstream consumers read it (`supplemental` → `sanctioned` on accept).
-
-| `anchor` | `record` | Meaning |
-|----------|----------|---------|
-| key | record | **edit / accept** the source record (change fields and/or status) |
-| key | null | **drop** the source record |
-| null | record | **authorship** — a record no source attests |
-
-### Actions, reviewed-ness, rollback
-
-- **Actions** are just ways to produce a patch: **Accept** (record with `status: sanctioned`),
-  **Drop** (`record: null`), **Edit** (record with corrected shaw/var/ipa/status).
-- **Reviewed** = a patch exists for the anchor. Primary filter partition (reviewed vs
-  unreviewed) — no stored flag; the patch's presence *is* the flag.
-- **Rollback** = delete the patch. The source basis was never mutated, so the record
-  reverts to its untouched source and returns to *unreviewed*. No undo log — the intact
-  basis *is* the undo.
-
-### Why full-record, not edits-only
-
-The earlier design stored only the changed fields (edits-only `new`, inheriting var/freq
-from the candidate). That is leaner but forces a source+patch *merge* to display or ship a
-record — and getting that merge wrong is exactly what made edits invisible in the UI.
-Full-record is self-describing and satisfies "don't throw away information": the patch
-carries the whole intended record, the basis stays intact underneath, so both the wanted
-state and the source state are always recoverable. A diff *view* can be derived from
-(source, record) at display time if wanted; the stored thing is complete.
-
-## The apply/build process
-
-`apply_patches.py` replaces `generate_merged_readlex.py` with identical output semantics
-and the same Make target (`$(READLEX_PATH)`), so nothing downstream changes:
-
-1. Compute the basis (upstream + supplements) on-demand.
-2. For each patch: resolve `anchor` against the current basis by natural key
-   `(word,pos,shaw,var)`; remove that source record; emit `record` (if non-null).
-   `record` is authoritative and complete — emitted verbatim, no merge with the source.
-   Authorship (`anchor: null`) simply emits `record`.
-3. **Fail loud** on a patch whose `anchor` no longer resolves (upstream drifted out from
-   under the decision) rather than silently dropping it — surface it to an "orphaned
-   decisions" queue. `merge_editorial_edits.py` and `generate_editorial_csv.py` are
-   retired from the editorial path.
-
-Determinism: total apply order over `(anchor…, id)`. Same inputs → same `readlex.json`.
-
-## Decisions locked (2026-07-16)
-
-- Store model: **git JSONL = source of truth**; a SQLite cache appears only in the
-  online phase as a derived coordination layer that flushes back to the JSONL (git stays
-  authoritative). Small-team framing confirmed — no Postgres-of-record.
-- Basis is **computed on-demand**, never persisted as an editorial artifact.
-- Natural key = anchor `(word, pos, shaw, var)`; `ipa`/`freq`/`source`/`status` are
-  payload, not identity.
-- Patch = `{anchor, record|null, meta}` (see "The patch record (settled model)"):
-  `anchor:null` = authorship, `record:null` = drop. `record` is complete + authoritative.
-- **`source` and `confidence` are basis-derived provenance, not reviewer decisions.** The
-  reviewer edits shaw/var/ipa/status; source and confidence come from the basis record and
-  are carried through. (Treating them as per-CSV-row editable would reintroduce anchor
-  conflicts — one anchor could get two divergent patches — so they stay basis-derived.)
-- Trust model (collaborator patches direct-to-prod vs. review gate): **deferred** to
-  Phase 2 (moot for single-user Phase 0/1).
-
-## Known open issues
-
-- **RSSB var reaches output.** RSSB is our own dialect addition; no downstream system
-  (spell-check, site, installer dicts) knows how to handle it. The legacy build
-  DELIBERATELY normalised these to `RRP`. The new patch-authoritative + var-independent
-  applicator preserves the real RSSB var instead — so ~376 records that were `RRP` under
-  legacy now surface as `RSSB`/`GenAm`. Harmless on this branch (not wired to production
-  output), but if this readlex.json ever feeds production, RSSB would break downstream
-  consumers. **Jury still out** (2026-07-16) — pending a decision on what to do with RSSB
-  generally. Do NOT special-case it away without that decision.
-
-## Deferred / open
-
-- Combined keep+override vs. separate ops: settled as **one shape** (the rewrite).
-- `patches.jsonl` single file vs. per-layer split: settled as **single file**
-  (provenance is a field, not a filename).
-- Migration: salvage verdicted CSV rows into `patches.jsonl` (see `migrate` tooling).
-  ~808 patches: 645 keep + 8 drop + 4 corrected + 103 pos-gap-keep + 48 manual.
-  `editorial-drops.csv` (1,632 machine-dropped affixes/fragments) NOT salvaged —
-  re-derivable.
-- Phasing: 0) applicator rewrite (invisible, output byte-identical) → 1) local
-  single-user editor → 2) multi-user via git → 3) live online + SQLite cache.
-
-## Phase 1 — the editor UI (MVP)
-
-North star: **an editable version of the dictionary with extra ways of searching** —
-not a bespoke review tool. The "review queue" is just a filter plus a stepping mode.
-
-**Backend** — a sibling **`editord`** daemon in `src/editor/`, built on the SAME pattern
-as the production `src/site-daemon/suggestd.py`: `socketserver` Unix-socket daemon,
-line-oriented `{op: ...}` JSON protocol, in-memory state, deploy/systemd idiom. It holds
-the basis (upstream + supplements) plus `patches.jsonl` and serves editor ops
-(`op: entries` → filtered basis annotated with patch-state; `op: patch` → append/update a
-patch). A thin CGI/HTTP frontend fronts it. **`suggestd` and the read-only production
-spell-check path are untouched** — the read-write editorial tool is its own process, no
-new deps.
-
-**The annotated view** (the one non-trivial piece): the UI browses the basis with each
-record annotated by its **patch-state** — untouched / kept / dropped / respelled /
-authored — computed by overlaying `patches.jsonl` on the basis. This shares the anchor
-matching logic with `apply_patches.py` (var-independent `(word,pos,shaw)`); factor it so
-both use one implementation rather than a parallel copy.
-
-**Filters:** `confidence` (threshold/range), `source`, `status` (supplement / new /
-pos-gap / manual), `pos`, `var`, `word`/`shaw` substring, and patch-state.
-
-**Layout:** filter bar on top; left panel = scrollable list/table of matches (incl. a
-**var/dialect column**); right = detail editor for the focused entry with **editable
-Shavian, focused by default**. Stepping = arrow keys through the list.
-
-**Detail panel — readable, not a cramped inspector.** The detail editor is the thing the
-editor stares at while deciding; it must BREATHE. Lay each field out vertically as a
-labelled row (label + LARGE value) — pivoted, not jammed into a compact grid. Shavian and
-IPA especially must be big and comfortably readable. Err on the side of bigger type. The
-whole reason for this tool is to stop squinting at tiny spreadsheet cells.
-
-**Mobile-first / responsive.** It must work well on a phone. On narrow screens the
-two-panel layout collapses: the **list becomes a collapsible panel** (drawer/overlay), so
-the phone shows one big readable detail card at a time, with the list pulled out on demand.
-Accept/Drop need real touch targets (not keyboard-only). This converges on a focused
-review-card shape on mobile — one entry, large, edit + accept/drop, step, list tucked away.
-
-**External reference links.** In the detail panel, near the word, a small row of labelled
-links (open in a new tab) to look the word up while deciding — keyed on the record's
-`word`, URL-encoded (handles phrases/apostrophes):
-- Wiktionary — `https://en.wiktionary.org/wiki/{word}`
-- Merriam-Webster — `https://www.merriam-webster.com/dictionary/{word}`
-- OED — `https://www.oed.com/search/dictionary/?scope=Entries&q={word}` (search form; OED
-  is subscription-only with no stable public deep-link, so we link to their search)
-
-**Continuity (localStorage).** Persist the editor's session so a reload — or coming back
-later, or on the phone — resumes where you left off. Store the **active filter** and your
-**position**. Position must be the **anchor** of the entry you were on (`{word,pos,shaw,var}`),
-NOT a row index — an index is meaningless once the pull-and-refresh list re-materialises.
-On load: restore the saved filter → pull the list → re-select the entry with that anchor;
-if it's no longer in the set (e.g. you reviewed it and it fell out), land on the nearest
-sensible neighbour rather than jumping to the top.
-
-**Shavian font.** Render Shavian in **Bernie Sans Beta**, the project's Shavian webfont at
-`src/fonts/BernieSansBetaVF.woff2` (the single canonical asset — do NOT duplicate it). The
-editor CSS already declares the `@font-face`; the missing piece is exposing `src/fonts/` at
-`fonts/` under the editor doc root, exactly as `deploy_site.py` copies `src/fonts/* →
-output/fonts/` for the production site. The local launcher (`test_editor.py`) must serve
-`src/fonts/` at `/fonts` so the font resolves; verify Shavian renders in Bernie Sans Beta,
-not a fallback.
-
-**Actions (pure patch model — see "The patch record (settled model)"):**
-- Accept → patch `{anchor, record}` where `record.status = sanctioned` (promote from
-  supplemental). Any field edit (shaw/var/ipa/status) is already in `record`.
-- Drop → `{anchor, record: null}`.
-- Edit → `{anchor, record}` with the corrected fields; the anchor never changes.
-- Buttons + keyboard shortcuts for accept / drop / edit / next / prev.
-
-**Deferred to a later Phase-1 iteration:** editing the transliterated **definitions**
-(`definitions-*.json`) — the same editor, extended. Design the entry model so definitions
-can be added as an editable field later without reshaping the patch store.
+- Migration (2026-07): verdicted CSV rows were salvaged into `patches.jsonl`
+  (~808 patches); the 1,632 machine-dropped affix/fragment rows were re-derivable
+  and not salvaged.
+- Phasing as executed: 0) applicator rewrite (output byte-identical) → 1) local
+  single-user editor (built, `src/editor/`) → 2+) multi-user/online (not built).
+- The RSSB-reaches-output question this doc used to track is resolved — see the
+  export-collapse decision in [decisions.md](decisions.md).

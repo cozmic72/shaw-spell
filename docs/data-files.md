@@ -3,16 +3,21 @@
 Reference for the key files under `data/`. For how they flow together see
 [pipeline-architecture.md](pipeline-architecture.md).
 
-"Ships" = feeds the built US/UK dictionaries / spell-checker. "Tracked" = in git.
+"Ships" = feeds the built US/UK dictionaries / spell-checker. "Tracked" = committed in
+the `data` submodule.
+
+Standing policy (see [decisions.md](decisions.md)): the committed artifact IS the
+combined+filtered pool. Tracked = the pipeline's checkpoint outputs; the per-source
+supplement files are gitignored intermediates, rebuilt when missing.
 
 ## Ship / build outputs
 
 | File | What it is | Written by | Tracked | Ships |
 |---|---|---|---|---|
-| `readlex.json` | the shipping dictionary (final merged + frequency-stamped) | editor daemon (Commit publish) | yes | yes |
-| `definitions-shavian-{gb,us}.json` | machine Shavian transliterations of glosses, keyed `word\|synset-id` | translit/gap-fill pass | yes | yes (dict builds) |
-| `definitions-latin-{gb,us}.json` | English glosses, keyed `word` | def extraction | **gitignored** | source for translit |
-| `definitions-wiktionary.json` | raw extracted Wiktionary definitions | `extract_wiktionary_definitions.py` | yes | source |
+| `readlex.json` | the shipping dictionary (final merged + frequency-stamped, ReadLex-shaped via `collapse_readlex`) | editor daemon (Commit publish); offline `apply_patches.py` | yes | yes |
+| `definitions-shavian-{gb,us}.json` | machine Shavian transliterations of glosses, keyed `word\|synset-id` | `make complete-definitions` (fill-missing-only) | yes | yes (dict builds) |
+| `definitions-latin-{gb,us}.json` | English glosses (source of truth), keyed `word\|synset-id` | `make complete-definitions` (fill-missing-only) | yes | source for translit |
+| `definitions-wiktionary.json` | raw extracted Wiktionary definitions | `extract_wiktionary_definitions.py` | gitignored | source |
 
 ## Editorial store (SACRED)
 
@@ -23,50 +28,45 @@ Reference for the key files under `data/`. For how they flow together see
 
 See [decisions.md](decisions.md) "patches.jsonl is sacred".
 
-## Supplement sources (candidate inputs)
+## Supplement sources (candidate inputs — all gitignored, rebuilt when missing)
 
-The four labelled sources wired into the basis (`combine_supplements.py` `SOURCES`).
-Each label becomes the record's `source`.
+The labelled sources wired into the pool (`combine_supplements.py` `SOURCES`; upstream
+ReadLex itself is the fifth, label `readlex`, read from `external/readlex/`). Each
+label becomes the record's `source`.
 
-| File | Label | What it is | Tracked | Wired? |
-|---|---|---|---|---|
-| `supplement-wordnet-reliable.json` | `wordnet` | WordNet words WITH a pronunciation → IPA→Shavian | yes | **yes** |
-| `supplement-wiktionary-neardot.json` | `wiktionary` | Wiktionary words after rescue + NEAR syllable-dot fix | yes | **yes** |
-| `supplement-names.json` | `names` | ~10K curated proper names (shave + CMUdict voters) | yes | **yes** |
-| `supplement-generated.json` | `generated` | ~19K net-new no-IPA WordNet words, shave-generated | yes | **yes** |
-
-## Supplement buckets NOT wired (side outputs / future lanes)
-
-| File | What it is | Tracked | Wired? |
+| File | Label | What it is | Wired? |
 |---|---|---|---|
-| `supplement-wordnet-speculative.json` | WordNet words with no usable pronunciation (split off) | yes | no |
-| `supplement-wiktionary-speculative.json` | Wiktionary words with IPA but `var=UNC` (dialect-labelling) | yes | no — future lane |
-| `supplement-wiktionary-reliable.json` | pre-neardot wiktionary reliable set | yes | superseded by neardot |
-| `supplement-wiktionary-rescued.json` | rescue-pass intermediate | yes | intermediate |
-| `supplement-britfone.json` | Britfone-derived candidates | yes | **dropped** (see [decisions.md]) |
+| `supplement-wordnet-reliable.json` | `wordnet` | WordNet words WITH a pronunciation → IPA→Shavian | **yes** |
+| `supplement-wiktionary-neardot.json` | `wiktionary` | Wiktionary words after rescue + NEAR syllable-dot fix | **yes** |
+| `supplement-names-ipa.json` | `names` | curated proper names (shave + CMUdict voters) + CMUdict IPA-fill over `supplement-names.json` | **yes** |
+| `supplement-generated-ipa.json` | `generated` | net-new no-IPA WordNet words, shave-spelled + neural-G2P IPA-fill over `supplement-generated.json` | **yes** |
 
-## Pipeline intermediates (gitignored, regenerable)
+Not wired (side outputs / future lanes, also gitignored): `supplement-wordnet-speculative.json`
+(no usable pronunciation), `supplement-wiktionary-speculative.json` (`var=UNC`, a future
+lane), `supplement-wiktionary-{reliable,rescued}.json` (pre-neardot intermediates),
+`supplement-britfone.json` (**dropped** — see [decisions.md](decisions.md)).
 
-The per-stage `supplement-combined-*.json` and per-source `supplement-{wordnet,wiktionary}-{deduped,classified,collapsed,decontaminated,filtered}.json` are stage
-dumps, all **gitignored** (`.gitignore` `data/supplement-combined-*.json` + explicit
-entries). Regenerated by the build; not authoritative.
+## The committed checkpoint
 
-- `supplement-combined-filtered.json` — the final supplement basis the applicator +
-  editor read (via `basis.py` `SUPPLEMENT_PATHS`). Gitignored; rebuilt by
-  `build_supplement.py`.
+- `supplement-combined-filtered.json` — the output of the whole supplement build
+  (`build_supplement.py`) and the file the applicator + editor read (via `basis.py`
+  `SUPPLEMENT_PATHS`). **Tracked** — this is the committed artifact; the build does
+  not re-derive it unless asked.
 
-## Models & phrase data
+## Models & corpus inputs
 
 | File | What it is | Tracked |
 |---|---|---|
 | `rhoticity-model.pkl` | trained R-insertion classifier (99.7%) | yes |
 | `ipa-normalizer-model.json` | ML IPA normaliser | yes |
-| `phrase-divergence.{json,tsv}` | phrase keeper/noise classification | yes |
+| `g2p-model/`, `g2p-judge-model/` | neural G2P + judge (IPA-fill for `generated`) | yes |
+| `bncfreq/1_1_all_fullalpha.txt` | BNC1994 LRW per-POS frequencies (freq POS split) | yes |
+| `phrase-divergence.{json,tsv}` | phrase keeper/noise classification (`make phrase-divergence`) | gitignored |
 
 ## Legacy CSV editorial (superseded)
 
-`editorial*.csv`, `readlex-reference.tsv`, and the old `data/README.md` describe the
-**pre-overlay** CSV review workflow (`generate_editorial_csv.py` / `merge_editorial_edits.py`),
-now replaced by the patch-overlay system ([editorial-overlay-design.md](editorial-overlay-design.md)).
-Retained for migration/history; not the live path. `data/README.md` "Other Data Files" is
-partly stale — prefer this doc.
+`editorial*.csv` and `readlex-reference.tsv` belong to the **pre-overlay** CSV review
+workflow, now replaced by the patch-overlay system
+([editorial-overlay-design.md](editorial-overlay-design.md)). They are untracked
+(gitignored) and not the live path. `data/README.md` "Other Data Files" is partly
+stale — prefer this doc.

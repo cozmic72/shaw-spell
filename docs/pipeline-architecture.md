@@ -17,7 +17,12 @@ two halves:
    upstream processing, so the editorial overlay is the last word and a patched freq is
    never recomputed away) and commits it alongside `data/patches/patches.jsonl`, so the
    published artifact is never out of sync with the patches that produced it. `make`
-   just depends on the committed file.
+   just depends on the committed file (`make check-readlex`, run by `make supplements`,
+   guards that the publish is not stale w.r.t. the patch store). Both producers finish
+   with the EXPORT BOUNDARY: a per-record publish whitelist (`basis.PUBLISH_FIELDS`)
+   plus the ReadLex-compatibility collapse (`basis.collapse_readlex` — mergers/variant
+   reverse into upstream's var vocabulary, RSSB→RRP, no-counterpart regional lanes held
+   back), so `readlex.json` stays ReadLex-shaped while the editor keeps every lane.
 
 ```
 sources ─► build_supplement.py ─► supplement-combined-filtered.json
@@ -37,14 +42,17 @@ record's `source`, so provenance survives to the editor:
 
 | label | file | what it is |
 |---|---|---|
+| `readlex` | `external/readlex/readlex.json` | upstream ReadLex core, collated into the pool as ordinary records; the `readlex` label is the upstream flag — core records are never dropped, relabelled or flag-mutated |
 | `wordnet` | `supplement-wordnet-reliable.json` | WordNet words WITH a pronunciation → IPA→Shavian |
 | `wiktionary` | `supplement-wiktionary-neardot.json` | Wiktionary words (post rescue + NEAR-dot fix) |
-| `names` | `supplement-names.json` | ~10K curated proper names (shave + CMUdict voters) |
-| `generated` | `supplement-generated.json` | ~19K net-new no-IPA WordNet words, shave-generated |
+| `names` | `supplement-names-ipa.json` | curated proper names (shave + CMUdict voters), plus CMUdict-confirmed `ipa` from the IPA-fill pass (`fill_names_ipa.py`) over `supplement-names.json` |
+| `generated` | `supplement-generated-ipa.json` | net-new no-IPA WordNet words, shave-spelled, plus voter-gated `ipa` from the neural-G2P IPA-fill (`fill_generated_ipa.py`) over `supplement-generated.json` |
 
 Adding a source = one line in `SOURCES` **and** a prerequisite in `build-rules/supplements.mk`
-(both, or `make` won't rebuild on change — see `docs`/memory on build-integration). `names` and
-`generated` are curated inputs (tracked in git); the `combined-*` intermediates are gitignored.
+(both, or `make` won't rebuild on change — see `docs`/memory on build-integration). The
+per-source `supplement-*.json` files are all gitignored intermediates, rebuilt when missing;
+the pipeline's committed checkpoint is `supplement-combined-filtered.json` (see
+[data-files.md](data-files.md) and the committed-artifact decision in [decisions.md](decisions.md)).
 
 Words WITHOUT a usable pronunciation are split off by the generators into `-speculative` buckets;
 `generated` rescues the WordNet no-IPA slice via shave. The `wiktionary-speculative` bucket (has
@@ -65,7 +73,7 @@ single-stage debugging.
 | 4 | classify mergers | `classify_dialect_mergers` | = | tag trap-bath / cot-caught / lot-palm mergers |
 | 5 | reclassify RRP | `reclassify_rrp` | **=** | relabel RRP-passable candidates' var → RRP |
 | 6 | generate RRP | `generate_rrp` | **=** | mint RRP for IPA-only gaps (propose-alongside); flag-gate |
-| 7 | collapse | `collapse_identical_dialects` | drops | merge identical-spelling dialects (D2) |
+| 7 | collapse | `collapse_identical_dialects` | drops | merge identical-spelling dialects (D2 flat collapse) + collapse harvested accents down the dialect hierarchy (GenCan→GenAm→RRP; GenAus/SthAfr/NZ/IrEng→RRP) |
 | 8 | flag variants | `flag_variants` | = | set the `variant` flag on disfavoured/regional spellings |
 | 9 | decontaminate | `filter_supplement_contamination` | drops | drop IPA-contaminated Shavian |
 | 10 | phrases | `filter_supplement_phrases` | drops | drop non-divergent multi-word candidates |

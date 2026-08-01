@@ -18,22 +18,27 @@ records it always did, with the **one intended exception** below (ReadLex's
 `TrapBath` var). The vocabulary and swap detection live in
 `src/tools/dialect_mergers.py`.
 
+> **Status:** only `trap-bath` is ACTIVE. `cot-caught` and `lot-palm` are
+> **disabled** (`MERGER_ENABLED` in `dialect_mergers.py`) pending the owner's
+> direction analysis — see the FROZEN entry in [decisions.md](decisions.md).
+> The direction findings and counts below stand as the analysis record.
+
 ## Where classification happens
 
 A merger flag is layered on **only** when a variant is an exact single-vowel swap
 of the non-merged form. It is detected per-record from the Shavian at the
 differing position — no invented data, only spellings that already exist.
 
-- **Supplements** (`src/tools/classify_dialect_mergers.py`) — a new pipeline stage
-  in the pruning chain: `reliable → deduped → **classified** → collapsed →
-  filtered → basis` (the collapse stage folds identical-spelling dialect variants
-  into one RRP record; see `src/tools/collapse_identical_dialects.py`).
-  Every multi-spelling supplement group is exactly an `{RSSB, GenAm}` pair; RSSB
-  is the non-merged British standard, GenAm the merged American accent. A GenAm
-  spelling that is an exact merger swap of an RSSB sibling in the same
-  `(word, pos)` group is tagged; its base `var` stays `GenAm`. RSSB records, and
-  GenAm forms differing in any other way, carry no merger — an RSSB↔GenAm
-  difference IS the base-accent difference, captured by the label, not a merger.
+- **Supplements** (`src/tools/classify_dialect_mergers.py`) — stage 4 of the
+  in-memory supplement build (see [pipeline-architecture.md](pipeline-architecture.md);
+  the later collapse stage folds identical-spelling dialect variants into one RRP
+  record — `src/tools/collapse_identical_dialects.py`).
+  A GenAm spelling that is an exact merger swap of a non-merged RSSB/RRP sibling
+  for the same `(word, pos)` — an RSSB sibling in the pool, or a non-merged
+  ReadLex/RRP attestation — is tagged; its base `var` stays `GenAm`. RSSB/RRP
+  records, and GenAm forms differing in any other way, carry no merger — an
+  RSSB↔GenAm difference IS the base-accent difference, captured by the label,
+  not a merger.
 - **ReadLex `TrapBath`** (`src/tools/basis.py`, `reinterpret_upstream`) — ReadLex
   is a read-only submodule, so its `var: "TrapBath"` records are reinterpreted at
   the point the pipeline consumes them (the basis loader and the applicator both

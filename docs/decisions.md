@@ -27,11 +27,11 @@ run, never an agent against the live store.
 → [`src/tools/apply_patches.py`](../src/tools/apply_patches.py) reads; nothing writes.
 
 **Patch = minimal diff over the live basis** — SETTLED (code).
-A patch is `{anchor, op, changes, meta}` (op ∈ accept/drop/flag; `changes` = intrinsic
-edits only). Owner's edit wins silently over the recomputed basis; the basis is never
-mutated; deleting a patch is rollback. Derived provenance (source/confidence/freq) is
-never stored in a patch. NB the earlier *full-record* shape in the design doc / editor
-README is superseded — see [record-schema.md](record-schema.md) doc-drift note.
+A patch is `{anchor, op, changes, meta}` (op ∈ accept/edit/drop/flag; `changes` =
+intrinsic edits only; `edit` = a dirty not-yet-reviewed edit that ships nothing).
+Owner's edit wins silently over the recomputed basis; the basis is never mutated;
+deleting a patch is rollback. Derived provenance (source/confidence) is never stored
+in a patch.
 → [`src/tools/basis.py`](../src/tools/basis.py) `INTRINSIC_FIELDS`, `resolve_patch`.
 
 **Definition corrections use a SEPARATE store** — SETTLED (design + code).
@@ -75,21 +75,22 @@ Canonical = ReadLex-attested base-RRP spelling, or the sole RRP pool specimen IF
 high-confidence (rrp_tier A/B). Multiple competing / low-conf lone → no safe canonical → no flags.
 → [`src/tools/flag_variants.py`](../src/tools/flag_variants.py).
 
-**Multi-accent harvest + fallback hierarchy** — PENDING (designed, not built).
-Harvest standard national accents ReadLex is thin on (GenAus, Canada, South-African,
-New-Zealand, Ireland-Republic) from Wiktionary `tags`, as their own vars. Records are
-stored only at the most-specific level where the spelling DIVERGES from its parent in the
-fallback hierarchy **Canada→GenAm→RRP; GenAus/NZ/SA/Ireland→RRP** (else it collapses to
-the parent — same principle as the D2 identical-dialect collapse). Harvested accents flow
-into `readlex.json` + editor but NOT the shipped US/UK dicts (yet). Northern-Ireland and
-all sub-national tags are dropped.
+**Multi-accent harvest + fallback hierarchy** — SETTLED (built).
+Standard national accents are harvested from Wiktionary `tags` as their own vars
+(`GenAus`, `GenCan`, `SthAfr`, `NZ`, `IrEng`, alongside `RRP`/`GenAm`). A harvested
+record is kept only where its spelling DIVERGES from its parent in the hierarchy
+**GenCan→GenAm→RRP; GenAus/SthAfr/NZ/IrEng→RRP** (else it collapses to the parent —
+the same principle as the D2 identical-dialect collapse). Harvested lanes reach the
+editor; the export boundary decides what publishes (see "readlex.json stays
+ReadLex-shaped" below).
+→ `KEEP_ACCENTS` in [`src/tools/generate_wiktionary_supplement.py`](../src/tools/generate_wiktionary_supplement.py);
+hierarchy in [`src/tools/collapse_identical_dialects.py`](../src/tools/collapse_identical_dialects.py).
 
-**Wiktionary geo-tag filtering** — PENDING (the primary half of the harvest feature).
-The wiktionary generator currently DEFAULTS off-target regional tags in as `var=UNC`
-instead of dropping them → common-word pronunciation bloat. Fix: allowlist the KEEP accents
-(RP/UK/British, GenAm/US, GenAus, Canada, SA, NZ, Ireland-Republic); DROP every other
-geographic tag (Northumbria, Scotland, MLE, Southern-US, Indic, …).
-→ [`src/tools/generate_wiktionary_supplement.py`](../src/tools/generate_wiktionary_supplement.py) (in flight — do not disturb).
+**Wiktionary geo-tag filtering** — SETTLED (built, same allowlist).
+The generator KEEPs the allowlisted accents above and DROPs every other geographic
+tag (Northumbria, Scotland, MLE, Southern-US, …) instead of defaulting them in as
+`var=UNC`.
+→ `KEEP_ACCENTS` / drop set in [`src/tools/generate_wiktionary_supplement.py`](../src/tools/generate_wiktionary_supplement.py).
 
 **Wiktionary quality tags → the `info` field** — SETTLED (schema landed).
 Rather than a lossy upfront drop, carry Wiktionary quality/register tags
@@ -98,16 +99,23 @@ as an editor filter/badge, so the owner judges them at review. A general-purpose
 field for non-essential metadata (NOT the patch `note`).
 → `INFO_FIELD` in [`src/tools/basis.py`](../src/tools/basis.py) (commit 5e3ac8c).
 
-**Untagged pronunciations kept as SSB** — SETTLED (part of harvest design).
-The ~33% of Wiktionary sounds with no accent tag (mostly legit main pronunciations) are
-kept as **SSB** (the honest "general/unconfirmed British" bucket), then the RRP reclassifier
-may promote to RRP. Junk stays SSB/low-confidence for review.
+**Untagged pronunciations kept as RSSB** — SETTLED (built).
+Wiktionary sounds with no accent tag (mostly legit main pronunciations) are kept as
+**RSSB** (the "unconfirmed British" bucket, SSB made rhotic), merging with wordnet's
+RSSB records at combine time; the RRP reclassifier may promote to RRP. Junk stays
+RSSB/low-confidence for review.
+→ `UNTAGGED_VAR` in [`src/tools/generate_wiktionary_supplement.py`](../src/tools/generate_wiktionary_supplement.py).
 
-**RSSB reaches output — fate undecided** — PENDING/open.
-RSSB is our own var (SSB made rhotic); no downstream consumer (spell-check, site, installer)
-handles it, and legacy builds normalised RSSB→RRP. The new applicator preserves it. Harmless
-on this branch (not wired to production). Do NOT special-case it away without an owner decision.
-→ [editorial-overlay-design.md](editorial-overlay-design.md) "Known open issues".
+**readlex.json stays ReadLex-shaped — export-time compatibility collapse** — SETTLED.
+The internal lane model (harvest vars, `mergers`, `variant`, RSSB) is richer than
+upstream ReadLex's; rather than impoverish the pool, `collapse_readlex()` runs in BOTH
+producers right before serialization: `mergers`/`variant` reverse into upstream's var
+vocabulary (RRP+trap-bath→`TrapBath`, variant→`RRPVar`) and are stripped; **RSSB
+collapses into RRP** (as legacy production always did); regional lanes with no upstream
+counterpart (NZ/IrEng/SthAfr/GenCan) are held back from publication, not lost; an
+unknown var fails loud. The editor keeps seeing every record and every lane. This
+resolves the old "RSSB reaches output — fate undecided" question.
+→ [`src/tools/basis.py`](../src/tools/basis.py) `collapse_readlex` (commit 6ad6c3d).
 
 ---
 
@@ -130,6 +138,14 @@ RRP record (the spelling is universal); `source` unions the origins.
 
 ## Generation & determinism
 
+**The committed artifact IS the combined+filtered pool** — SETTLED (policy).
+`data/` commits the pipeline's *checkpoint outputs* — `supplement-combined-filtered.json`,
+`definitions-{latin,shavian}-{gb,us}.json`, `readlex.json`, `patches/`, the trained
+models — not the per-source intermediates (all `supplement-<source>*.json` are
+gitignored, regenerated on demand). Build and editor are dumb readers of the checkpoint;
+they never re-derive it. Source-specific processing belongs upstream in the generators.
+→ [`data/.gitignore`](../data/.gitignore); [data-files.md](data-files.md).
+
 **shave-names path is feature-flagged OFF by default** — SETTLED.
 The IPA-basis path is pure/deterministic. The `generate_rrp` shave/names path (no-IPA names)
 is gated behind `SHAW_SPELL_ENABLE_SHAVE_NAMES` (default OFF) — present but dormant, an
@@ -150,10 +166,11 @@ future edit can't silently build a wrong basis. Drop-stages are unguarded by des
 
 ## Definitions
 
-**Every definition must have a Shavian transliteration** — SETTLED (invariant) / PENDING (build).
-Coverage must be total (quality then improved by review). Closed by a **gap-fill-only** shave
-pass (never re-transliterate existing keys → can't orphan definition-patches).
-→ [`src/tools/transliterate_definitions_gap.py`](../src/tools/transliterate_definitions_gap.py),
+**Every definition must have a Shavian transliteration** — SETTLED (invariant + built).
+Coverage must be total (quality then improved by review). Closed by a **fill-missing-only**
+pass (never re-transliterate existing keys → can't orphan definition-patches): `make
+complete-definitions` (manual — shave is expensive; run after a gloss source changes).
+→ [`src/tools/complete_definition_corpus.py`](../src/tools/complete_definition_corpus.py),
 [definitions-editor-design.md](definitions-editor-design.md).
 
 **Definition coverage: ~50%, gap is a long tail not a systemic hole** — SETTLED (finding).

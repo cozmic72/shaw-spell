@@ -11,8 +11,8 @@ and decisions.md before touching anything.
 ## The shape of the system
 
 - **Pipeline** — raw lexical sources → `data/readlex.json`. One in-memory orchestrator
-  builds the supplement basis, the applicator overlays the editorial patches, the
-  frequency pass stamps corpus frequencies. → [pipeline-architecture.md](pipeline-architecture.md).
+  builds the supplement basis, the frequency pass stamps corpus frequencies, then the
+  applicator overlays the editorial patches (the last word). → [pipeline-architecture.md](pipeline-architecture.md).
   Code: [`src/tools/`](../src/tools/) (`build_supplement.py`, `apply_patches.py`, `basis.py`, …).
 - **Editor** — a read-write review tool (`editord` daemon + web UI) over the **basis**
   (upstream + supplements, computed on demand) annotated with the **patch overlay**. The
@@ -40,15 +40,12 @@ and decisions.md before touching anything.
 | [record-schema.md](record-schema.md) | Record fields (intrinsic / provenance / orig_*) + the patch shape |
 | [data-files.md](data-files.md) | Reference table of `data/` files: what, who writes, tracked, ships |
 | [pipeline-architecture.md](pipeline-architecture.md) | The supplement build → merge → frequency pipeline; stages, determinism, invariants |
-| [editorial-overlay-design.md](editorial-overlay-design.md) | The patch-overlay editorial system + editor UI design (note: patch shape here is the older full-record model — see record-schema.md) |
+| [editorial-overlay-design.md](editorial-overlay-design.md) | The patch-overlay editorial system — the core idea, the natural-key derivation, rationale (historical design; the live schema is record-schema.md) |
 | [dialect-mergers.md](dialect-mergers.md) | The base-accent + additive-mergers dialect model; merger directions, counts, residue |
 | [shaw-spell-spelling.md](shaw-spell-spelling.md) | Project layer over the Shavian spelling rules — how shaw-spell applies/bends them; the two goals |
 | [phrase-divergence.md](phrase-divergence.md) | Which multi-word phrases earn their own entry (pronunciation ≠ sum of parts) |
 | [definitions-editor-design.md](definitions-editor-design.md) | Definitions viewer + corrector design (transliteration-only, separate patch store) |
 | [frequency-feasibility.md](frequency-feasibility.md) | Frequency-data enrichment from a subtitle corpus (built) |
-| [shavian-spelling-digest.md](shavian-spelling-digest.md) | Consolidated Shavian spelling rules + ReadLex conventions for tooling |
-| [overnight-progress.md](overnight-progress.md) | Log of an autonomous editor-iteration session (historical) |
-| [release-notes-draft.md](release-notes-draft.md) | Draft dictionary word-count / release notes |
 
 ## Deeper linguistic reference
 

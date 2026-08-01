@@ -1,7 +1,11 @@
 # Definitions viewer + editor — design
 
-Status: DRAFT for owner review. No code yet.
-Author: orchestrator, 2026-07-19.
+Status: design settled 2026-07-19; **partially built**. Built: the coverage pass
+(`make complete-definitions`, fill-missing-only) and the daemon side — ops
+`definitions` / `definition_patch` / `definition_unpatch` over the separate
+`data/patches/definition-patches.jsonl` store (`src/editor/definitions.py`,
+`definition_patches.py`). NOT yet built: the client UI (inline sense summary,
+correction modal — §5).
 
 ## 1. Purpose & invariant
 
@@ -20,7 +24,7 @@ Two orthogonal jobs, don't conflate them:
 - **Coverage** (pipeline): guarantee a transliteration exists for *every* definition.
 - **Correction** (editor): let the owner fix a specific bad transliteration → a patch.
 
-## 2. Data model (as it exists today)
+## 2. Data model (counts as measured at design time, 2026-07-19)
 
 - `data/definitions-latin-{gb,us}.json` — `word -> [ {definition, pos, examples, source} ]`.
   ~135,249 keys. The English glosses. `gb`/`us` are near-identical (dialect spelling of the
@@ -70,8 +74,9 @@ Two distinct coverage gaps, closed by different means:
 - **Transliteration gap** — English glosses that exist but lack a Shavian version (135k Latin vs
   88k Shavian). Closed by a transliteration pass (below).
 
-A pipeline pass — call it `transliterate_definitions.py` — that guarantees total *transliteration*
-coverage over whatever English defs we have (existing + newly ingested):
+A pipeline pass — built as `complete_definition_corpus.py` (`make complete-definitions`) —
+that guarantees total *transliteration* coverage over whatever English defs we have
+(existing + newly ingested):
 
 1. For every `(word, sense)` in the Latin defs lacking a Shavian transliteration, generate
    one with **shave** (the deterministic Roman→Shavian G2P we already use; `-b` British for
@@ -149,7 +154,7 @@ fight the word-review flow. Inline *view* + modal *edit* keeps each surface doin
 after using it the owner wants true inline editing for quick one-glyph fixes, it's an additive
 enhancement — the modal stays for the heavy cases.)
 
-## 6a. OWNER DECISIONS (2026-07-19) — resolving the questions below
+## 6a. OWNER DECISIONS (2026-07-19)
 - **Scope: the editor works over the SHAVIAN definitions only** (`definitions-shavian-{gb,us}.json`,
   keyed `word|synset-id`). The Latin↔Shavian keying "incompatibility" (old Q1) is MOOT — only the
   Shavian side is in play; one direction. This de-risks the build.
@@ -157,34 +162,14 @@ enhancement — the modal stays for the heavy cases.)
   gloss-editing / source-selection in v1.
 - **New sources:** ingest **Wikidata CC0** (names gap) only. OEWN already in use. kaikki examples
   DROPPED (owner: "we want definitions not examples"). See [[definitions-sources-rnd]].
-- Q2 (separate definition-patches.jsonl store), Q3 (shave gap-fill only), Q5 (entry point off the word
-  panel), Q6 (source provenance in UI) — my leans stand unless owner says otherwise; not build-blocking.
+- Remaining leans (standing unless the owner says otherwise; not build-blocking):
+  separate `definition-patches.jsonl` store (BUILT), coverage pass fill-missing-only
+  (BUILT), entry point off the word panel, per-sense source provenance in the UI once
+  new sources land.
 
-## 6. Open questions for the owner (LARGELY RESOLVED — see 6a)
-
-1. **gb/us split.** Correct one dialect or both at once? Options: (a) edit each dialect
-   separately (two patches); (b) one correction applies to both unless they diverge; (c) treat
-   the transliteration as dialect-agnostic where the English gloss is identical and only split
-   when it actually differs. My lean: (c) — most glosses transliterate identically across gb/us,
-   so default to one correction covering both, split only on genuine divergence. Confirm?
-2. **Separate `definition-patches.jsonl` store** (my recommendation) vs folding into the word
-   store — OK?
-3. **Coverage pass = shave gap-fill only** (never re-transliterate existing keys, to avoid
-   orphaning definition-patches) — agree?
-4. **Editing scope:** correct *transliterations only* (my assumption), or also edit/choose the
-   *English definitions* themselves? The latter grows once we ingest multiple def sources (#11) —
-   the owner may want to pick/prefer a source, or edit a gloss. I've scoped v1 to transliteration
-   correction; source-selection/gloss-editing is a natural v2. Confirm the v1 boundary.
-5. **Entry point:** is the definitions section part of the **word** detail panel (my design), or a
-   separate top-level "definitions" mode/filter in the workbench? I recommend hanging it off the
-   word (context matters), with a "definitions needing review" filter as the triage entry.
-6. **Definition source provenance in the UI:** once #11 lands new sources (WordNet vs Wiktionary vs
-   GCIDE vs Wikidata…), each sense should show WHICH source it came from (like the word records'
-   `source` list), so the owner can judge trust + pick. Fold into the inline sense summary.
-
-## 7. Build phasing (once design is agreed) — NOT started
-- P0: coverage pass (`transliterate_definitions.py`, shave gap-fill) → invariant holds.
-- P1: daemon def-ops (view senses for a word; def-patch/flag/unpatch) + `definition-patches.jsonl`.
+## 7. Build phasing
+- P0 **BUILT**: coverage pass (`complete_definition_corpus.py`, fill-missing-only) → invariant holds.
+- P1 **BUILT**: daemon def-ops (view senses for a word; def-patch/unpatch) + `definition-patches.jsonl`.
 - P2: inline definitions section in the word panel (read-only view + gap visibility).
 - P3: the correction modal (edit transliteration, shave-diff, save→patch).
 - P4: "definitions needing review" filter + flag triage.

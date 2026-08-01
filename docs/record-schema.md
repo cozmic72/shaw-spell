@@ -31,7 +31,8 @@ them in identity would orphan patches on trivial upstream re-notation). See
 
 ## Provenance fields (derived, read-only, never patch-editable)
 
-`PROVENANCE_FIELDS` + `INFO_FIELD`. Carried end-to-end so the editor can surface,
+`PROVENANCE_FIELDS` + `INFO_FIELD` (+ `has_definition`, carried the same way).
+Carried end-to-end so the editor can surface,
 filter, and sort the review pool; recomputed by the pipeline, never stored in a patch.
 
 | field | written by | meaning |
@@ -75,16 +76,14 @@ the live basis:
 
 | field | meaning |
 |---|---|
-| `anchor` | natural key of the ONE basis record reviewed; `null` = authorship (a brand-new record no source attests) |
-| `op` | `accept` (sanction the anchored record + lay `changes` over it), `drop` (emit nothing), `flag` (looked-at, no verdict — production no-op) |
+| `anchor` | natural key of the ONE basis record reviewed; `null` = authorship (a brand-new record no source attests; `op` is absent) |
+| `op` | `accept` (sanction the anchored record + lay `changes` over it), `edit` (a dirty edit persisted on navigate — carries `changes` but is unreviewed and ships nothing; Accept rewrites it), `drop` (emit nothing), `flag` (looked-at, no verdict — production no-op) |
 | `changes` | the INTRINSIC edits (subset of `INTRINSIC_FIELDS`) an accept layers over the basis record. For an authorship patch, this is the WHOLE record |
-| `meta` | `{author, ts, note}` — patch metadata; `note` is NEVER emitted to the dictionary |
+| `meta` | `{author, origin, ts, note?}` — patch metadata; `note` is NEVER emitted to the dictionary |
 
 `resolve_patch` (in basis.py) layers the patch over the *live* basis, so a decision
 follows upstream drift instead of freezing a stale copy. Deleting a patch is rollback.
 
-> **Doc drift, 2026-07-20:** [editorial-overlay-design.md](editorial-overlay-design.md)
-> §"The patch record" and [`src/editor/README.md`](../src/editor/README.md) describe an
-> earlier **full-record** `{anchor, record|null, meta}` shape. The shipped code
-> (`basis.py`, `apply_patches.py`, `editord.py`) uses the **minimal-diff**
-> `{anchor, op, changes, meta}` shape above. Trust the code / this doc.
+In the editor, authorship is an ORIGIN, not a verdict: an authored row carries
+`manual: True` while its `patch_state` is the same accepted/edited/dirty/dropped/
+flagged/orphaned vocabulary as every other row (`src/editor/overlay.py`).

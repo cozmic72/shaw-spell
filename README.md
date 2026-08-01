@@ -5,7 +5,7 @@
 **Comprehensive Shavian spelling support for macOS**
 
 Shaw-Spell provides dictionaries for Dictionary.app and system-wide spell checking for the Shavian alphabet. 
-106,000+ Shavian words with definitions, pronunciations, and intelligent spell checking that works in all macOS apps.
+114,000+ Shavian dictionary entries with definitions, pronunciations, and intelligent spell checking that works in all macOS apps.
 
 **Download and learn more about the project at [joro.io/shaw-spell](https://joro.io/shaw-spell)**
 
@@ -97,7 +97,7 @@ python3 src/tools/generate_review_files.py
 
 | Target | Description |
 |--------|------------|
-| `make supplements` | Ensure merged readlex is up to date |
+| `make supplements` | Ensure the committed readlex.json is present + not stale w.r.t. the patch store (runs `check-readlex`) |
 | `make supplements-from-source` | Full rebuild from source data |
 | `make rescore-full` | Re-score confidence with full shave consultation |
 | `make review-files` | Generate review TSVs for human inspection |
@@ -123,8 +123,9 @@ The dialect model separates a record's **base accent** (scalar `var`) from the
 | `var` | Meaning |
 |-------|---------|
 | `RRP` | Rhotic Received Pronunciation (canonical, universal default) |
-| `RSSB` | Rhotic Standard Southern British (supplement data) |
+| `RSSB` | Rhotic Standard Southern British (supplement data; collapses to RRP at export) |
 | `GenAm` | General American (exceptions + supplement data) |
+| `GenAus` `GenCan` `SthAfr` `NZ` `IrEng` | regional lanes harvested from Wiktionary accent tags (review pool; lanes with no upstream ReadLex counterpart are held back from readlex.json at export) |
 
 Mergers are NOT `var` values — they live in `mergers`, e.g. `["trap-bath"]` (PALM 𐑭→TRAP 𐑨 in
 BATH words). `cot-caught` and `lot-palm` are defined but currently disabled (see `MERGER_ENABLED`

@@ -18,10 +18,9 @@ records it always did, with the **one intended exception** below (ReadLex's
 `TrapBath` var). The vocabulary and swap detection live in
 `src/tools/dialect_mergers.py`.
 
-> **Status:** only `trap-bath` is ACTIVE. `cot-caught` and `lot-palm` are
-> **disabled** (`MERGER_ENABLED` in `dialect_mergers.py`) pending the owner's
-> direction analysis — see the FROZEN entry in [decisions.md](decisions.md).
-> The direction findings and counts below stand as the analysis record.
+> **Status:** all three mergers are ACTIVE (`MERGER_ENABLED` in
+> `dialect_mergers.py`) — see [decisions.md](decisions.md). The direction
+> findings and counts below are the analysis record that settled it.
 
 ## Where classification happens
 

@@ -148,10 +148,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 5px;
-    /* Thinner than a primary touch target (was 44px): this is a disclosure toggle,
-       tapped rarely, not a repeated action row — 38px keeps a real tap zone
-       without costing the vertical space the owner asked to reclaim. */
-    min-height: 38px;
+    min-height: 44px;
     font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 0.08em;
@@ -1423,7 +1420,6 @@ body {
     line-height: 1.3;
 }
 .ipa-field { font-size: 16px; font-style: italic; }
-.glance-word .edit-field { flex: 1 1 auto; min-width: 0; }
 .latin-field { font-size: 17px; font-weight: 700; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }

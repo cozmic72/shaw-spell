@@ -58,7 +58,7 @@ spell-check path.
 The daemon diffs the record and persists the minimal-diff patch (see above). The write
 validates the patch shape and, for an accept/edit/drop, that the anchor resolves to a
 basis record. See `editord.py` for the full op set (`related`, `definitions`,
-`commit`, `patch_counts`, …).
+`commit`, …).
 
 Filters: the combined `search` free-text (always-regex, case-insensitive, matched
 against word OR shaw OR ipa) plus `word`/`shaw` substring (back-compat); the three

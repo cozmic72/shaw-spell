@@ -131,13 +131,6 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 clear), keyed by anchor; an authorship record (anchor null) is
                 cleared by patch_id and its row removed (records empty)
 
-    Request:   {"op": "patch_counts"}
-    Response:  {"total": N, "today": M}   # N = every patch line in the store; M =
-                those whose meta.ts is on the server's LOCAL calendar day. Counted
-                from the patch store directly (not git), so it works on a repo-less
-                tarball deploy where the Commit button is hidden. The masthead reads
-                this on boot and after every write.
-
     Request:   {"op": "commit_status"}
     Response:  {"uncommitted": N, "head": "<short-sha>"|null,
                 "subject": "<last commit subject>"|null}   # N = patch lines in the
@@ -1658,46 +1651,6 @@ def _store_line_count(root, pathspec):
         return sum(1 for stored in handle if stored.strip())
 
 
-# Patch counts for the masthead — the batch-size signal the Commit button used to
-# carry, but now surfaced independently so it survives a repo-less tarball deploy
-# (where Commit is hidden). Counted from the PATCH STORE directly, never git.
-#
-# "today" = patches whose ts falls on the current LOCAL calendar day. The ts is
-# ISO-8601 UTC (_now_iso); the owner reads this on the DEPLOYED editor, so "today"
-# means the server's local calendar day (the day the owner sees on that machine's
-# clock). We convert each UTC ts to the server's local time and compare its date to
-# today's local date. (America/Chicago is the owner's zone; the deploy host's TZ is
-# the authority — set TZ there if it differs.)
-def _patch_counts():
-    """{total, today} over the current patch store. total = every patch line;
-    today = those whose ts is on the server's local calendar day. Reads the store
-    fresh (like the commit ops) so the count reflects what is on disk, working
-    with no repo."""
-    from patchstore import load_patches
-
-    patches = load_patches()
-    today = time.localtime().tm_yday, time.localtime().tm_year
-    today_count = 0
-    for patch in patches:
-        ts = (patch.get("meta") or {}).get("ts")
-        if ts and _is_local_today(ts, today):
-            today_count += 1
-    return {"total": len(patches), "today": today_count}
-
-
-def _is_local_today(ts, today):
-    """Whether an ISO-8601 UTC timestamp falls on the server's local calendar day
-    `today` (a (tm_yday, tm_year) pair). The UTC instant is converted to local time,
-    then its day-of-year + year are compared — so a late-evening Chicago decision
-    stored as the next UTC day still counts as today locally."""
-    local = time.localtime(_parse_iso_utc(ts))
-    return (local.tm_yday, local.tm_year) == today
-
-
-def handle_patch_counts(_state, _request):
-    return _patch_counts()
-
-
 def handle_commit_status(_state, _request):
     root = _commit_repo_root()
     if root is None:
@@ -1795,7 +1748,6 @@ HANDLERS = {
     "unpatch": handle_unpatch,
     "commit_status": handle_commit_status,
     "commit": handle_commit,
-    "patch_counts": handle_patch_counts,
 }
 
 

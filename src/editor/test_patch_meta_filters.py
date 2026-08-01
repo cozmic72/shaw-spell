@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Focused unit tests for the patch-meta editor features (author filter, relative
-date filter, masthead patch counts) — all daemon-side.
+date filter) — all daemon-side.
 
 Pure functions over SYNTHETIC patches and annotated records: no basis load, no
-build, no live store. The patch-count test redirects the store to a temp file via
-SHAW_SPELL_PATCH_STORE, so the real data/patches/patches.jsonl is never touched.
+build, no live store.
 
 Covers:
   - overlay surfaces patch_author/patch_ts onto a patched record, and leaves them
@@ -12,9 +11,6 @@ Covers:
   - the author facet matcher (record's patch_author ∈ selected)
   - the relative "days back" matcher (_within_days: patched within N days; a
     patchless record never matches)
-  - the today-count semantics (_is_local_today: a UTC ts on the server's LOCAL
-    calendar day counts; a two-day-old one does not)
-  - _patch_counts over a synthetic store (total + today)
   - _distinct_authors ignores patchless rows
   - group-aware filter_records (a matching member serves its whole group)
   - the review "mixed" GROUP-level filter (REVIEW_MIXED): serves groups whose
@@ -29,9 +25,7 @@ Standalone (no test framework): exits 0 on pass, non-zero on fail.
 """
 
 import calendar
-import os
 import sys
-import tempfile
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -41,7 +35,6 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
 import editord
-import patchstore
 
 
 def _iso(epoch):
@@ -138,73 +131,6 @@ def test_parse_iso_utc_roundtrip():
     epoch = calendar.timegm(time.strptime("2026-07-22T03:12:31Z",
                                           "%Y-%m-%dT%H:%M:%SZ"))
     assert editord._parse_iso_utc("2026-07-22T03:12:31Z") == epoch
-
-
-# ---- today-count semantics (local calendar day) ----
-
-def test_is_local_today_now_counts():
-    now = time.time()
-    today = (time.localtime().tm_yday, time.localtime().tm_year)
-    assert editord._is_local_today(_iso(now), today)
-
-
-def test_is_local_today_two_days_ago_misses():
-    old = time.time() - 2 * 86400
-    today = (time.localtime().tm_yday, time.localtime().tm_year)
-    assert not editord._is_local_today(_iso(old), today)
-
-
-# ---- patch_counts over a synthetic store ----
-
-def test_patch_counts_total_and_today():
-    now = time.time()
-    patches = [
-        {"id": "p_a", "anchor": {"word": "a", "pos": "NN", "shaw": "x", "var": ""},
-         "op": "accept", "changes": {},
-         "meta": {"author": "joro", "origin": "editor", "ts": _iso(now)}},
-        {"id": "p_b", "anchor": {"word": "b", "pos": "NN", "shaw": "y", "var": ""},
-         "op": "accept", "changes": {},
-         "meta": {"author": "joro", "origin": "editor",
-                  "ts": _iso(now - 3 * 86400)}},
-        {"id": "p_c", "anchor": {"word": "c", "pos": "NN", "shaw": "z", "var": ""},
-         "op": "flag", "changes": {},
-         "meta": {"author": "ann", "origin": "editor", "ts": _iso(now)}},
-    ]
-    with _redirected_store(patches) as _path:
-        counts = editord._patch_counts()
-    assert counts["total"] == 3, counts
-    assert counts["today"] == 2, counts  # the two "now" patches, not the 3-day-old
-
-
-def test_patch_counts_empty_store():
-    with _redirected_store([]) as _path:
-        counts = editord._patch_counts()
-    assert counts == {"total": 0, "today": 0}, counts
-
-
-class _redirected_store:
-    """Write `patches` to a temp store and point SHAW_SPELL_PATCH_STORE at it for
-    the duration of the block, so load_patches (and thus _patch_counts) reads the
-    synthetic store, never the live one."""
-
-    def __init__(self, patches):
-        self._patches = patches
-
-    def __enter__(self):
-        self._dir = tempfile.TemporaryDirectory()
-        path = Path(self._dir.name) / "patches.jsonl"
-        patchstore.write_patches(self._patches, path=path)
-        self._prev = os.environ.get("SHAW_SPELL_PATCH_STORE")
-        os.environ["SHAW_SPELL_PATCH_STORE"] = str(path)
-        return path
-
-    def __exit__(self, *_exc):
-        if self._prev is None:
-            os.environ.pop("SHAW_SPELL_PATCH_STORE", None)
-        else:
-            os.environ["SHAW_SPELL_PATCH_STORE"] = self._prev
-        self._dir.cleanup()
-        return False
 
 
 # ---- distinct authors (facets op helper) ----

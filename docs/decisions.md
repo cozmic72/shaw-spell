@@ -57,14 +57,22 @@ ReadLex's `TrapBath` var is reinterpreted at consumption as base `RRP` + `merger
 → [`src/tools/dialect_mergers.py`](../src/tools/dialect_mergers.py), `basis.py` reinterpret;
 [dialect-mergers.md](dialect-mergers.md).
 
-**Mergers are FROZEN — direction & one-vs-two unsettled** — FROZEN. **Important.**
-`trap-bath` is clear-cut and ON. `cot-caught` and `lot-palm` are **DISABLED** (per-merger
-enable flags, commit 44e289f) to buy analysis space. The owner's linguistic framing
-(canonical=LOT, variant=PALM) is the OPPOSITE direction to the code's current `MERGER_SWAPS`,
-and whether lot-palm/cot-caught is one bidirectional merger or two directional ones is
-genuinely unresolved. Do NOT re-enable them, alter `MERGER_SWAPS`, or commit merger logic
-until the owner completes a data analysis (an R&D task, not a code change).
+**Mergers are FROZEN — direction & one-vs-two unsettled** — SUPERSEDED by "All three mergers
+ENABLED" below (2026-08-01). Kept for history: `cot-caught` and `lot-palm` were disabled
+(per-merger enable flags, commit 44e289f) pending a direction analysis. The owner's linguistic
+framing (canonical=LOT, variant=PALM) had looked like the OPPOSITE direction to the code's
+`MERGER_SWAPS`, and whether lot-palm/cot-caught was one bidirectional merger or two directional
+ones was unresolved.
 → per-merger flags in `dialect_mergers.py` / `classify_dialect_mergers.py`.
+
+**All three mergers ENABLED** — SETTLED (commit 15fe62f).
+The owner ruled on direction (see [dialect-mergers.md](dialect-mergers.md)): the variety that
+DISTINGUISHES the vowels is canonical, the collapsing one carries the flag. That is an editorial
+call, not a measurement, and reversing one is a single tuple in `_MERGER_SWAPS_ALL` — expect it to
+be revisited once real output has been reviewed. The attestation rule was separately narrowed to
+RP/SSB-attested upstream siblings, removing the base-selection defect that motivated disabling
+them. `trap-bath`, `cot-caught`, and `lot-palm` are all default-on in `MERGER_ENABLED`.
+→ [`src/tools/dialect_mergers.py`](../src/tools/dialect_mergers.py) `MERGER_ENABLED`.
 
 **The `variant` flag IS live** — SETTLED (the decidable half of the frozen model).
 Anchor every decision to the **RRP canonical** spelling for `(word, pos)`:

@@ -218,10 +218,13 @@ SUPPLEMENT_STEP_MODULES := \
 	$(SRC_TOOLS)/g2p_common.py
 
 # data/g2p-judge-model (the LATIN-ONLY sibling of data/g2p-model) backs
-# reclassify_rrp's feature-flagged MODEL-JUDGE promotion gate. The gate is OFF
-# by default (SHAW_SPELL_MODEL_JUDGE=1 enables it) and the model is loaded
-# lazily only when it is on, but the artifacts are unconditional prerequisites
-# so a flag-on build rebuilds when the frozen model changes.
+# reclassify_rrp's MODEL-JUDGE promotion gate. The gate is ON by default
+# (reclassify_rrp.ENABLE_MODEL_JUDGE): every candidate the classifier would
+# promote to RRP must pass the Latin-only RP-IPA judge or it stays in its
+# source var as a review candidate. SHAW_SPELL_MODEL_JUDGE=0 turns it OFF,
+# restoring the pure source-var rule; =1 is redundant. The artifacts are
+# unconditional prerequisites so the build rebuilds when the frozen model
+# changes.
 data/supplement-combined-filtered.json: | $(SUPPLEMENT_STEP_MODULES) \
 		data/supplement-wordnet-reliable.json \
 		data/supplement-wiktionary-neardot.json \

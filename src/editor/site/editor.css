@@ -930,8 +930,6 @@ body {
     position: relative;
     overflow-y: auto;
     padding: 30px 34px;
-    border-left: 4px solid transparent;
-    transition: border-color 0.15s;
     container-type: inline-size;
 }
 
@@ -1098,10 +1096,6 @@ body {
     gap: 6px 8px;
 }
 .metadata-badges:empty { display: none; }
-/* The card's mode tell: review wears the live accent edge (single-key verdicts
-   armed), edit lifts it — the two modes are never ambiguous. */
-.detail.mode-review { border-left-color: var(--accent); }
-.detail.mode-edit { border-left-color: var(--state-edited); }
 .detail.mode-review::after {
     content: "REVIEW";
     position: absolute;

@@ -142,6 +142,7 @@ const ORPHAN_KIND_TAGS = new Map([
 
 const REFERENCES = [
     ["Wiktionary", "https://en.wiktionary.org/wiki/{word}"],
+    ["Cambridge", "https://dictionary.cambridge.org/dictionary/english/{word}"],
     ["Merriam-Webster", "https://www.merriam-webster.com/dictionary/{word}"],
     ["OED", "https://www.oed.com/search/dictionary/?scope=Entries&q={word}"],
 ];
@@ -3430,7 +3431,7 @@ async function authorEntry(ctx, { flag }) {
     let authored;
     try {
         authored = await callDaemon(
-            { op: "patch", anchor: null, record, author: AUTHOR, dirty: true });
+            { op: "patch", anchor: null, record, author: AUTHOR });
     } catch (error) {
         showToast(error.message, true);
         return;

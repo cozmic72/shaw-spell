@@ -1201,9 +1201,9 @@ def _build_patch(state, anchor, record, meta, dirty):
     resolves to no basis record. `dirty` selects op=edit vs op=accept for an
     anchored change, and op=edit vs op None for an authorship."""
     # Authorship (anchor null, record supplied): the record is self-contained, so
-    # `changes` IS the whole record. `dirty` makes it op="edit" — a NEW manual
-    # record enters the queue unreviewed and ships nothing (see basis
-    # resolve_patch) until an explicit Accept re-authors it with op None.
+    # `changes` IS the whole record. Creating a record IS a verdict — Create
+    # sends no `dirty` and the record is accepted and shipped, exactly as Accept
+    # does elsewhere. `dirty` (op="edit") is for an edit persisted on navigate.
     if anchor is None:
         op = OP_EDIT if dirty else None
         return make_patch(None, op, record, meta), anchor_key(record), None

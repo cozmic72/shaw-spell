@@ -38,8 +38,8 @@ _MERGER_SWAPS_ALL = {
     MERGER_LOT_PALM: (LOT, PALM),
 }
 
-# Per-merger enable flags. Default: trap-bath ON, cot-caught + lot-palm OFF. Each
-# can be flipped via env (SHAW_SPELL_MERGER_<NAME>=1/0) without a code edit.
+# Per-merger enable flags, each overridable via env
+# (SHAW_SPELL_MERGER_<NAME>=1/0) without a code edit.
 def _merger_enabled(name, default):
     env = os.environ.get(f"SHAW_SPELL_MERGER_{name.upper().replace('-', '_')}")
     if env is None:
@@ -48,8 +48,8 @@ def _merger_enabled(name, default):
 
 MERGER_ENABLED = {
     MERGER_TRAP_BATH: _merger_enabled(MERGER_TRAP_BATH, True),
-    MERGER_COT_CAUGHT: _merger_enabled(MERGER_COT_CAUGHT, False),
-    MERGER_LOT_PALM: _merger_enabled(MERGER_LOT_PALM, False),
+    MERGER_COT_CAUGHT: _merger_enabled(MERGER_COT_CAUGHT, True),
+    MERGER_LOT_PALM: _merger_enabled(MERGER_LOT_PALM, True),
 }
 
 # The active swap table: only enabled mergers. merger_of / classify iterate this,

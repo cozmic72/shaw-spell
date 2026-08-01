@@ -731,27 +731,10 @@ body {
     -webkit-user-select: none;
     -webkit-touch-callout: none;
 }
-/* State edge-bar: a redundant channel beside the stamp glyph so state never rides
-   on colour alone. STATE is its only job — selection never touches it. */
-.ledger-row::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--row-edge, transparent);
-}
-.ledger-row.state-unreviewed { --row-edge: transparent; }
-.ledger-row.state-accepted { --row-edge: var(--state-accepted); }
-.ledger-row.state-dropped { --row-edge: var(--state-dropped); }
-.ledger-row.state-flagged { --row-edge: var(--state-flagged); }
-.ledger-row.state-mixed { --row-edge: var(--state-mixed); }
-.ledger-row.state-orphaned { --row-edge: var(--state-orphaned); }
 .ledger-row:hover { background: var(--paper-raised); }
-/* Selection is the raised-paper wash ALONE — no accent strip (::before stays the
-   STATE channel). ONE treatment for cursor, pick, child and header alike; hover
-   shares the same ground, so hovering a selected row never reads as a state change. */
+/* Selection is the raised-paper wash ALONE. ONE treatment for cursor, pick, child
+   and header alike; hover shares the same ground, so hovering a selected row
+   never reads as a state change. */
 .ledger-row.selected { background: var(--paper-raised); }
 
 /* ---- record-list grouping ---- */
@@ -797,10 +780,6 @@ body {
     box-shadow: var(--frame-sides),
         inset 0 1px 0 var(--groove-line), inset 0 -1px 0 var(--groove-line);
 }
-/* Round the edge-bar's outer corners to follow the block's rounded corner. */
-.ledger-row.group-child::before { left: 0; }
-.ledger-row.group-child-first::before { border-top-left-radius: var(--frame-radius); }
-.ledger-row.group-child-last::before { border-bottom-left-radius: var(--frame-radius); }
 
 /* The indent strip left of the child block is the PARENT header's territory. The
    GEOMETRY rides on each child (::after painting the row's left-margin column);
@@ -897,6 +876,13 @@ body {
 .stamp.flagged { color: var(--state-flagged); }
 .stamp.mixed { color: var(--state-mixed); }
 .stamp.orphaned { color: var(--state-orphaned); }
+/* ✎ reads much lighter than the verdict glyph beside it at the shared 12px —
+   sized up so the two feel optically balanced rather than the mark disappearing. */
+.manual-mark { font-size: 16px; vertical-align: -1px; }
+/* Pinned to the bar's far end, independent of the count label's text length (1
+   RECORD vs 137 RECORDS) — a stamp riding on flow after the label would jump
+   horizontally as the label's width changes. */
+.records-bar .stamp { margin-left: auto; }
 
 /* ---- detail (right) — the card the editor stares at while deciding ---- */
 /* A query container: the splitter makes the panel's width independent of the
@@ -1097,14 +1083,6 @@ body {
 .records-bar.state-flagged { --state-edge: var(--state-flagged); }
 .records-bar.state-orphaned { --state-edge: var(--state-orphaned); }
 .records-bar.state-mixed { --state-edge: var(--state-mixed); }
-.records-summary {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px 12px;
-    flex: 1 1 auto;
-    min-width: 0;
-}
 .records-count {
     font-size: 11px;
     letter-spacing: 0.1em;
@@ -1113,22 +1091,10 @@ body {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
-/* Same box + hover-fill idiom as the action buttons (.act.act-icon) — same
-   interaction class (a bordered icon button), so it should read the same;
-   neutral colour since stepping carries no verdict. */
-.records-nav {
-    flex: 0 0 auto;
-    min-width: 44px;
-    min-height: 44px;
-    font-size: 16px;
-    line-height: 1;
-    color: var(--ink-soft);
-    background: none;
-    border: 1px solid currentColor;
-    border-radius: 2px;
-    cursor: pointer;
-}
-.records-nav:hover:not(:disabled) { background: var(--ink-soft); color: var(--paper); }
+/* stepNavButton builds these as genuine .act.act-icon buttons (editor.js) — the
+   border, sizing, glyph and hover-fill all come from .act/.act-icon/.act-glyph.
+   records-nav carries only its placement in the records bar. */
+.records-nav { flex: 0 0 auto; }
 .records-nav:disabled { opacity: 0.25; cursor: default; }
 
 /* The rolled-up POS tag sits in the content-sized posvar group (its .pos-glance
@@ -1488,8 +1454,11 @@ body {
 .act.drop:hover { background: var(--state-dropped); color: var(--paper); }
 .act.flag { color: var(--state-flagged); }
 .act.flag:hover { background: var(--state-flagged); color: var(--paper); }
-.act.unflag, .act.undo { color: var(--ink-soft); }
-.act.unflag:hover, .act.undo:hover { background: var(--ink-soft); color: var(--paper); }
+.act.unflag, .act.undo, .act.prev, .act.next { color: var(--ink-soft); }
+.act.unflag:hover, .act.undo:hover, .act.prev:hover:not(:disabled), .act.next:hover:not(:disabled) {
+    background: var(--ink-soft);
+    color: var(--paper);
+}
 .act.clear { color: var(--state-unreviewed); }
 .act.clear:hover { background: var(--state-unreviewed); color: var(--paper); }
 .act.clone { color: var(--accent-manual); }
@@ -2176,8 +2145,11 @@ kbd {
         border-top: 1px solid var(--rule);
         box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.14);
     }
-    .detail .act { flex: 1 1 0; text-align: center; padding: 10px 8px; }
-    .detail .act.act-icon { gap: 0; padding: 10px 8px; min-width: 0; }
+    /* Scoped to .actions (not the bare .detail .act it used to be) — that generic
+       selector also caught .records-nav, shrinking it off its fixed 44×44 footprint
+       and reopening the layout-stability bug the stamp-position fix closed. */
+    .detail .actions .act { flex: 1 1 0; text-align: center; padding: 10px 8px; }
+    .detail .actions .act.act-icon { gap: 0; padding: 10px 8px; min-width: 0; }
 
     .pacing { gap: 20px; padding: 8px 18px; }
 

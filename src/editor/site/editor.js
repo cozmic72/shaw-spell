@@ -855,7 +855,19 @@ function stampCell(record, verdict) {
         throw new Error(`no stamp glyph for verdict: ${verdict} (orphan_kind: ${record.orphan_kind})`);
     }
     const marked = Boolean(record.manual) && verdict !== GROUP_MIXED;
-    const stamp = cell(`stamp col-state ${verdict}`, marked ? `✎ ${glyph}` : glyph);
+    const stamp = document.createElement("span");
+    stamp.className = `stamp col-state ${verdict}`;
+    // A separate span for ✎: it shares the stamp's 12px by default and reads much
+    // lighter than the verdict glyph beside it, so it gets its own, larger size
+    // (.manual-mark) rather than riding the shared font-size as one text node.
+    if (marked) {
+        const mark = document.createElement("span");
+        mark.className = "manual-mark";
+        mark.textContent = "✎";
+        stamp.append(mark, document.createTextNode(` ${glyph}`));
+    } else {
+        stamp.textContent = glyph;
+    }
     const words = orphaned
         ? `orphaned — ${ORPHAN_KIND_TAGS.get(record.orphan_kind).title}`
         : verdict;
@@ -1432,35 +1444,34 @@ function recordEditor(group, opts) {
 // verdict glyph (its border also carries the panel's ONE verdict tint — see
 // stampCell/GROUP_MIXED), and (detail scope only — a modal has no list position)
 // the step-prev/next buttons.
+//
+// The stamp is PINNED to the far end (margin-left:auto, see .records-bar CSS),
+// not appended after the count label — the label's text length varies (1 RECORD
+// vs 137 RECORDS), and a stamp riding on that flow would jump horizontally as
+// the count changes width. Pinning decouples its x-position from the label.
 function recordsBar(ctx, group) {
     const consensus = verdictConsensus(group);
     const verdict = consensus.uniform ? consensus.value : GROUP_MIXED;
     const bar = document.createElement("div");
     bar.className = `records-bar state-${verdict}`;
-    const summary = document.createElement("div");
-    summary.className = "records-summary";
-    summary.append(
-        cell("records-count", `${group.length} record${group.length === 1 ? "" : "s"}`),
-        stampCell(group[0], verdict),
-    );
+    const count = cell("records-count", `${group.length} record${group.length === 1 ? "" : "s"}`);
+    const stamp = stampCell(group[0], verdict);
     if (ctx.scope === "detail") {
-        bar.append(stepNavButton(-1), summary, stepNavButton(1));
+        bar.append(stepNavButton(-1), count, stamp, stepNavButton(1));
     } else {
-        bar.append(summary);
+        bar.append(count, stamp);
     }
     return bar;
 }
 
+// A genuine .act.act-icon button (same SVG-glyph idiom as accept/drop/flag/…),
+// not a parallel look-alike — records-nav carries only the layout placement that
+// actually differs (pinned at the ends of the records bar, not the actions row).
 function stepNavButton(delta) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "records-nav";
-    button.textContent = delta < 0 ? "‹" : "›";
     const name = delta < 0 ? "Previous record (↑/k)" : "Next record (↓/j)";
-    button.setAttribute("aria-label", name);
-    button.title = name;
+    const button = actionButton(delta < 0 ? "prev" : "next", name, () => step(delta));
+    button.classList.add("records-nav");
     button.disabled = stepExhausted(delta);
-    button.addEventListener("click", () => step(delta));
     return button;
 }
 
@@ -2880,6 +2891,8 @@ const ACTION_ICONS = {
     unflag: '<path d="M6 21V4m0 0h11l-2 4 2 4H6M3 3l18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     clone: '<path d="M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1zM5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     undo: '<path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    prev: '<path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+    next: '<path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
 };
 
 function actionButton(kind, label, handler) {

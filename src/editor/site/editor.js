@@ -256,8 +256,6 @@ const DRAWER_TOGGLE = document.getElementById("drawerToggle");
 const HELP_TOGGLE = document.getElementById("helpToggle");
 const MASTHEAD_MENU = document.getElementById("mastheadMenu");
 const MASTHEAD_MENU_PANEL = document.getElementById("mastheadMenuPanel");
-const STEP_PREV = document.getElementById("stepPrev");
-const STEP_NEXT = document.getElementById("stepNext");
 const NEW_ENTRY = document.getElementById("newEntry");
 const COMMIT_DECISIONS = document.getElementById("commitDecisions");
 const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
@@ -1405,9 +1403,7 @@ function recordEditor(group, opts) {
         return container;
     }
 
-    if (group.length > 1) {
-        container.append(groupHeader(group));
-    }
+    container.append(recordsBar(ctx, group));
 
     const overridden = group.length === 1 ? overriddenFields(record) : new Set();
 
@@ -1430,14 +1426,70 @@ function recordEditor(group, opts) {
     return container;
 }
 
-function groupHeader(group) {
-    const header = document.createElement("div");
-    header.className = "group-edit-header";
-    header.append(
-        cell("group-edit-title", "Group edit"),
-        cell("group-edit-count", `${group.length} records`),
+// The records bar tops every render — single record and group alike — with the
+// same geometry, so stepping never reflows the panel. It carries the count, the
+// verdict pill(s), and (detail scope only — a modal has no list position) the
+// step-prev/next buttons.
+function recordsBar(ctx, group) {
+    const bar = document.createElement("div");
+    bar.className = "records-bar";
+    const summary = document.createElement("div");
+    summary.className = "records-summary";
+    summary.append(
+        cell("records-count", `${group.length} record${group.length === 1 ? "" : "s"}`),
+        ...statePills(group),
     );
-    return header;
+    if (ctx.scope === "detail") {
+        bar.append(stepNavButton(-1), summary, stepNavButton(1));
+    } else {
+        bar.append(summary);
+    }
+    return bar;
+}
+
+function statePills(group) {
+    const consensus = verdictConsensus(group);
+    if (!consensus.uniform) {
+        return consensus.distinct.map((entry) =>
+            cell(`state-pill ${entry.value}`, `${entry.value} ·${entry.count}`));
+    }
+    const name = group.every((member) => member.manual)
+        ? `${consensus.value} · manual`
+        : consensus.value;
+    const pills = [cell(`state-pill ${consensus.value}`, name)];
+    const orphanKind = orphanKindBadge(group[0]);
+    if (orphanKind.childElementCount) {
+        pills.push(orphanKind);
+    }
+    return pills;
+}
+
+function stepNavButton(delta) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "records-nav";
+    button.textContent = delta < 0 ? "‹" : "›";
+    const name = delta < 0 ? "Previous record (↑/k)" : "Next record (↓/j)";
+    button.setAttribute("aria-label", name);
+    button.title = name;
+    button.disabled = stepExhausted(delta);
+    button.addEventListener("click", () => step(delta));
+    return button;
+}
+
+// Nothing left to step to: at the edge stop of the working set AND no further
+// page to roll into.
+function stepExhausted(delta) {
+    const stops = cursorStops();
+    if (!stops.length) {
+        return true;
+    }
+    const at = currentStopIndex(stops);
+    if (at < 0) {
+        return false;
+    }
+    const atEdge = delta < 0 ? at === 0 : at === stops.length - 1;
+    return atEdge && !pageAvailable(delta);
 }
 
 function glanceColumn(ctx, group, overridden) {
@@ -1570,32 +1622,15 @@ function railColumn(ctx, group, overridden) {
     return column;
 }
 
-// Four FIXED slots — state, sources, freq, confidence — each keeping its geometry:
-// an absent value's slot goes invisible IN PLACE (.empty) and the others do NOT
+// Three FIXED slots — sources, freq, confidence — each keeping its geometry: an
+// absent value's slot goes invisible IN PLACE (.empty) and the others do NOT
 // reflow, so the glance loop never re-scans. Divergent groups roll up (tallies /
-// min–max / "mixed") rather than pretending uniformity.
+// min–max / "mixed") rather than pretending uniformity. The verdict lives in the
+// records bar above, not here.
 function priorityRail(group) {
     const record = group[0];
     const rail = document.createElement("div");
     rail.className = "priority-rail";
-
-    const state = railSlot("state");
-    const stateConsensus = verdictConsensus(group);
-    if (stateConsensus.uniform) {
-        const stateName = group.every((member) => member.manual)
-            ? `${stateConsensus.value} · manual`
-            : stateConsensus.value;
-        state.append(cell(`state-pill ${stateConsensus.value}`, stateName));
-        const orphanKind = orphanKindBadge(record);
-        if (orphanKind.childElementCount) {
-            state.append(orphanKind);
-        }
-    } else {
-        for (const entry of stateConsensus.distinct) {
-            state.append(cell(`state-pill ${entry.value}`,
-                `${entry.value} ·${entry.count}`));
-        }
-    }
 
     const sources = railSlot("sources");
     const sourceSet = groupSources(group);
@@ -1618,7 +1653,7 @@ function priorityRail(group) {
         conf.classList.add("empty");
     }
 
-    rail.append(state, sources, freq, conf);
+    rail.append(sources, freq, conf);
     return rail;
 }
 
@@ -1647,7 +1682,7 @@ function freqSlotContent(group, slot) {
     slot.append(cell("rail-value", min === max ? String(min) : `${min}–${max}`));
 }
 
-const RAIL_SLOT_LABELS = { state: "state", sources: "sources", freq: "freq", confidence: "confidence" };
+const RAIL_SLOT_LABELS = { sources: "sources", freq: "freq", confidence: "confidence" };
 
 function railSlot(kind) {
     const slot = document.createElement("div");
@@ -4060,6 +4095,7 @@ function step(delta) {
         : stops[Math.min(stops.length - 1, Math.max(0, at + delta))];
     const departed = at >= 0 ? stops[at] : null;
     if (target === departed) {
+        rollPage(delta);
         return;
     }
     // Stepping OFF a header the cursor claimed dissolves the group-as-unit selection
@@ -4071,6 +4107,36 @@ function step(delta) {
         state.cursorGroupKey = null;
     }
     selectStop(target);
+}
+
+function pageAvailable(delta) {
+    return delta < 0 ? state.offset > 0 : state.offset + state.limit < state.total;
+}
+
+// Stepping past either end of the page rolls into the neighbouring one. Keys and
+// nav buttons share step(), so BOTH roll. A roll re-runs the working query — a
+// fresh working set, so the multi-selection, group expansions and any rows the
+// current filter no longer matches reset, exactly as the footer page buttons do.
+let pageRollInFlight = false;
+function rollPage(delta) {
+    if (pageRollInFlight || !pageAvailable(delta)) {
+        return;
+    }
+    pageRollInFlight = true;
+    const targetOffset = delta < 0
+        ? Math.max(0, state.offset - state.limit)
+        : state.offset + state.limit;
+    runQuery(targetOffset)
+        .then(() => {
+            // runQuery lands on the page's first record; rolling BACKWARD must
+            // land on its LAST stop instead, through the same path a step uses.
+            const stops = cursorStops();
+            if (delta < 0 && stops.length) {
+                selectStop(stops[stops.length - 1]);
+            }
+        })
+        .catch((error) => showToast(error.message, true))
+        .finally(() => { pageRollInFlight = false; });
 }
 
 function setCursorGroupExpanded(expand) {
@@ -4611,6 +4677,8 @@ TOAST.addEventListener("click", () => {
 // The daemon is the single source of truth for the uncommitted count
 // (patches.jsonl lines not yet in HEAD), refreshed on boot and after every write.
 
+// Commit lives in the ⋯ menu; the dot on its trigger is the always-visible
+// prompt that uncommitted work exists.
 function paintCommitButton(uncommitted) {
     const count = Number.isFinite(uncommitted) ? uncommitted : 0;
     COMMIT_DECISIONS.textContent = count > 0
@@ -4618,6 +4686,7 @@ function paintCommitButton(uncommitted) {
         : "Commit";
     COMMIT_DECISIONS.disabled = count === 0;
     COMMIT_DECISIONS.hidden = false;
+    MASTHEAD_MENU.classList.toggle("uncommitted", count > 0);
 }
 
 // Committing is unavailable on a tarball deploy (no repo) — commit_available:false
@@ -4627,13 +4696,18 @@ async function refreshCommitStatus() {
     try {
         const status = await callDaemon({ op: "commit_status" });
         if (status.commit_available === false) {
-            COMMIT_DECISIONS.hidden = true;
+            hideCommitButton();
             return;
         }
         paintCommitButton(status.uncommitted);
     } catch (_error) {
-        COMMIT_DECISIONS.hidden = true;
+        hideCommitButton();
     }
+}
+
+function hideCommitButton() {
+    COMMIT_DECISIONS.hidden = true;
+    MASTHEAD_MENU.classList.remove("uncommitted");
 }
 
 // ---- patch counts ----
@@ -4744,8 +4818,6 @@ DRAWER_BACKDROP.addEventListener("click", () => setDrawer(false));
 initWorkbenchSplitter();
 FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
-STEP_PREV.addEventListener("click", () => step(-1));
-STEP_NEXT.addEventListener("click", () => step(1));
 NEW_ENTRY.addEventListener("click", openCreateForm);
 COMMIT_DECISIONS.addEventListener("click", () => commitDecisions());
 CREATE_MODAL.addEventListener("click", (event) => {

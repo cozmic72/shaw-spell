@@ -319,34 +319,28 @@ PAGE = """<!DOCTYPE html>
             <h1>Editorial Workbench</h1>
             <p class="strap">The dictionary as an editable overlay — accept, edit, drop, author.</p>
         </div>
-        <button type="button" class="filters-toggle chevron-toggle" id="filtersToggle"
-                aria-controls="filters" aria-expanded="true"
-                title="Filters"><span class="chevron" aria-hidden="true"></span>Filters</button>
-        <button type="button" class="commit-decisions" id="commitDecisions" disabled hidden
-                title="Commit the accumulated editorial decisions to git">Commit</button>
-        <button type="button" class="new-entry" id="newEntry"
-                title="Author a brand-new dictionary entry">+ New entry</button>
-        <button type="button" class="masthead-btn step-btn" id="stepPrev"
-                aria-label="Previous record" title="Previous record (↑/k)">‹</button>
-        <button type="button" class="masthead-btn step-btn" id="stepNext"
-                aria-label="Next record" title="Next record (↓/j)">›</button>
         <!-- Patch-store counts: total patches banked + how many were edited today
-             (server local calendar day). Replaces the batch count the Commit button
-             used to carry, so the signal survives on a repo-less tarball deploy where
-             Commit is hidden. Filled by paintPatchCounts from the daemon patch_counts
-             op on boot and after every write. -->
+             (server local calendar day). Counted from patches.jsonl, never git, so
+             the signal survives on a repo-less tarball deploy where Commit is
+             hidden. Filled by paintPatchCounts from the daemon patch_counts op on
+             boot and after every write. -->
         <div class="patch-counts" id="patchCounts" aria-live="polite"
              title="Patches in the store — total, and edited today"></div>
-        <!-- Overflow menu: the occasional controls (identity, shortcut help, keyboard
-             settings, sign-out) behind one ⋯ trigger so the row keeps only the
-             always-in-hand actions. Same .facet-panel popover idiom as the filter
-             pickers; the ids inside are unchanged so the JS wiring still binds. -->
+        <button type="button" class="new-entry" id="newEntry" aria-label="New entry"
+                title="Author a brand-new dictionary entry">+</button>
+        <!-- Overflow menu: the occasional controls behind one ⋯ trigger, in the
+             .facet-panel popover idiom the filter pickers use. paintCommitButton
+             stamps `uncommitted` on the trigger so uncommitted work stays visible
+             while Commit sits in here. -->
         <div class="masthead-menu-wrap">
             <button type="button" class="masthead-btn" id="mastheadMenu"
                     aria-haspopup="true" aria-expanded="false"
                     aria-label="More" title="More">⋯</button>
             <div class="facet-panel masthead-menu" id="mastheadMenuPanel" hidden>
                 <span class="whoami" id="whoami" title="Signed in as"></span>
+                <button type="button" class="menu-item commit-decisions" id="commitDecisions"
+                        disabled hidden
+                        title="Commit the accumulated editorial decisions to git">Commit</button>
                 <button type="button" class="menu-item" id="helpToggle"
                         aria-controls="cheatsheet"
                         title="Keyboard shortcuts (?)">Keyboard shortcuts</button>
@@ -358,6 +352,18 @@ PAGE = """<!DOCTYPE html>
             </div>
         </div>
     </header>
+
+    <!-- Twin disclosure rails (collapsed layout only): the filter panel's and the
+         ledger drawer's toggles side by side, one control idiom, one chevron
+         convention (▸ closed, ▾ open). -->
+    <div class="panel-rails">
+        <button type="button" class="rail-toggle chevron-toggle" id="filtersToggle"
+                aria-controls="filters" aria-expanded="true"
+                title="Filters"><span class="chevron" aria-hidden="true"></span>Filters</button>
+        <button type="button" class="rail-toggle chevron-toggle" id="drawerToggle"
+                aria-controls="ledger" aria-expanded="false"
+                title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
+    </div>
 
     <!-- The filter bar shows only ACTIVE filters, as composable chips. "+ Add filter"
          opens a menu of the not-yet-active fields; picking one adds its chip and opens
@@ -481,12 +487,6 @@ PAGE = """<!DOCTYPE html>
     </div>
 
     <main class="workbench" id="workbench">
-        <!-- Reveal rail for the mobile ledger drawer: a thin full-width strip the
-             drawer drops down from, so the affordance and the drawer share an edge.
-             Same id the old masthead toggle carried — the JS wiring is unchanged. -->
-        <button type="button" class="drawer-rail" id="drawerToggle"
-                aria-controls="ledger" aria-expanded="false"
-                title="Entries"><span class="chevron" aria-hidden="true"></span>Entries</button>
         <div class="drawer-backdrop" id="drawerBackdrop"></div>
         <!-- Collapsed-ledger rail (wide screens only): a thin strip standing in for
              the hidden list, its chevron pointing into the page to pull it back.

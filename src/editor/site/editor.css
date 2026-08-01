@@ -126,39 +126,16 @@ body {
 }
 .patch-counts:empty { display: none; }
 .patch-counts .today-count { color: var(--accent); font-weight: 700; }
-/* Chevron toggle (filter panel): only shown once the layout collapses (mobile block). */
-.chevron-toggle {
-    display: none;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink);
-    background: none;
-    border: none;
-    padding: 4px 6px;
-    cursor: pointer;
-    align-items: center;
-    gap: 6px;
-}
-.chevron {
-    display: inline-block;
-    width: 1em;
-    text-align: center;
-    color: var(--accent);
-    transition: transform 0.15s ease;
-}
-.chevron::before { content: "\25B8"; }             /* ▸ collapsed */
-.chevron-toggle[aria-expanded="true"] .chevron { transform: rotate(90deg); }
-.filters-toggle { margin-left: auto; }
-/* Reveal rail for the mobile ledger drawer. Opaque and stacked above the drawer so
-   the list visibly slides out from under it; hidden until the layout collapses. */
-.drawer-rail {
-    display: none;
-    z-index: 25;
+/* Twin disclosure rails (filters + entries drawer): one control idiom, side by
+   side; hidden until the layout collapses (mobile block). */
+.panel-rails { display: none; }
+.rail-toggle {
+    flex: 1 1 0;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    min-height: 44px;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.1em;
@@ -169,44 +146,31 @@ body {
     border-bottom: 1px solid var(--rule);
     cursor: pointer;
 }
-.drawer-rail .chevron { transform: rotate(90deg); }                        /* ▾ open it */
-.drawer-rail[aria-expanded="true"] .chevron { transform: rotate(-90deg); } /* ▴ close it */
-.drawer-backdrop { display: none; }
-.commit-decisions {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--state-edited);
-    background: none;
-    border: 1px solid currentColor;
-    border-radius: 2px;
-    min-height: 34px;
-    padding: 5px 14px;
-    cursor: pointer;
+.rail-toggle + .rail-toggle { border-left: 1px solid var(--rule); }
+.chevron {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+    color: var(--accent);
+    transition: transform 0.15s ease;
 }
-.commit-decisions:hover:not(:disabled) { background: var(--state-edited); color: var(--paper); }
-.commit-decisions:disabled { opacity: 0.4; cursor: default; }
-
-/* When Commit is hidden (repo-less deploy) its own margin-left:auto takes over
-   leading the right cluster. */
+.chevron::before { content: "\25B8"; }             /* ▸ closed */
+.chevron-toggle[aria-expanded="true"] .chevron { transform: rotate(90deg); } /* ▾ open */
+.drawer-backdrop { display: none; }
 .new-entry {
-    margin-left: auto;
     font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 18px;
+    line-height: 1;
     color: var(--accent-manual);
     background: none;
     border: 1px solid currentColor;
     border-radius: 2px;
     min-height: 34px;
-    padding: 5px 14px;
+    min-width: 40px;
+    padding: 5px 12px;
     cursor: pointer;
 }
 .new-entry:hover { background: var(--accent-manual); color: var(--paper); }
-.commit-decisions:not([hidden]) + .new-entry { margin-left: 0; }
 
 .whoami {
     font-family: var(--mono);
@@ -219,6 +183,7 @@ body {
 .whoami:empty { display: none; }
 
 .masthead-btn {
+    position: relative;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.08em;
@@ -232,11 +197,17 @@ body {
     cursor: pointer;
 }
 .masthead-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
-.step-btn {
-    font-size: 16px;
-    line-height: 1;
-    padding: 5px 12px;
-    min-width: 40px;
+/* Uncommitted work exists — the prompt Commit carried before it moved into the
+   menu. paintCommitButton stamps the class. */
+.masthead-btn.uncommitted::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--state-edited);
 }
 .masthead-menu-wrap { position: relative; flex: 0 0 auto; }
 .masthead-btn[aria-expanded="true"] {
@@ -391,6 +362,10 @@ body {
     cursor: pointer;
 }
 .menu-item:hover { background: var(--paper); }
+/* display:block would defeat the hidden attribute (repo-less deploys hide Commit). */
+.menu-item[hidden] { display: none; }
+.commit-decisions { color: var(--state-edited); }
+.commit-decisions:disabled { opacity: 0.4; cursor: default; }
 
 .text-picker { display: flex; align-items: stretch; gap: 3px; }
 .text-filter {
@@ -1024,10 +999,11 @@ body {
     min-width: 0;
 }
 /* Content-sized (GenAm/TrapBath are the widest) — RRP must not get a wide box. */
-.glance-posvar .var-field { width: 11ch; min-width: 0; }
+/* One width for both: `ch` resolves against each field's OWN font, and these two
+   differ (body vs mono), so equal ch counts rendered unequal. */
+.glance-posvar .var-field,
+.glance-posvar .freq-field { width: 9em; min-width: 0; }
 .glance-posvar .freq-field {
-    width: 10ch;
-    min-width: 0;
     font-family: var(--mono);
     font-variant-numeric: tabular-nums;
 }
@@ -1155,28 +1131,48 @@ body {
 .create-guard[data-state="collision"] { color: var(--state-dropped); }
 .create-guard[data-state="warn"] { color: var(--state-flagged); }
 
-/* ---- group edit — the group-native panel the card shows at 2+ selected ---- */
-.group-edit-header {
+/* ---- records bar — count + verdict + stepping, one geometry at any N ---- */
+.records-bar {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
+    min-height: 36px;
+    /* Clears the REVIEW/EDITING stamp pinned to the panel's top-right corner. */
+    margin-top: 4px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--rule);
 }
-.group-edit-title {
-    font-size: 13px;
+.records-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.records-count {
+    font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ink-soft);
-}
-.group-edit-count {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent);
     font-variant-numeric: tabular-nums;
-    line-height: 1;
+    white-space: nowrap;
 }
+.records-nav {
+    flex: 0 0 auto;
+    min-width: 40px;
+    min-height: 36px;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--ink-soft);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    cursor: pointer;
+}
+.records-nav:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-soft); }
+.records-nav:disabled { opacity: 0.25; cursor: default; }
 
 /* A mixed-state group carries no single hue: the word box keeps the neutral
    --state-edge default since .state-multiple sets no state class. */
@@ -1526,7 +1522,6 @@ body {
     font-family: var(--shaw);
     font-size: 20px;
     line-height: 1.3;
-    border-bottom-color: var(--accent);
 }
 .ipa-field { font-size: 16px; font-style: italic; }
 .glance-word .edit-field { flex: 1 1 auto; min-width: 0; }
@@ -2145,24 +2140,22 @@ kbd {
     /* minmax(0,1fr) lets the column shrink below its content's min width so a long
        word or wide field can't push the layout past the viewport. */
     .workbench {
-        --drawer-rail-h: 40px;
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: var(--drawer-rail-h) 1fr;
+        grid-template-rows: 1fr;
     }
-    .drawer-rail { display: flex; }
+    .panel-rails { display: flex; }
 
-    .chevron-toggle { display: inline-flex; }
     .patch-counts { display: none; }
 
     body.filters-collapsed .filters { display: none; }
 
-    /* Hidden, the drawer sits translated up by its own height, its bottom edge
-       under the opaque higher-stacked rail — opening reads as the list sliding
-       out from under the rail. */
+    /* Hidden, the drawer sits translated up by its own height, clipped by the
+       workbench's overflow — opening reads as the list sliding out from under
+       whatever sits above (the rails strip, or the open filter panel). */
     .ledger {
         position: absolute;
         z-index: 20;
-        top: var(--drawer-rail-h);
+        top: 0;
         left: 0;
         right: 0;
         height: min(78%, 480px);
@@ -2207,8 +2200,10 @@ kbd {
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .filters-toggle { flex: 0 0 auto; }
-    .step-btn { flex: 0 0 auto; min-height: 40px; min-width: 40px; padding: 5px 11px; }
+    .new-entry, .masthead-btn { min-height: 44px; min-width: 44px; }
+
+    .records-nav { min-width: 44px; min-height: 44px; }
+    .detail .records-bar { margin-top: 8px; }
 
     .variation-toggle { min-height: 40px; padding: 0 13px; }
     .priority-rail {
@@ -2217,8 +2212,6 @@ kbd {
         gap: 14px 20px;
     }
     .rail-slot { flex: 0 0 auto; }
-    .rail-state { order: 5; }
-
 
     /* padding-bottom clears the fixed bottom action bar + iOS safe-area inset. */
     .detail { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }

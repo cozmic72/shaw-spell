@@ -190,7 +190,7 @@ from basis import (ACCEPTED_STATUS, INTRINSIC_FIELDS, OP_ACCEPT,  # noqa: E402
                    anchor_key, collapse_readlex, published_entry)
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
-from dialect_mergers import MERGER_SWAPS                         # noqa: E402
+from dialect_mergers import MERGER_LABELS, MERGER_SWAPS           # noqa: E402
 from overlay import (AUTHORED_STATUS, NOVELTY_NEW_POS,           # noqa: E402
                      NOVELTY_NEW_SPELLING, NOVELTY_NEW_WORD, ORPHANED_STATUS,
                      PATCH_STATE_ACCEPTED, PATCH_STATE_DIRTY,
@@ -651,6 +651,20 @@ ATTRIBUTE_VARIANT = VARIANT_HAS
 ATTRIBUTE_NONE = MERGER_NONE
 ATTRIBUTE_FILTER_VALUES = frozenset(MERGER_SWAPS) | {ATTRIBUTE_VARIANT, ATTRIBUTE_NONE}
 
+# The attributes facet's chips, labelled: MERGER_SWAPS already reflects
+# MERGER_ENABLED, so a disabled merger drops out here with no separate check.
+# "other" (the variant pseudo-member) and "(none)" are this facet's own fixed
+# extras, not part of the merger vocabulary, so their labels live here rather
+# than in dialect_mergers.
+_ATTRIBUTE_LABELS = {ATTRIBUTE_VARIANT: "other", ATTRIBUTE_NONE: "(none / canonical)"}
+
+
+def _attribute_facet_entries():
+    entries = [{"value": name, "label": MERGER_LABELS[name]} for name in MERGER_SWAPS]
+    entries.append({"value": ATTRIBUTE_VARIANT, "label": _ATTRIBUTE_LABELS[ATTRIBUTE_VARIANT]})
+    entries.append({"value": ATTRIBUTE_NONE, "label": _ATTRIBUTE_LABELS[ATTRIBUTE_NONE]})
+    return entries
+
 
 def _record_attributes(record):
     """A record's attribute-set: its mergers plus "variant" when the variant flag
@@ -899,16 +913,22 @@ def handle_entries(state, request):
 # unfilterable; a dead chip like source=pos-gap matches nothing). POS is the long
 # tail (100+ CLAWS tags); var/source are small but drift as upstream data
 # and cleanup targets come and go. The closed vocabularies the code itself defines
-# (review/data/word_kind/novelty) can't drift, so they stay in the page.
+# (review/data/word_kind/novelty) can't drift, so they stay hardcoded client-side.
 # The former `status` facet is DISSOLVED: status is fully derived, so each of its
 # values maps onto the axes — manual = data:manual, orphaned = data:orphaned,
 # sanctioned = novelty:upstream ∪ review:accepted/edited, supplement = the rest.
 DATA_DERIVED_FACETS = ("pos", "var", "source")
 
-
+# `attributes` is a THIRD kind: a closed vocabulary, like review/data/novelty —
+# but one that DOES drift, via MERGER_ENABLED (env-overridable, no code edit). A
+# data-derived facet would hide an enabled-but-not-yet-attested merger; a
+# hardcoded client chip is exactly the drift bug this replaces. So it ships
+# labelled value/label pairs (dialect_mergers.MERGER_LABELS), not bare strings
+# like DATA_DERIVED_FACETS — the client tells the two kinds apart by shape.
 def handle_facets(state, _request):
     facets = {facet: _distinct_values(state.view, facet)
               for facet in DATA_DERIVED_FACETS}
+    facets["attributes"] = _attribute_facet_entries()
     # patch_author is present only on patched rows (absent on unreviewed/basis
     # ones), so it cannot go through _distinct_values' record[field] access; it is
     # collected with .get so unreviewed rows contribute nothing.

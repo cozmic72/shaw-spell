@@ -94,15 +94,19 @@ const RRP_VAR = "RRP";
 // The edit surface. status is NOT here — read-only, set only by the verdict actions.
 const EDITABLE_FIELDS = ["word", "shaw", "var", "ipa", "freq"];
 
-// A closed vocabulary mirroring src/tools/dialect_mergers.py; additive, empty == canonical.
-const MERGERS = [
-    ["trap-bath", "TRAP–BATH"],
-    ["cot-caught", "COT–CAUGHT"],
-    ["lot-palm", "LOT–PALM"],
-];
+// The merger vocabulary (additive, empty == canonical): [name, label] pairs, e.g.
+// ["trap-bath", "TRAP–BATH"]. Populated at boot from the same daemon-served
+// `attributes` facet the filter chips use (see buildFieldRegistry) — the single
+// origin is dialect_mergers.py, so an enabled/disabled merger never has to be
+// taught to this file separately.
+let MERGERS = [];
 
 // The within-accent free-variation marker (additive boolean, absent == canonical).
 const VARIANT_LABEL = "variant";
+
+// The attributes facet's canonical-partition sentinel — mirrors editord's
+// MERGER_NONE ("(none)"); no real merger/variant value can express "carries none".
+const MERGER_NONE_VALUE = "(none)";
 
 // Display label only — the on-disk field name (`variant`) and the daemon facet
 // value key stay unchanged.
@@ -236,7 +240,7 @@ const ADD_FILTER_WRAP = document.getElementById("addFilterWrap");
 const FILTER_META = document.getElementById("filterMeta");
 const FILTERS_TOGGLE = document.getElementById("filtersToggle");
 const REFRESH_RESULTS = document.getElementById("refreshResults");
-const PATCH_COUNTS = document.getElementById("patchCounts");
+const MASTHEAD_STATS = document.getElementById("mastheadStats");
 const LEDGER = document.getElementById("ledgerList");
 const LEDGER_HEAD = document.getElementById("ledgerHead");
 const LEDGER_FOOT = document.getElementById("ledgerFoot");
@@ -263,6 +267,9 @@ const PACING = document.getElementById("pacing");
 const state = {
     records: [],
     total: 0,
+    // Patches banked but not yet committed, mirrored from paintCommitButton for
+    // the masthead stats line; null when commit is unavailable (tarball deploy).
+    uncommitted: null,
     offset: 0,
     limit: PAGE_LIMIT,
     filters: {},
@@ -586,6 +593,7 @@ async function runQuery(offset = 0, preferredAnchor = null) {
         (group) => ({ key: group.key, size: group.records.length }));
     state.records = result.groups.flatMap((group) => group.records);
     state.total = result.total;
+    paintMastheadStats();
     markInvalidRegex(result.invalid_regex || []);
     // The old selection referred to the replaced working set; select-all is scoped
     // to the loaded page.
@@ -2581,7 +2589,9 @@ function orphanReasonNote(record) {
     return note;
 }
 
-const MERGER_LABELS = new Map(MERGERS);
+// Rebuilt alongside MERGERS once the boot-time facets fetch resolves (see
+// buildFieldRegistry) — both start empty and are populated together.
+let MERGER_LABELS = new Map();
 
 function definitionBadge(hasDefinition) {
     const wrap = document.createElement("span");
@@ -3364,7 +3374,6 @@ async function authorEntry(ctx, { flag }) {
             { op: "flag", anchor: null, author: AUTHOR, replaces: authored.id });
         applyWriteResult(flagged.records, created.anchor, { refocus: false });
         await refreshCommitStatus();
-        await refreshPatchCounts();
         showToast(`flagged · ${flagged.result}`);
     } catch (error) {
         // The entry was created but not flagged — a loud, recoverable state: the row is
@@ -3407,7 +3416,6 @@ function insertAuthoredRecord(record) {
     select(at);
     saveSession();
     refreshCommitStatus();
-    refreshPatchCounts();
 }
 
 async function single(action) {
@@ -3420,7 +3428,6 @@ async function single(action) {
         verdictInFlight = false;
     }
     await refreshCommitStatus();
-    await refreshPatchCounts();
 }
 
 // Saving is IMPLICIT (auto-save on leave); this remains the explicit "save now,
@@ -3492,7 +3499,6 @@ function autoSaveMainEdit() {
             showToast(error.message, true);
         }
         await refreshCommitStatus();
-        await refreshPatchCounts();
     })();
 }
 
@@ -3706,7 +3712,6 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
     refreshAfterBulk(focusedAnchor);
     reportBulk(verb, done, skipped, failures);
     await refreshCommitStatus();
-    await refreshPatchCounts();
 }
 
 // Rebuild the ledger once after a group run and restore the cursor — or its nearest
@@ -4553,6 +4558,8 @@ function paintCommitButton(uncommitted) {
     COMMIT_DECISIONS.disabled = count === 0;
     COMMIT_DECISIONS.hidden = false;
     MASTHEAD_MENU.classList.toggle("uncommitted", count > 0);
+    state.uncommitted = count;
+    paintMastheadStats();
 }
 
 // Committing is unavailable on a tarball deploy (no repo) — commit_available:false
@@ -4574,34 +4581,28 @@ async function refreshCommitStatus() {
 function hideCommitButton() {
     COMMIT_DECISIONS.hidden = true;
     MASTHEAD_MENU.classList.remove("uncommitted");
+    state.uncommitted = null;
+    paintMastheadStats();
 }
 
-// ---- patch counts ----
-// Lives independently of the Commit button so it survives a repo-less tarball
-// deploy, where Commit is hidden. Counted from patches.jsonl, never git.
-
-function paintPatchCounts(counts) {
-    if (!counts || !Number.isFinite(counts.total)) {
-        PATCH_COUNTS.textContent = "";
+// ---- masthead stats ----
+// Scoped to the CURRENT FILTER, not the whole corpus (state.total is the last
+// query's matched-group count); uncommitted is the one figure that moves as the
+// owner works without re-querying, so it repaints independently from
+// paintCommitButton/hideCommitButton rather than waiting on the next query.
+function paintMastheadStats() {
+    const groups = document.createElement("span");
+    groups.textContent = `${state.total.toLocaleString()} match${state.total === 1 ? "" : "es"}`;
+    MASTHEAD_STATS.replaceChildren(groups);
+    if (state.uncommitted === null) {
         return;
     }
-    const total = counts.total.toLocaleString();
-    const today = Number.isFinite(counts.today) ? counts.today : 0;
-    const totalLine = document.createElement("span");
-    totalLine.textContent = `${total} patch${counts.total === 1 ? "" : "es"}`;
-    const todayLine = document.createElement("span");
-    todayLine.className = "today-count";
-    todayLine.textContent = `${today.toLocaleString()} today`;
-    PATCH_COUNTS.replaceChildren(totalLine, todayLine);
-}
-
-// Advisory: a failure clears the element quietly rather than toasting.
-async function refreshPatchCounts() {
-    try {
-        paintPatchCounts(await callDaemon({ op: "patch_counts" }));
-    } catch (_error) {
-        PATCH_COUNTS.textContent = "";
-    }
+    const uncommitted = document.createElement("span");
+    uncommitted.className = "uncommitted-count";
+    uncommitted.textContent = state.uncommitted > 0
+        ? `${state.uncommitted.toLocaleString()} uncommitted`
+        : "all committed";
+    MASTHEAD_STATS.append(uncommitted);
 }
 
 async function commitDecisions() {
@@ -4724,14 +4725,25 @@ async function buildFieldRegistry() {
     for (const meta of FILTER_META.querySelectorAll("[data-field]")) {
         registerField(fieldSpecFromMeta(meta, derived));
     }
+    // The attributes facet's entries ARE the merger vocabulary plus two pseudo-
+    // members (variant's "other", the "(none)" partition) that aren't mergers —
+    // strip those two to get MERGERS for the detail-panel Variations toggles.
+    MERGERS = fieldSpec("attributes").entries
+        .filter((entry) => entry.value !== VARIANT_LABEL && entry.value !== MERGER_NONE_VALUE)
+        .map((entry) => [entry.value, entry.label]);
+    MERGER_LABELS = new Map(MERGERS);
 }
 
 function fieldSpecFromMeta(meta, derived) {
     const { field, kind, label } = meta.dataset;
     const pinned = meta.dataset.pinned === "true";
     if (kind === "categorical") {
+        // A daemon-served facet ships either bare strings (pos/var/source: the
+        // value IS the label) or {value, label} pairs (attributes: a code-defined,
+        // not data-observed, vocabulary — see editord.handle_facets).
         const entries = field in derived
-            ? derived[field].map((value) => ({ value, label: value }))
+            ? derived[field].map((entry) => (
+                typeof entry === "string" ? { value: entry, label: entry } : entry))
             : harvestVocab(meta);
         // Only multi-valued facets (source, attributes) offer the any/all mode
         // toggle — ALL on a scalar facet matches nothing.
@@ -5169,7 +5181,6 @@ async function boot() {
     }
     syncSortIndicators();
     refreshCommitStatus();
-    refreshPatchCounts();
     return runQuery(0, stored ? stored.anchor : null);
 }
 

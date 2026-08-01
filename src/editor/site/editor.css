@@ -121,19 +121,24 @@ body {
     font-size: 12px;
     margin-top: 2px;
 }
-.patch-counts {
-    margin-left: auto;
+/* Small-caps like .edit-label — subordinate to the wordmark, not competing with
+   it. Under .strap (vertical space) rather than beside it (horizontal space),
+   which is what forced it out of the mobile layout entirely (see the removed
+   mobile override this replaces). */
+.masthead-stats {
     display: flex;
-    flex-flow: column;
-    align-items: flex-end;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--ink-soft);
-    font-size: 11px;
-    line-height: 1.35;
-    letter-spacing: 0.04em;
     white-space: nowrap;
 }
-.patch-counts:empty { display: none; }
-.patch-counts .today-count { color: var(--accent); font-weight: 700; }
+.masthead-stats:empty { display: none; }
+/* Matches the ⋯ menu's uncommitted-work dot (.masthead-btn.uncommitted::after) —
+   same signal, same colour. */
+.masthead-stats .uncommitted-count { color: var(--state-edited); }
 /* Twin disclosure rails (filters + entries drawer): one control idiom, side by
    side; hidden until the layout collapses (mobile block). */
 .panel-rails { display: none; }
@@ -142,11 +147,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    min-height: 44px;
+    gap: 5px;
+    /* Thinner than a primary touch target (was 44px): this is a disclosure toggle,
+       tapped rarely, not a repeated action row — 38px keeps a real tap zone
+       without costing the vertical space the owner asked to reclaim. */
+    min-height: 38px;
     font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
+    font-size: 10px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink);
     background: var(--paper-raised);
@@ -1105,19 +1113,22 @@ body {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
+/* Same box + hover-fill idiom as the action buttons (.act.act-icon) — same
+   interaction class (a bordered icon button), so it should read the same;
+   neutral colour since stepping carries no verdict. */
 .records-nav {
     flex: 0 0 auto;
-    min-width: 40px;
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 16px;
     line-height: 1;
     color: var(--ink-soft);
     background: none;
-    border: 1px solid var(--rule);
+    border: 1px solid currentColor;
     border-radius: 2px;
     cursor: pointer;
 }
-.records-nav:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-soft); }
+.records-nav:hover:not(:disabled) { background: var(--ink-soft); color: var(--paper); }
 .records-nav:disabled { opacity: 0.25; cursor: default; }
 
 /* The rolled-up POS tag sits in the content-sized posvar group (its .pos-glance
@@ -2063,8 +2074,6 @@ kbd {
     }
     .panel-rails { display: flex; }
 
-    .patch-counts { display: none; }
-
     body.filters-collapsed .filters { display: none; }
 
     /* Hidden, the drawer sits translated up by its own height, clipped by the
@@ -2118,9 +2127,12 @@ kbd {
         overflow: hidden;
         text-overflow: ellipsis;
     }
+    .masthead-stats {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     .new-entry, .masthead-btn { min-height: 44px; min-width: 44px; }
 
-    .records-nav { min-width: 44px; min-height: 44px; }
     .detail .records-bar { margin-top: 8px; }
 
     .variation-toggle { min-height: 40px; padding: 0 13px; }

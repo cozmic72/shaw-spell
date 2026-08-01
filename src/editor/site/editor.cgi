@@ -318,14 +318,12 @@ PAGE = """<!DOCTYPE html>
         <div class="masthead-text">
             <h1>Editorial Workbench</h1>
             <p class="strap">The dictionary as an editable overlay — accept, edit, drop, author.</p>
+            <!-- Scoped to the CURRENT FILTER (not the whole corpus) plus the one
+                 count that changes as the owner works: patches banked but not yet
+                 committed. Filled by paintMastheadStats — the matched-count half
+                 from runQuery, the uncommitted half from refreshCommitStatus. -->
+            <div class="masthead-stats" id="mastheadStats" aria-live="polite"></div>
         </div>
-        <!-- Patch-store counts: total patches banked + how many were edited today
-             (server local calendar day). Counted from patches.jsonl, never git, so
-             the signal survives on a repo-less tarball deploy where Commit is
-             hidden. Filled by paintPatchCounts from the daemon patch_counts op on
-             boot and after every write. -->
-        <div class="patch-counts" id="patchCounts" aria-live="polite"
-             title="Patches in the store — total, and edited today"></div>
         <button type="button" class="new-entry" id="newEntry" aria-label="New entry"
                 title="Author a brand-new dictionary entry">+</button>
         <!-- Overflow menu: the occasional controls behind one ⋯ trigger, in the
@@ -388,9 +386,10 @@ PAGE = """<!DOCTYPE html>
     <!-- Filter metadata: one <div data-field> per registry field, carrying its human
          label (data-label) and its kind (data-kind). A closed-vocabulary categorical
          field also lists its value→label pairs as .chip templates, so those labels stay
-         authored here rather than duplicated in JS; a data-derived categorical field
-         (pos/var/source) omits them and takes its values from the daemon facets
-         op. `data-pinned="true"` marks the always-shown fields (the combined Search
+         authored here rather than duplicated in JS; a field whose vocabulary can
+         drift (pos/var/source = observed data; attributes = MERGER_ENABLED) omits
+         them and takes its values from the daemon facets op instead.
+         `data-pinned="true"` marks the always-shown fields (the combined Search
          box, Review, Data, Novelty) — permanent, seeding the strip and not removable;
          the rest are added on demand from the +Add filter menu. `data-inline="true"`
          marks a field rendered as a bare toolbar control (the Search box), not a chip
@@ -464,13 +463,13 @@ PAGE = """<!DOCTYPE html>
              + variant boolean — the same tag-set the detail editor edits as toggle
              buttons. Merges the former Mergers + Variant facets. Multi-valued, so its
              picker offers any/all: ALL = the record carries EVERY selected variation.
-             The "other" chip's VALUE stays "variant" (the daemon facet + saved
-             sessions key off it); only its label reads "other". -->
-        <div data-field="attributes" data-kind="categorical" data-label="Variations" data-multi="true">
-            <label class="chip"><input value="trap-bath"><span>TRAP–BATH</span></label>
-            <label class="chip"><input value="variant"><span>other</span></label>
-            <label class="chip"><input value="(none)"><span>(none / canonical)</span></label>
-        </div>
+             Its chips are CODE-DEFINED (like pos/var/source) rather than authored
+             here: the merger vocabulary is env-gated (MERGER_ENABLED) so it can
+             drift without a code edit, and a hardcoded list here is exactly the
+             staleness bug this replaced — see editord.handle_facets. The "other"
+             chip's VALUE stays "variant" (the daemon facet + saved sessions key
+             off it); only its label reads "other". -->
+        <div data-field="attributes" data-kind="categorical" data-label="Variations" data-multi="true"></div>
         <div data-field="confidence_min" data-kind="numeric" data-label="Conf ≥"
              data-min="0" data-max="100"></div>
         <div data-field="confidence_max" data-kind="numeric" data-label="Conf ≤"

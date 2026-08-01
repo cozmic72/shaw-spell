@@ -38,6 +38,15 @@ _MERGER_SWAPS_ALL = {
     MERGER_LOT_PALM: (LOT, PALM),
 }
 
+# Display labels (en dash), the SINGLE source for every UI that names a merger —
+# the editor's filter chips and its detail-panel Variations toggles both read
+# this off the daemon rather than hand-authoring their own copy.
+MERGER_LABELS = {
+    MERGER_TRAP_BATH: "TRAP–BATH",
+    MERGER_COT_CAUGHT: "COT–CAUGHT",
+    MERGER_LOT_PALM: "LOT–PALM",
+}
+
 # Per-merger enable flags, each overridable via env
 # (SHAW_SPELL_MERGER_<NAME>=1/0) without a code edit.
 def _merger_enabled(name, default):

@@ -22,46 +22,34 @@
     --state-edited: #3f7d3a;
     --state-dropped: #a24632;
     --state-flagged: #b07d1a;
-    /* Colour keys on the VERDICT: accepted (an explicit sanction, edits or none)
-       reads GREEN — the same green the edit affordances wear (--state-edited).
-       edited/dirty are decorations, never row/pill states (verdictState). The
-       verdict palette is EXACTLY four: green accepted, amber flagged, red
-       dropped, grey unreviewed. Manual-ness is never a colour (it rides label
-       text); the authoring affordances wear --accent-manual instead. */
+    /* Colour keys on the VERDICT: accepted reads the same green as the edit
+       affordances (--state-edited); edited/dirty are decorations, never row/pill
+       states (verdictState). The verdict palette is EXACTLY four: green accepted,
+       amber flagged, red dropped, grey unreviewed. Manual-ness is never a colour. */
     --state-accepted: var(--state-edited);
-    /* The GROUP-level mixed marker — members disagree on their verdict. A pale
-       blue deliberately OUTSIDE the four-verdict palette: it is a statement
-       about the group, not a verdict on any record. */
+    /* The GROUP-level mixed marker: a pale blue deliberately OUTSIDE the
+       four-verdict palette — a statement about the group, not a verdict. */
     --state-mixed: #5e8ca8;
     /* The authoring accent: New Entry / Clone / create-modal chrome. An origin
        tint, NOT a verdict colour — no ledger row, stamp or pill may wear it. */
     --accent-manual: #6b52a8;
-    /* Orphaned — the patch survived but its anchor didn't. ONE yellow for every
-       orphan: the stamp keeps the op's own glyph (check for a lost accept, cross
-       for a resurfaced drop), so the shape says what was decided and the yellow
-       alone says "it no longer resolves". A true yellow, kept apart from flagged's
-       amber-orange; the KIND rides in words (detail badge, note, tooltip), never
-       in a hue of its own. */
+    /* ONE yellow for every orphan; the stamp keeps the op's own glyph (shape says
+       what was decided, yellow says it no longer resolves). A true yellow, kept
+       apart from flagged's amber-orange. */
     --state-orphaned: #a08f00;
 
     --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
     --shaw: 'Bernie Sans Beta', sans-serif;
 
-    /* ---- group-unit vocabulary ---- */
-    /* ONE nesting language for BOTH folded structures — the record list's expanded
-       group and the related tree's open spelling node. The HEADER is a plain row
-       whose BOTTOM hairline is suppressed (dividers ride the TOP of cells, so the
-       parent has no line under it and flows into its children). Its children hang
-       beneath it as an INSET bordered block — indented from the left, ringed by a
-       subtle rounded groove — so they read as subordinate to THEIR header. The
-       block's own top border opens it directly under the header; its bottom border
-       closes it, and the clean break sits BELOW the group before the next row. All
-       box-shadow (no layout impact). */
+    /* ---- group-unit vocabulary ----
+       ONE nesting language for BOTH folded structures — the record list's expanded
+       group and the related tree's open spelling node. The children hang beneath
+       their header as an inset bordered block ringed by a groove. All box-shadow
+       (no layout impact). */
     --frame-radius: 7px;
     --frame-indent: 24px;   /* the child block's left indent (its subordination cue) */
     --frame-inset: 6px;     /* the block's right stand-off */
-    /* The groove line derives from --rule (softened toward paper) so it flips
-       with the theme. */
+    /* Derived from --rule so it flips with the theme. */
     --groove-line: color-mix(in srgb, var(--rule) 80%, var(--paper));
     /* The block's two vertical sides, worn by every child row. */
     --frame-sides: inset 1px 0 0 var(--groove-line), inset -1px 0 0 var(--groove-line);
@@ -125,11 +113,6 @@ body {
     font-size: 12px;
     margin-top: 2px;
 }
-/* Patch-store counts (total + edited-today): the batch signal the Commit button
-   used to carry, kept alive on a repo-less deploy. Two stacked right-aligned lines
-   so the pair costs one label's width; margin-left:auto absorbs the slack before
-   the stats/menu cluster. The today count is tinted the accent when non-zero so a
-   live session shows progress at a glance. */
 .patch-counts {
     margin-left: auto;
     display: flex;
@@ -143,9 +126,7 @@ body {
 }
 .patch-counts:empty { display: none; }
 .patch-counts .today-count { color: var(--accent); font-weight: 700; }
-/* Chevron toggle (filter panel): a compact affordance whose rotating caret carries
-   the collapsed/expanded state (▸ collapsed, ▾ expanded), leaving just a short label
-   beside it. Only shown once the layout collapses (see mobile block). */
+/* Chevron toggle (filter panel): only shown once the layout collapses (mobile block). */
 .chevron-toggle {
     display: none;
     font-family: var(--mono);
@@ -170,11 +151,8 @@ body {
 .chevron::before { content: "\25B8"; }             /* ▸ collapsed */
 .chevron-toggle[aria-expanded="true"] .chevron { transform: rotate(90deg); }
 .filters-toggle { margin-left: auto; }
-/* Reveal rail for the mobile ledger drawer: a thin strip across the workbench top
-   that the drawer drops down from, so the affordance sits where the drawer appears.
-   Reuses the chevron glyph, rotated to point down (pull the list down) when closed
-   and up (tuck it away) when open. Hidden until the layout collapses (mobile block);
-   opaque and stacked above the drawer so the list visibly slides out from under it. */
+/* Reveal rail for the mobile ledger drawer. Opaque and stacked above the drawer so
+   the list visibly slides out from under it; hidden until the layout collapses. */
 .drawer-rail {
     display: none;
     z-index: 25;
@@ -194,11 +172,6 @@ body {
 .drawer-rail .chevron { transform: rotate(90deg); }                        /* ▾ open it */
 .drawer-rail[aria-expanded="true"] .chevron { transform: rotate(-90deg); } /* ▴ close it */
 .drawer-backdrop { display: none; }
-/* Commit the accumulated editorial decisions to git — the owner's own commit of
-   data/patches/patches.jsonl. Tinted the edited green (an accepted decision's
-   colour) so it reads as "bank these decisions". Leads the right cluster;
-   margin-left:auto absorbs the slack before it. Disabled (dimmed) when there is
-   nothing to commit. */
 .commit-decisions {
     margin-left: auto;
     font-family: var(--mono);
@@ -216,10 +189,8 @@ body {
 .commit-decisions:hover:not(:disabled) { background: var(--state-edited); color: var(--paper); }
 .commit-decisions:disabled { opacity: 0.4; cursor: default; }
 
-/* Author a new entry: tinted the manual-authoring accent, so the action reads
-   as "make a new manual record" at a glance. Sits in the right cluster after
-   Commit; when Commit is hidden (repo-less deploy) its own margin-left:auto
-   takes over leading the cluster. */
+/* When Commit is hidden (repo-less deploy) its own margin-left:auto takes over
+   leading the right cluster. */
 .new-entry {
     margin-left: auto;
     font-family: var(--mono);
@@ -237,7 +208,6 @@ body {
 .new-entry:hover { background: var(--accent-manual); color: var(--paper); }
 .commit-decisions:not([hidden]) + .new-entry { margin-left: 0; }
 
-/* Signed-in handle, heading the ⋯ overflow menu. Quiet, mono, uppercase. */
 .whoami {
     font-family: var(--mono);
     font-size: 11px;
@@ -248,8 +218,6 @@ body {
 }
 .whoami:empty { display: none; }
 
-/* Quiet toolbar buttons (the ‹ › steppers, the ⋯ menu trigger), matching the
-   workbench's look. */
 .masthead-btn {
     font-family: var(--mono);
     font-size: 11px;
@@ -264,18 +232,12 @@ body {
     cursor: pointer;
 }
 .masthead-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
-/* ‹ › record-navigation pair: the ArrowUp/ArrowDown cursor step as buttons. The
-   glyph outgrows the masthead-btn label size for a clear target. */
 .step-btn {
     font-size: 16px;
     line-height: 1;
     padding: 5px 12px;
     min-width: 40px;
 }
-/* The ⋯ overflow menu: one trigger for the occasional controls (identity, shortcut
-   help, keyboard settings, sign-out). Reuses the .facet-panel popover, anchored to
-   the trigger's wrap and opening from the masthead's right edge; its rows share
-   .menu-item with the +Add menu. */
 .masthead-menu-wrap { position: relative; flex: 0 0 auto; }
 .masthead-btn[aria-expanded="true"] {
     outline: 2px solid var(--accent);
@@ -300,11 +262,7 @@ body {
     margin-bottom: 4px;
 }
 
-/* ---- filter bar ----
-   Only ACTIVE filters show, as composable chips in the strip, followed by the +Add
-   button and the refresh control. The strip wraps on a crowded row rather than
-   clipping; the chip pickers and +Add menu are absolutely-positioned popovers that
-   must overlay the ledger, so the bar never clips its overflow. */
+/* ---- filter bar ---- */
 .filters {
     display: flex;
     flex-wrap: wrap;
@@ -316,8 +274,6 @@ body {
     /* No clip: the popovers overlay below their anchors and must not be swallowed. */
     overflow: visible;
 }
-/* The inline combined Search box, leading the toolbar: one text field matching
-   Latin OR Shaw (always regex + case-insensitive, no toggles). */
 .search-inline { display: flex; align-items: center; flex: 0 0 auto; }
 .search-box { display: flex; align-items: stretch; }
 .search-field {
@@ -341,8 +297,6 @@ body {
     outline-color: var(--state-dropped);
 }
 
-/* The chip strip flexes to take the row's slack so +Add and refresh sit at the
-   trailing edge; it wraps its chips when they outrun the width. */
 .chip-strip {
     display: flex;
     flex-wrap: wrap;
@@ -352,8 +306,7 @@ body {
     min-width: 0;
 }
 
-/* A filter chip: its label trigger and a remove ×, sharing one pill. position:relative
-   anchors the chip's picker popover to it. */
+/* position:relative anchors the chip's picker popover to it. */
 .filter-chip {
     position: relative;
     display: inline-flex;
@@ -398,12 +351,8 @@ body {
     cursor: pointer;
 }
 .chip-remove:hover { color: var(--state-dropped); }
-/* Pinned (always-shown) chips are permanent: no remove control, a quiet tinted
-   ground so they read as fixtures of the bar rather than user-added filters. */
 .filter-chip.pinned { background: var(--paper-raised); }
 
-/* +Add filter: the empty-state and always-present affordance that opens the field
-   menu. Its wrapper anchors the menu popover. Disabled when every field is active. */
 .add-filter-wrap { position: relative; flex: 0 0 auto; }
 .add-filter {
     font-family: var(--mono);
@@ -443,7 +392,6 @@ body {
 }
 .menu-item:hover { background: var(--paper); }
 
-/* A text picker: the substring/regex box and its two mode toggles on one line. */
 .text-picker { display: flex; align-items: stretch; gap: 3px; }
 .text-filter {
     flex: 1 1 auto;
@@ -463,13 +411,9 @@ body {
     outline-offset: 0;
     border-color: var(--accent);
 }
-/* An invalid regex: the daemon named this box in invalid_regex, so flag it red
-   without breaking the query (it simply matched nothing). */
 .text-filter.invalid { border-color: var(--state-dropped); }
 .text-filter.invalid:focus { outline-color: var(--state-dropped); }
 
-/* A mode toggle: a small square button backed by a hidden checkbox. Checked = active
-   (accent fill). */
 .toggle {
     flex: 0 0 auto;
     display: inline-flex;
@@ -494,7 +438,6 @@ body {
     border-color: var(--accent);
 }
 
-/* A numeric picker: a single number input. */
 .numeric-picker input {
     width: 100%;
     height: 34px;
@@ -512,9 +455,6 @@ body {
     border-color: var(--accent);
 }
 
-/* Refresh affordance: a compact square icon button that re-pulls the working set
-   under the current filter (dropping reviewed rows and refilling from the pool). It
-   sits at the bar's trailing edge. */
 .refresh-results {
     flex: 0 0 auto;
     width: 34px;
@@ -532,10 +472,8 @@ body {
 
 /* ---- value-picker popovers ----
    A chip's picker and the +Add menu share the .facet-panel overlay: absolutely
-   positioned below its anchor so it overlays the layout rather than growing the bar.
-   The popover overlays the layout (absolute) so it never grows the filter bar. Its
-   checklist scrolls internally at a capped height; the whole thing is width-capped
-   so a long tag can't stretch it across the screen. */
+   positioned below its anchor so it overlays rather than growing the bar; the
+   checklist scrolls internally, the whole width-capped. */
 .facet-panel {
     position: absolute;
     z-index: 30;
@@ -551,9 +489,6 @@ body {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
     padding: 6px;
 }
-/* The MATCH any/all radio pair on multi-valued facets (source, attributes), in the
-   space the free-text search bar vacated. ANY = one selected value matches; ALL =
-   the record carries every selected value (agreement). */
 .facet-mode {
     display: flex;
     align-items: center;
@@ -578,7 +513,6 @@ body {
 }
 .facet-mode-opt input { margin: 0; }
 
-/* All / None bulk toggles above the checklist — act on the whole value list. */
 .facet-bulk {
     display: flex;
     gap: 6px;
@@ -605,8 +539,6 @@ body {
     max-height: 40vh;
     overflow-y: auto;
 }
-/* A checklist row: native checkbox shown, value beside it, the whole ≥44px row a
-   tap target. */
 .facet-list .chip {
     display: flex;
     align-items: center;
@@ -639,13 +571,10 @@ body {
 .workbench {
     position: relative;
     display: grid;
-    /* The ledger is a compact fixed-column list (word/shaw/var/conf/freq/pos); it
-       needs only ~560px to breathe. Cap it there so on a wide screen it stops
-       growing and hands the extra width to the detail pane rather than sprawling.
-       The middle auto track is the draggable splitter; dragging it sets --ledger-w
-       (a pixel width, clamped in JS to the --*-min floors below), which then owns
-       the first column. Unset, the minmax default holds. The mobile block replaces
-       this template wholesale, so a remembered --ledger-w is inert on a phone. */
+    /* The middle auto track is the draggable splitter; dragging sets --ledger-w
+       (clamped in JS to the --*-min floors below), which then owns the first
+       column. The mobile block replaces this template wholesale, so a remembered
+       --ledger-w is inert on a phone. */
     grid-template-columns: var(--ledger-w, minmax(360px, min(44%, 560px))) auto 1fr;
     /* Drag clamps: neither pane may be squeezed below these. Low ledger floor on
        purpose (squish it hard without it bouncing back); collapse covers "gone". */
@@ -663,10 +592,8 @@ body {
     overflow: hidden;
 }
 
-/* ---- ledger/detail splitter (ported from the shave GUI's splitter idiom) ----
-   The track is a thin rule; the visible affordance is a circular grab handle
-   pinned near the top, riding the line. Dragging sets --ledger-w on .workbench
-   (see initWorkbenchSplitter in editor.js); the fraction persists per reload. */
+/* ---- ledger/detail splitter ----
+   Dragging sets --ledger-w on .workbench (see initWorkbenchSplitter in editor.js). */
 .splitter {
     position: relative;
     width: 1px;
@@ -709,10 +636,8 @@ body {
     .splitter-handle { width: 28px; height: 28px; left: -14px; opacity: 0.9; font-size: 16px; }
 }
 
-/* Collapsed ledger (wide screens only — the mobile drawer has its own affordance).
-   The list and the splitter vanish; a thin rail with the shared chevron (pointing
-   into the page: pull the list back out) stands in. Scoped to the desktop range so
-   a collapse remembered from a wide window can never eat the mobile drawer. */
+/* Collapsed ledger. Scoped to the desktop range so a collapse remembered from a
+   wide window can never eat the mobile drawer. */
 .ledger-rail { display: none; }
 @media (min-width: 861px) {
     .workbench.ledger-collapsed { grid-template-columns: auto 1fr; }
@@ -734,14 +659,9 @@ body {
 }
 .ledger-head, .ledger-row {
     display: grid;
-    /* Two narrow gutter tracks lead every row — the group-disclosure chevron and
-       the member count (blank on singleton and child rows) — then the seven data
-       columns. Every row shares this one template, so an expanded group's
-       children align with the top-level columns. The STATE track fits the widest
-       stamp, "✎ ✓" (a manual record's ✎ origin mark beside its verdict glyph),
-       and the "state" head label; the width the glyphs freed (the track held the
-       word "unreviewed") flows to the fr columns — word and shaw, the things
-       being reviewed. */
+    /* Two gutter tracks (group chevron, member count) then the seven data columns.
+       Every row shares this ONE template, so an expanded group's children align
+       with the top-level columns. The STATE track fits the widest stamp, "✎ ✓". */
     grid-template-columns: 22px 20px 44px 1fr 1.3fr 64px 40px 56px 48px;
     gap: 10px;
     align-items: center;
@@ -750,8 +670,6 @@ body {
     padding: 0 var(--ledger-inset);
 }
 
-/* Touch multi-select bar: the count and the Done affordance that leaves the mode.
-   Hidden until a long-press enters the mode. */
 .select-bar {
     display: flex;
     align-items: center;
@@ -782,10 +700,8 @@ body {
     color: var(--ink-soft);
     border-bottom: 1px solid var(--rule);
 }
-/* Clickable column headers: bare buttons that inherit the head-row typography, with
-   a trailing caret marking the active sort's direction (▲ asc, ▼ desc). The caret
-   slot is reserved on every header so the label does not shift when a column becomes
-   active. */
+/* The sort caret slot is reserved on every header so the label does not shift when
+   a column becomes active. */
 .sort-head {
     display: inline-flex;
     align-items: center;
@@ -814,9 +730,8 @@ body {
 .ledger-row {
     position: relative;
     height: 40px;
-    /* The divider rides the TOP of every row (a line starts each row) — so an
-       expanded parent has no line under it and flows into its children, and a
-       group's child block closes cleanly at the bottom before the next row. */
+    /* Dividers ride the TOP of every row — so an expanded parent has no line under
+       it and flows into its children, and a child block closes cleanly. */
     border-top: 1px solid var(--rule);
     cursor: pointer;
     /* A list row is a selection target, not prose: shift-click extends a range
@@ -825,9 +740,8 @@ body {
     -webkit-user-select: none;
     -webkit-touch-callout: none;
 }
-/* State edge-bar: a coloured rule down the left of each row, a redundant channel
-   alongside the stamp glyph and the pip meter so state never rides on colour
-   alone. STATE is its only job — selection never touches it. */
+/* State edge-bar: a redundant channel beside the stamp glyph so state never rides
+   on colour alone. STATE is its only job — selection never touches it. */
 .ledger-row::before {
     content: "";
     position: absolute;
@@ -844,17 +758,12 @@ body {
 .ledger-row.state-mixed { --row-edge: var(--state-mixed); }
 .ledger-row.state-orphaned { --row-edge: var(--state-orphaned); }
 .ledger-row:hover { background: var(--paper-raised); }
-/* The selected row: the raised-paper wash ALONE — no accent strip (the ::before
-   edge-bar stays the STATE channel only). ONE treatment for the review cursor, a
-   single pick, a picked child and a fully-picked header alike — painted by the
-   one-pass paintLedgerSelection. Hover shares the same raised ground, so hovering
-   a selected row never reads as a state change. */
+/* Selection is the raised-paper wash ALONE — no accent strip (::before stays the
+   STATE channel). ONE treatment for cursor, pick, child and header alike; hover
+   shares the same ground, so hovering a selected row never reads as a state change. */
 .ledger-row.selected { background: var(--paper-raised); }
 
-/* ---- record-list grouping (Phase 3) ---- */
-/* A collapsed group HEADER is a tightened ledger row previewing the export-winner:
-   the chevron + member-count gutter tracks filled, then the winner's columns (state
-   pill included, per the members' consensus). */
+/* ---- record-list grouping ---- */
 .group-disclosure {
     display: inline-flex;
     align-items: center;
@@ -866,7 +775,6 @@ body {
     cursor: pointer;
     color: var(--accent);
 }
-/* Reuse the shared chevron glyph + open-rotation the related tree uses. */
 .group-disclosure[aria-expanded="true"] .chevron { transform: rotate(90deg); }
 .group-count {
     font-size: 10px;
@@ -875,21 +783,12 @@ body {
 }
 .ledger-group-header { font-weight: 600; }
 
-/* An EXPANDED group: the header is a PLAIN row whose bottom hairline is suppressed
-   (dividers ride the top of cells, so the parent has no line beneath it) and flows
-   into its children below. The children hang under it as an INSET bordered block —
-   indented from the left, stood off the right, ringed by a subtle rounded groove —
-   so they read as subordinate to THEIR header, not the next record. The DOM is a
-   flat <li> run with no wrapper, so the ring is assembled per-row: every child
-   wears the two sides; the FIRST child opens the block (top border + top corners)
-   directly under the header; the LAST child closes it (bottom border + bottom
-   corners) so the clean break falls below the group. Collapsed headers and
-   singletons carry none of this (N=1 invariant: gated on .expanded / .group-child). */
-/* The expanded header keeps the base top divider (starts the group); nothing to
-   override — dividers already ride the top, so it has no line under it. */
+/* An EXPANDED group's children hang under the header as an inset bordered block.
+   The DOM is a flat <li> run with no wrapper, so the ring is assembled per-row:
+   every child wears the two sides; the FIRST child opens the block (top border +
+   corners), the LAST closes it. Collapsed headers and singletons carry none of
+   this (N=1 invariant: gated on .expanded / .group-child). */
 .ledger-row.group-child {
-    /* Children carry no row divider of their own — the groove (below) is the only
-       internal structure, so the block reads as one undivided unit. */
     margin: 0 var(--frame-inset) 0 var(--frame-indent);
     border-top: none;
     box-shadow: var(--frame-sides);
@@ -902,30 +801,21 @@ body {
     border-radius: 0 0 var(--frame-radius) var(--frame-radius);
     box-shadow: var(--frame-sides), inset 0 -1px 0 var(--groove-line);
 }
-/* A group of one child is both first and last — open AND close the block. */
 .ledger-row.group-child-first.group-child-last {
     border-radius: var(--frame-radius);
     box-shadow: var(--frame-sides),
         inset 0 1px 0 var(--groove-line), inset 0 -1px 0 var(--groove-line);
 }
-/* The state edge-bar (::before) is a square strip pinned to the row's left; round
-   its outer corners to follow the block so it doesn't square off the rounded
-   corner — and it must not overrun the block's own left inset, so pin it inside
-   the child's left margin. */
+/* Round the edge-bar's outer corners to follow the block's rounded corner. */
 .ledger-row.group-child::before { left: 0; }
 .ledger-row.group-child-first::before { border-top-left-radius: var(--frame-radius); }
 .ledger-row.group-child-last::before { border-bottom-left-radius: var(--frame-radius); }
 
-/* The indent strip LEFT of the child block is the PARENT header's territory — it
-   wears the header's background in every interactive state, so header + strip read
-   as one continuous shape bracketing the children. The GEOMETRY rides on each child
-   (::after painting the row's left-margin column); the STATE rides on the
-   parent-hover / parent-selected classes, because the flat <li> run offers CSS no
-   selector for "the children up to the next header" from the header's own
-   :hover/.selected — the header's hover handler and paintLedgerSelection toggle
-   them (see bindParentGutter / paintLedgerSelection). DEFAULT needs no paint: an
-   idle header is transparent over the same paper the margin already shows. A child's
-   own hover/selected wash stays on its box and never lights the strip. */
+/* The indent strip left of the child block is the PARENT header's territory. The
+   GEOMETRY rides on each child (::after painting the row's left-margin column);
+   the STATE rides on .parent-hover / .parent-selected, because the flat <li> run
+   offers CSS no selector for "the children up to the next header" from the
+   header's own :hover/.selected (see bindParentGutter / paintLedgerSelection). */
 .ledger-row.group-child.parent-hover::after,
 .ledger-row.group-child.parent-selected::after {
     content: "";
@@ -952,13 +842,8 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-/* The RRP default is the common case; dimming it lets the non-default dialects
-   (GenAm, TrapBath, RSSB, …) pop when scanning the list. */
 .col-var.var-default { color: var(--ink-soft); opacity: 0.55; }
 .col-pos { color: var(--ink-soft); font-size: 11px; cursor: help; }
-/* Corpus frequency: a right-aligned integer so the digits line up down the column.
-   The head button reuses the ledger-head typography but right-justifies its content
-   to sit over the numbers. */
 .col-freq {
     color: var(--ink-soft);
     font-size: 11px;
@@ -1003,9 +888,8 @@ body {
 .ledger-foot button:disabled { opacity: 0.4; cursor: default; }
 
 /* ---- decision stamp ---- */
-/* A glyph, not a word (?, ✓, ✕, ⚑, …, with ✎ prefixed on manual records) — the
-   words live in the tooltip and the detail rail's state pill. Plain text glyphs
-   inheriting currentColor, so the verdict hue drives them. */
+/* A glyph, not a word — the words live in the tooltip and the detail rail's state
+   pill. Plain text glyphs inheriting currentColor, so the verdict hue drives them. */
 .stamp {
     font-size: 12px;
     line-height: 1;
@@ -1019,9 +903,6 @@ body {
 .stamp.accepted { color: var(--state-accepted); }
 .stamp.dropped { color: var(--state-dropped); }
 
-/* The detail rail's small state pill — restates the exact verdict WORD (colour alone
-   can't tell accepted from unreviewed, or dropped from flagged). Unobtrusive: small,
-   uppercase, tinted by the record's state hue. */
 .state-pill {
     display: inline-block;
     font-size: 11px;
@@ -1051,15 +932,8 @@ body {
     border-left: 4px solid transparent;
     transition: border-color 0.15s;
 }
-/* The redesign spreads the editor CHROME across the full width on top, with the
-   evidence pair (related + definitions) BELOW it. The cap is lifted so the chrome
-   and the evidence grid can use the horizontal room. */
 .detail { max-width: none; }
 
-/* The chrome: the five glance-fields compact in the LEFT column (text stack with
-   POS + var beside it), the priority rail + attributes + metadata + action buttons
-   in a RIGHT column/rail. One column on narrow screens (glance stacks above the
-   rail). */
 .detail-chrome {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1073,8 +947,6 @@ body {
     }
 }
 
-/* The evidence pair below the chrome: related WIDER (the scan-to-decide table),
-   definitions beside it, all related rows visible. One column when narrow. */
 .evidence-cols { display: block; }
 @media (min-width: 900px) {
     .evidence-cols {
@@ -1090,10 +962,8 @@ body {
 }
 
 /* ---- glance column: text stack (word / Shavian / IPA) with POS + var BESIDE it ---- */
-/* Two compact sub-columns share the row — the editable text stack and the small
-   categorical fields — so the panel uses horizontal room instead of forcing a scroll.
-   flex-wrap lets posvar drop below the stack only when the screen is genuinely too
-   narrow for both (the stack's 200px basis + posvar fit a 375px phone side by side). */
+/* flex-wrap lets posvar drop below the stack only when genuinely too narrow for
+   both (the stack's 200px basis + posvar fit a 375px phone side by side). */
 .glance-column {
     display: flex;
     flex-wrap: wrap;
@@ -1101,8 +971,6 @@ body {
     gap: 12px 24px;
     min-width: 0;
 }
-/* The text stack: the word's state box, then Shavian and IPA, stacked CLOSE. Each
-   entry stretches to the stack's width so the three read as one aligned column. */
 .glance-fields {
     display: flex;
     flex-direction: column;
@@ -1110,9 +978,6 @@ body {
     flex: 1 1 200px;
     min-width: 0;
 }
-/* The state box around the Latin word: a left-edge accent + full border in the
-   record's state hue (reusing the ledger's --state-* vars), keyed by .state-* class.
-   A quiet tinted ground keeps it legible without a garish fill. */
 .glance-word {
     display: flex;
     align-items: baseline;
@@ -1140,8 +1005,6 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-/* POS (code prominent) above var, a content-sized categorical column beside the
-   text stack. */
 .glance-posvar {
     display: flex;
     flex-direction: column;
@@ -1150,11 +1013,8 @@ body {
     flex: 0 0 auto;
     min-width: 0;
 }
-/* Size the var field to its CONTENT (GenAm/TrapBath are the widest) — no fixed 130px
-   box; RRP must not get a wide box. */
+/* Content-sized (GenAm/TrapBath are the widest) — RRP must not get a wide box. */
 .glance-posvar .var-field { width: 11ch; min-width: 0; }
-/* The single-record editable corpus frequency: an integer, so digits line up in a
-   tabular monospace box wide enough for the top counts (8 digits). */
 .glance-posvar .freq-field {
     width: 10ch;
     min-width: 0;
@@ -1163,8 +1023,6 @@ body {
 }
 .pos-glance { flex: 0 0 auto; min-width: 0; }
 .pos-glance-value { display: flex; flex-direction: column; gap: 2px; }
-/* The CLAWS CODE (e.g. NN1) is the prominent text; the spelled-out English sits
-   under it, smaller, and may wrap/truncate. */
 .pos-glance-tag {
     font-family: var(--mono);
     font-size: 15px;
@@ -1185,9 +1043,6 @@ body {
 /* ---- rail column: priority rail, attributes, metadata, actions ---- */
 .rail-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 
-/* The priority rail: four FIXED slots (state / sources / freq / confidence). An
-   absent slot goes invisible IN PLACE (.empty) and the geometry does NOT change,
-   so the glance loop never re-scans. A 2×2 grid keeps every slot's position fixed. */
 .priority-rail {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1211,7 +1066,6 @@ body {
 .rail-value { font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .rail-confidence .rail-slot-value { color: var(--ink-soft); }
 
-/* Atomic source pills — one per attesting origin; two side by side = agreement. */
 .source-pills { display: inline-flex; flex-wrap: wrap; gap: 5px; }
 .source-pill {
     font-size: 10px;
@@ -1225,8 +1079,6 @@ body {
 }
 .source-pill.source-readlex { color: var(--accent); border-color: var(--accent); }
 
-/* The demoted (tier-3) metadata badges below the rail. Quiet; empty when the
-   record carries none. */
 .metadata-badges {
     display: flex;
     flex-wrap: wrap;
@@ -1234,10 +1086,8 @@ body {
     gap: 6px 8px;
 }
 .metadata-badges:empty { display: none; }
-/* Review mode is the resting state: the card wears a live accent edge and a
-   REVIEW cue, telling the editor that single-key verdicts are armed. Edit mode
-   lifts the accent (the caret is in a field now) so the two modes are never
-   ambiguous. This edge is the card's signature tell. */
+/* The card's mode tell: review wears the live accent edge (single-key verdicts
+   armed), edit lifts it — the two modes are never ambiguous. */
 .detail.mode-review { border-left-color: var(--accent); }
 .detail.mode-edit { border-left-color: var(--state-edited); }
 .detail.mode-review::after {
@@ -1268,8 +1118,6 @@ body {
 }
 .detail-empty { color: var(--ink-soft); font-style: italic; }
 
-/* The new-entry form heading: names the action in the manual-authoring accent so
-   the card reads unmistakably as "creating", not "reviewing an existing record". */
 .detail-create-title {
     font-family: var(--mono);
     font-size: 15px;
@@ -1284,21 +1132,12 @@ body {
     font-size: 12px;
     margin-bottom: 18px;
 }
-/* The create/clone dialog's verdict bar: [Accept, Flag, Cancel] on one row, with the
-   distinctness-guard message wrapping onto its own line beneath (full width). */
 .create-actions { row-gap: 8px; }
-/* A verdict blocked by the distinctness guard (an exact-anchor collision, or the sibling
-   fetch still in flight): dimmed and inert, so the owner sees at a glance that the entry
-   is not yet clear to author. */
 .act.create-verdict:disabled {
     opacity: 0.35;
     cursor: default;
     pointer-events: none;
 }
-/* The distinctness-guard line under the verdicts. Silent (no reserved space) while the
-   entry is distinct or incomplete; PENDING (checking) reads quiet, a COLLISION in the
-   dropped tone (hard block), a canonical-conflict WARN in the flagged/amber tone
-   (allowed, but flagged). */
 .create-guard {
     flex-basis: 100%;
     margin: 0;
@@ -1311,10 +1150,6 @@ body {
 .create-guard[data-state="warn"] { color: var(--state-flagged); }
 
 /* ---- group edit — the group-native panel the card shows at 2+ selected ---- */
-/* The banner names how many records the panel edits, so a verdict's or edit's fan-out
-   to N records is never a surprise. The fields below it edit group-native: a field
-   common to every member edits exactly as a single record's; a divergent field renders
-   the "multiple"/tri-state form (see .field-multiple / .variation-toggle.mixed). */
 .group-edit-header {
     display: flex;
     align-items: baseline;
@@ -1337,10 +1172,8 @@ body {
     line-height: 1;
 }
 
-/* A divergent identity field (word/pos) or state, rolled up read-only as "·N a, b, c"
-   — the group spans several values the owner cannot bulk-overwrite (that would re-anchor). */
-/* A mixed-state group carries no single hue: the word box keeps the neutral --state-edge
-   default (var(--rule)) since .state-multiple sets no state class. */
+/* A mixed-state group carries no single hue: the word box keeps the neutral
+   --state-edge default since .state-multiple sets no state class. */
 .latin.latin-multiple { font-size: 15px; color: var(--ink-soft); }
 /* The rolled-up POS tag sits in the content-sized posvar group (its .pos-glance
    ancestor is flex:0 0 auto), so the .distinct-values `max-width:100%` has no finite
@@ -1348,9 +1181,8 @@ body {
    something to engage on — matching the ch-based caps the other glance cells use. */
 .pos-glance-value.pos-glance-multiple .pos-glance-tag { max-width: 18ch; }
 
-/* Every divergent slot's distinct-value list is one truncated line: an ellipsis keeps
-   an unbounded selection from walling the panel, and the full list is on the `title=`
-   tooltip so hovering reveals it all. The `·N` prefix keeps the true count visible. */
+/* One truncated line: the ellipsis keeps an unbounded selection from walling the
+   panel; the full list is on the title tooltip. */
 .distinct-values {
     display: block;
     max-width: 100%;
@@ -1359,9 +1191,6 @@ body {
     white-space: nowrap;
 }
 
-/* A "multiple" TEXT field (var/shaw/ipa differ across the group): an empty box with a
-   greyed `multiple` placeholder and the one-line distinct-value list. Typing overwrites
-   ALL members (D1), flipping the box to a pending-overwrite tone so the fan-out shows. */
 .edit-field.field-multiple .edit-input::placeholder {
     color: var(--ink-soft);
     opacity: 0.7;
@@ -1384,17 +1213,11 @@ body {
    ellipsis engages; the full list stays on the title tooltip. */
 .glance-posvar .field-multiple-values.distinct-values { max-width: 18ch; }
 
-/* A tri-state variation toggle whose members disagree ("mixed", D2): a dashed indeterminate
-   pill. Clicking it makes a uniform decision across all members. */
 .variation-toggle.mixed {
     border-style: dashed;
     color: var(--ink-soft);
 }
 
-/* The orphan sub-tag, beside the state pill in the DETAIL rail (never in the ledger
-   row — the row carries only the yellow op glyph). Names the op + why it orphaned in
-   WORDS; the kind is not colour-coded (one orphan yellow for both). Non-orphan
-   records render nothing. */
 .orphan-kind-badges {
     align-self: center;
     display: inline-flex;
@@ -1412,10 +1235,6 @@ body {
     color: var(--state-orphaned);
 }
 
-/* The orphan reason + action note, shown in the detail card under the heading (where
-   there is room, unlike the ledger row). Spells out WHY the record orphaned and WHAT to
-   do, in words rather than a tooltip. A left edge-bar in the orphaned yellow ties it to
-   the ledger row's edge for the same record. */
 .orphan-note {
     margin: 10px 0 4px;
     padding: 10px 14px;
@@ -1455,9 +1274,6 @@ body {
     color: var(--ink);
 }
 
-/* The record's active vowel mergers, read-at-a-glance beside the word. A
-   phonological attribute, not a decision-state, so it stays in the quiet accent
-   tone rather than borrowing a state colour. Empty renders nothing. */
 .merger-badges {
     align-self: center;
     display: inline-flex;
@@ -1475,10 +1291,6 @@ body {
     white-space: nowrap;
 }
 
-/* The within-accent variant marker, read-at-a-glance beside the word. A
-   spelling attribute like the mergers, so it mirrors their badge but in a
-   distinct tint to keep the two axes separable at a glance. Absent renders
-   nothing. */
 .variant-badges {
     align-self: center;
     display: inline-flex;
@@ -1496,10 +1308,6 @@ body {
     white-space: nowrap;
 }
 
-/* The upstream-definition provenance marker, read-at-a-glance beside the word. A
-   quiet provenance fact like the merger/variant badges, so it mirrors their pill
-   but in the soft-ink tint to read as informational, not editable. Absent (no
-   upstream definition) renders nothing. */
 .def-badges {
     align-self: center;
     display: inline-flex;
@@ -1517,10 +1325,6 @@ body {
     white-space: nowrap;
 }
 
-/* The novelty marker ("new word"/"new spelling"/"new POS"), read-at-a-glance beside
-   the word: is this word/spelling/pos new to the dictionary versus upstream ReadLex.
-   A quiet triage pill like the def badge (soft-ink, not editable); `known` rows
-   render nothing (the absence is the signal, mirroring the other provenance pills). */
 .novelty-badges {
     align-self: center;
     display: inline-flex;
@@ -1538,11 +1342,6 @@ body {
     white-space: nowrap;
 }
 
-/* The relabel-provenance marker ("was GenAm"), read-at-a-glance beside the word:
-   the dialect var a pipeline transform changed this record's var away from. Derived
-   provenance like the def badge (soft-ink, not editable), but a DASHED border marks
-   it as transformation history — a record that was moved — distinct from the solid
-   provenance pills. Absent (no transform moved the var) renders nothing. */
 .orig-var-badges {
     align-self: center;
     display: inline-flex;
@@ -1560,10 +1359,6 @@ body {
     white-space: nowrap;
 }
 
-/* The general-purpose informational metadata (basis.INFO_FIELD): a catch-all list of
-   non-essential tags (e.g. Wiktionary quality tags obsolete/dialectal), one quiet pill
-   each beside the word. Read-only derived provenance like the def badge (soft-ink, not
-   editable); an empty list renders nothing (the absence is the signal). */
 .info-badges {
     align-self: center;
     display: inline-flex;
@@ -1581,9 +1376,6 @@ body {
     white-space: nowrap;
 }
 
-/* A one-line recap beside the state badge naming every field the owner overrode
-   on accept ("edited: shaw, mergers"). Rides the edited-state tone; empty (an
-   accept-as-is or unreviewed row) renders nothing. */
 .edited-summary {
     display: inline-flex;
     align-items: baseline;
@@ -1602,7 +1394,6 @@ body {
     font-family: var(--mono);
 }
 
-/* External look-ups, sitting just under the chrome, full width. */
 .references {
     display: flex;
     flex-wrap: wrap;
@@ -1621,7 +1412,6 @@ body {
 }
 .reference:hover, .reference:focus-visible { border-bottom-color: var(--accent); }
 
-/* Pivoted: every field is a full-width labelled row, label above a LARGE value. */
 .field-stack {
     display: flex;
     flex-direction: column;
@@ -1630,12 +1420,6 @@ body {
 }
 .edit-field { display: flex; flex-direction: column; gap: 4px; }
 
-/* Dialect (var) + mergers + variant grouped on ONE row — three independent
-   controls laid side by side for glanceability, not merged in the data. They wrap
-   onto stacked rows only when the card gets too narrow to hold them (phones); at
-   iPad width and up they share the row. The var field takes a comfortable fixed
-   width; the toggle groups size to their chips. Bottom-aligned so the labels sit
-   above controls of differing heights. */
 .field-row {
     display: flex;
     flex-wrap: wrap;
@@ -1651,11 +1435,6 @@ body {
     color: var(--ink-soft);
 }
 
-/* Provenance mark on a field the owner overrode when accepting the record: a
-   small "edited" pill pinned to the field's label, in the edited-state tone.
-   Fields left as the live basis carry no tag. The label rows itself so the pill
-   sits inline beside the caption text; on the word/pos cells the pill flows as
-   inline content after the text without changing the cell's layout. */
 .edit-field.overridden > .edit-label {
     display: inline-flex;
     align-items: baseline;
@@ -1695,16 +1474,10 @@ body {
 .edit-input.dirty { border-bottom-color: var(--state-edited); }
 
 /* ---- variations: always-visible toggle buttons (mergers + "other" unified) ---- */
-/* A row of toggle-button pills under the "Variations" label — every merger plus the
-   "other" (free-variation) marker, always visible. Each pill toggles on/off; the
-   hidden .merger-check / .variant-check checkbox inside it is the flattened on-disk
-   state (mergers list + variant bool), never shown. Mirrors the pre-redesign merger
-   toggle-row + variant toggle, merged into one group. */
 .variations-field { min-width: 0; }
 .variation-toggles { display: flex; flex-wrap: wrap; gap: 7px; }
-/* Secondary controls: kept small (tight padding, smaller type) so they read as
-   subordinate to the glance fields, not primary. Still a comfortable tap target on
-   touch — the mobile block below restores a taller (40px) min-height. */
+/* Kept small so they read as subordinate; the mobile block restores a taller
+   (40px) touch target. */
 .variation-toggle {
     display: inline-flex;
     align-items: center;
@@ -1726,7 +1499,6 @@ body {
     background: var(--accent);
     border-color: var(--accent);
 }
-/* The "other" toggle rides its own tone, distinct from a merger. */
 .variation-toggle.variation-other.on {
     background: var(--accent-manual);
     border-color: var(--accent-manual);
@@ -1746,9 +1518,6 @@ body {
     outline-color: var(--accent-manual);
 }
 
-/* The Shavian spelling is the dictionary's payload — a touch larger than the Latin
-   type for glyph legibility, but input-sized like every other field. The accent
-   bottom border keeps it read as the primary field. */
 .shaw-field {
     font-family: var(--shaw);
     font-size: 20px;
@@ -1756,9 +1525,6 @@ body {
     border-bottom-color: var(--accent);
 }
 .ipa-field { font-size: 16px; font-style: italic; }
-/* The single-record editable Latin word (inside the state box): input-sized like
-   the other fields but bold and a step larger, mirroring the old big-word heading.
-   The field flexes to the box's width so the input does not collapse. */
 .glance-word .edit-field { flex: 1 1 auto; min-width: 0; }
 .latin-field { font-size: 17px; font-weight: 700; }
 
@@ -1775,9 +1541,6 @@ body {
     cursor: pointer;
     background: none;
 }
-/* Icon-only action buttons: the inline SVG glyph IS the button — no text label, so
-   every action fits one compact row on both desktop and mobile. A square-ish tap
-   target; the title/aria-label carry the name (hover tooltip + accessible name). */
 .act.act-icon {
     display: inline-flex;
     align-items: center;
@@ -1797,28 +1560,16 @@ body {
 .act.unflag:hover, .act.undo:hover { background: var(--ink-soft); color: var(--paper); }
 .act.clear { color: var(--state-unreviewed); }
 .act.clear:hover { background: var(--state-unreviewed); color: var(--paper); }
-/* Clone wears the manual-authoring accent — it mints a new manual sibling, like
-   New Entry. */
 .act.clone { color: var(--accent-manual); }
 .act.clone:hover { background: var(--accent-manual); color: var(--paper); }
 
 
-/* ---- related entries — the context index below the focused card ---- */
-/* Secondary to the card above: a quiet, hairline-ruled list of every entry that
-   shares this Latin word (capitalisation dupes, homographs), each stamped by its
-   provenance + review state. Colour rides the same --state-* palette as the
-   ledger; the glyph and text label carry the meaning off-colour too. */
-/* Definitions — the read-only inline sense summary (design §5b). A <details>
-   disclosure so the sense list stays collapsed until the owner opens it, keeping
-   the word panel uncrowded. Mirrors the related section's top rule + mono header. */
+/* ---- related entries + definitions — the evidence below the focused card ---- */
 .definitions {
     margin-top: 30px;
     padding-top: 22px;
     border-top: 1px solid var(--rule);
 }
-/* Both detail sub-sections (definitions, related) are collapsible <details>. Their
-   <summary> titles share a look and a project chevron (▸/▾), matching the filter and
-   drawer toggles, so the panel reads as one consistent set of collapsibles. */
 .definitions-title,
 .related-title {
     display: flex;
@@ -1834,14 +1585,11 @@ body {
 }
 .definitions-title:hover,
 .related-title:hover { color: var(--ink); }
-/* Replace the native disclosure triangle with the project chevron span, so the
-   affordance is identical to the masthead toggles. */
+/* Replace the native disclosure triangle with the project chevron span. */
 .definitions-title::-webkit-details-marker,
 .related-title::-webkit-details-marker { display: none; }
 .definitions-title { list-style: none; }
 .related-title { list-style: none; }
-/* The chevron rotates with the parent <details>[open] state (mirrors the
-   aria-expanded rotation the .chevron-toggle summaries use). */
 .definitions[open] .definitions-title .chevron,
 .related[open] .related-title .chevron { transform: rotate(90deg); }
 .definitions[open] .definitions-title { margin-bottom: 12px; }
@@ -1849,9 +1597,6 @@ body {
 .definitions-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
 .definitions-empty { color: var(--ink-soft); font-size: 13px; }
 .definitions-list { list-style: none; }
-/* One sense: a POS/gloss head line, and the Shavian transliteration beneath. Rows
-   are generously spaced and full-width (readable + mobile-friendly per the editor's
-   UX rule), not squeezed into the dense grid the related rows use. */
 .definition-row {
     padding: 10px 12px;
     border-bottom: 1px solid var(--rule);
@@ -1894,7 +1639,6 @@ body {
     line-height: 1.35;
     color: var(--ink);
 }
-/* The GB/US dialect tag, shown only where the two transliterations diverge. */
 .definition-dialect {
     font-family: var(--mono);
     font-size: 9px;
@@ -1903,14 +1647,11 @@ body {
     color: var(--ink-soft);
     min-width: 20px;
 }
-/* The coverage gap made visible: a sense whose Shavian transliteration is missing. */
 .definition-no-shaw {
     font-size: 12px;
     font-style: italic;
     color: var(--ink-soft);
 }
-/* The source-provenance tag: where the gloss came from, so the owner judges trust.
-   WordNet is the neutral default; a generated/drafted gloss is highlighted. */
 .definition-source {
     font-family: var(--mono);
     font-size: 9px;
@@ -1927,7 +1668,6 @@ body {
     background: color-mix(in srgb, var(--warn, #c60) 22%, transparent);
     color: var(--warn, #c60);
 }
-/* The ✎ per-sense correction affordance. Pushed to the row's end; quiet until hover. */
 .definition-edit {
     margin-left: auto;
     border: none;
@@ -1941,8 +1681,6 @@ body {
 }
 .definition-edit:hover { color: var(--accent); background: var(--rule); }
 
-/* The definition-correction modal: read-only gloss identity + editable Shavian. It
-   reuses the create-card shell chrome but its own body layout. */
 .definition-modal-card { max-width: 640px; }
 .definition-modal-body { display: flex; flex-direction: column; gap: 14px; }
 .definition-modal-meta {
@@ -1995,32 +1733,20 @@ body {
     margin-top: 30px;
     padding-top: 22px;
     border-top: 1px solid var(--rule);
-    /* The plain horizontal row inset shared by the head, the leaf rows and the
-       node summaries. Leaf nesting comes from the open node's group unit (the
-       :root vocabulary's continuous left edge), not a per-row indent. */
     --related-inset: 10px;
 }
 .related-loading { color: var(--ink-soft); font-style: italic; font-size: 12px; }
 .related-list { list-style: none; }
-/* The related list is a real table: the header and every row share ONE fixed
-   column template so word/pos/var/shaw/source/state line up vertically down the
-   list (the former per-row max-content/auto tracks sized independently and never
-   aligned). Seven tracks — word + shaw take the flexible space (they are what's
-   being reviewed); the metadata tracks are fixed/narrow; the state column (badge +
-   its label) sits LAST, two cells the header spans. */
+/* A real table: the header and every row share ONE fixed column template so the
+   columns align down the list. The state column (badge + label) is two tracks the
+   header spans. */
 .related-head, .related-row {
     display: grid;
-    /* word + shaw are the point — real min widths so they hold and never truncate
-       first; the metadata columns (pos/var/source/state) stay as tight as their
-       content and concede space. */
     grid-template-columns: minmax(90px, 2fr) 34px 50px minmax(90px, 2.4fr) 56px 18px 52px;
     gap: 8px 12px;
     align-items: baseline;
     padding: 0 var(--related-inset);
 }
-/* The sortable header row, styled like the ledger head (uppercase, tracked, quiet)
-   and reusing the .sort-head button look + ▲/▼ carets. The state header spans the
-   badge + label tracks (last two) so it sits over the one logical "state" column. */
 .related-head {
     align-items: center;
     height: 26px;
@@ -2033,39 +1759,29 @@ body {
     border-bottom: 1px solid var(--rule);
 }
 .related-head .related-head-state { grid-column: span 2; }
-/* Header buttons borrow the row's column classes only for grid PLACEMENT — reset the
-   typography those classes carry (the shaw class is 20px Shavian, source is 10px mono)
-   so every header label renders in the uniform head type, not its cell's content font.
-   The shaw + source labels right-justify to sit over their end-aligned cells. */
+/* Header buttons borrow the row's column classes only for grid PLACEMENT — reset
+   the typography those classes carry (shaw is 20px Shavian, source 10px mono) so
+   every header label renders in the uniform head type. */
 .related-head .sort-head {
     font-family: inherit;
     font-size: inherit;
     justify-self: stretch;
 }
-/* Header buttons that borrow a row-cell class must not inherit that cell's flex
-   layout — the dialect cell is an inline-flex/baseline group, which lifts the VAR
-   header out of line with the other (block) headers. Force them plain + left. */
+/* The dialect cell is an inline-flex/baseline group, which lifts the VAR header
+   out of line with the other (block) headers — force it plain + left. */
 .related-head .related-dialect {
     display: block;
     text-align: left;
     align-self: center;
 }
-/* Leaf rows nest UNDER their spelling node inside the open node's group unit; the
-   shared grid keeps the columns aligned across all leaves. */
 .related-row {
     align-items: baseline;
     padding: 8px var(--related-inset);
     border-bottom: 1px solid var(--rule);
 }
 .related-row:last-child { border-bottom: none; }
-/* A sibling row opens in a modal for in-place review — hint it is a target. The
-   focused row is the detail card above, so it carries no affordance. */
 .related-row.clickable { cursor: pointer; }
 .related-row.clickable:hover { background: var(--paper-raised); }
-/* The focused entry is the DEFAULT-SELECTED row: it wears the editor's unified
-   selection highlight (the raised-paper wash alone, mirroring .ledger-row.selected),
-   tying it to the detail card above. The selection IS "you are here" — no separate
-   label. */
 .related-row.selected { background: var(--paper-raised); }
 .related-badge {
     justify-self: center;
@@ -2073,8 +1789,6 @@ body {
     line-height: 1;
 }
 .related-source {
-    /* Left-aligned like every other column; ellipsis clips a long
-       "wordnet+wiktionary" to its track. */
     min-width: 0;
     text-align: left;
     font-family: var(--mono);
@@ -2098,18 +1812,12 @@ body {
 }
 .related-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .related-pos { color: var(--ink-soft); font-size: 11px; cursor: help; }
-/* The dialect track: the var, followed by variant/merger markers when present.
-   One grid cell (the row template is fixed), so the markers group beside the var
-   rather than claiming their own columns. */
 .related-dialect {
     display: inline-flex;
     align-items: baseline;
     flex-wrap: wrap;
     gap: 4px 6px;
 }
-/* Compact echoes of the detail variant/merger badges, sized to the dense row:
-   they borrow the badge tints (variant = the manual accent, merger = accent) but
-   drop the border and shrink to sit level with the 11px var text. */
 .related-variant, .related-merger {
     font-size: 9px;
     letter-spacing: 0.06em;
@@ -2121,8 +1829,6 @@ body {
 .related-shaw {
     font-family: var(--shaw);
     font-size: 20px;
-    /* Left-aligned: the Shavian starts under the SHAW header and reads L-to-R.
-       min-width:0 + ellipsis clips a long spelling to its column. */
     min-width: 0;
     text-align: left;
     overflow: hidden;
@@ -2131,17 +1837,6 @@ body {
 }
 
 /* ---- related-entries TREE — ledger-group node → flat rows ---- */
-/* The flat sibling list hides that several entries share ONE spelling, so it is
-   folded into a two-level disclosure tree: each served ledger group (group_key —
-   word + Shavian + variation set) is one node whose header (<summary>) SUMMARISES
-   what's inside — the word, the glyphs, the rolled-up POS + VAR tags, the group's
-   variation markers, and the leaf count. The chevron strip toggles the fold; the
-   rest of the header opens the group editor over the node's members (the ledger
-   idiom: chevron drills down, the row acts). Expanding reveals the full flat table
-   (the leaf rows) for that spelling; there is no deeper nesting. The open node's
-   group unit (the continuous left edge running from summary through leaves) ties
-   the leaves to their node, the chevron leading the eye down to the aligned leaf
-   columns. */
 .related-node { border: none; }
 .related-node > .related-subtree { list-style: none; }
 .related-list .related-group { list-style: none; }
@@ -2159,11 +1854,9 @@ body {
 .related-node-summary::-webkit-details-marker { display: none; }
 .related-node-summary:hover { background: var(--paper-raised); }
 
-/* The disclosure chevron reuses the project chevron; it rotates when its own
-   <details> is open. It is the node's TOGGLE tap target (the rest of the summary
-   opens the group editor), so it pads out to a finger-sized strip filling the
-   summary's left inset — negative margins pull the padding back into the
-   summary's own box, keeping the glyph where it always sat. */
+/* The chevron is the node's TOGGLE tap target (the rest of the summary opens the
+   group editor), so it pads out to a finger-sized strip filling the summary's left
+   inset — negative margins pull the padding back into the summary's own box. */
 .related-chevron {
     flex: none;
     align-self: stretch;
@@ -2177,13 +1870,10 @@ body {
 .related-node[open] > .related-node-summary > .related-chevron { transform: rotate(90deg); }
 
 /* An OPEN node wears the SAME nesting as the ledger's expanded group — the shared
-   :root vocabulary supplies the indent, groove and radius, so the two structures
-   cannot drift apart. The summary is a PLAIN row whose bottom hairline is suppressed
-   (it flows into its leaves below); unlike the ledger's flat <li> run, the <details>'
-   subtree IS a wrapper, so the inset bordered block rides on it in one piece —
-   indented from the left, ringed all round, overflow clipping the square row washes
-   (hover/selected) to the curve. A collapsed node stays a plain summary row,
-   mirroring a collapsed group header. */
+   :root vocabulary supplies indent/groove/radius, so the two structures cannot
+   drift apart. Unlike the ledger's flat <li> run, the <details>' subtree IS a
+   wrapper, so the ring rides on it in one piece; overflow clips the square row
+   washes to the curve. */
 .related-node[open] > .related-node-summary {
     border-bottom: none;
 }
@@ -2195,21 +1885,15 @@ body {
 }
 .related-node[open] > .related-subtree .related-row { border-bottom: none; }
 
-/* The indent gutter beside an open node's leaves belongs to the node HEADER — the
-   ledger's gutter-follows-parent rule, but trivial here: the <details> IS the
-   wrapper the ledger's flat run lacks, so hovering the summary washes the indent
-   column via :has() on the node's own background. A hard-stop gradient confines
-   the wash to the indent width; an element background paints under every
-   descendant, so the summary's and the leaves' own washes stay on top. Summaries
-   carry no selected background (.on-path tints text only), so hover is the only
-   header state with a wash to mirror. */
+/* Hovering the summary washes the indent column via :has() on the node's own
+   background — a hard-stop gradient confines the wash to the indent width; an
+   element background paints under every descendant, so the summary's and leaves'
+   own washes stay on top. */
 .related-node[open]:has(> .related-node-summary:hover) {
     background: linear-gradient(to right,
         var(--paper-raised) var(--frame-indent), transparent var(--frame-indent));
 }
 
-/* The summarising label lays the word, glyphs, and rolled-up POS/VAR tags out on
-   one line so the shared spelling and what it covers read at a glance. */
 .related-node-label {
     min-width: 0;
     display: inline-flex;
@@ -2243,8 +1927,6 @@ body {
     letter-spacing: 0.04em;
     color: var(--ink-soft);
 }
-/* The " · N" leaf count, pushed to the right of the header so the glance picks up
-   how much a node hides without expanding it. */
 .related-node-count {
     margin-left: auto;
     flex: none;
@@ -2253,7 +1935,6 @@ body {
     color: var(--ink-soft);
 }
 .related-node-count::before { content: "· "; }
-/* The focused node's header is tinted to tie it to the detail card above. */
 .related-node-summary.on-path { color: var(--accent); }
 .related-node-summary.on-path .related-group-pos-tag,
 .related-node-summary.on-path .related-group-var-tag,
@@ -2379,8 +2060,6 @@ kbd {
 }
 .cheat-list dt { display: flex; gap: 4px; justify-self: start; }
 .cheat-list dd { color: var(--ink); font-size: 12px; }
-/* A verdict row's key chip wears the colour the ledger uses for that outcome, so
-   the sheet doubles as a legend for the stamps the reviewer reads all day. */
 .cheat-list dt.state-accepted kbd { color: var(--state-accepted); border-color: var(--state-accepted); }
 .cheat-list dt.state-dropped kbd { color: var(--state-dropped); border-color: var(--state-dropped); }
 .cheat-list dt.state-flagged kbd { color: var(--state-flagged); border-color: var(--state-flagged); }
@@ -2402,9 +2081,6 @@ kbd {
 .cheat-close:hover { background: var(--accent); }
 
 /* ---- create-entry modal (shared by New Entry and Clone-as-dialect) ---- */
-/* The backdrop shell mirrors the cheatsheet's; the card wears the manual-accent
-   top-rule to read unmistakably as "creating". The form inside reuses the record
-   editor's field styles (.field-stack / .edit-field / .actions). */
 .create-modal {
     position: fixed;
     inset: 0;
@@ -2444,30 +2120,21 @@ kbd {
 .create-dismiss:hover { color: var(--ink); }
 
 /* ---- edit-mode modal (a related entry opened for review) ---- */
-/* The related/clone edit modal hosts the SAME record editor as the wide detail pane —
-   the glance fields + priority rail chrome. That chrome was laid out for the wide
-   pane (two side-by-side columns at >=900px viewport). The modal is a NARROW card in a
-   wide viewport, so the viewport-keyed grid fired anyway and the two columns collided.
-   These rules reflow the chrome for the constrained card: a single stacked column,
-   the glance fields above a horizontal rail, so nothing overlaps and the word stays
-   visible. Scoped to .create-card so the main detail pane is untouched. Create-mode
-   uses the .field-stack form (already narrow-friendly) — only the chrome-hosting card
-   widens. */
+/* The edit modal hosts the SAME record editor as the wide detail pane, but is a
+   NARROW card in a wide viewport — the viewport-keyed >=900px grid fired anyway
+   and the two chrome columns collided. Reflow to a single stacked column, scoped
+   to .create-card so the main detail pane is untouched. */
 .create-card:has(.detail-chrome) { max-width: min(920px, 92vw); }
 
-/* One stacked column regardless of viewport width — override the >=900px two-column
-   grid, which has no room inside the card. */
 .create-card .detail-chrome {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
 }
 
-/* The word may wrap to a second line rather than ellipsing away — in the card there is
-   vertical room, and a vanished word is the worse failure. */
+/* The word may wrap — in the card there is vertical room, and a vanished word is
+   the worse failure. */
 .create-card .glance-word .latin { white-space: normal; overflow: visible; }
 
-/* The rail becomes a horizontal wrapping strip below the identity/fields (like the
-   mobile treatment), not a 2-column grid crammed into half the card. */
 .create-card .priority-rail {
     display: flex;
     flex-wrap: wrap;
@@ -2478,11 +2145,8 @@ kbd {
 
 /* ---- mobile: one big detail card, ledger tucked into a drawer ---- */
 @media (max-width: 860px) {
-    /* The detail card fills the screen; the ledger is a full-width panel that drops
-       down from the reveal rail over a backdrop. minmax(0,1fr) lets the column
-       shrink below its content's min width so a long word or wide field can't push
-       the whole layout past the viewport; the rail leads and the detail takes the
-       remaining height. */
+    /* minmax(0,1fr) lets the column shrink below its content's min width so a long
+       word or wide field can't push the layout past the viewport. */
     .workbench {
         --drawer-rail-h: 40px;
         grid-template-columns: minmax(0, 1fr);
@@ -2493,15 +2157,11 @@ kbd {
     .chevron-toggle { display: inline-flex; }
     .patch-counts { display: none; }
 
-    /* The filter bar collapses to its chevron on narrow screens so the results own
-       the first screen; the row is restored to a wrapping two-column grid when
-       expanded (rule below). */
     body.filters-collapsed .filters { display: none; }
 
-    /* Hidden, the drawer sits translated up by its own height: its bottom edge
-       rests exactly under the (opaque, higher-stacked) rail, and the workbench's
-       overflow:hidden clips the rest, so opening reads as the list sliding out
-       from under the rail. */
+    /* Hidden, the drawer sits translated up by its own height, its bottom edge
+       under the opaque higher-stacked rail — opening reads as the list sliding
+       out from under the rail. */
     .ledger {
         position: absolute;
         z-index: 20;
@@ -2516,7 +2176,6 @@ kbd {
     }
     .drawer-open .ledger { transform: translateY(0); }
 
-    /* The panes stack (the list is the drawer): no side-by-side split to drag. */
     .splitter { display: none; }
 
     .drawer-backdrop {
@@ -2533,18 +2192,13 @@ kbd {
 
     .detail { max-width: none; padding: 22px 18px; }
 
-    /* The chip strip already wraps; on a phone give it a touch more breathing room and
-       let the +Add / refresh controls wrap onto their own line when the chips fill the
-       first. A chip's picker still overlays from wherever the chip lands. */
     .filters { padding: 12px 18px; gap: 10px; }
     .add-filter-wrap { flex: 1 1 auto; }
     .add-filter { width: 100%; }
 
-    /* Compact masthead so the right-hand controls always fit: drop the strap,
-       shrink the mark, let the title take the middle and truncate. The flex-basis:0
-       on the title means it never demands its content width, so the row can never
-       grow past the viewport and push the controls off-screen. No overflow clip —
-       the ⋯ menu popover must overlay below the row. */
+    /* flex-basis:0 on the title means it never demands its content width, so the
+       row can never push the controls off-screen. No overflow clip — the ⋯ menu
+       popover must overlay below the row. */
     .masthead { padding: 12px 18px; gap: 10px; align-items: center; }
     .strap { display: none; }
     .mark { font-size: 22px; flex: 0 0 auto; }
@@ -2557,17 +2211,8 @@ kbd {
         text-overflow: ellipsis;
     }
     .filters-toggle { flex: 0 0 auto; }
-    /* The ‹ › record-navigation pair earns a full touch target on a phone — it is
-       the mobile stand-in for the arrow keys. */
     .step-btn { flex: 0 0 auto; min-height: 40px; min-width: 40px; padding: 5px 11px; }
 
-    /* Mobile chrome: the glance area needs no reflow — its compact base layout (the
-       text stack with POS + var beside it, wrapping when too narrow) already fits a
-       phone. The priority rail becomes a single horizontal strip (sources / freq /
-       confidence) sitting BELOW the glance — the rail-column follows the
-       glance-column in source order, and the action buttons are pulled OUT of it
-       into the fixed bottom bar (rule below). */
-    /* The variation tiles stay small but regain a full touch target on a phone. */
     .variation-toggle { min-height: 40px; padding: 0 13px; }
     .priority-rail {
         display: flex;
@@ -2575,23 +2220,14 @@ kbd {
         gap: 14px 20px;
     }
     .rail-slot { flex: 0 0 auto; }
-    /* Move the state badge to the END of its row (kill the ragged left edge): order
-       the state slot after sources/freq/confidence in the horizontal strip. */
     .rail-state { order: 5; }
 
-    /* The word row keeps the state OFF its front; nothing to reorder there now. */
 
-    /* Supporting evidence stays collapsible; give the detail room so the fixed
-       bottom action bar never hides content (padding-bottom clears the bar +
-       iOS safe-area inset). */
+    /* padding-bottom clears the fixed bottom action bar + iOS safe-area inset. */
     .detail { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 
-    /* Drop the confidence pips from the crowded ledger row on narrow screens;
-       the detail card still shows confidence. Chevron, count, state, word, shaw,
-       var, freq, pos — eight tracks (conf hidden). On a phone the fixed metadata columns starve
-       word + shaw (the things being reviewed), so give those the space: crank the
-       var/freq/pos tracks down to just their short content, and tighten the gap +
-       padding to reclaim width. The glyph stamp fits its 44px track outright. */
+    /* Conf pips dropped (the detail card still shows confidence); the fixed
+       metadata tracks crank down so word + shaw get the width. */
     .ledger-head, .ledger-row {
         grid-template-columns:
             20px 16px 44px minmax(0, 1.4fr) minmax(0, 1.6fr) 34px 30px 40px;
@@ -2603,14 +2239,9 @@ kbd {
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
-    /* Raise the touch row to the 44px target the rest of the UI uses, so a
-       long-press or tap has a comfortable thumb target. */
     .ledger-row { height: 44px; }
 
-    /* FIXED bottom icon action bar — every action reachable by thumb, no scroll-to-
-       act. The detail's action row pins to the bottom of the viewport over a paper
-       ground, with the iOS safe-area inset. Icon-only here (labels hidden) so all
-       actions fit one row; the buttons stretch to share the width evenly. */
+    /* Fixed bottom icon action bar — every action reachable by thumb. */
     .detail .actions {
         position: fixed;
         left: 0;
@@ -2625,27 +2256,20 @@ kbd {
         border-top: 1px solid var(--rule);
         box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.14);
     }
-    /* Buttons are icon-only everywhere; on mobile they stretch to share the fixed
-       bottom bar's width evenly. */
     .detail .act { flex: 1 1 0; text-align: center; padding: 10px 8px; }
     .detail .act.act-icon { gap: 0; padding: 10px 8px; min-width: 0; }
 
-    /* The REVIEW/EDITING pill would collide with the shorter card; tuck it in. */
     .detail.mode-review::after, .detail.mode-edit::after { top: 10px; right: 12px; }
 
     .pacing { gap: 20px; padding: 8px 18px; }
 
-    /* Related table on a phone: only word, var, Shavian and the state badge fit —
-       drop POS, SOURCE and the state LABEL (their tracks collapse to 0, cells hide),
-       keeping the shared 7-track template so header + rows stay aligned. word + shaw
-       get real min widths so they never crush to one letter. Tracks:
-       word · pos(0) · var · shaw · source(0) · badge · label(0). */
+    /* Drop POS, SOURCE and the state LABEL: their tracks collapse to 0 and the
+       cells hide, keeping the shared 7-track template so header + rows stay
+       aligned. */
     .related-head, .related-row {
         grid-template-columns: minmax(72px, 1fr) auto auto minmax(84px, 1.3fr) 0 18px 0;
         gap: 6px 10px;
     }
-    /* Drop SOURCE + the state LABEL on a phone; keep word/pos/var/shaw + the state
-       badge. POS and VAR are auto (content-sized) so AVQ+VM0 / GenAus fit. */
     .related-source,
     .related-label { display: none; }
     .related-head .related-head-state { grid-column: auto; }

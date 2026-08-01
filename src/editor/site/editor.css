@@ -1172,40 +1172,6 @@ body {
     color: var(--ink);
 }
 
-.merger-badges {
-    align-self: center;
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.merger-badge {
-    font-size: 10px;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    color: var(--accent);
-    border: 1px solid currentColor;
-    border-radius: 2px;
-    white-space: nowrap;
-}
-
-.variant-badges {
-    align-self: center;
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.variant-badge {
-    font-size: 10px;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    color: var(--accent-manual);
-    border: 1px solid currentColor;
-    border-radius: 2px;
-    white-space: nowrap;
-}
-
 .def-badges {
     align-self: center;
     display: inline-flex;

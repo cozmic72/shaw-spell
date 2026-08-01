@@ -2455,6 +2455,7 @@ function cmpStr(a, b) {
     return 0;
 }
 
+// No additive flag (empty mergers, not variant) — mirrors the daemon's _is_canonical.
 function isCanonical(record) {
     return (!record.mergers || record.mergers.length === 0) && !record.variant;
 }
@@ -2645,16 +2646,6 @@ function infoBadges(info) {
     return wrap;
 }
 
-function confidenceBadge(confidence) {
-    const badge = document.createElement("span");
-    badge.className = "conf-badge";
-    if (confidence === null || confidence === undefined) {
-        return badge;
-    }
-    badge.append(confidenceMeter(confidence), cell("conf-value", String(confidence)));
-    return badge;
-}
-
 // All the reference links share ONE named tab, so looking up a new word reuses it
 // rather than piling up a fresh tab each time.
 const REFERENCE_TARGET = "shaw-ref";
@@ -2681,7 +2672,6 @@ function referenceLinks(word) {
 // (applyAdditiveFields) and dirty-check (mainEditIsDirty) read exactly the DOM they
 // always did — the on-disk shape and patch round-trip are byte-identical. A
 // display/label skin only; nothing on disk is renamed.
-const ATTRIBUTE_VARIANT = VARIANT_LABEL; // on-disk "variant"; displayed "other"
 
 function attributesField(ctx, group, overridden) {
     const wrap = document.createElement("div");
@@ -3335,20 +3325,15 @@ const ACCEPTED_STATES = new Set([PATCH_STATE.ACCEPTED, PATCH_STATE.EDITED]);
 // The daemon's one-canonical-per-(word,pos,var) rival (editord _canonical_conflict),
 // mirrored client-side to WARN before the write.
 function canonicalRival(record, siblings) {
-    if (!isCanonicalRecord(record)) {
+    if (!isCanonical(record)) {
         return null;
     }
     return siblings.find((sibling) =>
         sibling.pos === record.pos
         && (sibling.var || "") === (record.var || "")
         && sibling.shaw !== record.shaw
-        && isCanonicalRecord(sibling)
+        && isCanonical(sibling)
         && ACCEPTED_STATES.has(sibling.patch_state)) ?? null;
-}
-
-// No additive flag (empty mergers, not variant) — the daemon's _is_canonical.
-function isCanonicalRecord(record) {
-    return !(record.mergers && record.mergers.length) && !record.variant;
 }
 
 // Author a new entry (Create or Flag): {op:"patch", anchor:null, record, author,
@@ -3795,7 +3780,7 @@ async function unpatch(anchor, verb, { step = true, uncount = false, patchId = n
         session.decisions = Math.max(0, session.decisions - 1);
     }
     if (!result.records.length) {
-        removeRow(anchor ?? findAnchorByPatchId(patchId), { refocus, deferRender });
+        removeRow(anchor ?? findAnchorByPatchId(patchId), { refocus });
     } else {
         applyWriteResult(result.records, anchor, { step, refocus, deferRender });
     }
@@ -3812,10 +3797,8 @@ function findAnchorByPatchId(patchId) {
 
 // Clearing an authored entry leaves no record — drop that row from the working set.
 // A removal from an edit-modal targets the modal record's anchor — NEVER
-// state.selected — and closes the modal. `deferRender` is accepted for call-site
-// symmetry with the write path but a removal already defers its render via
-// refocus:false.
-function removeRow(anchor, { refocus = true, deferRender = false } = {}) {
+// state.selected — and closes the modal.
+function removeRow(anchor, { refocus = true } = {}) {
     if (isModalEditorOpen()) {
         removeModalRow(contextRecord(state.modalEditor).anchor);
         return;

@@ -1,4 +1,4 @@
-"""RRP spelling generator — phase 0 (report-only).
+"""RRP spelling generator.
 
 The generative counterpart to the RRP classifier: where the classifier JUDGES
 an existing candidate spelling ("does this pass as RRP?"), the generator
@@ -37,15 +37,14 @@ Tiers:  A  IPA basis, stress known, shave agrees
 Pure logic, no I/O, mutates nothing. Reuses the classifier's rule tables
 (src/tools/rrp_classifier.py) and the repo converter (ipa_to_shavian).
 
-NOTE ON PIPELINE ORDER: the live reclassify stage (reclassify_rrp.py) is the
+NOTE ON PIPELINE ORDER: the reclassify stage (reclassify_rrp.py) is the
 CLASSIFIER — it judges existing candidate spellings and relabels the passing
-ones to RRP. This GENERATOR (produce an RRP spelling from scratch) is the NEXT
-stage after reclassify per the pipeline order (reclassifier -> generator ->
-merger/variant tagging); it is not invoked by reclassify_rrp.py. It is promoted
-here as a proper importable module for that follow-up stage. The generator's
-shave-only path (_generate_from_shave, for IPA-less names) is the sole
-non-deterministic surface and belongs to the generator stage, never to the
-deterministic reclassify stage.
+ones to RRP. This module backs the SEPARATE generator stage (generate_rrp.py,
+which runs live in the supplement chain immediately after reclassify); it is
+not invoked by reclassify_rrp.py. The generator's shave-only path
+(_generate_from_shave, for IPA-less names) is the sole non-deterministic
+surface and belongs to the generator stage, never to the deterministic
+reclassify stage.
 """
 
 from __future__ import annotations

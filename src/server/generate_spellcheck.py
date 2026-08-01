@@ -179,14 +179,12 @@ def extract_lemma_from_key(key):
 
 
 def is_proper_noun(pos):
-    """Check if POS tag indicates a proper noun."""
     if not pos:
         return False
     return pos == 'NP0' or pos.startswith('NP0+')
 
 
 def should_include_word(lemma, preferred_dialect, wordnet_cache):
-    """Dialect-filter a word using the WordNet comprehensive cache."""
     if not wordnet_cache or lemma.lower() not in wordnet_cache:
         return True
     entry = wordnet_cache[lemma.lower()]
@@ -214,7 +212,6 @@ def calculate_character_frequencies(readlex_data):
 
 
 def _substitute(word, src, dst, position):
-    """Replace all occurrences of src with dst at the given position."""
     if position == 'any':
         return word.replace(src, dst)
     if position == 'final':
@@ -399,9 +396,6 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff,
             if len(variants) > max_ph:
                 max_ph = len(variants)
 
-            # Affix flags. P generates the plural (which itself carries R for
-            # plural-possessive); S and Q generate singular possessives.
-            # NN2 stems get R directly so their bare possessive (alms') works.
             flags = ''
             if takes_plural[word]:
                 flags += 'P'

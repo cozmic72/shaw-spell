@@ -26,6 +26,8 @@ A patch is a MINIMAL DIFF over the live basis, not a full-record snapshot:
                         edits in `changes` layered over it (empty = accept as-is).
             "drop"    — emit nothing for the anchored key.
             "flag"    — "looked at, no verdict yet"; a production no-op.
+            "edit"    — DIRTY: edited on navigate, not yet accepted; carries the
+                        changes but ships nothing (see is_dirty_patch).
   changes   the INTRINSIC field edits {word, shaw, pos, ipa, var, mergers,
             variant} an accept lays over the basis record — and ONLY those. For
             an authorship patch (anchor null) `changes` is the WHOLE record, as
@@ -68,19 +70,13 @@ DATA_ROOT = (Path(os.environ["SHAW_SPELL_DATA_DIR"]).resolve()
 # The ONE pool that makes up the basis: the phrase-filtered view of the
 # SOURCE-COMBINED, merger-classified pool (combine -> defs-annotated -> deduped
 # -> classified -> collapsed -> decontaminated -> filtered; see the supplement
-# pruning chain). Upstream ReadLex core and the per-source wordnet and
-# wiktionary pools
-# are unified up front (combine_supplements.py) so every prune runs on the union;
-# candidates an established entry already resolves to, identical-spelling dialect
-# variants (collapsed onto the highest-precedence var), candidates whose Shavian
-# carries a non-Shavian character (unmapped IPA passthrough), or sum-of-parts
-# phrase noise, are dropped upstream, so the basis — and thus the editor's review
-# surface — never sees them. Core records ride the chain untouched (never
-# dropped, relabelled or flag-mutated; see is_upstream), so every upstream
-# anchor appears here exactly once — the basis's ONLY union point. Each record
-# carries its `mergers` annotation, its
-# `source` list (the origins that attested its anchor), and its `has_definition`
-# provenance boolean (whether any attesting source carries a definition).
+# pruning chain). Upstream ReadLex core and the per-source pools are unified up
+# front (combine_supplements.py) so every prune runs on the union; duplicates,
+# identical-spelling dialect variants, non-Shavian contamination and phrase
+# noise are dropped upstream, so the basis — and thus the editor's review
+# surface — never sees them. Core records ride the chain untouched (see
+# is_upstream), so every upstream anchor appears here exactly once — the
+# basis's ONLY union point.
 SUPPLEMENT_PATHS = [
     DATA_ROOT / "supplement-combined-filtered.json",
 ]
@@ -141,8 +137,8 @@ INFO_FIELD = "info"
 # order. `note` is patch metadata and is deliberately NOT emitted to the
 # dictionary. `status` lives in the record because downstream consumers read it.
 # The rrp_* fields are the RRP reclassifier's review-triage provenance
-# (reclassify_rrp.py): rrp_outcome (PASS/PASS_RESPELL/STAY/REVIEW/SKIP_MERGER),
-# rrp_tier (A..F confidence), rrp_review (True on a low-confidence flag). The
+# (reclassify_rrp.py): rrp_outcome (PASS/PASS_RESPELL/STAY/REVIEW or a SKIP_*
+# hold), rrp_tier (A..F confidence), rrp_review (True on a low-confidence flag). The
 # generated_* fields are the RRP generator's PROPOSE-ALONGSIDE provenance
 # (generate_rrp.py): generated_shaw (a minted RRP spelling proposed BESIDE the
 # record's own Shaw, never overwriting it), generated_tier (A..F), generated_method
@@ -180,14 +176,9 @@ PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source",
 # where the applicator reads it. The field it shadows -> the orig key it records:
 ORIG_FIELDS = {"var": "orig_var", "shaw": "orig_shaw", "ipa": "orig_ipa"}
 
-# A patch's operation. An accept sanctions the anchored basis record (with any
-# intrinsic edits in `changes`); a drop removes it; a flag is a production no-op.
 OP_ACCEPT = "accept"
 OP_DROP = "drop"
 OP_FLAG = "flag"
-# An edit persisted on navigate but not yet accepted — DIRTY. It carries the
-# field changes (so they are not lost) but is reviewed=False and ships nothing;
-# pressing Accept rewrites it as OP_ACCEPT. No legacy patch is op="edit".
 OP_EDIT = "edit"
 
 # The intrinsic, human-editable fields — the ONLY keys a patch's `changes` may
@@ -645,19 +636,11 @@ def resolve_patch(patch, basis_index, basis_source):
                               sanctioned. If the anchor no longer resolves against
                               the basis, PATCH_ORPHAN — the applicator soft-fails
                               (logs + skips + retains) and the editor surfaces it."""
-    # A flag is "looked at, no verdict yet" whether the row is a basis candidate
-    # or an authored one — in both cases nothing reaches production, so this test
-    # precedes the authored/anchored split.
+    # Both tests precede the authored/anchored split: a flag can sit on an
+    # authored row, and a manual record is BORN dirty (anchor null, op="edit")
+    # — either way nothing reaches production.
     if is_flag_patch(patch):
         return PATCH_NOOP
-
-    # A DIRTY patch (op="edit", edited but not yet accepted) is not shippable: its
-    # edits are persisted in the store but withheld from production until Accept
-    # rewrites it as op="accept", so the record ships in its unpatched form — a
-    # no-op, exactly like a flag. Legacy patches are never op="edit", so they ship
-    # as before. The test precedes the authored/anchored split: a manual record is
-    # BORN dirty (anchor null, op="edit" — the editor's create flow) and is
-    # equally unshippable until accepted.
     if is_dirty_patch(patch):
         return PATCH_NOOP
 

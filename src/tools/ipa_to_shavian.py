@@ -185,10 +185,6 @@ def normalize_ipa(ipa: str, word: str = "", source: str = "readlex") -> str:
     # choice (goulburn ˈɡəʊlbəːRn → 𐑜𐑴𐑤𐑚𐑼𐑯).
     ipa = _rewrite_ssb_nurse(ipa)
 
-    # Voiceless velar fricative → 𐑒 (anglicized)
-    # But only IPA x (which is ASCII), not when it's part of a word
-    # This is handled by leaving it for the PHONEME_MAP; add mapping there
-
     # Remove parenthesized optional segments like (ɹ)
     ipa = re.sub(r'\([^)]*\)', '', ipa)
 
@@ -318,22 +314,20 @@ def _genam_i_stressed(word_ipa: str, pos: int) -> bool:
 def _normalize_genam(ipa: str) -> str:
     """Normalize GenAm IPA symbols to ReadLex RRP conventions.
 
-    GenAm IPA uses symbols that don't exist in ReadLex:
-      ɚ  → əR  (r-colored schwa, e.g. "better")
-      ɝ  → ɜːR (r-colored NURSE, e.g. "bird")
+    GenAm IPA symbols with no ReadLex counterpart (the r-colored vowels
+    ɚ/ɝ are already rewritten by the common normalize_ipa section):
       ɾ  → t   (alveolar flap, e.g. "butter" — ReadLex writes 't')
-      ɑɹ → ɑːR (START, e.g. "car" — GenAm has short ɑ+ɹ, ReadLex has ɑːR)
-      ɔɹ → ɔːR (FORCE, e.g. "more")
+      ɑr → ɑːR (START, e.g. "car" — GenAm has short ɑ+ɹ, ReadLex has ɑːR)
+      ɔr → ɔːR (FORCE, e.g. "more")
 
     GenAm vowel mappings where they differ from RP:
-      bare ɑ → ɒ  (LOT: GenAm merges LOT into ɑ, ReadLex uses ɒ)
-      ɔ (without ː) → ɔː (THOUGHT: GenAm often drops the length mark)
+      bare ɑ → ɒ (LOT: GenAm merges LOT into ɑ, ReadLex uses ɒ)
+      bare ɔ → ɒ (the merged cot-caught vowel; ReadLex canonicalises on LOT)
 
     Note: Many GenAm words produce the SAME Shavian as RRP because
     ReadLex is designed as a universal compromise. GenAm entries in
     ReadLex only exist for genuine exceptions (yod-dropping, etc.).
     """
-    # R-colored vowels and bare ɜ now handled in common normalize_ipa() section.
 
     # Stressed bare i → iː (FLEECE). GenAm transcriptions write bare i (no length
     # mark) for the FLEECE vowel where RP writes iː. Under stress it is FLEECE
@@ -794,7 +788,6 @@ def ipa_to_shavian(ipa: str) -> str:
     Returns:
         Shavian string
     """
-    # Split on affix boundaries, convert each segment, rejoin
     if '+' in ipa:
         segments = ipa.split('+')
         return ''.join(_convert_segment(seg) for seg in segments)
@@ -804,10 +797,10 @@ def ipa_to_shavian(ipa: str) -> str:
 def _convert_segment(ipa: str) -> str:
     """Convert a single IPA segment (no affix boundaries) to Shavian.
 
-    Strips stress marks and length marks before matching so that compound
-    phonemes like ər are not broken by intervening ˈ or ˌ.
+    Strips stress marks before matching so that compound phonemes like ər
+    are not broken by an intervening ˈ or ˌ. Length marks are kept: ː is
+    part of the phoneme patterns (iː, ɑː, …).
     """
-    # Strip stress marks and length marks — they don't affect Shavian output
     stripped = ''
     for ch in ipa:
         if ch not in SKIP:
@@ -945,7 +938,6 @@ def detect_penalties(word: str, ipa: str, shaw: str,
     notes = []
     penalties = []
 
-    # Check ML disagreement
     if ml_shaw is not None and ml_shaw != shaw:
         notes.append(f"ml_disagrees:{ml_shaw}")
         penalties.append("ml_disagrees")
@@ -961,19 +953,16 @@ def detect_penalties(word: str, ipa: str, shaw: str,
             notes.append(f"r_gap:spelling={spelling_r},ipa={ipa_r}")
             penalties.append("r_gap")
 
-    # Check missing r entirely
     missing_r = check_missing_r(word, shaw)
     if missing_r:
         notes.append(missing_r)
         penalties.append("missing_r")
 
-    # Check unknown characters
     unknown = set(shaw) - KNOWN_SHAVIAN
     if unknown:
         notes.append(f"unknown_chars:{''.join(unknown)}")
         penalties.append("unknown_chars")
 
-    # Check numeral in word
     if word and word[0].isdigit():
         notes.append("numeral")
         penalties.append("numeral")
@@ -988,8 +977,7 @@ def score_confidence(word: str, ipa: str, shaw: str,
     Empirically calibrated against ReadLex overlap data:
       Clean (no flags):              89% accuracy → confidence 89
       shave+ML consensus override:  ~99% accuracy → confidence 99
-      r_gap + shave agrees:          97% accuracy → confidence 95
-      ML disagrees + shave agrees:   67% accuracy → confidence 65
+      any penalty + shave agrees:    upgraded to 95 (see upgrade_confidence_shave)
       r_gap only:                    30% accuracy → confidence 30
       ML disagrees only:              5% accuracy → confidence 5
       missing_r or unknown_chars:     0% accuracy → confidence 1
@@ -1005,7 +993,6 @@ def score_confidence(word: str, ipa: str, shaw: str,
     """
     penalties, notes = detect_penalties(word, ipa, shaw, ml_shaw)
 
-    # Compute confidence percentage from penalty combination
     p = set(penalties)
     if not p:
         pct = 89
@@ -1058,7 +1045,6 @@ def upgrade_confidence_shave(pct: int, notes: list[str],
         options = [o.strip().lstrip("·") for o in shave_shaw[1:-1].split("/")]
 
     if shave_shaw == shaw or (options is not None and shaw in options):
-        # Shave agrees with rules
         new_pct = max(pct, 95) if pct < 89 else max(pct, 97)
         notes.append("shave_agrees")
         return new_pct, notes, None
@@ -1075,7 +1061,6 @@ def upgrade_confidence_shave(pct: int, notes: list[str],
         # concrete agreed spelling (ml_shaw), never the bracketed list itself.
         return 99, notes, ml_shaw
     else:
-        # Shave disagrees with both
         notes.append(f"shave_says:{shave_shaw}")
         return pct, notes, None
 
@@ -1093,8 +1078,6 @@ def check_missing_r(word: str, shaw: str) -> str | None:
     has_shavian_r = bool(set(shaw) & SHAVIAN_R_LETTERS)
     if has_shavian_r:
         return None
-
-    # Word has 'r' in spelling but zero r-sounds in Shavian output
     return f"missing_r:spelling_has_r_but_shaw_has_none"
 
 
@@ -1142,7 +1125,6 @@ def validate_against_readlex(readlex_path: str, verbose: bool = False) -> dict:
         print(f"Correct:       {correct} ({accuracy:.2f}%)")
         print(f"Mismatches:    {len(mismatches)}")
         print()
-        # Show first 50 mismatches
         for m in mismatches[:50]:
             print(f"  {m['word']:25s} ipa={m['ipa']:35s}")
             print(f"    expected:  {m['expected']}")

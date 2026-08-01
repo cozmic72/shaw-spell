@@ -28,8 +28,7 @@ from dialect_display import (
 )
 
 
-# Affix flag definitions
-# We keep these minimal since we have explicit irregular forms
+# Kept minimal since irregular forms are explicit in the cache.
 AFFIX_FLAGS = {
     'S': 'plural/3rd person singular',  # -s, -es
     'D': 'past tense',                  # -ed
@@ -43,7 +42,6 @@ AFFIX_FLAGS = {
 
 
 def load_comprehensive_cache(cache_path: Path) -> Dict:
-    """Load the comprehensive WordNet cache."""
     print(f"Loading comprehensive cache from {cache_path}...")
     with open(cache_path, 'r', encoding='utf-8') as f:
         cache = json.load(f)
@@ -52,7 +50,6 @@ def load_comprehensive_cache(cache_path: Path) -> Dict:
 
 
 def load_readlex_data(readlex_path: Path) -> Dict:
-    """Load Readlex data."""
     print(f"Loading Readlex data from {readlex_path}...")
     with open(readlex_path, 'r', encoding='utf-8') as f:
         readlex = json.load(f)
@@ -135,7 +132,6 @@ def should_include_word(entry: Dict, target_dialect: str) -> bool:
     if word_dialect is None:
         return True  # Neutral words go in both dictionaries
 
-    # Map our dialect codes
     dialect_map = {
         'gb': ['GB', 'CA', 'AU'],  # GB includes Commonwealth
         'us': ['US']
@@ -154,7 +150,6 @@ def get_affix_flags(lemma: str, pos: str, has_explicit_forms: bool) -> str:
     if has_explicit_forms:
         return ''  # Irregular - forms will be added explicitly
 
-    # Regular inflections based on POS
     flags = []
 
     if pos == 'n':  # Noun
@@ -190,11 +185,9 @@ def generate_dic_file(cache: Dict, target_dialect: str, output_path: Path, readl
     """
     print(f"\nGenerating {target_dialect.upper()} .dic file...")
 
-    word_entries = set()  # Use set to avoid duplicates
+    word_entries = set()
 
-    # Add words from WordNet cache
     for lemma, entry in cache.items():
-        # Check if this word belongs in this dialect
         if not should_include_word(entry, target_dialect):
             continue
 
@@ -204,7 +197,6 @@ def generate_dic_file(cache: Dict, target_dialect: str, output_path: Path, readl
             forms = pos_data.get('forms', [])
             has_explicit_forms = len(forms) > 0
 
-            # Add the lemma with appropriate flags
             flags = get_affix_flags(lemma, pos, has_explicit_forms)
             if flags:
                 word_entries.add(f"{lemma}/{flags}")
@@ -218,22 +210,18 @@ def generate_dic_file(cache: Dict, target_dialect: str, output_path: Path, readl
     wordnet_count = len(word_entries)
     print(f"Added {wordnet_count:,} entries from WordNet")
 
-    # Add words from Readlex (if provided)
     if readlex_words:
-        # Build a set of base words from WordNet for fast lookup
         wordnet_base_words = {entry.split('/')[0] for entry in word_entries}
 
         readlex_only = 0
         for word in readlex_words:
-            # Only add if not already in word_entries (from WordNet)
-            # This allows WordNet entries (with their flags) to take precedence
+            # WordNet entries (with their flags) take precedence.
             if word not in wordnet_base_words:
                 word_entries.add(word)
                 readlex_only += 1
 
         print(f"Added {readlex_only:,} additional entries from Readlex")
 
-    # Write .dic file
     print(f"Writing {len(word_entries):,} total entries to {output_path}")
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(f"{len(word_entries)}\n")
@@ -288,16 +276,10 @@ COMPOUNDRULE n*mp
 
 """
 
-    # Add REP entries (common misspellings based on English phonetics)
     aff_content += generate_rep_entries(target_dialect)
-
-    # Add suffix rules
     aff_content += generate_suffix_rules()
-
-    # Add prefix rules
     aff_content += generate_prefix_rules()
 
-    # Write .aff file
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(aff_content)
 
@@ -364,7 +346,6 @@ def generate_rep_entries(dialect: str) -> str:
             ('ence', 'ense'),                # GB defence → US defense
         ]
 
-    # Combine all REP entries
     all_reps = phonetic_reps + dialect_reps
 
     rep_content = f"\n# Common misspellings and phonetic substitutions\n"
@@ -443,21 +424,18 @@ PFX N   0     un        .            # happy → unhappy
 
 
 def print_statistics(cache: Dict, gb_count: int, us_count: int):
-    """Print statistics about generated dictionaries."""
     print("\n" + "="*60)
     print("HUNSPELL GENERATION STATISTICS")
     print("="*60)
 
     total_entries = len(cache)
 
-    # Count entries with explicit forms
     irregular_count = sum(
         1 for entry in cache.values()
         for pos_data in entry.get('pos_entries', {}).values()
         if pos_data.get('forms')
     )
 
-    # Count dialect-specific words
     dialect_specific = sum(
         1 for entry in cache.values()
         if entry.get('dialect') is not None
@@ -473,7 +451,6 @@ def print_statistics(cache: Dict, gb_count: int, us_count: int):
 
 
 def main():
-    """Main function."""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -506,7 +483,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Validate inputs
     if not args.cache.exists():
         print(f"ERROR: Cache file not found: {args.cache}")
         print("Run: ./src/tools/build_wordnet_cache.py")
@@ -517,13 +493,11 @@ def main():
         print("Continuing without Readlex data...")
         readlex_words = None
     else:
-        # Load Readlex and extract words
         readlex_data = load_readlex_data(args.readlex)
         readlex_words = extract_readlex_words(readlex_data, args.dialect)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Output paths
     dic_path = args.output_dir / f'io.joro.shaw-spell.en_{args.dialect.upper()}.dic'
     aff_path = args.output_dir / f'io.joro.shaw-spell.en_{args.dialect.upper()}.aff'
 
@@ -536,20 +510,13 @@ def main():
     print(f"         {aff_path}")
     print()
 
-    # Load cache
     cache = load_comprehensive_cache(args.cache)
 
-    # Generate .aff file
     generate_aff_file(args.dialect, aff_path)
-
-    # Generate .dic file with Readlex words
     generate_dic_file(cache, args.dialect, dic_path, readlex_words)
 
-    # Count entries for both dialects for statistics
     gb_count = sum(1 for e in cache.values() if should_include_word(e, 'gb'))
     us_count = sum(1 for e in cache.values() if should_include_word(e, 'us'))
-
-    # Print statistics
     print_statistics(cache, gb_count, us_count)
 
     print(f"\n✓ Successfully generated Hunspell {args.dialect.upper()} dictionary")

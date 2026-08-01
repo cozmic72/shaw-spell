@@ -49,7 +49,8 @@ rationale. At most one candidate promotes onto a given (word, pos, Shaw)
 anchor (national_overpromotions): a held twin folds onto the promoted record
 downstream instead of minting a duplicate RRP anchor.
 
-⚠ MODEL-JUDGE GATE (feature-flagged, DEFAULT OFF — SHAW_SPELL_MODEL_JUDGE).
+⚠ MODEL-JUDGE GATE (feature-flagged, DEFAULT ON — SHAW_SPELL_MODEL_JUDGE=0
+disables; see ENABLE_MODEL_JUDGE).
 The source-var rule trusts the source LABEL, but RSSB labels are not
 trustworthy: the untagged-Wiktionary lane restored no-accent-tag records as
 SSB→RSSB, so thousands of American pronunciations sit under the RSSB label
@@ -67,16 +68,18 @@ trap-bath forms — see model_judge_holds). A judge-rejected candidate stays in
 its source var, recorded rrp_outcome=SKIP_JUDGE_REJECT; one the model cannot
 judge (charset-OOV, unconvertible prediction) is held as SKIP_JUDGE_OOV. The
 anchor-dedup (national_overpromotions) and lane-occupancy guards still apply
-after the judge. Flag OFF (the default) is byte-identical to the pre-judge
-behaviour and never loads the model.
+after the judge. Flag OFF is byte-identical to the pre-judge behaviour and
+never loads the model.
 
 Every relabelled/respelled record is an UNREVIEWED REVIEW CANDIDATE — nothing
 is auto-accepted, nothing is written to the patch store (never-auto-accept).
 The stage also carries a small provenance triple onto every judged record so
 the editor can surface + sort the review pool:
 
-  rrp_outcome   PASS | PASS_RESPELL | STAY | REVIEW  (SKIP_MERGER on a flagged
-                record — judged but held back, see below)
+  rrp_outcome   PASS | PASS_RESPELL | STAY | REVIEW, or a SKIP_* hold:
+                SKIP_MERGER (merger-flagged), SKIP_OCCUPIED (lane guard),
+                SKIP_NONBRITISH (source-var rule), SKIP_JUDGE_REJECT /
+                SKIP_JUDGE_OOV (model judge)
   rrp_tier      A..F (the classifier's confidence tier)
   rrp_review    present (True) only on REVIEW records — a filterable flag
 
@@ -122,7 +125,7 @@ merged forms (and their flags) intact for the downstream identical-dialect
 collapse.
 
   combine -> defs -> dedup -> classify_mergers -> HERE (reclassified) ->
-  collapse -> decontaminate -> filter -> basis
+  generate_rrp -> collapse -> decontaminate -> filter -> basis
 
 Inputs:  data/supplement-combined-classified.json
 Outputs: data/supplement-combined-reclassified.json
@@ -521,10 +524,10 @@ def reclassify_supplement(supplement, tallies, samples, enable_model_judge=None)
     in the output (this stage judges + relabels, it never collapses).
 
     `enable_model_judge` gates the MODEL-JUDGE promotion gate (module
-    docstring) and DEFAULTS OFF: None resolves SHAW_SPELL_MODEL_JUDGE from the
-    environment (1/true/yes/on = enabled), else ENABLE_MODEL_JUDGE (False).
-    Off, the source-var rule (may_promote) applies unchanged and the judge
-    model is never loaded."""
+    docstring): None resolves SHAW_SPELL_MODEL_JUDGE from the environment
+    (1/true/yes/on = enabled), else ENABLE_MODEL_JUDGE (the committed default,
+    currently ON). Off, the source-var rule (may_promote) applies unchanged
+    and the judge model is never loaded."""
     if enable_model_judge is None:
         # None resolves the env var if SET (1/true/yes/on = on, else off), else
         # falls back to the ENABLE_MODEL_JUDGE constant (the committed default).

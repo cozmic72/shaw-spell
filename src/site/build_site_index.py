@@ -18,28 +18,22 @@ import html
 import re
 from copy import deepcopy
 
-# XML namespaces
 NS = {
     'd': 'http://www.apple.com/DTDs/DictionaryService-1.0.rdf',
     'xhtml': 'http://www.w3.org/1999/xhtml'
 }
 
 def strip_namespace(elem):
-    """Recursively strip namespace from element and all children.
-
-    Optimized to process tag and attributes inline without separate split operations.
-    """
-    # Strip namespace from tag (find '}' once instead of using split)
+    """Recursively strip namespace from element and all children."""
     tag = elem.tag
     if tag.startswith('{'):
         close_idx = tag.find('}')
         if close_idx != -1:
             elem.tag = tag[close_idx + 1:]
 
-    # Strip namespace from attributes (only if there are any)
     attribs = elem.attrib
     if attribs:
-        # Build new dict to avoid modifying dict during iteration
+        # Build a new dict to avoid modifying the dict during iteration.
         new_attribs = {}
         for name, value in attribs.items():
             if name.startswith('{'):
@@ -53,18 +47,15 @@ def strip_namespace(elem):
         elem.attrib.clear()
         elem.attrib.update(new_attribs)
 
-    # Recursively process children
     for child in elem:
         strip_namespace(child)
 
 
-# Compile word pattern once at module level for performance
 _WORD_PATTERN = re.compile(
     r"\b[\w\u0400-\u04FF\u10450-\u1047F][\w\u0400-\u04FF\u10450-\u1047F\-']*\b",
     re.UNICODE
 )
 
-# Cache these sets at module level
 _SKIP_CLASSES = frozenset({'ipa'})
 _FORCE_WRAP_CLASSES = frozenset({'definition', 'lemma-form', 'derived-form', 'variant'})
 
@@ -79,10 +70,8 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
         elem: The XML element to process
         should_wrap: Whether words in this element should be wrapped
     """
-    # Determine which elements should have clickable words
     elem_class = elem.get('class', '')
 
-    # Determine if we should wrap words in this element
     if elem_class in _SKIP_CLASSES:
         current_should_wrap = False
     elif elem_class in _FORCE_WRAP_CLASSES:
@@ -99,14 +88,11 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
         last_end = 0
 
         for match in _WORD_PATTERN.finditer(text):
-            # Add non-word text before this match
             if match.start() > last_end:
                 parts.append(('text', text[last_end:match.start()]))
-            # Add the word
             parts.append(('word', match.group(0)))
             last_end = match.end()
 
-        # Add any remaining text
         if last_end < len(text):
             parts.append(('text', text[last_end:]))
 
@@ -120,11 +106,9 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
             continue
         wrap_text_nodes_in_spans(child, current_should_wrap)
 
-    # Now process this element's text and tail texts (only if we should wrap)
     if current_should_wrap and elem.text:
         parts = split_text_into_words(elem.text)
         if parts:
-            # Set first part as element text
             first_type, first_content = parts[0]
             if first_type == 'text':
                 elem.text = first_content
@@ -132,7 +116,6 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
             else:
                 elem.text = ''
 
-            # Insert remaining parts as children at the beginning
             insert_pos = 0
             for part_type, content in parts:
                 if part_type == 'word':
@@ -146,17 +129,15 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
                     if insert_pos > 0:
                         elem[insert_pos - 1].tail = (elem[insert_pos - 1].tail or '') + content
 
-    # Process tail texts of existing children
-    # Build index map once to avoid O(n²) list(parent).index(child) calls
+    # Tail texts of existing children. Index map built once to avoid O(n²)
+    # list(parent).index(child) calls.
     if current_should_wrap:
-        # Create a mapping from child to index for O(1) lookups
         child_to_index = {child: idx for idx, child in enumerate(existing_children)}
 
         for child in existing_children:
             if child.tail:
                 parts = split_text_into_words(child.tail)
                 if parts:
-                    # First part becomes the tail
                     first_type, first_content = parts[0]
                     if first_type == 'text':
                         child.tail = first_content
@@ -164,7 +145,6 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
                     else:
                         child.tail = ''
 
-                    # Insert remaining parts after this child
                     parent = elem
                     child_index = child_to_index[child]
                     insert_pos = child_index + 1
@@ -176,33 +156,26 @@ def wrap_text_nodes_in_spans(elem, should_wrap=True):
                             parent.insert(insert_pos, span)
                             insert_pos += 1
                         else:
-                            # Attach to previous element's tail
                             if insert_pos > 0:
                                 parent[insert_pos - 1].tail = (parent[insert_pos - 1].tail or '') + content
 
 
 def extract_entry_html(entry_elem):
-    """Extract the HTML content of a dictionary entry (everything except the entry wrapper).
-
-    Optimized to skip copying for index elements and use faster serialization.
-    """
-    # Pre-allocate list size if we know it (most entries have few children)
+    """Extract the HTML content of a dictionary entry (everything except the
+    entry wrapper)."""
     parts = []
 
-    # Process all child elements
     for child in entry_elem:
         # Skip index elements early (before copying) - they're for searching, not display
         if child.tag == '{http://www.apple.com/DTDs/DictionaryService-1.0.rdf}index':
             continue
 
-        # Make a copy and strip namespaces
         child_copy = deepcopy(child)
         strip_namespace(child_copy)
 
-        # Wrap words in clickable spans (process XML tree before serialization)
         wrap_text_nodes_in_spans(child_copy, should_wrap=False)
 
-        # Serialize the element to string (using 'html' method which is faster than 'xml')
+        # 'html' serialization is faster than 'xml' here.
         content = ET.tostring(child_copy, encoding='unicode', method='html')
 
         parts.append(content)

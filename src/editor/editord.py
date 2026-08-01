@@ -50,8 +50,10 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # with an invalid regex matches nothing rather than 500-ing.
 
     Request:   {"op": "facets"}
-    Response:  {"pos": [...]}   # the distinct POS tags present, sorted — the
-                # open-ended facet's filter chips (fixed-enum facets are in the page)
+    Response:  {"pos": [...], "var": [...], "source": [...],
+                "patch_author": [...]}   # the distinct values present, sorted —
+                # the data-derived facets' filter chips (fixed-enum facets are
+                # in the page)
 
     Request:   {"op": "entry", "anchor": {"word","pos","shaw","var"}}
     Response:  {"records": [...]}   # the record on that natural key
@@ -645,8 +647,8 @@ def _matches_variant(record, value):
 # one filter. Its vocabulary is the merger names plus "variant"; "(none)" is the
 # canonical partition (empty attribute-set), which no real value can express (an
 # empty list is absence, not a value). A chip outside the vocabulary fails loud.
-ATTRIBUTE_VARIANT = VARIANT_HAS  # "variant"
-ATTRIBUTE_NONE = MERGER_NONE     # "(none)"
+ATTRIBUTE_VARIANT = VARIANT_HAS
+ATTRIBUTE_NONE = MERGER_NONE
 ATTRIBUTE_FILTER_VALUES = frozenset(MERGER_SWAPS) | {ATTRIBUTE_VARIANT, ATTRIBUTE_NONE}
 
 
@@ -1778,7 +1780,6 @@ HANDLERS = {
 
 
 def handle_request(state, request):
-    """Dispatch one request dict to a response dict."""
     op = request.get("op")
     handler = HANDLERS.get(op)
     if handler is None:
@@ -1787,7 +1788,6 @@ def handle_request(state, request):
 
 
 class RequestHandler(socketserver.StreamRequestHandler):
-    """One request, one response, then close."""
 
     READ_TIMEOUT_SEC = 5.0
 

@@ -17,7 +17,7 @@ whether `changes` is non-empty, which `patch_state` reflects.
 
 Each annotated record carries the displayed content (word/shaw/pos/ipa/freq/var
 plus provenance), its stable `anchor` (immutable identity, so an edited row never
-moves), a `reviewed` flag (a patch exists — the primary filter partition), and a
+moves), a `reviewed` flag (a patch exists), and a
 `patch_state` for the ledger stamp:
 
     unreviewed  no patch resolves to this anchor

@@ -17,7 +17,9 @@ docs/editorial-overlay-design.md, "The patch record (settled model)"):
                reviews, or null for authorship. Immutable identity — never changed
                when the record is edited.
       op       accept (sanction the anchored basis record) / drop (remove it) /
-               flag (production no-op). Authorship has no op.
+               flag (production no-op) / edit (DIRTY — carries changes, ships
+               nothing). An authorship ACCEPT has op null; an authored row can
+               also be flagged or dirty (op flag/edit with anchor null).
       changes  the intrinsic edits {word, shaw, pos, ipa, var, mergers, variant}
                an accept lays over the LIVE basis record (empty = accept as-is);
                or, for authorship, the whole self-contained record.
@@ -264,14 +266,9 @@ def apply_patches(output, basis_index, basis_source, patches, authored_bases):
             patch["anchor"] is not None
             and anchor_key(patch["anchor"]) not in basis_index)
 
-        # The anchor no longer resolves against the basis. FIRST resort: a key-
-        # moving transform (var relabel / respell) may have rewritten the record
-        # but preserved its old key in orig_*. If so, follow the record to its new
-        # key and apply the decision there — the verdict is preserved automatically,
-        # no manual migration. Only if no orig_* record covers the anchor does it
-        # fall through to the soft-fail below.
         if is_orphan:
-            # FIRST resort: follow an orig_* pre-image to the record's new key.
+            # FIRST resort: follow an orig_* pre-image to the record's new key
+            # (a key-moving transform preserved the old key — see reanchor_index).
             moved = reanchor_patch(patch, reanchor_map)
             reresolved = (resolve_patch(moved, basis_index, basis_source)
                           if moved is not None else None)

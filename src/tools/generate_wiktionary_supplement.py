@@ -225,7 +225,7 @@ def classify_sound(tags: list[str]) -> tuple[list[tuple[str, str]], list[str], b
     Decision order:
       1. Any keep-accent tag  -> one record per matched accent (info attached).
       2. Else any drop-geo tag -> drop (no record).
-      3. Else (no accent, no drop-geo) -> SSB (info attached).
+      3. Else (no accent, no drop-geo) -> RSSB (info attached).
     Quality tags never select an accent and never cause a drop; a dropped sound
     simply discards them with the record.
     """
@@ -301,7 +301,6 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
     pos = POS_MAP.get(pos_raw, "UNC")
     stats["total_entries"] += 1
 
-    # Collect IPA entries, preferring broad transcriptions
     for sound in sounds:
         ipa_raw = sound.get("ipa")
         if not ipa_raw:
@@ -309,8 +308,6 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
 
         tags = sound.get("tags", [])
 
-        # Prefer broad transcription (slashes) over narrow (brackets)
-        # but accept narrow if that's all we have
         is_broad = is_broad_transcription(ipa_raw)
 
         # Skip fragment IPA (e.g. "-di", "ə-", "-ˌbiːoʊ-") — Wiktionary uses
@@ -338,10 +335,8 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
         # normalised per-accent because rhotic vs non-rhotic accents take
         # different normalisation pathways.
         for var, norm_source in accents:
-            # Normalize IPA to ReadLex conventions
             ipa_normalized = normalize_ipa(ipa_clean, word=word, source=norm_source)
 
-            # Generate Shavian
             try:
                 shaw = ipa_to_shavian(ipa_normalized)
             except Exception:
@@ -351,11 +346,8 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
             if not shaw:
                 continue
 
-            # ML confidence comparison only for the non-rhotic (UK-model) path.
             ml_shaw = _compute_ml_shaw(word, ipa_normalized, norm_source,
                                        have_ml, ml_model)
-
-            # Score confidence as percentage
             conf_pct, notes = score_confidence(word, ipa_normalized, shaw, ml_shaw)
 
             entry_data = {
@@ -375,7 +367,6 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
             # Stash ml_shaw for shave consultation later
             entry_data["_ml_shaw"] = ml_shaw
 
-            # Bucket for initial stats
             if conf_pct >= 80:
                 stats["confidence_high"] += 1
             elif conf_pct >= 30:
@@ -401,7 +392,6 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
 
             if key not in target:
                 target[key] = []
-            # Avoid exact duplicates
             if entry_data not in target[key]:
                 target[key].append(entry_data)
 
@@ -415,7 +405,6 @@ def main():
     speculative = {}
     stats = Counter()
 
-    # Load ML model for confidence comparison
     ml_model = None
     have_ml = False
     try:
@@ -440,7 +429,6 @@ def main():
                 stats["json_errors"] += 1
                 continue
 
-            # Only English
             if entry.get("lang_code") != "en":
                 stats["non_english"] += 1
                 continue
@@ -455,7 +443,6 @@ def main():
     print(f"  Initial confidence: high={stats['confidence_high']:,}, "
           f"medium={stats['confidence_medium']:,}, low={stats['confidence_low']:,}")
 
-    # Consult `shave` tool for entries below 89% confidence in reliable dict
     review_british = set()
     review_american = set()
     for key, entries in reliable.items():
@@ -543,7 +530,7 @@ def main():
                 elif new_pct > e.get("confidence", 0):
                     shave_upgraded += 1
 
-        # Fix keys for overridden entries in reliable dict
+        # Rebuild keys: an override changed an entry's Shaw, and the key embeds it.
         new_reliable = {}
         for key, entries in reliable.items():
             new_key = make_key(entries[0]["Latn"], entries[0]["pos"], entries[0]["Shaw"])
@@ -553,7 +540,6 @@ def main():
         print(f"  Upgraded {shave_upgraded:,} entries based on shave agreement")
         print(f"  Overrode {shave_overridden:,} entries based on shave+ML consensus")
 
-    # Clean up internal fields and compute final stats
     conf_buckets = {"high (>=80)": 0, "medium (30-79)": 0, "low (<30)": 0}
     for d in (reliable, speculative):
         for key, entries in d.items():
@@ -571,7 +557,6 @@ def main():
 
     print(f"\n  Final confidence: {conf_buckets}")
 
-    # Write outputs
     print(f"Writing reliable supplement ({len(reliable):,} keys)...")
     RELIABLE_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     with open(RELIABLE_OUTPUT, 'w', encoding='utf-8') as f:

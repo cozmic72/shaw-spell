@@ -4,16 +4,19 @@ The read-write editorial tool: an editable view of the dictionary with extra way
 of searching. The dictionary is the **basis** (upstream ReadLex + wordnet/wiktionary
 supplements, computed on demand) overlaid with the **patch store**
 (`data/patches/patches.jsonl`, the only persisted editorial artifact). Each basis
-record is annotated with its patch-state — unreviewed / edited / dropped / authored —
-and a derived `reviewed` flag (a patch exists). See `docs/editorial-overlay-design.md`.
+record is annotated with its patch-state — unreviewed / accepted / edited / dirty /
+dropped / flagged / orphaned — and a derived `reviewed` flag (a patch exists).
+Manual authorship is an ORIGIN, not a state: an authored row carries `manual: true`
+and takes a verdict like any other. See `docs/editorial-overlay-design.md`.
 
 A **persisted** patch is `{anchor, op, changes, meta}` — a minimal diff over the live basis
 (see `src/editor/patchstore.py`). `anchor` is the reviewed record's immutable natural key
 `{word, pos, shaw, var}` (never changed on edit, so an entry never moves; `anchor: null`
 is authorship). `op` is `accept` (sanction the anchored basis record), `edit` (a bare
 not-yet-reviewed edit), `drop` (remove it), or `flag` (a production no-op). `changes` are
-the intrinsic edits (`word, shaw, pos, ipa, var, mergers, variant`) laid over the basis
-record — empty means accept as-is; for authorship it is the whole self-contained record.
+the intrinsic edits (`word, shaw, pos, ipa, var, mergers, variant, freq`) laid over the
+basis record — empty means accept as-is; for authorship it is the whole self-contained
+record.
 
 The **socket `patch` op** (below) is client-facing and still sends the COMPLETE wanted
 `record`; the daemon diffs its intrinsic fields against the live basis and persists the
@@ -57,9 +60,12 @@ validates the patch shape and, for an accept/edit/drop, that the anchor resolves
 basis record. See `editord.py` for the full op set (`related`, `definitions`,
 `commit`, `patch_counts`, …).
 
-Filters: `word`/`shaw` (substring), `reviewed` (reviewed/unreviewed — the primary
-partition), `source`, `status`, `pos`, `var`, `patch_state`, `confidence_min`,
-`confidence_max`.
+Filters: the combined `search` free-text (always-regex, case-insensitive, matched
+against word OR shaw OR ipa) plus `word`/`shaw` substring (back-compat); the three
+orthogonal facet axes `review` (verdict lifecycle), `data` (origin/nature) and
+`novelty` (vs upstream ReadLex), plus `pos`, `var`, `source`, `attributes`,
+`word_kind`, `patch_author`; numeric `confidence_min`/`confidence_max` and
+`patch_days`. See `editord.py`'s protocol docstring for the full semantics.
 
 ## Run locally
 
@@ -99,10 +105,13 @@ editord writes the patch store, so the unit grants `ReadWritePaths` for
 
 ## Editing
 
-The detail editor exposes every editable field of the focused record — shaw, var,
-ipa — because the record is self-contained. Actions produce a patch on the
-record's immutable anchor: **Accept** (persisted `op:accept`, reviewed and shipped),
-**Save edit** (the edited fields), **Drop** (`op:drop`, removes the record).
+The detail editor exposes every intrinsic field of the focused record (word, shaw,
+pos, ipa, var, mergers/variant chips, freq) because the record is self-contained.
+Actions produce a patch on the record's immutable anchor: **Accept** (persisted
+`op:accept`, reviewed and shipped), **Drop** (`op:drop`, removes the record),
+**Flag** (`op:flag`, looked-at-no-verdict). A bare edit is auto-saved on navigate
+as a DIRTY patch (`op:edit` — kept but not reviewed, ships nothing) until an
+explicit Accept.
 
 The filtered list is a materialised working set: a just-reviewed row stays in place
 showing its new content and stamp (it does not vanish), and the list only re-syncs —

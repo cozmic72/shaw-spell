@@ -45,11 +45,11 @@ This stage is patch-unaware: it collapses purely on the dialect hierarchy. If a
 lower-precedence var the owner anchored is relabelled away, its patch orphans and
 apply_patches.py fails loud — that is intentional and handled downstream.
 
-This is a pruning-chain stage between the RRP reclassifier and the contamination
-filter: combined-reclassified -> HERE (collapsed) -> decontaminated -> filtered
+This is a pruning-chain stage between the RRP generator and the contamination
+filter: combined-generated -> HERE (collapsed) -> decontaminated -> filtered
 -> basis. Downstream stages read the collapsed output verbatim.
 
-Inputs:  data/supplement-combined-reclassified.json.
+Inputs:  data/supplement-combined-generated.json.
 Outputs: data/supplement-combined-collapsed.json.
 
 Usage:

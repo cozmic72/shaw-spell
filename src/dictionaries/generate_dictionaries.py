@@ -2,16 +2,14 @@
 """
 Generate Shavian dictionary XML files for macOS Dictionary.app
 
-Uses readlex.json for word data and pre-built definition caches.
+Uses readlex.json for word data and pre-built definition caches
+(data/definitions-shavian-{gb,us}.json — build with
+src/dictionaries/build_definition_caches.py).
 
-Prerequisites:
-  - Run src/build_definition_caches.py first to generate the Shavian cache
-  - Or use existing cache at data/definitions-shavian.json
-
-Generates:
-  - shavian-english.xml (Shavian → English with definitions)
-  - english-shavian.xml (English → Shavian with transliterated definitions)
-  - shavian-shavian.xml (Shavian → Shavian definitions)
+Generates, per dialect, under build/dictionaries/xml/:
+  - shavian-english-{dialect}.xml (Shavian → English with definitions)
+  - english-shavian-{dialect}.xml (English → Shavian with transliterated definitions)
+  - shavian-shavian-{dialect}.xml (Shavian → Shavian definitions)
 """
 
 import json
@@ -27,10 +25,7 @@ from dialect_display import (
     var_label, is_british, is_american, variations_label, rssb_role,
     BRITISH_BASE_VAR,
 )
-# Dialect detection now uses comprehensive cache only
 
-
-# Cache for normalized words to avoid repeated lookups
 _normalize_us_cache = {}
 _normalize_gb_cache = {}
 
@@ -122,11 +117,9 @@ def normalize_to_us_with_cache(word, wordnet_cache):
     Returns US spelling if available in cache, otherwise returns word unchanged.
     Handles hyphenated compounds by normalizing each part.
     """
-    # Check memo cache first
     if word in _normalize_us_cache:
         return _normalize_us_cache[word]
 
-    # Handle hyphenated words by normalizing each part
     if '-' in word:
         parts = word.split('-')
         normalized_parts = [normalize_to_us_with_cache(part, wordnet_cache) for part in parts]
@@ -134,10 +127,8 @@ def normalize_to_us_with_cache(word, wordnet_cache):
         _normalize_us_cache[word] = result
         return result
 
-    # Pre-compute lowercase to avoid multiple calls
     word_lower = word.lower()
 
-    # Return unchanged if no cache or word not in cache
     if not wordnet_cache or word_lower not in wordnet_cache:
         _normalize_us_cache[word] = word
         return word
@@ -153,7 +144,6 @@ def normalize_to_us_with_cache(word, wordnet_cache):
                     us_variants.append(v)
 
     if us_variants:
-        # Pick first variant and preserve original casing
         us_variant = us_variants[0]
         if word and word[0].isupper():
             result = us_variant.capitalize()
@@ -172,11 +162,9 @@ def normalize_to_gb_with_cache(word, wordnet_cache):
     Returns GB spelling if available in cache, otherwise returns word unchanged.
     Handles hyphenated compounds by normalizing each part.
     """
-    # Check memo cache first
     if word in _normalize_gb_cache:
         return _normalize_gb_cache[word]
 
-    # Handle hyphenated words by normalizing each part
     if '-' in word:
         parts = word.split('-')
         normalized_parts = [normalize_to_gb_with_cache(part, wordnet_cache) for part in parts]
@@ -184,10 +172,8 @@ def normalize_to_gb_with_cache(word, wordnet_cache):
         _normalize_gb_cache[word] = result
         return result
 
-    # Pre-compute lowercase to avoid multiple calls
     word_lower = word.lower()
 
-    # Return unchanged if no cache or word not in cache
     if not wordnet_cache or word_lower not in wordnet_cache:
         _normalize_gb_cache[word] = word
         return word
@@ -203,7 +189,6 @@ def normalize_to_gb_with_cache(word, wordnet_cache):
                     gb_variants.append(v)
 
     if gb_variants:
-        # Pick first variant and preserve original casing
         gb_variant = gb_variants[0]
         if word and word[0].isupper():
             result = gb_variant.capitalize()
@@ -216,7 +201,6 @@ def normalize_to_gb_with_cache(word, wordnet_cache):
     return word
 
 
-# Cache for spelling variant detection
 _spelling_variant_cache = {}
 
 def detect_spelling_variant_with_cache(word, wordnet_cache):
@@ -224,19 +208,15 @@ def detect_spelling_variant_with_cache(word, wordnet_cache):
     Detect word dialect using comprehensive WordNet cache.
     Returns 'US', 'GB', 'CA', 'AU', or None if not in cache.
     """
-    # Check memo cache first
     if word in _spelling_variant_cache:
         return _spelling_variant_cache[word]
 
-    # Pre-compute lowercase to avoid multiple calls
     word_lower = word.lower()
 
-    # Return None if no cache or word not in cache
     if not wordnet_cache or word_lower not in wordnet_cache:
         _spelling_variant_cache[word] = None
         return None
 
-    # Get dialect from cache
     entry = wordnet_cache[word_lower]
     result = entry.get('dialect')
     _spelling_variant_cache[word] = result
@@ -259,7 +239,6 @@ def get_all_spelling_variants(word, dialect, wordnet_cache):
         get_all_spelling_variants('color', 'GB', cache) → ['colour']
         get_all_spelling_variants('honour', 'GB', cache) → ['honor'] (if multiple GB variants exist)
     """
-    # Pre-compute lowercase to avoid multiple calls
     word_lower = word.lower()
 
     if not wordnet_cache or word_lower not in wordnet_cache:
@@ -267,7 +246,6 @@ def get_all_spelling_variants(word, dialect, wordnet_cache):
 
     entry = wordnet_cache[word_lower]
 
-    # Aggregate variants from all senses across all POS
     dialect_variants = []
     for pos_data in entry.get('pos_entries', {}).values():
         for sense in pos_data.get('sense_variants', []):
@@ -276,7 +254,6 @@ def get_all_spelling_variants(word, dialect, wordnet_cache):
                 if v not in dialect_variants:
                     dialect_variants.append(v)
 
-    # Return variants that aren't the same as the input word
     return [v for v in dialect_variants if v != word_lower]
 
 
@@ -341,50 +318,20 @@ def extract_lemma_shavian_from_key(key):
 
 
 def is_proper_noun(pos_code):
-    """
-    Check if a POS tag indicates a proper noun.
-
-    Args:
-        pos_code: CLAWS POS tag (e.g., 'NP0', 'NN1', etc.)
-
-    Returns:
-        True if the POS tag indicates a proper noun
-    """
+    """True for the CLAWS proper-noun tag NP0, including combined tags
+    like 'NP0+NN1'."""
     if not pos_code:
         return False
-
-    # CLAWS tag NP0 = proper noun
-    # Also check for combined tags like 'NP0+NN1'
     return 'NP0' in pos_code
 
 
 def capitalize_if_proper_noun(text, pos_code):
-    """
-    Capitalize text if it's a proper noun.
-
-    Args:
-        text: The text to potentially capitalize (Latin/English)
-        pos_code: CLAWS POS tag
-
-    Returns:
-        Capitalized text if proper noun, otherwise original text
-    """
     if is_proper_noun(pos_code):
         return text.capitalize()
     return text
 
 
 def add_namer_dot_if_proper_noun(text, pos_code):
-    """
-    Add namer dot (·) prefix if text is a proper noun.
-
-    Args:
-        text: The Shavian text to potentially prefix
-        pos_code: CLAWS POS tag
-
-    Returns:
-        Text with namer dot prefix if proper noun, otherwise original text
-    """
     namer_dot = '·'  # U+00B7 MIDDLE DOT
 
     if is_proper_noun(pos_code):
@@ -499,16 +446,12 @@ def process_readlex_with_lemmas(readlex_data):
         if isinstance(entries, dict):
             entries = [entries]
 
-        # Extract lemma from key
         lemma = extract_lemma_from_key(key)
         if not lemma and entries:
-            # Fallback to first entry's Latn field
             lemma = entries[0]['Latn'].lower()
 
-        # Extract canonical Shavian from key (the lemma form)
         canonical_shavian = extract_lemma_shavian_from_key(key)
         if not canonical_shavian and entries:
-            # Fallback to first entry's Shaw field
             canonical_shavian = entries[0]['Shaw']
 
         processed[key] = {
@@ -952,9 +895,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         dialect: 'gb' or 'us' (for preferred variant)
         wordnet_cache: Comprehensive WordNet cache (required for dialect detection)
     """
-    # Initialize hyphenation session for Shavian dictionaries
     shyphenate_session = None
-    # Configuration based on dictionary type
     config = {
         'shaw-eng': {
             'name': 'Shavian–English',
@@ -990,24 +931,19 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
     print(config['msg'])
 
-    # Build Shavian lookup if needed
     shavian_lookup = build_shavian_lookup(readlex_data) if config['translate_labels'] else None
-
-    # Determine preferred variant
     preferred_var = 'RRP' if dialect == 'gb' else 'GenAm'
 
-    # Process each readlex key as a separate entry
-    # Each readlex key represents a distinct word sense (lemma + POS + canonical pronunciation)
+    # Each readlex key represents a distinct word sense (lemma + POS +
+    # canonical pronunciation).
     readlex_entries = {}
 
     for key, data in readlex_data.items():
         lemma = data['lemma']
         canonical_shavian = data['canonical_shavian']
 
-        # Get definitions using (lemma, synset_id) key for Shavian cache
-        # The transliteration cache is keyed by "lemma|synset_id" strings
+        # The transliteration cache is keyed by "lemma|synset_id" strings.
         if config['use_shavian_cache']:
-            # First, determine POS to get synset
             key_pos_set = set()
             for entry in data['entries']:
                 pos_code = entry.get('pos', '')
@@ -1020,13 +956,11 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 elif pos_code.startswith('AV'):
                     key_pos_set.add('r')
 
-            # Get synsets for this lemma/POS
             synsets = []
             if wordnet_cache and key_pos_set:
                 first_pos = sorted(key_pos_set)[0]
                 synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache)
 
-            # Look up definitions using (lemma, synset_id) key for ALL synsets
             lemma_defs = []
             if synsets:
                 for synset_id in synsets:
@@ -1073,7 +1007,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         # Both branches are synset-specific already — no POS filtering needed.
         filtered_defs = lemma_defs
 
-        # Process each form in this readlex key
         forms = []
         for entry in data['entries']:
             shaw = entry['Shaw']
@@ -1082,13 +1015,9 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             ipa = normalize_readlex_ipa(entry.get('ipa', ''), dialect=dialect)
             var = entry.get('var', '')
 
-            # Detect spelling variant using comprehensive cache
             detected_variant = detect_spelling_variant_with_cache(latn, wordnet_cache)
-
-            # A form is the "lemma form" if its Shavian matches the canonical one from the key
             is_lemma_form = (shaw == canonical_shavian)
 
-            # Add form
             form_info = {
                 'shaw': shaw,
                 'latn': latn,
@@ -1103,7 +1032,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             }
             forms.append(form_info)
 
-        # Store this readlex key as an entry
         readlex_entries[key] = {
             'forms': forms,
             'definitions': filtered_defs,
@@ -1126,8 +1054,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
     for key, data in readlex_entries.items():
         lemma = data.get('lemma', key.split('_')[0])
 
-        # Determine POS for this entry
-        # Map CLAWS POS codes to single-letter codes
+        # Map CLAWS POS codes to WordNet single-letter codes.
         pos_set = set()
         for form in data['forms']:
             pos_code = form.get('pos', '')
@@ -1148,19 +1075,15 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             # Note: Other POS codes (pronouns, determiners, numbers, etc.) are not mapped
             # and will result in empty pos_set, which we handle below
         pos_tuple = tuple(sorted(pos_set))
-        entry_pos[key] = pos_tuple  # Store for later use
+        entry_pos[key] = pos_tuple
 
-        # Create signature based on synset ID (if available) or readlex key (fallback)
-        # Synset ID uniquely identifies a word sense and groups:
-        # - Spelling variants: color/colour (same synset)
-        # - Different words: dew/due (different synsets even with same Shavian)
-        # - Keeps synonyms separate: color/hue (actually they're in same synset, so they WILL merge - see below)
-        #
-        # For entries without WordNet data (pronouns, determiners), use readlex key
-
+        # Signature: (lemma, synset) where WordNet knows the word, else the
+        # readlex key (pronouns, determiners …). Synset groups morphological
+        # variants (color/colors/colored); including the lemma keeps same-synset
+        # synonyms and cross-dialect spellings (color vs colour, color vs hue)
+        # separate. dew/due differ by synset even with the same Shavian.
         synsets = []
         if wordnet_cache and pos_tuple:
-            # Get first POS from tuple for lookup
             first_pos = pos_tuple[0] if pos_tuple else None
             if first_pos:
                 synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache)
@@ -1171,54 +1094,40 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         is_foreign = synsets and is_foreign_dialect_lemma(lemma, synsets[0], home_dialect, wordnet_cache)
 
         if is_foreign:
-            # Mark as foreign - we'll add index entries but not full definitions
+            # Foreign dialect: index entries only, no full definitions.
             if lemma in debug_words:
                 print(f"DEBUG FOREIGN: {key} (foreign dialect - will add as index only)")
             entry_signatures[key] = ('foreign', lemma, synsets[0])
         elif synsets:
-            # Use (lemma, synset) as signature to group:
-            # - Morphological variants: color/colors/colored (same lemma "color", same synset)
-            # - Keep separate: color vs colour (different lemmas, even if same synset)
-            # - Keep separate: color vs tinge (different lemmas, even if same synset as synonyms)
-            # - Keep separate: color noun vs color verb (different synsets)
             entry_signatures[key] = ('synset', lemma, synsets[0])
         else:
-            # No WordNet data - use readlex key to keep separate
             entry_signatures[key] = ('readlex', key)
 
-        # Debug output for specific words or Shavian forms
         if lemma in debug_words or data['canonical_shavian'] in debug_shavian:
             print(f"DEBUG: {key} -> lemma={lemma}, pos={pos_tuple}, shaw={data['canonical_shavian']}, signature={entry_signatures[key]}")
 
-    # Now merge entries with the same signature
-    # When merging, prefer the normalized (US) spelling for the canonical entry
+    # Merge entries with the same signature (first-seen entry is canonical).
     merged_entries = {}
     variant_map = {}  # Maps original keys to merged keys
     signature_to_key = {}  # Maps signatures to the canonical key with that signature
     foreign_to_home = {}  # Maps foreign dialect entries to their home dialect equivalent
 
-    # Debug: count merges
     merge_count = 0
 
     for key, data in readlex_entries.items():
-        # Skip entries that were filtered out (foreign dialect)
         if key not in entry_signatures:
             continue
 
         entry_signature = entry_signatures[key]
         lemma = data.get('lemma', key.split('_')[0])
 
-        # Handle foreign dialect entries - track them but don't create full entries
+        # Foreign dialect entries are tracked but get no full entry of their own:
+        # they map onto the home-dialect entry sharing their synset.
         if entry_signature[0] == 'foreign':
-            # Find the home dialect entry with same synset
-            # Signature is ('foreign', lemma, synset_id)
             synset_id = entry_signature[2]
             home_signature = None
-
-            # Look for a home dialect entry with this synset
             for other_key, other_sig in entry_signatures.items():
                 if other_sig[0] == 'synset' and other_sig[2] == synset_id:
-                    # Found a home dialect entry with same synset
                     home_signature = other_sig
                     break
 
@@ -1229,21 +1138,16 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     print(f"DEBUG FOREIGN MAP: {key} -> {home_key}")
             continue
 
-        # Check if we already have an entry with this signature
         if entry_signature in signature_to_key:
-            # Merge with existing entry
             existing_key = signature_to_key[entry_signature]
             merge_count += 1
 
-            # Debug output for specific words
             if lemma in debug_words or existing_key.split('_')[0] in debug_words:
                 print(f"DEBUG MERGE: {key} merged into {existing_key} (signature={entry_signature})")
 
-            # Keep existing as canonical, just add forms
             merged_entries[existing_key]['forms'].extend(data['forms'])
             variant_map[key] = existing_key
         else:
-            # This is a new unique entry
             merged_entries[key] = data
             variant_map[key] = key
             signature_to_key[entry_signature] = key
@@ -1254,8 +1158,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
     # For example, looking up 𐑮𐑧𐑛 should show both "read" (verb) and "red" (color)
     index_to_entries = defaultdict(list)
     for key, data in merged_entries.items():
-        # Skip entries that were merged into other entries
-        # variant_map[key] points to the canonical key for this entry
+        # variant_map[key] points to the canonical key for this entry.
         if variant_map.get(key) != key:
             continue
 
@@ -1266,20 +1169,18 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             lemma_forms = [f for f in data['forms'] if f['is_lemma']]
             lemma_shavian_forms = set(f['shaw'] for f in lemma_forms)
 
-            # Create an entry for each unique lemma Shavian form
-            # This handles homophones like "dew" and "due" which both have lemma form 𐑛𐑿
+            # One entry per unique lemma Shavian form: homophones like "dew"
+            # and "due" both have lemma form 𐑛𐑿.
             for shaw in lemma_shavian_forms:
                 if key not in index_to_entries[shaw]:
                     index_to_entries[shaw].append(key)
         else:
-            # For Latin dictionaries, use the first lemma form
             lemma_forms = [f for f in data['forms'] if f['is_lemma']]
             if lemma_forms:
                 index_word = lemma_forms[0]['latn'].lower()
                 if key not in index_to_entries[index_word]:
                     index_to_entries[index_word].append(key)
 
-    # Initialize hyphenation session if needed and pre-hyphenate all definitions
     if config.get('use_shavian_cache', False):
         shyphenate_session = ShyphenateSession()
         if shyphenate_session.available:
@@ -1290,7 +1191,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             shyphenate_session._flush_batch()
             print(f"Pre-hyphenated {len(shyphenate_session._cache)} unique definition texts")
 
-    # Write XML
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(create_xml_header(config['name'], config['from_lang'], config['to_lang']))
@@ -1299,8 +1199,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
             written_entries = 0
 
-            # Write entries - each readlex entry is a separate word sense
-            # Sort index words, stripping namer dots so ·𐑛𐑵 sorts with 𐑛𐑵
+            # Sort index words, stripping namer dots so ·𐑛𐑵 sorts with 𐑛𐑵.
             def index_sort_key(word):
                 return word.lstrip('·')
 
@@ -1311,7 +1210,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 def sort_entries(entry_key):
                     entry_data = merged_entries[entry_key]
 
-                    # Check if this is a direct match (index_word matches ANY form - lemma or derived)
+                    # A direct match is index_word matching ANY form, lemma or derived.
                     is_direct_match = False
                     lemma_text = None
                     for form in entry_data['forms']:
@@ -1321,17 +1220,13 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         if lemma_text is None and form['is_lemma']:
                             lemma_text = form['latn'].lower()
 
-                    # Get POS for sorting
                     pos = entry_pos.get(entry_key, ())
                     pos_str = ''.join(sorted(pos)) if pos else 'zzz'  # Put entries without POS at end
 
-                    # Sort key: (not is_direct_match, lemma, pos)
-                    # not is_direct_match: False (direct) comes before True (indirect)
                     return (not is_direct_match, lemma_text or '', pos_str)
 
                 entry_keys = sorted(entry_keys, key=sort_entries)
 
-                # Debug: check for dew entries
                 if index_word in debug_shavian:
                     print(f"DEBUG INDEX: {index_word} has {len(entry_keys)} entries:")
                     for ek in entry_keys:
@@ -1340,7 +1235,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         lemma_form = next((f['latn'] for f in ed['forms'] if f['is_lemma']), 'unknown')
                         print(f"  {ek}: sort_key={sort_key}, lemma={lemma_form}")
 
-                # Write separate entry for each merged entry (each word sense)
                 for entry_idx, entry_key in enumerate(entry_keys):
                     entry_data = merged_entries[entry_key]
                     lemma_data = {'forms': entry_data['forms'], 'definitions': entry_data['definitions']}
@@ -1350,11 +1244,10 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     for form in lemma_data['forms']:
                         form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
 
-                        # Apply proper noun formatting to index values
                         if config['index_key'] == 'shaw':
-                            # Add namer dot version for proper nouns
                             if is_proper_noun(form['pos']):
-                                # Add both with and without namer dot for flexibility
+                                # Index both with and without namer dot so either
+                                # spelling convention finds the entry.
                                 lemma_forms_indices.add(form_index)
                                 lemma_forms_indices.add(add_namer_dot_if_proper_noun(form_index, form['pos']))
                             else:
@@ -1368,8 +1261,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                     derive_shavian_noun_indices(stem, form['pos'])
                                 )
                         else:
-                            # For Latin, add both lowercase and capitalized versions for proper nouns
-                            lemma_forms_indices.add(form_index)  # lowercase version
+                            lemma_forms_indices.add(form_index)
                             if is_proper_noun(form['pos']):
                                 lemma_forms_indices.add(form_index.capitalize())
 
@@ -1388,7 +1280,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     # E.g., in GB dictionary, add "color" indices pointing to "colour" entry
                     for foreign_key, home_key in foreign_to_home.items():
                         if home_key == entry_key:
-                            # This home entry has foreign variants - add their forms as indices
                             foreign_data = readlex_entries[foreign_key]
                             for form in foreign_data['forms']:
                                 form_index = form['shaw'] if config['index_key'] == 'shaw' else form['latn'].lower()
@@ -1414,26 +1305,19 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                         for d in derived_latin:
                                             lemma_forms_indices.add(d.capitalize())
 
-                    # Write entry for this readlex key
                     entry_id = f"{config['index_key']}_{index_word}_{entry_idx}"
                     f.write(f'  <d:entry id="{escape(entry_id)}" d:title="{escape(index_word)}">\n')
 
-                    # Add d:index for each form in this lemma
                     for form_index in sorted(lemma_forms_indices):
                         f.write(f'    <d:index d:value="{escape(form_index)}"/>\n')
 
-                    # Apply proper noun formatting to h1 title based on first lemma form's POS
                     lemma_forms = [f for f in lemma_data['forms'] if f['is_lemma']]
                     first_pos = lemma_forms[0]['pos'] if lemma_forms else ''
 
-                    # Determine which text to display in h1 based on dictionary type
-                    # Use the canonical form from the readlex entry
                     if config['index_key'] == 'shaw':
-                        # For Shavian dictionaries, use the canonical Shavian from readlex key
                         h1_text = entry_data['canonical_shavian']
                         h1_text = add_namer_dot_if_proper_noun(h1_text, first_pos)
                     else:
-                        # For Latin dictionaries, use the first lemma form's Latin text
                         if lemma_forms:
                             h1_text = lemma_forms[0]['latn']
                             h1_text = capitalize_if_proper_noun(h1_text, first_pos)
@@ -1442,7 +1326,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
                     f.write(f'    <h1>{escape(h1_text)}</h1>\n')
 
-                    # Check if we need to show variants
                     unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
                     show_variants = len(unique_variants) > 1
 
@@ -1454,7 +1337,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     lemma_has_rrp = any(form['var'] == BRITISH_BASE_VAR
                                         for form in lemma_data['forms'])
 
-                    # Determine home dialect spelling for this dictionary
                     home_dialect = 'GB' if preferred_var == 'RRP' else 'US'
 
                     # Group forms by normalized English word to find all variants together
@@ -1464,16 +1346,12 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     is_eng_to_shaw = (config['index_key'] == 'latn')
 
                     for form in lemma_data['forms']:
-                        # ALL dictionaries: Group by normalized English spelling
-                        # This merges colour/color and also groups due /djuː/ with due /duː/
                         base_word = normalize_to_us_with_cache(form['latn'], wordnet_cache)
                         key = (base_word, form['is_lemma'])
                         word_groups[key].append(form)
 
-                    # Display forms for this lemma
                     f.write('    <div class="forms">\n')
 
-                    # Sort: lemmas first, then derived forms
                     def sort_key(k):
                         base_word, is_lemma = k
                         return (not is_lemma, base_word)
@@ -1491,10 +1369,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         alt_forms = []
 
                         for form in forms:
-                            # Check spelling variant first (US/GB spelling like color/colour)
                             spelling_var = form.get('spelling_variant')
                             if spelling_var:
-                                # Use spelling variant to determine home vs alt
                                 is_home = (spelling_var == home_dialect)
                             else:
                                 # Fall back to pronunciation variant (var field):
@@ -1516,29 +1392,24 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             else:
                                 alt_forms.append(form)
 
-                        # Determine style
                         div_class = 'lemma-form' if is_lemma else 'derived-form'
                         f.write(f'      <div class="{div_class}">')
 
                         alt_dialect = 'US' if home_dialect == 'GB' else 'GB'
 
-                        # Determine which field to display based on dictionary type
-                        # shaw->eng: display English (latn)
-                        # eng->shaw and shaw->shaw: display Shavian (shaw)
+                        # shaw->eng displays English (latn); eng->shaw and
+                        # shaw->shaw display Shavian (shaw).
                         display_key = 'shaw' if is_eng_to_shaw or config['display_text'] is None else 'latn'
 
-                        # Get the home form to display
                         if home_forms:
                             home_form = home_forms[0]
 
-                            # Apply proper noun formatting to displayed text
                             home_display_text = home_form[display_key]
                             if display_key == 'shaw':
                                 home_display_text = add_namer_dot_if_proper_noun(home_display_text, home_form['pos'])
                             else:
                                 home_display_text = capitalize_if_proper_noun(home_display_text, home_form['pos'])
 
-                            # Display the main text
                             f.write(escape(home_display_text))
                             f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
 
@@ -1557,32 +1428,25 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             alt_spellings = []  # List of (spelling, dialect, ipa) tuples
 
                             if wordnet_cache and lemma_latn.lower() in wordnet_cache and is_lemma:
-                                # Get the synset for this entry
                                 entry_sig = entry_signatures.get(entry_key)
                                 if entry_sig and entry_sig[0] == 'synset':
                                     synset_id = entry_sig[2]
 
-                                    # Look up variants in the cache for this synset
                                     cache_entry = wordnet_cache[lemma_latn.lower()]
                                     for pos_data in cache_entry.get('pos_entries', {}).values():
                                         for sense in pos_data.get('sense_variants', []):
                                             if sense.get('synset') == synset_id:
                                                 variants = sense.get('variants', {})
-                                                # Check each dialect
                                                 for dialect, variant_words in variants.items():
                                                     if dialect != home_dialect:
-                                                        # This is a foreign dialect
                                                         for variant_word in variant_words:
                                                             if variant_word.lower() != lemma_latn.lower():
-                                                                # Different spelling - try to find pronunciation from WordNet cache
                                                                 variant_ipa = None
                                                                 if variant_word.lower() in wordnet_cache:
                                                                     variant_cache = wordnet_cache[variant_word.lower()]
-                                                                    # Look for this synset in the variant's cache entry
                                                                     for v_pos_data in variant_cache.get('pos_entries', {}).values():
                                                                         for v_sense in v_pos_data.get('sense_variants', []):
                                                                             if v_sense.get('synset') == synset_id:
-                                                                                # Found the right sense - get pronunciation
                                                                                 prons = v_sense.get('pronunciations', {})
                                                                                 # Prefer the dialect-specific pronunciation
                                                                                 variant_ipa = prons.get(dialect) or prons.get('default') or prons.get('US') or prons.get('GB')
@@ -1602,28 +1466,22 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                     else:
                                         f.write(f' <span class="variant">(also /{additional_form["ipa"]}/)</span>')
 
-                            # Display alternate spellings (only if actually different)
-                            # For shaw-shaw dictionary, skip Latin alphabet variants
+                            # The shaw-shaw dictionary skips Latin alphabet variants.
                             if alt_spellings and dict_type != 'shaw-shaw':
                                 for alt_spelling, alt_dialect, alt_ipa in alt_spellings:
-                                    # Only show if spelling is different OR pronunciation is different
                                     spelling_differs = alt_spelling.lower() != home_form.get('latn', '').lower()
                                     pronunciation_differs = alt_ipa and alt_ipa != home_form['ipa']
 
                                     if not spelling_differs and not pronunciation_differs:
-                                        # Nothing different - skip this variant
                                         continue
 
                                     if pronunciation_differs:
-                                        # Different pronunciation - show both spelling and IPA
                                         f.write(f' <span class="variant">({escape(alt_spelling)}, {alt_dialect} /{alt_ipa}/)</span>')
                                     elif spelling_differs:
-                                        # Only spelling differs (same or no pronunciation)
                                         f.write(f' <span class="variant">({escape(alt_spelling)}, {alt_dialect})</span>')
 
-                            # Check for additional spelling variants in the same dialect from the actual forms
-                            # Only show variants that exist in THIS entry (not from cache lookup)
-                            # e.g., if we have both "colour" and "colourise" in home_forms, show them
+                            # Same-dialect spelling variants: only those that exist in
+                            # THIS entry's forms (not from cache lookup).
                             displayed_latn_normalized = normalize_to_us_with_cache(home_form.get('latn', ''), wordnet_cache)
                             additional_home_forms = []
                             for additional_form in home_forms[1:]:  # Skip the first one we already displayed
@@ -1641,7 +1499,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             if alt_forms:
                                 alt_form = alt_forms[0]
 
-                                # Apply proper noun formatting to alternate form
                                 alt_display_text = alt_form[display_key]
                                 if display_key == 'shaw':
                                     alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
@@ -1654,17 +1511,13 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 alt_label = form_variant_label(alt_form, lemma_has_rrp) or alt_dialect
 
                                 if home_form['ipa'] == alt_form['ipa']:
-                                    # Same pronunciation - just show alternate spelling (colour vs color)
                                     f.write(f' <span class="variant">({escape(alt_display_text)}, {escape(alt_label)})</span>')
                                 else:
-                                    # Different pronunciation - show alternate with its IPA
                                     f.write(f' <span class="variant">({escape(alt_display_text)}, {escape(alt_label)} /{alt_form["ipa"]}/)</span>')
 
                         elif alt_forms:
-                            # Only alt form available
                             alt_form = alt_forms[0]
 
-                            # Apply proper noun formatting
                             alt_display_text = alt_form[display_key]
                             if display_key == 'shaw':
                                 alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
@@ -1689,7 +1542,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                     f.write('    </div>\n')
 
                     # Irregular forms (if any)
-                    # Get the first lemma form to determine which lemma to look up
                     if lemma_forms:
                         first_lemma_latn = lemma_forms[0]['latn']
                         irregular_forms = get_irregular_forms(first_lemma_latn, wordnet_cache)
@@ -1697,10 +1549,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         if irregular_forms:
                             f.write('    <div class="irregular-forms">\n')
                             for pos, forms in irregular_forms.items():
-                                # Map WordNet POS to readable forms
                                 pos_label = POS_TO_ENGLISH.get(pos, pos)
 
-                                # Translate forms list if needed
                                 if config['translate_labels']:
                                     forms_display = ', '.join([translate_to_shavian(form, shavian_lookup) for form in forms])
                                     label_text = translate_to_shavian(f'Irregular {pos_label} forms', shavian_lookup)
@@ -1711,14 +1561,11 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 f.write(f'      <p><i>{escape(label_text)}:</i> {escape(forms_display)}</p>\n')
                             f.write('    </div>\n')
 
-                    # Definitions for this lemma
                     if lemma_data['definitions']:
                         pos_groups = group_definitions_by_pos(lemma_data['definitions'][:20])
                         f.write('    <div class="definitions">\n')
                         for pos, pos_defs in pos_groups:
-                            # Convert single-letter POS code to readable label
                             pos_label = wordnet_pos_to_label(pos)
-                            # Translate to Shavian if needed
                             if config['translate_labels']:
                                 pos_label = translate_to_shavian(pos_label, shavian_lookup)
 
@@ -1727,7 +1574,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             f.write('        <ol class="definition-list">\n')
                             for i, def_data in enumerate(pos_defs[:5], 1):
                                 definition_text = def_data["definition"]
-                                # Hyphenate Shavian definitions using persistent session
                                 if shyphenate_session:
                                     definition_text = shyphenate_session.hyphenate(definition_text)
                                 f.write(f'          <li class="definition">{escape(definition_text)}</li>\n')
@@ -1740,7 +1586,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
                         f.write('    <div class="definitions">\n')
                         if readlex_pos_tuple:
-                            # Show each POS with no definitions message
                             for pos in readlex_pos_tuple:
                                 pos_label = wordnet_pos_to_label(pos)
                                 if config['translate_labels']:
@@ -1754,7 +1599,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 f.write(f'        <p><i>{escape(no_defs_msg)}</i></p>\n')
                                 f.write('      </div>\n')
                         else:
-                            # Can't determine POS
                             if config['translate_labels']:
                                 no_defs_msg = '(𐑯𐑴 𐑛𐑧𐑓𐑦𐑯𐑦𐑖𐑩𐑯𐑟 𐑩𐑝𐑱𐑤𐑩𐑚𐑩𐑤)'
                             else:
@@ -1762,14 +1606,12 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             f.write(f'      <p><i>{escape(no_defs_msg)}</i></p>\n')
                         f.write('    </div>\n')
 
-                    # Add separator between entries except for the last one
                     if entry_idx < len(entry_keys) - 1:
                         f.write('    <hr/>\n')
 
                     f.write('  </d:entry>\n')
                     written_entries += 1
 
-                # Flush every 1000 entries
                 if written_entries % 1000 == 0:
                     f.flush()
 
@@ -1778,14 +1620,11 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
         print(f"Generated {written_entries} entries → {output_path}")
     finally:
-        # Close hyphenation session if it was created
         if shyphenate_session:
             shyphenate_session.close()
 
 
 def main():
-    """Main function."""
-    # Parse --dict arguments
     dictionaries = []
     i = 1
     while i < len(sys.argv):
@@ -1795,18 +1634,15 @@ def main():
         else:
             i += 1
 
-    # Parse dialect argument
-    dialect = 'gb'  # default
+    dialect = 'gb'
     if '--dialect=us' in sys.argv or '--us' in sys.argv:
         dialect = 'us'
     elif '--dialect=gb' in sys.argv or '--gb' in sys.argv:
         dialect = 'gb'
 
-    # Default to all dictionaries if none specified
     if not dictionaries:
         dictionaries = ['shavian-english', 'english-shavian', 'shavian-shavian']
 
-    # Paths
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent.parent
     readlex_path = project_dir / 'data/readlex.json'
@@ -1820,10 +1656,8 @@ def main():
     english_shavian_path = xml_dir / f'english-shavian-{dialect}.xml'
     shavian_shavian_path = xml_dir / f'shavian-shavian-{dialect}.xml'
 
-    # Ensure directories exist
     xml_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load readlex data
     print("Loading readlex data...")
     with open(readlex_path, 'r', encoding='utf-8') as f:
         readlex_raw = json.load(f)
@@ -1842,7 +1676,6 @@ def main():
         print(f"\nNote: Latin definitions not found at {latin_defs_path}")
         print("The shavian-english dictionary will have no glosses.")
 
-    # Load comprehensive WordNet cache (required for dialect detection)
     wordnet_cache = {}
     if wordnet_cache_path.exists():
         print("\nLoading comprehensive WordNet cache...")
@@ -1855,7 +1688,6 @@ def main():
         sys.exit(1)
     print()
 
-    # Load Shavian definition cache (if needed)
     shavian_def_cache = {}
     needs_shavian_cache = 'english-shavian' in dictionaries or 'shavian-shavian' in dictionaries
     if needs_shavian_cache:
@@ -1869,12 +1701,10 @@ def main():
             shavian_def_cache = json.load(f)
         print(f"Loaded Shavian definitions for {len(shavian_def_cache)} lemmas")
 
-    # Process readlex with lemma information
     readlex_data = process_readlex_with_lemmas(readlex_raw)
 
     print(f"\nGenerating dictionaries: {', '.join(dictionaries)}\n")
 
-    # Generate requested dictionaries
     if 'shavian-english' in dictionaries:
         generate_dictionary(readlex_data, latin_defs, shavian_english_path, 'shaw-eng', dialect, wordnet_cache)
         print()

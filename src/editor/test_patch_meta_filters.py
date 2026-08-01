@@ -17,6 +17,10 @@ Covers:
   - _patch_counts over a synthetic store (total + today)
   - _distinct_authors ignores patchless rows
   - group-aware filter_records (a matching member serves its whole group)
+  - the review "mixed" GROUP-level filter (REVIEW_MIXED): serves groups whose
+    members span >1 verdict (verdict_state collapse), ANDs with the other
+    facets, ORs with the record-level review values, and never matches
+    everything when review is reduced to mixed alone
   - group-denominated entries paging (handle_entries: total/offset/limit count
     GROUPS, a group is never split across pages, groups rank by their best
     member under every sort, and offset paging is stable — no dups, no gaps)
@@ -256,6 +260,96 @@ def test_group_key_splits_on_variation_never_on_verdict():
     assert editord.group_key(base) == editord.group_key(
         _annotated(word="run", pos="NN",
                    patch_state=editord.PATCH_STATE_ACCEPTED))
+
+
+# ---- the review "mixed" group-level filter (REVIEW_MIXED) ----
+
+def _mixed_corpus():
+    """Two groups: `run` spans two verdicts (mixed); `walk` is uniformly accepted
+    (its edited member collapses onto accepted — verdict_state)."""
+    return [
+        _annotated(word="run", pos="NN", patch_state="accepted"),
+        _annotated(word="run", pos="VB", patch_state="unreviewed"),
+        _annotated(word="walk", pos="NN", patch_state="accepted"),
+        _annotated(word="walk", pos="VB", patch_state="edited"),
+    ]
+
+
+def test_queryfilters_strips_mixed_into_the_group_leg():
+    only = editord.QueryFilters({"review": ["mixed"]})
+    assert only.review_mixed and only.review_only_mixed
+    both = editord.QueryFilters({"review": ["mixed", "flagged"]})
+    assert both.review_mixed and not both.review_only_mixed
+    without = editord.QueryFilters({"review": ["flagged"]})
+    assert not without.review_mixed and not without.review_only_mixed
+
+
+def test_mixed_serves_only_groups_spanning_verdicts():
+    result = editord.filter_records(
+        _mixed_corpus(), editord.QueryFilters({"review": ["mixed"]}), None)
+    assert [r["word"] for r in result] == ["run", "run"], result
+
+
+def test_mixed_uses_the_verdict_collapse_not_raw_patch_state():
+    # dirty collapses onto unreviewed (verdict_state): two raw states, ONE
+    # verdict — not mixed, matching the client's verdictConsensus exactly.
+    records = [
+        _annotated(word="run", pos="NN", patch_state="unreviewed"),
+        _annotated(word="run", pos="VB", patch_state="dirty"),
+    ]
+    result = editord.filter_records(
+        records, editord.QueryFilters({"review": ["mixed"]}), None)
+    assert result == [], result
+
+
+def test_mixed_ands_with_the_other_axes():
+    # AND across axes: the mixed group must also hold a member matching the other
+    # facets (which then serves the group whole, non-matching siblings included).
+    query = editord.QueryFilters({"review": ["mixed"], "pos": ["VB"]})
+    result = editord.filter_records(_mixed_corpus(), query, None)
+    assert [r["word"] for r in result] == ["run", "run"], result
+    none = editord.QueryFilters({"review": ["mixed"], "pos": ["JJ"]})
+    assert editord.filter_records(_mixed_corpus(), none, None) == []
+
+
+def test_mixed_ors_with_record_level_review_values():
+    # OR within the review axis: mixed groups ∪ groups holding a flagged member.
+    records = _mixed_corpus() + [
+        _annotated(word="cat", pos="NN", patch_state="flagged"),
+    ]
+    result = editord.filter_records(
+        records, editord.QueryFilters({"review": ["mixed", "flagged"]}), None)
+    assert [r["word"] for r in result] == ["run", "run", "cat"], result
+
+
+def test_review_without_mixed_stays_record_level():
+    result = editord.filter_records(
+        _mixed_corpus(), editord.QueryFilters({"review": ["accepted"]}), None)
+    assert [r["word"] for r in result] == ["run", "run", "walk", "walk"], result
+
+
+def test_entries_serves_mixed_groups_via_the_review_filter():
+    # End-to-end through handle_entries: `cat` spans unreviewed+flagged verdicts,
+    # the other two groups are uniform — only cat is served, whole.
+    page = _entries(_grouped_corpus(), filters={"review": ["mixed"]})
+    assert page["total"] == 1
+    assert [[member[0] for member in members]
+            for members in _group_anchors(page)] == [["cat", "cat", "cat"]]
+
+
+# ---- authorship op selection (_build_patch, anchor null) ----
+
+def test_authorship_dirty_selects_op_edit_never_born_accepted():
+    # A NEW manual record is created dirty (op "edit": unreviewed, ships nothing)
+    # — accepting it is a separate explicit act (op None via _reauthor).
+    record = {"word": "newword", "pos": "NN", "shaw": "\U00010451", "var": "RRP"}
+    meta = {"author": "joro", "ts": "2026-01-01T00:00:00Z"}
+    dirty, _key, error = editord._build_patch(None, None, record, meta, True)
+    assert error is None
+    assert dirty["op"] == "edit" and dirty["anchor"] is None
+    accepted, _key, error = editord._build_patch(None, None, record, meta, False)
+    assert error is None
+    assert accepted["op"] is None and accepted["anchor"] is None
 
 
 # ---- group-denominated entries paging (handle_entries) ----

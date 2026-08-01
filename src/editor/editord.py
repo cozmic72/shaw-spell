@@ -109,16 +109,18 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # record is null). `dirty` marks a bare edit-on-navigate: the patch
                 # op is "edit" (DIRTY — not reviewed, not shipped) instead of
                 # "accept"; only an explicit Accept (dirty omitted) reviews/ships.
-                # anchor null (record supplied) = authorship.
-                # anchor null + replaces = re-decide an AUTHORED entry: edits that
+                # anchor null (record supplied) = authorship (a MANUAL record).
+                # `dirty` applies there too: a new manual record is created dirty
+                # (unreviewed, shipping nothing) and reviews like any other row.
+                # anchor null + replaces = re-decide a MANUAL entry: edits that
                 # authorship patch in place (anchor stays null), never an anchored
                 # patch (which would orphan the decision — see _reauthor).
 
     Request:   {"op": "flag", "anchor": {"word","pos","shaw","var"}, "author": "…"}
              | {"op": "flag", "anchor": null, "replaces": "p_…", "author": "…"}
     Response:  {"result": …, "id": "p_…", "records": [...]}   # flagged, a no-op
-                for production (see is_flag_patch). anchor null + replaces flags an
-                AUTHORED entry, keeping anchor null (see _flag_authored)
+                for production (see is_flag_patch). anchor null + replaces flags a
+                MANUAL entry, keeping anchor null (see _flag_authored)
 
     Request:   {"op": "unpatch", "anchor": {"word","pos","shaw","var"}}
              | {"op": "unpatch", "patch_id": "p_…"}
@@ -189,8 +191,8 @@ import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_SWAPS                         # noqa: E402
 from overlay import (AUTHORED_STATUS, NOVELTY_NEW_POS,           # noqa: E402
                      NOVELTY_NEW_SPELLING, NOVELTY_NEW_WORD, ORPHANED_STATUS,
-                     PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
-                     PATCH_STATE_DIRTY, PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
+                     PATCH_STATE_ACCEPTED, PATCH_STATE_DIRTY,
+                     PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
                      PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
                      PATCH_STATE_UNREVIEWED, load_view, verdict_state)
 from patchstore import (                                        # noqa: E402
@@ -202,10 +204,10 @@ DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
 
 # The patch-states a live, sanctioned record carries — an accept whose changes
-# are empty (ACCEPTED) or non-empty (EDITED), or an AUTHORED entry (a human minted
-# a production record). All reach the shipped dictionary, so a canonical conflict
-# is drawn from any of them.
-ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED, PATCH_STATE_AUTHORED)
+# are empty (ACCEPTED) or non-empty (EDITED). A manual record shipping to the
+# dictionary is ACCEPTED too (see overlay.annotate_authored_record), so both
+# reach the shipped dictionary and a canonical conflict is drawn from either.
+ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED)
 
 
 class State:
@@ -287,12 +289,20 @@ class QueryFilters:
     once into predicates so a regex compiles a single time, not per record. Any
     field whose regex failed to compile is named in `invalid_regex`; its predicate
     matches nothing. The "<field>_regex"/"<field>_ci" companion keys are consumed
-    here, so `matches` never sees them as filters."""
+    here, so `matches` never sees them as filters.
+
+    The review facet's "mixed" value (REVIEW_MIXED) is GROUP-level: it is
+    stripped from the per-record review values here and recorded as
+    `review_mixed` for filter_records to evaluate per group. `review_only_mixed`
+    marks a review facet left with NO record-level value — its record-level leg
+    then matches nothing (never everything)."""
 
     def __init__(self, filters):
         self._other = {}
         self._substring_predicates = {}
         self.invalid_regex = []
+        self.review_mixed = False
+        self.review_only_mixed = False
         for key, value in filters.items():
             if value in (None, "", []):
                 continue
@@ -308,8 +318,19 @@ class QueryFilters:
                     self.invalid_regex.append(key)
             elif key.endswith("_regex") or key.endswith("_ci"):
                 continue  # companion flag, consumed alongside its substring field
+            elif key == "review":
+                self._add_review(value)
             else:
                 self._other[key] = value
+
+    def _add_review(self, value):
+        values, mode = _categorical_values_mode("review", value)
+        self.review_mixed = REVIEW_MIXED in values
+        remaining = [v for v in values if v != REVIEW_MIXED]
+        if remaining:
+            self._other["review"] = {"values": remaining, "mode": mode}
+        else:
+            self.review_only_mixed = True
 
 
 # The categorical facets are multi-select: the request carries either a bare LIST
@@ -363,16 +384,20 @@ def _combine(values, mode, predicate):
     return any(predicate(v) for v in values)
 
 
-def matches(record, query, established):
+def matches(record, query, established, review=True):
     """Whether an annotated record passes every supplied filter. Absent filters
     do not constrain; a present filter that the record fails excludes it. `query`
     is a QueryFilters carrying the pre-compiled substring predicates and the
     remaining categorical/numeric filters. `established` is the view's
-    EstablishedIndex, needed by the novelty filter."""
+    EstablishedIndex, needed by the novelty filter. `review=False` skips the
+    record-level review facet — the group-level mixed leg matches members on
+    every OTHER facet (see filter_records)."""
     for predicate in query._substring_predicates.values():
         if not predicate(record):
             return False
     for key, value in query._other.items():
+        if key == "review" and not review:
+            continue
         if not _field_matches(record, key, value, established):
             return False
     return True
@@ -446,11 +471,19 @@ def _field_matches(record, key, value, established):
 
 
 # AXIS 1 — process status. The Review facet is the review-lifecycle filter: the
-# verdicts a record can be in (matched on patch_state). authored and orphaned are
-# patch_states too, but they describe the record's ORIGIN, not a review verdict,
-# so they live in the data facet (axis 2) as `manual`/`orphaned` — an authored or
+# verdicts a record can be in (matched on patch_state). Manual rows carry a real
+# verdict like any other (their origin lives in the data facet as `manual`);
+# orphaned is a patch_state too, but it describes the record's LIFECYCLE, not a
+# review verdict, so it lives in the data facet (axis 2) as `orphaned` — an
 # orphaned row matches NO review value. A chip outside the closed vocabulary
 # fails loud.
+#
+# REVIEW_MIXED is the one GROUP-level review value: it selects groups whose
+# members do NOT all share one verdict (verdict_state — the same collapse the
+# client's verdictConsensus applies). It is never matched per record; QueryFilters
+# strips it from the review facet and filter_records evaluates it per group,
+# OR-ed with the record-level review values (see filter_records).
+REVIEW_MIXED = "mixed"
 REVIEW_FILTER_VALUES = (
     PATCH_STATE_UNREVIEWED, PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED,
     PATCH_STATE_DIRTY, PATCH_STATE_DROPPED, PATCH_STATE_FLAGGED)
@@ -468,8 +501,8 @@ def _matches_review(record, value):
 # authored/orphaned values pulled out of Review. The values are NON-mutually-
 # exclusive predicates (a record can be generated AND have a definition), OR-ed
 # within the facet like every other; the AND-usecases come from crossing axes.
-#   manual         a human authored the record (patch_state authored — the old
-#                  status="manual" / Review "authored")
+#   manual         a human authored the record (the row's `manual` origin marker
+#                  — anchor-null patch; the old status="manual")
 #   orphaned       an anchored patch whose basis anchor is gone (patch_state
 #                  orphaned — the old status="orphaned" / Review "orphaned")
 #   generated      the RRP generator synthesized it (source CONTAINS "generated",
@@ -505,7 +538,7 @@ DATA_FILTER_VALUES = (
 
 def _matches_data(record, value):
     if value == DATA_MANUAL:
-        return record["patch_state"] == PATCH_STATE_AUTHORED
+        return bool(record.get("manual"))
     if value == DATA_ORPHANED:
         return record["patch_state"] == PATCH_STATE_ORPHANED
     if value == DATA_GENERATED:
@@ -672,11 +705,38 @@ def filter_records(records, query, established):
     non-matching siblings into the result, so the whole group reaches the
     client together (handle_entries pages by GROUP, so it arrives unsplit).
     Record order is preserved (the caller sorts). With no active filters every
-    record matches, so this degenerates to the identity."""
+    record matches, so this degenerates to the identity.
+
+    Review "mixed" is the one GROUP-level value: its leg serves the groups whose
+    members span more than one verdict AND hold a member matching every
+    non-review facet, UNIONED with the record-level leg — OR within the review
+    axis, AND across axes, exactly the per-record composition lifted to the
+    group. A review facet reduced to mixed alone offers no record-level value,
+    so that leg matches nothing (review_only_mixed), never everything."""
     keyed = [(group_key(record), record) for record in records]
-    matched_groups = {key for key, record in keyed
-                      if matches(record, query, established)}
+    if query.review_only_mixed:
+        matched_groups = set()
+    else:
+        matched_groups = {key for key, record in keyed
+                          if matches(record, query, established)}
+    if query.review_mixed:
+        matched_groups |= _mixed_group_keys(keyed, query, established)
     return [record for key, record in keyed if key in matched_groups]
+
+
+def _mixed_group_keys(keyed, query, established):
+    """The group keys the review "mixed" leg serves: members spanning more than
+    one verdict (verdict_state — the same collapse the client's verdictConsensus
+    applies, so filter and group stamp can never disagree), with at least one
+    member passing every NON-review facet (the mixed leg IS these groups' review
+    constraint)."""
+    members_by_key = {}
+    for key, record in keyed:
+        members_by_key.setdefault(key, []).append(record)
+    return {key for key, members in members_by_key.items()
+            if len({verdict_state(record) for record in members}) > 1
+            and any(matches(record, query, established, review=False)
+                    for record in members)}
 
 
 # The list's natural key — the deterministic tiebreak under every sort, and the
@@ -1105,12 +1165,13 @@ def handle_patch(state, request):
     if error:
         return {"error": error}
 
-    # Re-deciding an AUTHORED entry (anchor null, replacing a prior authorship
+    # Re-deciding a MANUAL entry (anchor null, replacing a prior authorship
     # patch) stays authorship: it edits that patch in place rather than minting an
-    # anchored patch, which would orphan the decision (an authored word has no
+    # anchored patch, which would orphan the decision (a manual word has no
     # basis record for the anchor to resolve against).
     if anchor is None and replaces:
-        return _reauthor(state, record, _meta(author, request.get("note")), replaces)
+        return _reauthor(state, record, _meta(author, request.get("note")),
+                         replaces, request.get("dirty"))
 
     meta = _meta(author, request.get("note"))
     patch, key, error = _build_patch(state, anchor, record, meta, request.get("dirty"))
@@ -1123,11 +1184,9 @@ def handle_patch(state, request):
     # merger/variant flag, is exempt (see _canonical_conflict). Nothing is written
     # if a different-shaw canonical already exists.
     if patch["op"] != OP_EDIT:
-        conflict = _canonical_conflict(state, record)
-        if conflict is not None:
-            return {"error": f"a canonical {record.get('var', '')} entry already exists "
-                    f"for {record['word']}/{record['pos']} ({conflict}) — "
-                    "flag one as a variant/merger first"}
+        error = _canonical_conflict_error(state, record)
+        if error:
+            return {"error": error}
 
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)
@@ -1138,11 +1197,14 @@ def _build_patch(state, anchor, record, meta, dirty):
     """Construct the (patch, key) an accept/drop/authorship persists. Returns
     (patch, key, None) on success, or (None, None, error) when the anchor
     resolves to no basis record. `dirty` selects op=edit vs op=accept for an
-    anchored change."""
+    anchored change, and op=edit vs op None for an authorship."""
     # Authorship (anchor null, record supplied): the record is self-contained, so
-    # `changes` IS the whole record and there is no op to resolve.
+    # `changes` IS the whole record. `dirty` makes it op="edit" — a NEW manual
+    # record enters the queue unreviewed and ships nothing (see basis
+    # resolve_patch) until an explicit Accept re-authors it with op None.
     if anchor is None:
-        return make_patch(None, None, record, meta), anchor_key(record), None
+        op = OP_EDIT if dirty else None
+        return make_patch(None, op, record, meta), anchor_key(record), None
     # An accept/drop must anchor to a record that exists in the basis right now.
     # Writing an anchor that resolves to nothing would create an orphan the build
     # later fails on; reject it here where the actor can fix it.
@@ -1208,9 +1270,10 @@ def _is_canonical(record):
 # exempt: return None. Otherwise scan the other records on the same (word, pos,
 # var) with a DIFFERENT shaw and return the first that is itself a live accepted
 # canonical (an existing sanctioned entry the wanted one would duplicate), or
-# None. A read against the current view, taking the view's own lock via by_word;
-# it never mutates.
-def _canonical_conflict(state, wanted):
+# None. `exclude_patch_id` spares the row a re-authorship is about to replace —
+# its own prior version is not a rival. A read against the current view, taking
+# the view's own lock via by_word; it never mutates.
+def _canonical_conflict(state, wanted, exclude_patch_id=None):
     if wanted is None or not _is_canonical(wanted):
         return None
     word, pos, var = wanted["word"], wanted["pos"], wanted.get("var", "")
@@ -1220,18 +1283,41 @@ def _canonical_conflict(state, wanted):
             continue
         if other["shaw"] == shaw:
             continue
+        patch = other.get("patch")
+        if exclude_patch_id and patch and patch["id"] == exclude_patch_id:
+            continue
         if other["patch_state"] in ACCEPTED_STATES and _is_canonical(other):
             return other["shaw"]
     return None
 
 
-def _reauthor(state, record, meta, prior_id):
-    """Persist an authored re-decision (accept / edit) as a replacement of the
-    prior authorship patch, keeping anchor null. Fails loud if the prior patch is
+def _canonical_conflict_error(state, record, exclude_patch_id=None):
+    """The one-canonical invariant as a write-rejection message, or None when the
+    write is clean — shared by the anchored/authorship accept and the manual
+    re-decision accept, so the two can never phrase the rule apart."""
+    conflict = _canonical_conflict(state, record, exclude_patch_id)
+    if conflict is None:
+        return None
+    return (f"a canonical {record.get('var', '')} entry already exists "
+            f"for {record['word']}/{record['pos']} ({conflict}) — "
+            "flag one as a variant/merger first")
+
+
+def _reauthor(state, record, meta, prior_id, dirty=False):
+    """Persist a manual re-decision as a replacement of the prior authorship
+    patch, keeping anchor null. `dirty` keeps it an unshipped edit (op="edit",
+    verdict unreviewed); otherwise the re-decision is an ACCEPT (op None — the
+    record ships), gated by the one-canonical invariant like any other accept
+    (excluding the very patch being replaced). Fails loud if the prior patch is
     not there (surfaced to the actor, never a silent new-patch fallback)."""
     if record is None:
-        return {"error": "authored re-decision requires a record"}
-    patch = make_patch(None, None, record, meta)
+        return {"error": "manual re-decision requires a record"}
+    op = OP_EDIT if dirty else None
+    if op != OP_EDIT:
+        error = _canonical_conflict_error(state, record, exclude_patch_id=prior_id)
+        if error:
+            return {"error": error}
+    patch = make_patch(None, op, record, meta)
     try:
         replace_authored_patch(patch, prior_id)
     except (KeyError, ValueError) as exc:
@@ -1251,7 +1337,7 @@ def handle_flag(state, request):
     if not author:
         return {"error": "flag requires an author"}
 
-    # Flagging an AUTHORED entry re-authors it with op flag, keeping anchor null —
+    # Flagging a MANUAL entry re-authors it with op flag, keeping anchor null —
     # never an anchored flag patch that would orphan the decision.
     if anchor is None and replaces:
         return _flag_authored(state, author, request.get("note"), replaces)

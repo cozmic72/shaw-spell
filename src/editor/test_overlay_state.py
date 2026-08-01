@@ -10,8 +10,12 @@ patches, authored_bases), exactly as load_view assembles it.
 
 Covers:
   - every patch_state: unreviewed, accepted, edited, dirty, dropped, flagged,
-    authored, orphaned — a basis+patch that should yield each, asserting the
-    derived patch_state (and the reviewed flag that partitions the review pool)
+    orphaned — a basis+patch that should yield each, asserting the derived
+    patch_state (and the reviewed flag that partitions the review pool)
+  - MANUAL rows (authorship patches, anchor null): manual-ness is an origin
+    (`manual: True`), not a state — the row's patch_state is derived from the
+    patch op like any other (op None = accepted/ships, op "edit" = dirty/
+    unreviewed, op "flag" = flagged)
   - accept-with-edits layering: accept = basis record + intrinsic `changes` laid
     over it (the `edited` state), vs an accept-as-is (`accepted`, empty changes)
   - a FLAG is a review no-op: reviewed=True but the shown content is the untouched
@@ -39,8 +43,8 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 
 import overlay
 from basis import authored_pool
-from overlay import (PATCH_STATE_ACCEPTED, PATCH_STATE_AUTHORED,
-                     PATCH_STATE_DIRTY, PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
+from overlay import (PATCH_STATE_ACCEPTED, PATCH_STATE_DIRTY,
+                     PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
                      PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
                      PATCH_STATE_UNREVIEWED, ORPHAN_LOST_ACCEPT,
                      ORPHAN_RESURFACED_DROP, AnnotatedView)
@@ -85,10 +89,12 @@ def anchored_patch(op, word, pos, shaw, var, changes=None, pid="p_test"):
                                                "ts": "2026-01-01T00:00:00Z"}}
 
 
-def authored_patch(record, pid="p_auth"):
+def authored_patch(record, pid="p_auth", op=None):
     """An authorship patch: anchor null, `changes` is the whole self-contained
-    record (word/shaw/pos/var — the natural-key fields at minimum)."""
-    return {"id": pid, "anchor": None, "op": None, "changes": record,
+    record (word/shaw/pos/var — the natural-key fields at minimum). `op` picks
+    the manual record's verdict: None = accepted (ships), "edit" = dirty
+    (unreviewed, ships nothing), "flag" = flagged."""
+    return {"id": pid, "anchor": None, "op": op, "changes": record,
             "meta": {"author": "joro", "origin": "editor",
                      "ts": "2026-01-01T00:00:00Z"}}
 
@@ -161,16 +167,48 @@ def test_flagged_state_is_reviewed_but_undecided():
     assert rec["reviewed"] is True
 
 
-def test_authored_state_for_record_with_null_anchor():
+def test_manual_record_with_null_anchor_is_accepted_and_marked_manual():
+    # op None: the manual record ships, so its verdict is ACCEPTED; manual-ness
+    # is the `manual` origin marker, never a patch_state of its own.
     record = {"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
               "ipa": "nuː"}
     view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])],
                    [authored_patch(record)])
     rec = only_record_for(view, "newword")
-    assert rec["patch_state"] == PATCH_STATE_AUTHORED, rec["patch_state"]
+    assert rec["patch_state"] == PATCH_STATE_ACCEPTED, rec["patch_state"]
+    assert rec["manual"] is True
     assert rec["reviewed"] is True
-    # An authored source is normalised to a one-element list.
+    # A manual source is normalised to a one-element list.
     assert isinstance(rec["source"], list)
+
+
+def test_manual_record_created_dirty_is_unreviewed():
+    # op "edit": a NEW manual record enters the review queue unreviewed —
+    # verdict dirty, reviewed False, still marked manual.
+    record = {"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP"}
+    view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])],
+                   [authored_patch(record, op="edit")])
+    rec = only_record_for(view, "newword")
+    assert rec["patch_state"] == PATCH_STATE_DIRTY, rec["patch_state"]
+    assert rec["manual"] is True
+    assert rec["reviewed"] is False
+
+
+def test_manual_record_flagged_is_flagged():
+    # op "flag": a flagged manual record wears the FLAGGED verdict (it used to be
+    # swallowed by the retired blanket "authored" state).
+    record = {"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP"}
+    view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])],
+                   [authored_patch(record, op="flag")])
+    rec = only_record_for(view, "newword")
+    assert rec["patch_state"] == PATCH_STATE_FLAGGED, rec["patch_state"]
+    assert rec["manual"] is True
+    assert rec["reviewed"] is True
+
+
+def test_basis_rows_carry_no_manual_marker():
+    view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])], [])
+    assert "manual" not in only_record_for(view, "cat")
 
 
 def test_authored_row_displays_pool_derived_freq():

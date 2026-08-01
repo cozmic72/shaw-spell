@@ -399,20 +399,24 @@ PAGE = """<!DOCTYPE html>
         <div data-field="search" data-kind="text" data-label="Search" data-pinned="true"
              data-inline="true" data-placeholder="latin or 𐑖𐑷 (regex)"></div>
         <!-- AXIS 1 — Review: the review-lifecycle verdicts (mutually exclusive; a
-             record is in exactly one). authored/orphaned are origins, not verdicts —
-             they live in Data as manual/orphaned (see editord _matches_review).
-             edited/dirty are DECORATIONS, not verdicts: accepted covers edited and
-             unreviewed covers dirty (the client fans each verdict out to its raw
-             patch_states on the wire — editor.js reviewStatesForVerdict). -->
+             record is in exactly one). manual/orphaned are origins, not verdicts —
+             they live in Data (see editord _matches_review); a manual record carries
+             a real verdict here like any other row. edited/dirty are DECORATIONS,
+             not verdicts: accepted covers edited and unreviewed covers dirty (the
+             client fans each verdict out to its raw patch_states on the wire —
+             editor.js reviewStatesForVerdict). "mixed" is the one GROUP-level value:
+             it selects groups whose members do NOT all share one verdict (the
+             daemon's REVIEW_MIXED leg), OR-ed with the record verdicts. -->
         <div data-field="review" data-kind="categorical" data-label="Review" data-pinned="true">
             <label class="chip"><input value="unreviewed"><span>unreviewed</span></label>
             <label class="chip"><input value="accepted"><span>accepted</span></label>
             <label class="chip"><input value="dropped"><span>dropped</span></label>
             <label class="chip"><input value="flagged"><span>flagged</span></label>
+            <label class="chip"><input value="mixed"><span>mixed</span></label>
         </div>
         <!-- AXIS 2 — Data: origin/nature predicates, NON-mutually-exclusive (a record
              can be manual AND have a definition). Absorbs the former Status and
-             Definition facets and Review's authored/orphaned (see editord
+             Definition facets and the origin values once in Review (see editord
              _matches_data). generated + supplement are DROPPED here — redundant now
              the Source facet is atomic (Source:generated, or Source-ALL wordnet+
              wiktionary for supplement-agreement). promoted = the reclassifier

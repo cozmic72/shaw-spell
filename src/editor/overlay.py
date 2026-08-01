@@ -28,12 +28,18 @@ moves), a `reviewed` flag (a patch exists — the primary filter partition), and
                 explicit Accept rewrites it as an accept (see is_dirty_patch)
     dropped     a drop (op == "drop")
     flagged     a flag "looked at, no verdict yet" (see is_flag_patch)
-    authored    a standalone record no basis anchor attests (anchor is null)
     orphaned    an ANCHORED patch whose anchor no longer resolves against the basis
                 (upstream drifted out from under the decision — see below)
 
+MANUAL rows (authorship patches, anchor null — a standalone record no basis anchor
+attests) are NOT a state of their own: manual-ness is an ORIGIN, carried as
+`manual: True` on the row, while `patch_state` is the record's verdict like any
+other row's — `accepted` (op None, the record ships), `flagged`, or `dirty` (a
+manual record awaiting review, shipping nothing until accepted). See
+annotate_authored_record.
+
 `dropped` rows still DISPLAY the source content (flagged, not hidden — the editor
-must see a drop to roll it back). `authored` rows are not in the basis; they are
+must see a drop to roll it back). Manual rows are not in the basis; they are
 synthesized into the view so the editor sees everything a human has ruled on.
 
 `orphaned` rows are the soft-fail counterpart of the applicator's orphan handling
@@ -83,7 +89,6 @@ PATCH_STATE_EDITED = "edited"
 PATCH_STATE_DIRTY = "dirty"
 PATCH_STATE_DROPPED = "dropped"
 PATCH_STATE_FLAGGED = "flagged"
-PATCH_STATE_AUTHORED = "authored"
 PATCH_STATE_ORPHANED = "orphaned"
 
 # edited/dirty are decorations on a verdict, not verdicts of their own: the UI
@@ -175,8 +180,9 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     obsolete/dialectal/dated). Additive and read-only — passed through only when the
     record carries it, so a record without it is unaffected.
 
-    `op` is the patch's operation (accept/drop/flag), or None for an unreviewed
-    row. It is carried onto the UI shape so the owner can tell WHAT verdict a
+    `op` is the patch's operation (accept/drop/flag/edit) — None for an
+    unreviewed row (no patch) and for a manual ACCEPT, whose authorship patch
+    carries no op. It is carried onto the UI shape so the owner can tell WHAT verdict a
     reviewed row records — most useful on orphan rows, where a lost accept
     (redundant) and an EVADED drop (junk resurfaced under a relabelled var) need
     distinct triage. The daemon strips the raw `patch` object from the wire shape
@@ -261,19 +267,25 @@ def annotate_basis_record(candidate, source, patch, established):
 
 
 def annotate_authored_record(patch, established, authored_bases):
-    """One annotated row from an authorship patch (anchor is null): the record a
-    human invented, which has no basis anchor. Its displayed content IS the record
-    (the patch's `changes`, self-contained — no basis to diff against); its stable
-    anchor is that record's own natural key.
+    """One annotated row from an authorship patch (anchor is null): the MANUAL
+    record a human invented, which has no basis anchor. Its displayed content IS
+    the record (the patch's `changes`, self-contained — no basis to diff against);
+    its stable anchor is that record's own natural key.
 
-    Its freq is the pool-derived value from `authored_bases` (the authored wing,
+    Manual-ness is an origin, not a verdict: the row carries `manual: True`, and
+    its `patch_state` is derived from the patch's op exactly like a basis row's —
+    a flag is `flagged`, an op="edit" is `dirty` (a manual record awaiting review;
+    the applicator ships nothing for it), and op None is `accepted` (the record
+    ships — see basis.resolve_patch).
+
+    Its freq is the pool-derived value from `authored_bases` (the manual wing,
     enriched at startup alongside the basis — see basis.authored_pool) unless the
     patch asserts its own; basis.authored_freq is the same rule the applicator
     ships, so display and production can never disagree. A record authored in
     THIS session has no enriched base yet (no corpus resident) and shows 0 until
     the next startup or publish derives it.
 
-    An authored record's source is a single origin (the author), a scalar in the
+    A manual record's source is a single origin (the author), a scalar in the
     patch. It is normalised to a one-element LIST here so the whole UI/daemon sees
     a uniform list-valued `source` — the same shape a basis record carries."""
     record = patch["changes"]
@@ -282,8 +294,15 @@ def annotate_authored_record(patch, established, authored_bases):
     record = {**record,
               "freq": authored_freq(record,
                                     authored_bases.get(anchor_key(anchor)))}
-    ui = _ui_record(record, anchor, [AUTHORED_STATUS], AUTHORED_STATUS, True,
-                    PATCH_STATE_AUTHORED, patch, established)
+    if is_flag_patch(patch):
+        reviewed, state = True, PATCH_STATE_FLAGGED
+    elif is_dirty_patch(patch):
+        reviewed, state = False, PATCH_STATE_DIRTY
+    else:
+        reviewed, state = True, PATCH_STATE_ACCEPTED
+    ui = _ui_record(record, anchor, [AUTHORED_STATUS], AUTHORED_STATUS, reviewed,
+                    state, patch, established)
+    ui["manual"] = True
     if not isinstance(ui["source"], list):
         ui["source"] = [ui["source"]]
     return ui
@@ -434,7 +453,7 @@ class AnnotatedView:
             if removed is None:
                 raise KeyError(f"no authored patch in view: {prior_id}")
             key = anchor_key(removed["changes"])
-            self._forget_record(key, lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
+            self._forget_record(key, lambda r: r.get("manual")
                                 and r["patch"]["id"] == prior_id)
             self._apply_authored_patch(patch)
 
@@ -460,7 +479,7 @@ class AnnotatedView:
             if removed is None:
                 raise KeyError(f"no authored patch in view: {patch_id}")
             key = anchor_key(removed["anchor"] or removed["changes"])
-            self._forget_record(key, lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
+            self._forget_record(key, lambda r: r.get("manual")
                                 and r["patch"]["id"] == patch_id)
 
     def _reannotate_basis_anchor(self, key, patch):
@@ -475,7 +494,7 @@ class AnnotatedView:
         annotated = annotate_basis_record(candidate, self.basis_source[key], patch,
                                           self.established)
         self._replace_record(key, annotated,
-                             lambda r: r["patch_state"] != PATCH_STATE_AUTHORED)
+                             lambda r: not r.get("manual"))
 
     def _apply_authored_patch(self, patch):
         self.authored[patch["id"]] = patch
@@ -484,8 +503,7 @@ class AnnotatedView:
         key = anchor_key(patch["changes"])
         self._replace_record(
             key, annotated,
-            lambda r: r["patch_state"] == PATCH_STATE_AUTHORED
-            and r["patch"]["id"] == patch["id"])
+            lambda r: r.get("manual") and r["patch"]["id"] == patch["id"])
 
     def _replace_record(self, key, annotated, predicate):
         """Swap the record on `key` matching `predicate` for `annotated`,

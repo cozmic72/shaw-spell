@@ -22,18 +22,27 @@
     --state-edited: #3f7d3a;
     --state-dropped: #a24632;
     --state-flagged: #b07d1a;
-    --state-authored: #6b52a8;
     /* Colour keys on the VERDICT: accepted (an explicit sanction, edits or none)
        reads GREEN — the same green the edit affordances wear (--state-edited).
-       edited/dirty are decorations, never row/pill states (verdictState). */
+       edited/dirty are decorations, never row/pill states (verdictState). The
+       verdict palette is EXACTLY four: green accepted, amber flagged, red
+       dropped, grey unreviewed. Manual-ness is never a colour (it rides label
+       text); the authoring affordances wear --accent-manual instead. */
     --state-accepted: var(--state-edited);
+    /* The GROUP-level mixed marker — members disagree on their verdict. A pale
+       blue deliberately OUTSIDE the four-verdict palette: it is a statement
+       about the group, not a verdict on any record. */
+    --state-mixed: #5e8ca8;
+    /* The authoring accent: New Entry / Clone / create-modal chrome. An origin
+       tint, NOT a verdict colour — no ledger row, stamp or pill may wear it. */
+    --accent-manual: #6b52a8;
     /* Orphaned is not one state but two, keyed off orphan_kind so the reasons triage
        apart at a glance. Neither reuses another state's hue (was: == dropped, a
        collision — an orphan looked like a plain drop). resurfaced-drop is the URGENT
        case (suppressed junk RETURNED) → a hot raspberry-crimson, loud and distinct
        from the brick-red of a deliberate drop. lost-accept is the quieter "needs
        attention" case (a stranded sanction) → a slate-blue, distinct from
-       flagged-amber, dropped-red, authored-purple and the teal accent. */
+       flagged-amber, dropped-red, manual-purple and the teal accent. */
     --state-orphan-resurfaced: #b02a5b;
     --state-orphan-lost: #4a6fa5;
     /* Generic orphan tone for a bare `.orphaned` badge that has no kind to hand
@@ -75,7 +84,8 @@
         --state-edited: #6bbf5f;
         --state-dropped: #d97457;
         --state-flagged: #e0aa4e;
-        --state-authored: #a690e0;
+        --state-mixed: #9bc4dd;
+        --accent-manual: #a690e0;
         --state-orphan-resurfaced: #e0699a;
         --state-orphan-lost: #7fa0d4;
         --state-orphaned: #b590c4;
@@ -213,17 +223,17 @@ body {
 .commit-decisions:hover:not(:disabled) { background: var(--state-edited); color: var(--paper); }
 .commit-decisions:disabled { opacity: 0.4; cursor: default; }
 
-/* Author a new entry: tinted the authored purple its outcome carries, so the
-   action reads as "make a new authored record" at a glance. Sits in the right
-   cluster after Commit; when Commit is hidden (repo-less deploy) its own
-   margin-left:auto takes over leading the cluster. */
+/* Author a new entry: tinted the manual-authoring accent, so the action reads
+   as "make a new manual record" at a glance. Sits in the right cluster after
+   Commit; when Commit is hidden (repo-less deploy) its own margin-left:auto
+   takes over leading the cluster. */
 .new-entry {
     margin-left: auto;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--state-authored);
+    color: var(--accent-manual);
     background: none;
     border: 1px solid currentColor;
     border-radius: 2px;
@@ -231,7 +241,7 @@ body {
     padding: 5px 14px;
     cursor: pointer;
 }
-.new-entry:hover { background: var(--state-authored); color: var(--paper); }
+.new-entry:hover { background: var(--accent-manual); color: var(--paper); }
 .commit-decisions:not([hidden]) + .new-entry { margin-left: 0; }
 
 /* Signed-in handle, heading the ⋯ overflow menu. Quiet, mono, uppercase. */
@@ -734,8 +744,10 @@ body {
     /* Two narrow gutter tracks lead every row — the group-disclosure chevron and
        the member count (blank on singleton and child rows) — then the seven data
        columns. Every row shares this one template, so an expanded group's
-       children align with the top-level columns. */
-    grid-template-columns: 22px 20px 84px 1fr 1.3fr 64px 40px 56px 48px;
+       children align with the top-level columns. The STATE track fits the widest
+       stamp, "✎ unreviewed" (a manual record's ✎ origin mark beside its verdict
+       word). */
+    grid-template-columns: 22px 20px 100px 1fr 1.3fr 64px 40px 56px 48px;
     gap: 10px;
     align-items: center;
     /* One shared row inset (overridden per breakpoint). */
@@ -834,7 +846,7 @@ body {
 .ledger-row.state-accepted { --row-edge: var(--state-accepted); }
 .ledger-row.state-dropped { --row-edge: var(--state-dropped); }
 .ledger-row.state-flagged { --row-edge: var(--state-flagged); }
-.ledger-row.state-authored { --row-edge: var(--state-authored); }
+.ledger-row.state-mixed { --row-edge: var(--state-mixed); }
 /* Orphaned rows: the edge-bar hue is keyed off the orphan REASON, not the shared
    "orphaned" state, so a resurfaced drop (urgent) and a lost accept read apart in the
    list at a glance. */
@@ -1033,10 +1045,9 @@ body {
 .state-pill.accepted { --state-pill-hue: var(--state-accepted); }
 .state-pill.dropped { --state-pill-hue: var(--state-dropped); }
 .state-pill.flagged { --state-pill-hue: var(--state-flagged); }
-.state-pill.authored { --state-pill-hue: var(--state-authored); }
 .state-pill.orphaned { --state-pill-hue: var(--state-orphaned); }
 .stamp.flagged { color: var(--state-flagged); }
-.stamp.authored { color: var(--state-authored); }
+.stamp.mixed { color: var(--state-mixed); }
 .stamp.orphaned { color: var(--state-orphaned); }
 /* The orphaned stamp text takes the reason's hue too (the class lives on the row),
    so tag colour matches the edge-bar. */
@@ -1130,7 +1141,6 @@ body {
 .glance-word.accepted { --state-edge: var(--state-accepted); }
 .glance-word.dropped { --state-edge: var(--state-dropped); }
 .glance-word.flagged { --state-edge: var(--state-flagged); }
-.glance-word.authored { --state-edge: var(--state-authored); }
 .glance-word.orphaned { --state-edge: var(--state-orphaned); }
 .glance-word .latin {
     font-size: 17px;
@@ -1270,15 +1280,15 @@ body {
 }
 .detail-empty { color: var(--ink-soft); font-style: italic; }
 
-/* The new-entry form heading: names the action in the authored tone so the card
-   reads unmistakably as "creating", not "reviewing an existing record". */
+/* The new-entry form heading: names the action in the manual-authoring accent so
+   the card reads unmistakably as "creating", not "reviewing an existing record". */
 .detail-create-title {
     font-family: var(--mono);
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--state-authored);
+    color: var(--accent-manual);
     margin-bottom: 6px;
 }
 .detail-create-hint {
@@ -1508,7 +1518,7 @@ body {
     letter-spacing: 0.07em;
     text-transform: uppercase;
     padding: 2px 7px;
-    color: var(--state-authored);
+    color: var(--accent-manual);
     border: 1px solid currentColor;
     border-radius: 2px;
     white-space: nowrap;
@@ -1746,8 +1756,8 @@ body {
 }
 /* The "other" toggle rides its own tone, distinct from a merger. */
 .variation-toggle.variation-other.on {
-    background: var(--state-authored);
-    border-color: var(--state-authored);
+    background: var(--accent-manual);
+    border-color: var(--accent-manual);
 }
 /* The checkbox is the state, not the affordance — the pill is what you click. */
 .variation-toggle .merger-check,
@@ -1761,7 +1771,7 @@ body {
     outline-offset: 1px;
 }
 .variation-toggle.variation-other:focus-within {
-    outline-color: var(--state-authored);
+    outline-color: var(--accent-manual);
 }
 
 /* The Shavian spelling is the dictionary's payload — a touch larger than the Latin
@@ -1815,9 +1825,10 @@ body {
 .act.unflag:hover, .act.undo:hover { background: var(--ink-soft); color: var(--paper); }
 .act.clear { color: var(--state-unreviewed); }
 .act.clear:hover { background: var(--state-unreviewed); color: var(--paper); }
-/* Clone wears the authored tone — it mints a new authored sibling, like New Entry. */
-.act.clone { color: var(--state-authored); }
-.act.clone:hover { background: var(--state-authored); color: var(--paper); }
+/* Clone wears the manual-authoring accent — it mints a new manual sibling, like
+   New Entry. */
+.act.clone { color: var(--accent-manual); }
+.act.clone:hover { background: var(--accent-manual); color: var(--paper); }
 
 
 /* ---- related entries — the context index below the focused card ---- */
@@ -2106,7 +2117,6 @@ body {
 .related-badge.accepted { color: var(--state-accepted); }
 .related-badge.dropped { color: var(--state-dropped); }
 .related-badge.flagged { color: var(--state-flagged); }
-.related-badge.authored { color: var(--state-authored); }
 .related-badge.orphaned { color: var(--state-orphaned); }
 .related-label {
     font-size: 10px;
@@ -2126,15 +2136,15 @@ body {
     gap: 4px 6px;
 }
 /* Compact echoes of the detail variant/merger badges, sized to the dense row:
-   they borrow the badge tints (variant = authored, merger = accent) but drop the
-   border and shrink to sit level with the 11px var text. */
+   they borrow the badge tints (variant = the manual accent, merger = accent) but
+   drop the border and shrink to sit level with the 11px var text. */
 .related-variant, .related-merger {
     font-size: 9px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
 }
-.related-variant { color: var(--state-authored); }
+.related-variant { color: var(--accent-manual); }
 .related-merger { color: var(--accent); }
 .related-shaw {
     font-family: var(--shaw);
@@ -2420,9 +2430,9 @@ kbd {
 .cheat-close:hover { background: var(--accent); }
 
 /* ---- create-entry modal (shared by New Entry and Clone-as-dialect) ---- */
-/* The backdrop shell mirrors the cheatsheet's; the card wears the authored top-rule
-   to read unmistakably as "creating". The form inside reuses the record editor's
-   field styles (.field-stack / .edit-field / .actions). */
+/* The backdrop shell mirrors the cheatsheet's; the card wears the manual-accent
+   top-rule to read unmistakably as "creating". The form inside reuses the record
+   editor's field styles (.field-stack / .edit-field / .actions). */
 .create-modal {
     position: fixed;
     inset: 0;
@@ -2438,7 +2448,7 @@ kbd {
     position: relative;
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-top: 3px solid var(--state-authored);
+    border-top: 3px solid var(--accent-manual);
     border-radius: 4px;
     padding: 24px 28px 28px;
     max-width: 560px;
@@ -2617,7 +2627,7 @@ kbd {
         --ledger-inset: 10px;
     }
     .col-conf { display: none; }
-    /* Clip the state pill so long labels (AUTHORED, UNREVIEWED) don't force the
+    /* Clip the state pill so long labels (✎ UNREVIEWED) don't force the
        state column wide; the color already carries the meaning. */
     .stamp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .col-var, .col-freq, .col-pos {

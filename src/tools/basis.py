@@ -655,8 +655,9 @@ def resolve_patch(patch, basis_index, basis_source):
     # edits are persisted in the store but withheld from production until Accept
     # rewrites it as op="accept", so the record ships in its unpatched form — a
     # no-op, exactly like a flag. Legacy patches are never op="edit", so they ship
-    # as before. The test precedes the authored/anchored split: an authored dirty
-    # edit (were one ever minted) is equally unshippable.
+    # as before. The test precedes the authored/anchored split: a manual record is
+    # BORN dirty (anchor null, op="edit" — the editor's create flow) and is
+    # equally unshippable until accepted.
     if is_dirty_patch(patch):
         return PATCH_NOOP
 

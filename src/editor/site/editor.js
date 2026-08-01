@@ -29,6 +29,8 @@ const ACCEPTED_STATUS = "sanctioned";
 // the client compares against it in switches and guards, so it must track the
 // daemon's constants exactly. Single source of truth on the Python side:
 // src/editor/overlay.py (PATCH_STATE_*). A rename there MUST be mirrored here.
+// Manual-ness is NOT a state: a manual record carries `manual: true` plus a real
+// verdict like any other row (see isManual).
 const PATCH_STATE = {
     UNREVIEWED: "unreviewed",
     ACCEPTED: "accepted",
@@ -36,9 +38,14 @@ const PATCH_STATE = {
     DIRTY: "dirty",
     DROPPED: "dropped",
     FLAGGED: "flagged",
-    AUTHORED: "authored",
     ORPHANED: "orphaned",
 };
+
+// The mixed-verdicts marker — "the members do NOT all share one verdict". A
+// statement about a GROUP, never a record's patch_state: the group header stamps
+// it (pale blue, deliberately outside the four verdict colours), and the Review
+// facet offers it as its one group-level value (the daemon's REVIEW_MIXED).
+const GROUP_MIXED = "mixed";
 
 // The daemon's orphan_kind vocabulary — WHY an orphaned patch stranded, read off
 // record.orphan_kind. Single source of truth on the Python side:
@@ -613,7 +620,9 @@ function reviewStatesForVerdict(verdict) {
 
 // The daemon-facing filters dict: the Review verdicts expanded to their raw
 // patch_states. Only the wire dict differs — state.filters (the query signature,
-// the session, pacing) stays in the verdict vocabulary.
+// the session, pacing) stays in the verdict vocabulary. The group-level "mixed"
+// value is no verdict (it fans out to no patch_state); it passes through as-is
+// for the daemon's per-group leg (REVIEW_MIXED).
 function daemonFilters(filters) {
     if (!filters.review) {
         return filters;
@@ -621,7 +630,8 @@ function daemonFilters(filters) {
     if (!Array.isArray(filters.review)) {
         throw new Error("review filter must be a value list");
     }
-    return { ...filters, review: filters.review.flatMap(reviewStatesForVerdict) };
+    return { ...filters, review: filters.review.flatMap((value) =>
+        value === GROUP_MIXED ? [value] : reviewStatesForVerdict(value)) };
 }
 
 // The inverse map: a saved filters dict → an ordered activeFilters array, so an old
@@ -985,13 +995,13 @@ function syncSortIndicators() {
 // freq, pos), in column order. Shared by the flat/child row and the collapsed group
 // header (which shows the export-winner's cells), so a header scans as one ledger row.
 // `verdict` defaults to the record's own; a group header passes the group's shared
-// verdict — or null when members disagree, leaving the stamp blank.
+// verdict — or GROUP_MIXED when members disagree.
 // Every row prepends the two narrow gutter tracks (chevron, count) itself: a header
 // fills them, flat and child rows leave them blank — children share the top-level
 // template, aligned full-width under their header.
 function ledgerCells(record, verdict = verdictState(record)) {
     return [
-        cell(verdict ? "stamp col-state " + verdict : "stamp col-state", verdict ?? ""),
+        stampCell(record, verdict),
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
         varCell(record.var),
@@ -999,6 +1009,20 @@ function ledgerCells(record, verdict = verdictState(record)) {
         freqCell(record.freq),
         posCell("col-pos", record.pos),
     ];
+}
+
+// The STATE stamp: the verdict WORD in the verdict's colour — colour is ONLY ever
+// one of the four acceptance states (or the group-level mixed blue). A manual
+// record keeps its verdict colour; its manual-ness rides the label TEXT as a ✎
+// mark (colour and word are orthogonal). GROUP_MIXED is a group statement, so the
+// mark is dropped there — expand for each member's own stamp.
+function stampCell(record, verdict) {
+    const marked = Boolean(record.manual) && verdict !== GROUP_MIXED;
+    const stamp = cell(`stamp col-state ${verdict}`, marked ? `✎ ${verdict}` : verdict);
+    if (marked) {
+        stamp.title = "manual entry";
+    }
+    return stamp;
 }
 
 // A record-bearing ledger row: a flat singleton group, or (`isChild`) a child of
@@ -1039,14 +1063,15 @@ function ledgerRow(record, index, isChild = false) {
 // appends every member row below (§3.3).
 function groupRow(group) {
     const winner = exportWinner(group.members).record;
-    // The header stamps a verdict (state class + STATE-track stamp) only when EVERY
-    // member shares it — a group verdict is unconditional, so a header must never
-    // advertise one member's verdict as the group's. Mixed verdicts render blank
-    // (no state class: --row-edge falls back to transparent, the unreviewed frame).
+    // The header stamps a shared verdict (state class + STATE-track stamp) only when
+    // EVERY member shares it — a group verdict is unconditional, so a header must
+    // never advertise one member's verdict as the group's. Disagreeing members stamp
+    // GROUP_MIXED instead (pale blue — a statement about the group, not a verdict),
+    // the owner's handle for sweeping part-reviewed groups (the Review mixed filter).
     const consensus = verdictConsensus(group.members.map((member) => member.record));
-    const verdict = consensus.uniform ? consensus.value : null;
+    const verdict = consensus.uniform ? consensus.value : GROUP_MIXED;
     const li = document.createElement("li");
-    li.className = "ledger-row ledger-group-header" + (verdict ? ` state-${verdict}` : "");
+    li.className = `ledger-row ledger-group-header state-${verdict}`;
     if (winner.patch_state === PATCH_STATE.ORPHANED && winner.orphan_kind) {
         li.classList.add(`orphan-${winner.orphan_kind}`);
     }
@@ -1065,7 +1090,7 @@ function groupRow(group) {
 
     // Gutter tracks: the disclosure chevron, then the member count. The data cells
     // preview the export-winner; the STATE track stamps the group's shared verdict,
-    // blank when members disagree — expand for each member's own stamp.
+    // "mixed" when members disagree — expand for each member's own stamp.
     li.append(groupDisclosure(group, expanded), groupCountCell(group), ...ledgerCells(winner, verdict));
     li.addEventListener("click", (event) => onGroupHeaderClick(group, event));
     return li;
@@ -1775,9 +1800,9 @@ function glanceColumn(ctx, group, overridden) {
         ? `glance-word state-box ${stateConsensus.value}`
         : "glance-word state-box state-multiple";
     if (stateConsensus.uniform) {
-        const stateName = STATE_LABELS[stateConsensus.value] ?? stateConsensus.value;
-        wordGroup.title = `state: ${stateName}`;
-        wordGroup.setAttribute("aria-label", `${record.word} — state: ${stateName}`);
+        wordGroup.title = `state: ${stateConsensus.value}`;
+        wordGroup.setAttribute("aria-label",
+            `${record.word} — state: ${stateConsensus.value}`);
     } else {
         wordGroup.title = "state: mixed";
     }
@@ -1919,7 +1944,11 @@ function priorityRail(group) {
     const state = railSlot("state");
     const stateConsensus = verdictConsensus(group);
     if (stateConsensus.uniform) {
-        const stateName = STATE_LABELS[stateConsensus.value] ?? stateConsensus.value;
+        // A manual record's origin rides the pill TEXT beside its verdict — the
+        // colour stays the verdict's (colour and word are orthogonal).
+        const stateName = group.every((member) => member.manual)
+            ? `${stateConsensus.value} · manual`
+            : stateConsensus.value;
         state.append(cell(`state-pill ${stateConsensus.value}`, stateName));
         const orphanKind = orphanKindBadge(record);
         if (orphanKind.childElementCount) {
@@ -1927,8 +1956,8 @@ function priorityRail(group) {
         }
     } else {
         for (const entry of stateConsensus.distinct) {
-            const label = STATE_LABELS[entry.value] ?? entry.value;
-            state.append(cell(`state-pill ${entry.value}`, `${label} ·${entry.count}`));
+            state.append(cell(`state-pill ${entry.value}`,
+                `${entry.value} ·${entry.count}`));
         }
     }
 
@@ -2956,9 +2985,8 @@ const RELATED_STATE_ORDER = new Map([
     ["unreviewed", 0],
     ["orphaned", 1],
     ["flagged", 2],
-    ["authored", 3],
-    ["dropped", 4],
-    ["accepted", 5],
+    ["dropped", 3],
+    ["accepted", 4],
 ]);
 
 // Compare two related records on one header column. Returns <0/0/>0 for the
@@ -3113,8 +3141,6 @@ function relatedSource(record) {
 // `glyph` is the non-colour channel.
 function relatedProvenance(record) {
     switch (verdictState(record)) {
-        case PATCH_STATE.AUTHORED:
-            return { state: "authored", glyph: "✎", label: "manual" };
         case PATCH_STATE.DROPPED:
             return { state: "dropped", glyph: "✕", label: "dropped" };
         case PATCH_STATE.FLAGGED:
@@ -3126,6 +3152,12 @@ function relatedProvenance(record) {
         case PATCH_STATE.ACCEPTED:
             return { state: "accepted", glyph: "✓", label: "sanctioned" };
         default:
+            // An unreviewed-verdict row: upstream, a manual record awaiting review
+            // (the word says manual, the colour stays the verdict grey), or a
+            // harvested candidate.
+            if (record.manual) {
+                return { state: "unreviewed", glyph: "✎", label: "manual" };
+            }
             return record.source.includes("readlex")
                 ? { state: "unreviewed", glyph: "✓", label: "upstream" }
                 : { state: "unreviewed", glyph: "○", label: "candidate" };
@@ -3139,11 +3171,6 @@ function setDetailMode() {
     DETAIL.classList.toggle("mode-edit", editing);
     DETAIL.classList.toggle("mode-review", !editing && state.selected >= 0);
 }
-
-// Display text per (verdict) state — the internal value stays as-is (CSS class,
-// filter value, daemon), only the human label differs. "authored" reads as
-// "manual" (a human hand-added it) since every entry is authored by someone.
-const STATE_LABELS = { authored: "manual" };
 
 // The orphan sub-tag: on an `orphaned` row, a small badge naming the op + why it
 // orphaned (accept-orphan vs the URGENT drop-resurfaced), from overlay.orphan_kind.
@@ -3751,30 +3778,31 @@ function requireFreq(record) {
     return true;
 }
 
-// An authored entry (anchor null, patch_state "authored") exists ONLY via its
-// authorship patch — no basis record backs it. Re-deciding it must edit THAT
-// patch in place (anchor stays null), not write an anchored patch that would
-// resolve to nothing and orphan the decision (failing the build).
-function isAuthored(record) {
-    return record.patch_state === PATCH_STATE.AUTHORED;
+// A manual entry (anchor null in the store, `manual: true` on the row) exists
+// ONLY via its authorship patch — no basis record backs it. Re-deciding it must
+// edit THAT patch in place (anchor stays null), not write an anchored patch that
+// would resolve to nothing and orphan the decision (failing the build).
+function isManual(record) {
+    return Boolean(record.manual);
 }
 
 // ---- create/clone modal (authorship from scratch or seeded from a record) ----
 // Author a brand-new manual record with no basis behind it. The daemon's authorship
 // path is a patch with anchor null and a self-contained record (see editord.py
-// handle_patch): {op:"patch", anchor:null, record:{…}, author}. This is the ONLY
-// flow that mints such a record; every other write edits or re-decides an existing
-// one. The result is an authored entry (patch_state "authored"), which the review
-// flow then treats like any other authored row.
+// handle_patch): {op:"patch", anchor:null, record:{…}, author, dirty:true}. This is
+// the ONLY flow that mints such a record; every other write edits or re-decides an
+// existing one. A new manual record is created DIRTY — verdict UNREVIEWED, shipping
+// nothing — and then passes through review like any other row (accepting it is a
+// separate, explicit act on the workbench). No surprises, nothing auto-accepts.
 //
 // ONE dismissable dialog serves both entry points: New Entry opens it BLANK, and Clone
 // opens the SAME dialog SEEDED with an exact copy of a source record — cloning is just
 // "open the edit dialog seeded from this record". Its CONTENT is a recordEditor in
 // create mode (scope "modal") — the single editor renderer shared with the detail
-// panel — so create and edit never diverge. The verdict buttons ARE the action:
-// [Accept, Flag, Cancel] (D6 — no Drop, no Clear before creation). Accept authors the
-// record, Flag authors it flagged, Cancel dismisses. The distinctness guard (D3) blocks
-// the verdicts LIVE while the authored anchor duplicates an existing live record.
+// panel — so create and edit never diverge. The action bar is [Create, Flag, Cancel]
+// (D6 — no Drop, no Clear before creation). Create authors the record unreviewed,
+// Flag authors it flagged, Cancel dismisses. The distinctness guard (D3) blocks the
+// actions LIVE while the new anchor duplicates an existing live record.
 //
 // The only difference between New Entry and Clone is the seed and the title/hint wording.
 
@@ -3949,17 +3977,18 @@ function createVariantRow(ctx, record) {
     return row;
 }
 
-// The create/clone dialog's action bar: the VERDICT buttons ARE the authoring action
-// (D6) — [Accept, Flag, Cancel]. Accept authors the record; Flag authors it flagged;
-// Cancel dismisses. No Drop (authoring only to suppress is marginal) and no Clear
-// (meaningless before a record exists). Below the buttons sits the distinctness-guard
-// message, hidden until the guard has something to say. Accept/Flag carry the
-// `create-verdict` hook the guard enables/disables live.
+// The create/clone dialog's action bar (D6) — [Create, Flag, Cancel]. Create
+// authors the record UNREVIEWED (a new manual record enters the review queue, it
+// is never born accepted); Flag authors it flagged; Cancel dismisses. No Drop
+// (authoring only to suppress is marginal) and no Clear (meaningless before a
+// record exists). Below the buttons sits the distinctness-guard message, hidden
+// until the guard has something to say. Create/Flag carry the `create-verdict`
+// hook the guard enables/disables live.
 function createActionBar(ctx) {
     const bar = document.createElement("div");
     bar.className = "actions create-actions";
 
-    const accept = actionButton("accept", "Accept", () => authorEntry(ctx, { flag: false }));
+    const accept = actionButton("accept", "Create", () => authorEntry(ctx, { flag: false }));
     const flag = actionButton("flag", "Flag", () => authorEntry(ctx, { flag: true }));
     accept.classList.add("create-verdict");
     flag.classList.add("create-verdict");
@@ -4109,8 +4138,9 @@ function distinctnessStatus(record) {
 }
 
 // The patch states the daemon treats as an accepted (sanctioned/shipped) entry —
-// mirrors editord ACCEPTED_STATES, for the canonical-conflict check.
-const ACCEPTED_STATES = new Set([PATCH_STATE.ACCEPTED, PATCH_STATE.EDITED, PATCH_STATE.AUTHORED]);
+// mirrors editord ACCEPTED_STATES, for the canonical-conflict check. (An accepted
+// manual record carries "accepted" like any other.)
+const ACCEPTED_STATES = new Set([PATCH_STATE.ACCEPTED, PATCH_STATE.EDITED]);
 
 // The daemon's one-canonical-per-(word,pos,var) rival (editord _canonical_conflict),
 // mirrored client-side to WARN before the write: only when the authored record is itself
@@ -4134,14 +4164,16 @@ function isCanonicalRecord(record) {
     return !(record.mergers && record.mergers.length) && !record.variant;
 }
 
-// Author a new entry from the create dialog (Accept or Flag). Validates the identity
+// Author a new entry from the create dialog (Create or Flag). Validates the identity
 // fields client-side (the daemon validates too, but this gives a precise, immediate
-// message), then sends the authorship patch: {op:"patch", anchor:null, record, author}.
-// Flag additionally re-authors the fresh record with op flag (the daemon flags an
-// authored entry via `replaces`, so a flagged authorship is author-then-flag). On
-// success the modal closes and the owner lands on the new row; a daemon rejection on the
-// authorship write surfaces as a toast with the dialog left open. The distinctness guard
-// has already disabled the buttons on an exact-anchor collision, so this is the
+// message), then sends the authorship patch: {op:"patch", anchor:null, record,
+// author, dirty:true} — dirty, so the new manual record lands UNREVIEWED and goes
+// through review like any other row (never born accepted). Flag additionally
+// re-authors the fresh record with op flag (the daemon flags a manual entry via
+// `replaces`, so a flagged authorship is create-then-flag). On success the modal
+// closes and the owner lands on the new row; a daemon rejection on the authorship
+// write surfaces as a toast with the dialog left open. The distinctness guard has
+// already disabled the buttons on an exact-anchor collision, so this is the
 // belt-and-braces backstop, not the primary block.
 async function authorEntry(ctx, { flag }) {
     const record = harvestRecord(ctx);
@@ -4152,7 +4184,8 @@ async function authorEntry(ctx, { flag }) {
     }
     let authored;
     try {
-        authored = await callDaemon({ op: "patch", anchor: null, record, author: AUTHOR });
+        authored = await callDaemon(
+            { op: "patch", anchor: null, record, author: AUTHOR, dirty: true });
     } catch (error) {
         showToast(error.message, true);
         return;
@@ -4166,7 +4199,7 @@ async function authorEntry(ctx, { flag }) {
     const created = authored.records.find((r) => r.patch_id === authored.id);
     insertAuthoredRecord(created);
     if (!flag) {
-        showToast(`authored · ${authored.result}`);
+        showToast(`created · ${authored.result}`);
         return;
     }
     try {
@@ -4177,9 +4210,9 @@ async function authorEntry(ctx, { flag }) {
         await refreshPatchCounts();
         showToast(`flagged · ${flagged.result}`);
     } catch (error) {
-        // The entry was authored but not flagged — a loud, recoverable state: the row is
-        // already on the workbench (authored), so the owner can flag it from there.
-        showToast(`authored, but flag failed: ${error.message}`, true);
+        // The entry was created but not flagged — a loud, recoverable state: the row is
+        // already on the workbench (unreviewed), so the owner can flag it from there.
+        showToast(`created, but flag failed: ${error.message}`, true);
     }
 }
 
@@ -4414,12 +4447,12 @@ async function dropSelected() {
     await groupVerdict("dropped", dropOne);
 }
 
-// Drop one record. An authored entry has no basis to revert to, so dropping it IS
+// Drop one record. A manual entry has no basis to revert to, so dropping it IS
 // deleting its authorship patch (same as Clear); a basis record gets a drop patch.
 async function dropOne(selected, options = {}) {
-    if (isAuthored(selected)) {
+    if (isManual(selected)) {
         if (!selected.patch_id) {
-            throw new Error(`${selected.word}: authored entry has no patch id.`);
+            throw new Error(`${selected.word}: manual entry has no patch id.`);
         }
         return unpatch(null, "dropped", { ...options, patchId: selected.patch_id });
     }
@@ -4435,10 +4468,11 @@ async function writePatch(anchor, record, verb, selected, { step = true, toast =
     const priorReviewed = selected ? selected.reviewed : false;
     // A bare edit persisted on navigate is DIRTY (op="edit" server-side): the
     // daemon records it but does NOT review or ship it. Only an explicit Accept
-    // (dirty omitted) writes op="accept". An authored edit-on-navigate stays
-    // authorship (re-authored in place), so dirty applies to anchored writes only.
-    const request = isAuthored(selected)
-        ? { op: "patch", anchor: null, record, author: AUTHOR, replaces: selected.patch_id }
+    // (dirty omitted) writes op="accept". A manual edit-on-navigate stays
+    // authorship (re-authored in place, anchor null) and carries dirty the same
+    // way — never auto-accepted by leaving the row.
+    const request = isManual(selected)
+        ? { op: "patch", anchor: null, record, author: AUTHOR, replaces: selected.patch_id, dirty }
         : { op: "patch", anchor, record, author: AUTHOR, dirty };
     const result = await callDaemon(request);
     pushUndo(anchor, priorReviewed);
@@ -4459,7 +4493,7 @@ async function flagSelected() {
 
 async function flagOne(selected, { step = true, toast = true, refocus = true, deferRender = false } = {}) {
     const priorReviewed = selected.reviewed;
-    const request = isAuthored(selected)
+    const request = isManual(selected)
         ? { op: "flag", anchor: null, author: AUTHOR, replaces: selected.patch_id }
         : { op: "flag", anchor: anchorOf(selected), author: AUTHOR };
     const result = await callDaemon(request);
@@ -4478,13 +4512,21 @@ async function unflagSelected() {
     if (!selected || selected.patch_state !== PATCH_STATE.FLAGGED) {
         return;
     }
+    // A manual entry has no basis row to revert to (deleting its flag patch would
+    // delete the record): re-author it DIRTY instead — back to the unreviewed
+    // verdict, record kept, awaiting review like any other row.
+    if (isManual(selected)) {
+        await single(() => writePatch(anchorOf(selected), recordFields(selected),
+            "unflagged", selected, { step: false, dirty: true }));
+        return;
+    }
     await single(() => unpatch(anchorOf(selected), "unflagged", { step: false }));
 }
 
 // Clear: the general "reset this entry's state" — delete WHATEVER patch it holds
-// (accept/edit/drop/flag/authored, this session or a prior one), reverting a basis
-// record to its untouched source, or removing an authored record outright. Shown
-// whenever the entry is reviewed. An authored record has no anchor, so it is
+// (accept/edit/drop/flag/authorship, this session or a prior one), reverting a
+// basis record to its untouched source, or removing a manual record outright.
+// Shown whenever the entry is reviewed. A manual record has no anchor, so it is
 // cleared by its patch id; the daemon then returns no record and the row is dropped.
 async function clearSelected() {
     // Clear reverts in place (it does not advance the review cursor to a next record).
@@ -4499,16 +4541,16 @@ const GROUP_SKIPPED = Symbol("bulk-skipped");
 // Clear one record. Only a truly unreviewed record holds no patch to clear — a
 // no-op the bulk run counts as skipped, not done. A dirty record is unreviewed BY
 // VERDICT but carries an unshipped edit patch, which Clear deletes like any other
-// (so C reverts an unwanted edit — the reviewed bit would wrongly skip it). An
-// authored record clears by patch id and its row is dropped; a basis record clears
-// by anchor and reverts in place.
+// (so C reverts an unwanted edit — the reviewed bit would wrongly skip it). A
+// manual record clears by patch id and its row is dropped (its patch IS the
+// record); a basis record clears by anchor and reverts in place.
 async function clearOne(selected, options = {}) {
     if (selected.patch_state === PATCH_STATE.UNREVIEWED) {
         return GROUP_SKIPPED;
     }
-    if (selected.patch_state === PATCH_STATE.AUTHORED) {
+    if (isManual(selected)) {
         if (!selected.patch_id) {
-            throw new Error(`${selected.word}: authored entry has no patch id.`);
+            throw new Error(`${selected.word}: manual entry has no patch id.`);
         }
         return unpatch(null, "cleared", { ...options, patchId: selected.patch_id });
     }

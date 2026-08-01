@@ -28,7 +28,11 @@ Covers:
     wholly gone) and a flag of a vanished anchor
   - THE big invariant: incremental-apply == full-rebuild. A sequence of writes
     applied in place must yield a view byte-identical to a from-scratch rebuild
-    over the same basis + final patch set.
+    over the same basis + final patch set (records AND the word/shaw indexes).
+  - the word/shaw indexes track the DISPLAYED record (task #119): a patch that
+    respells the word (or shaw) re-files its anchor under the value the client
+    shows, with no stale registrations left across a mutation sequence — while
+    the case-only path (the owner's `i` -> `I` fix) keeps resolving.
 
 Standalone (no test framework): exits 0 on pass, non-zero on fail.
 """
@@ -354,6 +358,12 @@ def test_incremental_apply_equals_full_rebuild_over_same_patches():
     assert incremental.records == rebuilt.records, (
         "incremental view diverged from full rebuild:\n"
         f"  incremental={incremental.records}\n  rebuild={rebuilt.records}")
+    assert incremental.by_word_index == rebuilt.by_word_index, (
+        f"word index diverged: {incremental.by_word_index} != "
+        f"{rebuilt.by_word_index}")
+    assert incremental.by_shaw_index == rebuilt.by_shaw_index, (
+        f"shaw index diverged: {incremental.by_shaw_index} != "
+        f"{rebuilt.by_shaw_index}")
 
 
 def test_incremental_reversal_matches_rebuild_without_the_patch():
@@ -372,6 +382,81 @@ def test_incremental_reversal_matches_rebuild_without_the_patch():
 
     assert live.records == clean_rebuild.records, (
         f"after apply+unpatch: {live.records} != clean {clean_rebuild.records}")
+
+
+# ---- the word/shaw indexes follow the DISPLAYED record (task #119) ----
+# A patch may respell the Latin word (or shaw) while the anchor stays pinned;
+# the related read queries with the word the client DISPLAYS, so the indexes
+# must be keyed by the effective record, not the anchor.
+
+def test_respelled_word_found_by_displayed_word_at_build():
+    entries = [entry("recieve", "VB", SHAW_A, "RRP", ["wiktionary"])]
+    patches = [anchored_patch("accept", "recieve", "VB", SHAW_A, "RRP",
+                              changes={"word": "receive"})]
+    view = view_of(entries, patches)
+    assert [r["word"] for r in view.by_word("receive")] == ["receive"]
+    assert view.by_word("recieve") == [], "old word must no longer resolve"
+
+
+def test_respelled_word_found_by_displayed_word_after_apply():
+    entries = [entry("recieve", "VB", SHAW_A, "RRP", ["wiktionary"])]
+    view = view_of(entries, [])
+    view.apply_patch(anchored_patch("accept", "recieve", "VB", SHAW_A, "RRP",
+                                    changes={"word": "receive"}))
+    assert [r["word"] for r in view.by_word("receive")] == ["receive"]
+    assert view.by_word("recieve") == [], "old word must no longer resolve"
+    # The pinned ANCHOR still finds the row — anchor lookups are untouched.
+    row = view.by_anchor(("recieve", "VB", SHAW_A, "RRP"))
+    assert [r["word"] for r in row] == ["receive"]
+
+
+def test_case_only_edit_resolves_under_both_cases():
+    """Regression lock on the owner's `i` -> `I` fix: a case-only respell keeps
+    resolving (anchor words and queries are both lowercased, so the displayed
+    word and the anchor word coincide once lowercased)."""
+    entries = [entry("i", "PPSS", SHAW_A, "RRP", ["readlex"])]
+    view = view_of(entries, [])
+    view.apply_patch(anchored_patch("accept", "i", "PPSS", SHAW_A, "RRP",
+                                    changes={"word": "I"}))
+    assert [r["word"] for r in view.by_word("I")] == ["I"]
+    assert [r["word"] for r in view.by_word("i")] == ["I"]
+
+
+def test_word_index_stays_clean_across_edit_revert_remove():
+    """No stale registrations across a mutation sequence: respell, respell back,
+    revert the patch, and (for an authored row) remove entirely."""
+    key = ("recieve", "VB", SHAW_A, "RRP")
+    entries = [entry("recieve", "VB", SHAW_A, "RRP", ["wiktionary"])]
+    view = view_of(entries, [])
+
+    view.apply_patch(anchored_patch("accept", "recieve", "VB", SHAW_A, "RRP",
+                                    changes={"word": "receive"}))
+    assert view.by_word_index == {"receive": {key}}
+
+    view.apply_patch(anchored_patch("accept", "recieve", "VB", SHAW_A, "RRP"))
+    assert view.by_word_index == {"recieve": {key}}
+
+    view.apply_unpatch_anchor(anchor("recieve", "VB", SHAW_A, "RRP"))
+    assert view.by_word_index == {"recieve": {key}}
+
+    view.apply_patch(authored_patch({"word": "Zebra", "shaw": SHAW_B,
+                                     "pos": "NN", "var": "RRP"}, pid="p_z"))
+    assert [r["word"] for r in view.by_word("zebra")] == ["Zebra"]
+    view.apply_unpatch_id("p_z")
+    assert view.by_word("zebra") == []
+    assert view.by_word_index == {"recieve": {key}}
+    assert view.by_shaw_index == {SHAW_A: {key}}
+
+
+def test_respelled_shaw_found_by_displayed_spelling():
+    """The shaw index mirrors the word index: an edit that respells the Shavian
+    re-files the anchor under the spelling the client displays."""
+    entries = [entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])]
+    view = view_of(entries, [])
+    view.apply_patch(anchored_patch("accept", "cat", "NN", SHAW_A, "RRP",
+                                    changes={"shaw": SHAW_B}))
+    assert [r["shaw"] for r in view.by_shaw(SHAW_B)] == [SHAW_B]
+    assert view.by_shaw(SHAW_A) == [], "old spelling must no longer resolve"
 
 
 if __name__ == "__main__":

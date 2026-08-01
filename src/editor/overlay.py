@@ -347,11 +347,13 @@ class AnnotatedView:
     authored map) are retained so a write can re-annotate one anchor in place.
     `by_anchor_index` maps an anchor key to the records carrying it, so both the
     per-anchor read and the in-place update are O(1). `by_word_index` maps a
-    lowercased Latin word to the anchor keys carrying it, so the related-entries
-    read is O(hits) rather than a full-view scan; it is kept in step with
-    by_anchor_index as authored rows are added and removed. `by_shaw_index` mirrors
-    it on the Shavian spelling, so variant siblings (same shaw, different Latin
-    word — estrogen/oestrogen) join the same related read.
+    lowercased DISPLAYED Latin word to the anchor keys whose rows show it, so the
+    related-entries read is O(hits) rather than a full-view scan; it is kept in
+    step with by_anchor_index as rows are added, edited (a patch that respells
+    the word re-files its anchor — see _reindex_anchor) and removed.
+    `by_shaw_index` mirrors it on the displayed Shavian spelling, so variant
+    siblings (same shaw, different Latin word — estrogen/oestrogen) join the same
+    related read.
 
     The daemon is multithreaded (ThreadingMixIn): an in-place write mutates the
     shared index while readers iterate it, so a lock guards every mutating op and
@@ -406,23 +408,30 @@ class AnnotatedView:
             return output_to_record(candidate) if candidate is not None else None
 
     def by_word(self, word):
-        """A snapshot of every annotated record whose Latin word matches `word`
-        case-insensitively — the related-entries read. Resolved through the
-        lowercased-word index (O(hits), not a full-view scan) under the lock."""
+        """A snapshot of every annotated record whose DISPLAYED Latin word matches
+        `word` case-insensitively — the related-entries read. Resolved through the
+        lowercased-word index (O(hits), not a full-view scan) under the lock. The
+        index is keyed by the word a row shows (see _build_word_index), so a
+        record respelled by a patch is found by the word the user sees; the row
+        filter matters because sibling rows on a matching anchor may display a
+        different word."""
         with self._lock:
+            wanted = word.lower()
             return [record
-                    for key in self.by_word_index.get(word.lower(), ())
-                    for record in self.by_anchor_index.get(key, ())]
+                    for key in self.by_word_index.get(wanted, ())
+                    for record in self.by_anchor_index.get(key, ())
+                    if record["word"].lower() == wanted]
 
     def by_shaw(self, shaw):
-        """A snapshot of every annotated record whose Shavian spelling matches
-        `shaw` exactly — the variant-sibling half of the related-entries read.
-        Resolved through the shaw index (O(hits), not a full-view scan) under the
-        lock, mirroring by_word."""
+        """A snapshot of every annotated record whose DISPLAYED Shavian spelling
+        matches `shaw` exactly — the variant-sibling half of the related-entries
+        read. Resolved through the shaw index (O(hits), not a full-view scan)
+        under the lock, mirroring by_word."""
         with self._lock:
             return [record
                     for key in self.by_shaw_index.get(shaw, ())
-                    for record in self.by_anchor_index.get(key, ())]
+                    for record in self.by_anchor_index.get(key, ())
+                    if record["shaw"] == shaw]
 
     def authored_patch(self, patch_id):
         """The authorship patch with `patch_id`, or None. A snapshot read under the
@@ -507,46 +516,44 @@ class AnnotatedView:
 
     def _replace_record(self, key, annotated, predicate):
         """Swap the record on `key` matching `predicate` for `annotated`,
-        keeping its position; append if none matched (a new row). A new anchor
-        key (an authored word absent from the basis) is registered on the word
-        and shaw indexes so the related read finds it."""
+        keeping its position; append if none matched (a new row). The word and
+        shaw indexes are reconciled afterwards: a patch may change the displayed
+        word/shaw, and the indexes follow the display (see _build_word_index)."""
         records = self.by_anchor_index.setdefault(key, [])
+        before = (_displayed_words(records), _displayed_shaws(records))
         for i, record in enumerate(records):
             if predicate(record):
                 records[i] = annotated
-                return
-        if not records:
-            self.by_word_index.setdefault(key[0], set()).add(key)
-            self.by_shaw_index.setdefault(key[2], set()).add(key)
-        records.append(annotated)
+                break
+        else:
+            records.append(annotated)
+        self._reindex_anchor(key, before, records)
 
     def _forget_record(self, key, predicate):
-        """Drop the record on `key` matching `predicate` from the index. When the
-        anchor empties, deregister it from the word and shaw indexes too."""
+        """Drop the record on `key` matching `predicate` from the index,
+        reconciling the word and shaw indexes (an emptied anchor deregisters
+        from both entirely)."""
         records = self.by_anchor_index.get(key, [])
         for i, record in enumerate(records):
             if predicate(record):
+                before = (_displayed_words(records), _displayed_shaws(records))
                 del records[i]
                 if not records:
                     self.by_anchor_index.pop(key, None)
-                    self._deregister_word(key)
-                    self._deregister_shaw(key)
+                self._reindex_anchor(key, before, records)
                 return
         raise KeyError(f"no record to forget on anchor: {key}")
 
-    def _deregister_word(self, key):
-        keys = self.by_word_index.get(key[0])
-        if keys is not None:
-            keys.discard(key)
-            if not keys:
-                self.by_word_index.pop(key[0], None)
-
-    def _deregister_shaw(self, key):
-        keys = self.by_shaw_index.get(key[2])
-        if keys is not None:
-            keys.discard(key)
-            if not keys:
-                self.by_shaw_index.pop(key[2], None)
+    def _reindex_anchor(self, key, before, records):
+        """Bring the word and shaw registrations for `key` in line with its
+        current rows after a mutation: values the rows no longer display are
+        deregistered, newly displayed ones registered — so the incremental path
+        always matches a full index rebuild."""
+        before_words, before_shaws = before
+        _reindex(self.by_word_index, key, before_words,
+                 _displayed_words(records))
+        _reindex(self.by_shaw_index, key, before_shaws,
+                 _displayed_shaws(records))
 
 
 def _index_patches_by_anchor(patches):
@@ -643,24 +650,55 @@ def _orphan_kind(patch, key, resurfaced_index):
     return None
 
 
+def _displayed_words(records):
+    """The lowercased DISPLAYED Latin words across an anchor's rows — the word
+    registrations the anchor owes the index. Usually the singleton {anchor word},
+    but the word is an editable patch field: a respell moves the displayed word
+    while the anchor stays pinned, and the index must follow the display or a
+    lookup by the word the user sees misses the record."""
+    return {record["word"].lower() for record in records}
+
+
+def _displayed_shaws(records):
+    """The DISPLAYED Shavian spellings across an anchor's rows — the shaw
+    registrations the anchor owes the index (mirror of _displayed_words)."""
+    return {record["shaw"] for record in records}
+
+
+def _reindex(index, key, before, after):
+    """Move `key`'s registrations in a value->keys index from displaying `before`
+    to `after`: vanished values are deregistered (an emptied set is dropped),
+    appeared ones registered."""
+    for value in before - after:
+        keys = index.get(value)
+        if keys is not None:
+            keys.discard(key)
+            if not keys:
+                index.pop(value, None)
+    for value in after - before:
+        index.setdefault(value, set()).add(key)
+
+
 def _build_word_index(by_anchor_index):
-    """Map each lowercased Latin word to the set of anchor keys carrying it — the
-    related-entries lookup. The anchor key's first element IS that lowercased word
-    (see anchor_key), so this is a regrouping of the existing keys."""
+    """Map each lowercased DISPLAYED Latin word to the set of anchor keys whose
+    rows show it — the related-entries lookup. Keyed by the displayed word, NOT
+    the anchor's (key[0]): a patch may respell the word while the anchor stays
+    pinned, and the related read queries with the word the client displays."""
     word_index = {}
-    for key in by_anchor_index:
-        word_index.setdefault(key[0], set()).add(key)
+    for key, records in by_anchor_index.items():
+        for word in _displayed_words(records):
+            word_index.setdefault(word, set()).add(key)
     return word_index
 
 
 def _build_shaw_index(by_anchor_index):
-    """Map each Shavian spelling to the set of anchor keys carrying it — the
-    variant-sibling half of the related-entries lookup. The anchor key's third
-    element IS the shaw (see anchor_key), so this is a regrouping of the existing
-    keys."""
+    """Map each DISPLAYED Shavian spelling to the set of anchor keys whose rows
+    show it — the variant-sibling half of the related-entries lookup, mirroring
+    _build_word_index (a patch may respell the shaw too)."""
     shaw_index = {}
-    for key in by_anchor_index:
-        shaw_index.setdefault(key[2], set()).add(key)
+    for key, records in by_anchor_index.items():
+        for shaw in _displayed_shaws(records):
+            shaw_index.setdefault(shaw, set()).add(key)
     return shaw_index
 
 

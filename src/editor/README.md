@@ -36,7 +36,11 @@ spell-check path.
 ## Ops (line-oriented JSON over the socket)
 
     {"op":"entries","filters":{...},"offset":0,"limit":50}
-        -> {"total","offset","limit","records":[...]}
+        -> {"total","offset","limit","groups":[{"key","records":[...]},...]}
+        # group-denominated: total/offset/limit count GROUPS (word_lower+shaw+
+        # variation-set), a group is never split across pages, groups rank by
+        # their best member under the active sort; only the daemon computes
+        # grouping — `key` is opaque to the client
     {"op":"entry","anchor":{"word","pos","shaw","var"}}
         -> {"records":[...]}                       # the record on that natural key
     {"op":"patch","anchor":{"word","pos","shaw","var"}|null,"record":{...}|null,

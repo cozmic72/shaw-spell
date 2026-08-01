@@ -935,17 +935,6 @@ body {
     background: var(--paper-raised);
 }
 
-/* The matched children of an expanded group are bright (full opacity); a sibling
-   fetched via `related` that fell outside the active filter is DIMMED (opacity,
-   works in both themes) but stays fully interactive — dimming is de-emphasis,
-   not disable (§3.3, D7). The dimming rides on the row's CELLS and state bar, not
-   the <li> box, so the parent-owned indent strip (::after) beside a dimmed sibling
-   carries the header's wash at full strength — the bracket never breaks. */
-.ledger-row.group-child[data-filter-match="false"] { font-weight: 400; }
-.ledger-row.group-child[data-filter-match="false"] > *,
-.ledger-row.group-child[data-filter-match="false"]::before {
-    opacity: 0.5;
-}
 .col-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-shaw {
     font-family: var(--shaw);

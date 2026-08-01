@@ -30,8 +30,21 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # case-insensitive / shaw case-sensitive (backward-compatible).
                 # Filtering is GROUP-AWARE: a group (group_key) whose ANY member
                 # matches is served whole, non-matching siblings included.
-    Response:  {"total": 1234, "offset": 0, "limit": 50, "records": [...],
+                # Pagination is GROUP-DENOMINATED: offset/limit/total COUNT
+                # GROUPS, and a group is never split across pages.
+    Response:  {"total": 1234, "offset": 0, "limit": 50,
+                "groups": [{"key": "…", "records": [...]}, …],
                 "invalid_regex": ["word"]}
+                # Each group is served WHOLE: groups are ranked by their
+                # best-sorted member under the active sort (a stable total
+                # order — the flat sort's natural-key tiebreak carries over),
+                # members inside a group in that same flat-sort order. `key` is
+                # the serialised group_key, OPAQUE to the client (view state —
+                # expansion, cursor — keys off it; only the daemon computes
+                # grouping). A group of ONE is still a group. Every serialised
+                # record — in EVERY op returning records — also carries its own
+                # `group_key`, so a write response can place a fresh record
+                # (authorship) into the served partition.
                 # invalid_regex names the substring field(s) whose regex value
                 # failed to compile (absent/empty when all compiled). A field
                 # with an invalid regex matches nothing rather than 500-ing.
@@ -184,6 +197,7 @@ from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
     replace_authored_patch, upsert_patch)
 
+# Entries-page size, in GROUPS (the entries op pages by group, never splitting one).
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
 
@@ -643,11 +657,10 @@ def _parse_iso_utc(ts):
     return calendar.timegm(time.strptime(ts, "%Y-%m-%dT%H:%M:%SZ"))
 
 
-# The record-list group identity — the daemon-side twin of the client's groupKey
-# (editor.js): Latin word (lowercased) + Shavian + variation set (the mergers plus
-# the "variant" pseudo-member, i.e. _record_attributes). Identity ONLY — editorial
-# state never partitions. The two MUST partition records identically, or a sibling
-# served for one group would fold into another client-side.
+# The record-list group identity — the ONE grouping notion (the client renders the
+# partition it is sent, never recomputes it): Latin word (lowercased) + Shavian +
+# variation set (the mergers plus the "variant" pseudo-member, i.e.
+# _record_attributes). Identity ONLY — editorial state never partitions.
 def group_key(record):
     return (record["word"].lower(), record["shaw"],
             frozenset(_record_attributes(record)))
@@ -657,10 +670,9 @@ def filter_records(records, query, established):
     """Group-aware filtering: a group (group_key) is served WHOLE when at least
     one member matches the active filters — a matching record pulls its
     non-matching siblings into the result, so the whole group reaches the
-    client together (subject to paging: a group larger than the page can still
-    straddle a page boundary — the sort has no group-affinity — so the client
-    folds whatever members the current page carries). Record order is preserved
-    (the caller sorts). With no active filters every record matches, so this degenerates to the identity."""
+    client together (handle_entries pages by GROUP, so it arrives unsplit).
+    Record order is preserved (the caller sorts). With no active filters every
+    record matches, so this degenerates to the identity."""
     keyed = [(group_key(record), record) for record in records]
     matched_groups = {key for key, record in keyed
                       if matches(record, query, established)}
@@ -758,11 +770,45 @@ def sort_records(records, sort):
 
 def serialisable(record):
     """The record without the raw patch object (the UI reads patch_state and,
-    when it needs the patch itself, the fields it carries)."""
+    when it needs the patch itself, the fields it carries). Every serialised
+    record carries its wire group key, so a write response can place a fresh
+    record (authorship) into the client's served partition — the client never
+    computes grouping."""
     result = {k: v for k, v in record.items() if k != "patch"}
     patch = record.get("patch")
     result["patch_id"] = patch["id"] if patch else None
+    result["group_key"] = wire_group_key(group_key(record))
     return result
+
+
+# Partition the SORTED flat list into groups, order-preserving: a group ranks at
+# its FIRST (best-under-the-active-sort) member's position, and its members keep
+# their flat-sort relative order. The flat sort is a deterministic TOTAL order
+# (every sorter tiebreaks on _natural_key), each record belongs to exactly one
+# group, and distinct groups have distinct first members — so the group sequence
+# is itself a deterministic total order, and offset paging over it is stable
+# across requests (no duplicates, no gaps).
+def group_sorted(records):
+    ordered = []
+    by_key = {}
+    for record in records:
+        key = group_key(record)
+        members = by_key.get(key)
+        if members is None:
+            by_key[key] = members = []
+            ordered.append((key, members))
+        members.append(record)
+    return ordered
+
+
+# The group key on the wire: an opaque string token (the client's expansion and
+# cursor state key off it, nothing parses it). NUL separators cannot occur in a
+# component (a word may contain spaces), so distinct keys never collide — the
+# "+"-joined attribute set relies on no merger name ever containing "+"
+# (MERGER_SWAPS' vocabulary is hyphenated).
+def wire_group_key(key):
+    word, shaw, attributes = key
+    return "\0".join((word, shaw, "+".join(sorted(attributes))))
 
 
 def handle_entries(state, request):
@@ -772,12 +818,15 @@ def handle_entries(state, request):
 
     matched = filter_records(state.view.records, query, state.view.established)
     matched = sort_records(matched, request.get("sort") or DEFAULT_SORT)
-    page = matched[offset:offset + limit]
+    groups = group_sorted(matched)
+    page = groups[offset:offset + limit]
     return {
-        "total": len(matched),
+        "total": len(groups),
         "offset": offset,
         "limit": limit,
-        "records": [serialisable(r) for r in page],
+        "groups": [{"key": wire_group_key(key),
+                    "records": [serialisable(r) for r in members]}
+                   for key, members in page],
         "invalid_regex": query.invalid_regex,
     }
 

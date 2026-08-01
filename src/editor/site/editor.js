@@ -372,15 +372,15 @@ const state = {
     // Touch multi-select mode (iOS Mail/Photos style): entered by long-press, in
     // which a plain tap toggles rather than reviews. Off = plain tap reviews.
     touchMulti: false,
-    // Record-list grouping (Phase 3). The ledger folds state.records into
-    // (word_lower, shaw, variation-set) groups at paint time; a
-    // multi-member group is a disclosure. `groupsExpanded` holds the keys of the
-    // groups the owner has opened (transient view state — a re-query rebuilds the
-    // fold, so it is cleared with the working set). `groupMembers` caches the FULL
-    // (unfiltered) membership fetched via the `related` op, keyed by group key, so a
-    // header-select can act on siblings that fell outside the active filter (D7).
+    // Record-list grouping. The DAEMON owns grouping and pagination: the entries
+    // op serves whole (word_lower, shaw, variation-set) groups — never split
+    // across pages, every member on the page — and `groups` mirrors that partition
+    // over state.records as {key, size} runs (the key is the daemon's, opaque
+    // here). A multi-member group renders as a disclosure. `groupsExpanded` holds
+    // the keys of the groups the owner has opened (transient view state — a
+    // re-query replaces the partition, so it is cleared with the working set).
+    groups: [],
     groupsExpanded: new Set(),
-    groupMembers: new Map(),
     // Monotonic token for the related-entries fetch. Each loadRelated bumps it and
     // captures the new value; only the LATEST request may render its result. A fetch
     // issued for an earlier landing (or an earlier state of the same record — a
@@ -702,10 +702,14 @@ async function runQuery(offset = 0, preferredAnchor = null) {
         offset,
         limit: state.limit,
     });
-    // The daemon owns order: it sorts the whole filtered corpus (per daemonSort) and
-    // returns this page already in that order, so index-keyed selection and in-place
-    // row refresh stay aligned with what is on screen, and paging walks a stable order.
-    state.records = result.records;
+    // The daemon owns grouping AND order: it sorts the whole filtered corpus (per
+    // daemonSort), partitions it into groups ranked by their best-sorted member,
+    // and pages by GROUP — so this page carries whole groups, already in order.
+    // state.records stays the flat member run (index-keyed selection and in-place
+    // row refresh untouched); state.groups is the partition over it.
+    state.groups = result.groups.map(
+        (group) => ({ key: group.key, size: group.records.length }));
+    state.records = result.groups.flatMap((group) => group.records);
     state.total = result.total;
     markInvalidRegex(result.invalid_regex || []);
     // The selection is over the working set that was on screen; a re-materialise
@@ -714,11 +718,9 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     state.multi.clear();
     state.lastToggledKey = null;
     state.touchMulti = false;
-    // The group fold is over the working set that was on screen; a re-materialise
-    // replaces that set, so any expansion or cached full membership no longer refers
-    // to these groups. Clear both — groups re-fold closed against the fresh records.
+    // The expansion state is over the partition that was on screen; a re-materialise
+    // replaces that partition, so clear it — fresh groups land closed.
     state.groupsExpanded.clear();
-    state.groupMembers.clear();
     materialisedSignature = querySignature(state.filters);
     renderLedger();
     renderFoot();
@@ -802,16 +804,15 @@ function overriddenFields(record) {
     return new Set(Object.keys(patch.changes));
 }
 
-// The ledger folds the flat working set into (word_lower, shaw, variation-set)
-// groups (§3, D5–D7). A group of ONE renders as a plain ledger row —
-// byte-identical to the flat row, empty gutter cells (the N=1 invariant). A group
-// of 2+ renders a disclosure HEADER (previewing the export-winner) that expands to
-// its member rows. `state.records` stays the flat, daemon-ordered working set; this
-// is a paint-time view transform, so paging, in-place refresh, and anchor-keyed
-// selection are untouched.
+// The ledger renders the DAEMON's group partition (§3, D5–D7) — the client never
+// computes grouping. A group of ONE renders as a plain ledger row — byte-identical
+// to the flat row, empty gutter cells (the N=1 invariant). A group of 2+ renders a
+// disclosure HEADER (previewing the export-winner) that expands to its member
+// rows. `state.records` stays the flat, daemon-ordered working set, so paging,
+// in-place refresh, and anchor-keyed selection are untouched.
 function renderLedger() {
     LEDGER.replaceChildren();
-    for (const group of foldLedgerGroups(state.records)) {
+    for (const group of ledgerGroups()) {
         if (group.members.length === 1) {
             LEDGER.append(ledgerRow(group.members[0].record, group.members[0].index));
             continue;
@@ -829,30 +830,11 @@ function renderLedger() {
     }
 }
 
-// The child rows of an expanded group (§3.3): every member of the FULL membership,
-// matched children bright (their own working-set index, index-addressable) and
-// siblings outside the active filter dimmed (index -1, selectable by anchor only).
+// The child rows of an expanded group (§3.3): every member, in served order. The
+// daemon pages whole groups, so the full membership is on the page — each child a
+// bright, index-addressable working-set row.
 function groupChildRows(group) {
-    return groupDisplayMembers(group).map(({ record, index }) =>
-        ledgerRow(record, index, index >= 0));
-}
-
-// The members an expanded group displays, in RENDERED order: the FULL membership when
-// fetched, else the in-page matched members until the fetch lands (a group auto-fetches
-// on expand, so that is only the transient pre-fetch frame). Each member carries its
-// working-set index, or -1 for a sibling outside the active filter (dimmed, not in
-// state.records). Shared by the row painter and the keyboard cursor (cursorStops), so
-// the two can never disagree on child order.
-function groupDisplayMembers(group) {
-    const matchedIndex = new Map(
-        group.members.map((entry) => [anchorKey(entry.record.anchor), entry.index]),
-    );
-    const members = state.groupMembers.get(group.key)
-        || group.members.map((entry) => entry.record);
-    return members.map((record) => {
-        const index = matchedIndex.get(anchorKey(record.anchor));
-        return { record, index: index === undefined ? -1 : index };
-    });
+    return group.members.map(({ record, index }) => ledgerRow(record, index, true));
 }
 
 // A record's VERDICT — the single source of truth collapsing the two DECORATION
@@ -873,33 +855,6 @@ function verdictState(record) {
     }
 }
 
-// The variation-set axis of the group key (§3.1): a record's mergers (additive list)
-// plus its `variant` boolean ("other"), rendered as ONE canonical string so equality
-// is order-independent. Variations are IDENTITY — two records with the same Latin+Shaw
-// but a different variation set are DISTINCT groups, never merged. A trailing `variant`
-// token carries the boolean; a plain sorted-merger join carries the rest.
-function variationSetKey(record) {
-    const flags = [...(record.mergers || [])].sort();
-    if (record.variant) {
-        flags.push(VARIANT_LABEL);
-    }
-    return flags.join("+");
-}
-
-// The record-list group key (§3.1): Latin word (lowercased, mirroring the daemon's
-// natural key) + Shavian spelling + variation set. Identity ONLY — editorial state
-// (verdict, origin) never partitions: a manual record and a reviewed one with the same
-// Latin+Shaw+variations are the same thing and group together. The NUL separators
-// cannot occur in any component (a word may contain spaces), so distinct groups never
-// collide.
-function groupKey(record) {
-    return [
-        (record.word || "").toLowerCase(),
-        record.shaw,
-        variationSetKey(record),
-    ].join("\0");
-}
-
 // The export var-hierarchy (§5a): the same precedence the export collapse applies —
 // RRP > RSSB > GenAm, and any other var ranks below all listed ones. Mirrors
 // src/tools/collapse_identical_dialects.py (PRECEDENCE / UNKNOWN_RANK): lower rank
@@ -912,27 +867,60 @@ function varRank(value) {
     return rank === undefined ? VAR_UNKNOWN_RANK : rank;
 }
 
-// Fold the flat (daemon-sorted) working set into groups (§3.1, §3.5). Node order
-// follows the incoming record order (the active sort): a group anchors where its FIRST
-// member falls, so — because the daemon already sorted the flat list — a group sits at
-// its BEST member under the active sort (§3.5), and later members attach to it. Each
-// member carries its own `state.records` index so a child row stays addressable for
-// selection and in-place refresh. The group's DISPLAY member is the export-winner (the
-// var-hierarchy winner, §3.6), which may differ from the first (best-under-sort) member.
-function foldLedgerGroups(records) {
+// The grouped view of the working set (§3.1, §3.5): the daemon's partition
+// (state.groups — contiguous {key, size} runs over state.records) hydrated with
+// member records and their working-set indices. The daemon already ranked each
+// group at its BEST member under the active sort (§3.5) and ordered members
+// within it; the client only re-reads that partition — it NEVER computes
+// grouping, so it cannot drift from the daemon's group_key. The group's DISPLAY
+// member is the export-winner (the var-hierarchy winner, §3.6), which may differ
+// from the first (best-under-sort) member. Fails loud if the partition and the
+// working set have drifted apart (a bookkeeping bug, not a state to render).
+function ledgerGroups() {
     const groups = [];
-    const index = new Map();
-    records.forEach((record, recordIndex) => {
-        const key = groupKey(record);
-        let group = index.get(key);
-        if (!group) {
-            group = { key, members: [] };
-            index.set(key, group);
-            groups.push(group);
+    let index = 0;
+    for (const { key, size } of state.groups) {
+        const members = [];
+        for (let member = 0; member < size; member += 1, index += 1) {
+            members.push({ record: state.records[index], index });
         }
-        group.members.push({ record, index: recordIndex });
-    });
+        groups.push({ key, members });
+    }
+    if (index !== state.records.length) {
+        throw new Error("group partition out of step with the working set.");
+    }
     return groups;
+}
+
+// The group holding the record at a working-set index, or null when the index is
+// unset/out of range — the lookup every cursor/fold flow uses instead of ever
+// recomputing a group key from the record.
+function groupOfIndex(index) {
+    if (index < 0) {
+        return null;
+    }
+    return ledgerGroups().find(
+        (group) => group.members.some((member) => member.index === index)) || null;
+}
+
+// A record removed from the working set leaves its group too: shrink the owning
+// {key, size} run so the partition stays aligned with state.records (call BEFORE
+// splicing the record out). A group emptied of its last member is dropped, along
+// with any expansion state it held. An index outside the partition is a caller bug.
+function shrinkGroupAt(index) {
+    let end = 0;
+    for (let at = 0; at < state.groups.length; at += 1) {
+        end += state.groups[at].size;
+        if (index < end) {
+            state.groups[at].size -= 1;
+            if (state.groups[at].size === 0) {
+                state.groupsExpanded.delete(state.groups[at].key);
+                state.groups.splice(at, 1);
+            }
+            return;
+        }
+    }
+    throw new Error("removed record index outside the group partition.");
 }
 
 // The export-winner among a group's members (§3.6, D5): the highest-in-hierarchy var
@@ -1009,13 +997,10 @@ function ledgerCells(record) {
     ];
 }
 
-// A record-bearing ledger row: a flat singleton group, or a child of an expanded
-// group. `filterMatch` is null for a plain row; for an expanded child it is true
-// (matched the active filter — bright) or false (a sibling fetched via `related` that
-// fell outside the filter — dimmed, but fully selectable, §3.3). A dimmed child has a
-// NEGATIVE index (it is not in state.records), so it is addressable for selection by
-// its anchor but excluded from index-keyed row refresh.
-function ledgerRow(record, index, filterMatch = null) {
+// A record-bearing ledger row: a flat singleton group, or (`isChild`) a child of
+// an expanded group. Every row is a working-set row — the daemon serves whole
+// groups per page, so a child is always index-addressable.
+function ledgerRow(record, index, isChild = false) {
     const row = document.createElement("li");
     row.className = `ledger-row state-${verdictState(record)}`;
     // An orphaned row's edge-bar + stamp are coloured by WHICH orphan reason it is
@@ -1026,17 +1011,13 @@ function ledgerRow(record, index, filterMatch = null) {
     if (record.patch_state === PATCH_STATE.ORPHANED && record.orphan_kind) {
         row.classList.add(`orphan-${record.orphan_kind}`);
     }
-    if (filterMatch !== null) {
+    if (isChild) {
         row.classList.add("group-child");
-        row.dataset.filterMatch = String(filterMatch);
     }
-    if (index >= 0) {
-        row.dataset.index = String(index);
-    }
+    row.dataset.index = String(index);
     // Every record-bearing row carries its anchor key so the selection wash can be
-    // painted by anchor — a dimmed child (index -1) is not in state.records, so it has
-    // no index to look its record up by, but it can still be a picked group member. The
-    // key carries NUL separators (not attribute-safe), so it rides on a JS property.
+    // painted by anchor. The key carries NUL separators (not attribute-safe), so it
+    // rides on a JS property.
     row._anchorKey = anchorKey(record.anchor);
     row.append(cell("col-chevron", ""), cell("col-count", ""), ...ledgerCells(record));
     bindLongPress(row, record);
@@ -1050,9 +1031,8 @@ function ledgerRow(record, index, filterMatch = null) {
 // row — it carries no data-index (so index-keyed refresh skips it; the selection
 // painter addresses it by _groupKey, lighting a COLLAPSED header when the cursor's
 // record is folded inside) — but it IS a selection target: clicking its select region
-// picks the WHOLE (unfiltered) group (§3.2), while the chevron toggles expansion.
-// Expanding appends every member row below (matched bright, fetched siblings dimmed,
-// §3.3).
+// picks the WHOLE group (§3.2), while the chevron toggles expansion. Expanding
+// appends every member row below (§3.3).
 function groupRow(group) {
     const winner = exportWinner(group.members).record;
     const li = document.createElement("li");
@@ -1120,21 +1100,17 @@ function groupDisclosure(group, expanded) {
     return button;
 }
 
-// The header's member-count gutter cell (§3.6): the FULL membership once fetched
-// (state.groupMembers), else the in-page member count (a group present in the working
-// set has ≥1 matched member; siblings outside the filter are pulled on demand).
-// Capped at two digits ("99+") to keep the track narrow.
+// The header's member-count gutter cell (§3.6): the group's full membership — the
+// daemon serves whole groups. Capped at two digits ("99+") to keep the track narrow.
 function groupCountCell(group) {
-    const full = state.groupMembers.get(group.key);
-    const total = full ? full.length : group.members.length;
+    const total = group.members.length;
     return cell("col-count group-count", total > 99 ? "99+" : String(total));
 }
 
 // A group header was clicked (outside its disclosure triangle): the group is a
-// selection target acting on the WHOLE unfiltered group (§3.2, D7). A plain click
-// reviews the group (selects every member, showing the group-native panel); ⌘/Ctrl or
-// touch-multi toggles the group into the selection. Header-select needs the full
-// membership (matched + siblings outside the filter), so it fetches it first.
+// selection target acting on the WHOLE group (§3.2, D7). A plain click reviews the
+// group (selects every member, showing the group-native panel); ⌘/Ctrl or
+// touch-multi toggles the group into the selection.
 function onGroupHeaderClick(group, event) {
     if (suppressNextClick) {
         suppressNextClick = false;
@@ -1142,69 +1118,28 @@ function onGroupHeaderClick(group, event) {
     }
     setDrawer(false);
     const toggle = state.touchMulti || event.metaKey || event.ctrlKey;
-    selectWholeGroup(group, toggle).catch((error) => showToast(error.message, true));
+    selectWholeGroup(group, toggle);
 }
 
-// Toggle a group's expansion and re-fold the ledger so its member rows appear/vanish
-// in place. Expanding fetches the group's full membership (matched + siblings outside
-// the filter) so the dimmed children can be shown (§3.3); the re-render then paints
-// them. The selection is preserved (it keys on anchors, which survive the re-fold).
+// Toggle a group's expansion and re-render so its member rows appear/vanish in
+// place. The full membership is already on the page (the daemon serves whole
+// groups), so this is a pure view toggle — no fetch. The selection is preserved
+// (it keys on anchors, which survive the re-render).
 function toggleGroupExpanded(key) {
-    if (state.groupsExpanded.has(key)) {
-        state.groupsExpanded.delete(key);
-        renderLedger();
-        paintLedgerSelection();
-        return;
+    if (!state.groupsExpanded.delete(key)) {
+        state.groupsExpanded.add(key);
     }
-    state.groupsExpanded.add(key);
-    ensureGroupMembers(key)
-        .then(() => {
-            renderLedger();
-            paintLedgerSelection();
-        })
-        .catch((error) => showToast(error.message, true));
+    renderLedger();
+    paintLedgerSelection();
 }
 
-// Re-warm the full membership of every still-present expanded group whose cache was
-// just cleared (after a write, §3.3), then repaint once so their dimmed siblings
-// reappear. Only expanded, still-existing (post-refold) multi-member groups are
-// fetched, so this is a handful of requests at most — not a per-paint storm. A group
-// key that no longer folds (its members regrouped after the write) is dropped from the
-// expansion set, since there is nothing left to expand.
-function refillExpandedGroups() {
-    const present = new Map(
-        foldLedgerGroups(state.records)
-            .filter((group) => group.members.length >= 2)
-            .map((group) => [group.key, group]),
-    );
-    const stale = [];
-    for (const key of state.groupsExpanded) {
-        if (!present.has(key)) {
-            stale.push(key);
-        }
-    }
-    for (const key of stale) {
-        state.groupsExpanded.delete(key);
-    }
-    const toRefill = [...state.groupsExpanded].filter((key) => !state.groupMembers.has(key));
-    if (!toRefill.length) {
-        return;
-    }
-    Promise.all(toRefill.map((key) => ensureGroupMembers(key)))
-        .then(() => {
-            renderLedger();
-            paintLedgerSelection();
-        })
-        .catch((error) => showToast(error.message, true));
-}
-
-// Select the WHOLE unfiltered group (§3.2, D7): add EVERY member's anchor — matched
-// and the siblings outside the active filter alike — to the selection, so a group
-// verdict never silently leaves a sibling unreviewed (the export collapses the whole
-// group). A plain click reviews the group (replaces the selection); a toggle gesture
-// flips the group's members in/out. Needs the full membership, so it fetches first.
-async function selectWholeGroup(group, toggle) {
-    const anchors = await groupMemberAnchors(group);
+// Select the WHOLE group (§3.2, D7): add EVERY member's anchor to the selection, so
+// a group verdict never silently leaves a sibling unreviewed (the export collapses
+// the whole group — and the daemon serves it whole, so every member is on the
+// page). A plain click reviews the group (replaces the selection); a toggle gesture
+// flips the group's members in/out.
+function selectWholeGroup(group, toggle) {
+    const anchors = group.members.map((member) => member.record.anchor);
     // A plain header-select lands the cursor ON the header (the group-as-unit stop),
     // for keyboard and mouse alike; a toggle is a hand mutation of the pick, which
     // forfeits any header claim (see state.cursorGroupKey).
@@ -1227,46 +1162,6 @@ async function selectWholeGroup(group, toggle) {
     onSelectionChanged();
 }
 
-// Every member anchor of a group — the FULL (unfiltered) membership. The in-page
-// members come from the working set; the rest (siblings outside the active filter) are
-// pulled via the `related` op and cached (§3.2). A record present both in-page and in
-// the fetched set is deduped by anchor key.
-async function groupMemberAnchors(group) {
-    const members = await ensureGroupMembers(group.key);
-    return members.map((record) => record.anchor);
-}
-
-// Ensure state.groupMembers holds a group's FULL membership, fetching it once via the
-// `related` op (keyed on the group's word + shaw) and narrowing the result to this
-// group's variation set (variations are identity, §3.1 — a related record with a
-// different variation set belongs to a DIFFERENT group). The union of the
-// in-page matched members and the fetched siblings, deduped by anchor, is the full
-// membership. Returns the cached membership on a repeat call.
-async function ensureGroupMembers(key) {
-    const cached = state.groupMembers.get(key);
-    if (cached) {
-        return cached;
-    }
-    const inPage = state.records.filter((record) => groupKey(record) === key);
-    const seed = inPage[0];
-    if (!seed) {
-        // Every caller derives `key` from a group folded out of the working set, so a
-        // present group always has ≥1 in-page member to seed the fetch. No seed means a
-        // stale/foreign key — a caller bug — so fail loud rather than cache an empty set.
-        throw new Error("group membership requested for a key not in the working set.");
-    }
-    const result = await callDaemon({ op: "related", word: seed.word, shaw: seed.shaw });
-    const byKey = new Map(inPage.map((record) => [anchorKey(record.anchor), record]));
-    for (const record of result.records) {
-        if (groupKey(record) === key) {
-            byKey.set(anchorKey(record.anchor), record);
-        }
-    }
-    const members = [...byKey.values()];
-    state.groupMembers.set(key, members);
-    return members;
-}
-
 // The native list-selection gesture on a row. Plain click reviews the one row (and
 // collapses any multi-selection to it); ⌘/Ctrl-click toggles the row without
 // disturbing the rest; shift-click extends a contiguous range from the anchor. In
@@ -1279,14 +1174,6 @@ function onRowClick(record, index, event) {
         return;
     }
     setDrawer(false);
-    // A dimmed group child (a sibling fetched via `related` that fell outside the
-    // active filter, §3.3) is NOT in the working set — it has no state.records index,
-    // so it cannot be the review cursor nor a range anchor. It participates only as a
-    // picked member of the group edit, so any gesture on it toggles the selection.
-    if (index < 0) {
-        toggleSelection(record.anchor);
-        return;
-    }
     if (state.touchMulti) {
         toggleSelection(record.anchor);
         return;
@@ -1410,9 +1297,11 @@ function confidenceMeter(confidence) {
     return meter;
 }
 
+// Pagination is GROUP-denominated (the daemon pages by group): the summary and the
+// offsets count groups, not records.
 function renderFoot() {
     LEDGER_FOOT.replaceChildren();
-    const shown = state.records.length;
+    const shown = state.groups.length;
     const from = shown ? state.offset + 1 : 0;
     const summary = document.createElement("span");
     summary.textContent = `${from}–${state.offset + shown} of ${state.total}`;
@@ -1501,24 +1390,14 @@ function rowByGroupKey(key) {
 }
 
 // Expand the collapsed group holding the record at `index` so the review cursor is
-// visible. A no-op when the record is a singleton or already-expanded group. This is a
-// fetch-FREE expand — a cursor move must not hit the network per keystroke — so only
-// the in-page matched children show (bright); the dimmed siblings appear on an explicit
-// disclosure click or a header-select, which do fetch. Re-renders the ledger in place.
+// visible. A no-op when the record is a singleton or already-expanded group.
+// Re-renders the ledger in place.
 function revealSelectedInGroup(index) {
-    const record = state.records[index];
-    if (!record) {
+    const group = groupOfIndex(index);
+    if (!group || group.members.length < 2 || state.groupsExpanded.has(group.key)) {
         return;
     }
-    const key = groupKey(record);
-    if (state.groupsExpanded.has(key)) {
-        return;
-    }
-    const memberCount = state.records.filter((r) => groupKey(r) === key).length;
-    if (memberCount < 2) {
-        return;
-    }
-    state.groupsExpanded.add(key);
+    state.groupsExpanded.add(group.key);
     renderLedger();
     // No repaint here: the caller (select) runs paintLedgerSelection right after.
 }
@@ -1645,15 +1524,19 @@ function onSelectionChanged() {
 // the last header lit — the split case leaves the strip dark by construction.
 function paintLedgerSelection() {
     const multi = state.multi.size > 0;
+    // Hydrate the partition ONCE per paint (this runs per keystroke/step), keyed
+    // for the header lookups below.
+    const groupsByKey = new Map(
+        ledgerGroups().map((group) => [group.key, group]));
     let headerSelected = false;
     for (const row of LEDGER.querySelectorAll(".ledger-row")) {
         let on;
         if (multi) {
             on = row._groupKey
-                ? isGroupFullySelected(row._groupKey)
+                ? isGroupFullySelected(groupsByKey.get(row._groupKey))
                 : Boolean(row._anchorKey) && state.multi.has(row._anchorKey);
         } else {
-            on = rowIsCursor(row);
+            on = rowIsCursor(row, groupsByKey);
         }
         row.classList.toggle("selected", on);
         if (row.classList.contains("group-child")) {
@@ -1671,7 +1554,7 @@ function paintLedgerSelection() {
 // or a COLLAPSED header when the cursor's record is folded inside it (a non-stepping
 // landing — refocus, undo — that reveals no row). While a header holds the claim its
 // members' record rows do NOT light by index — the header IS the cursor.
-function rowIsCursor(row) {
+function rowIsCursor(row, groupsByKey) {
     if (state.selected < 0) {
         return false;
     }
@@ -1683,22 +1566,20 @@ function rowIsCursor(row) {
         if (row._groupKey === state.cursorGroupKey) {
             return true;
         }
-        const cursor = state.records[state.selected];
-        return Boolean(cursor) && groupKey(cursor) === row._groupKey
+        const group = groupsByKey.get(row._groupKey);
+        return Boolean(group)
+            && group.members.some((member) => member.index === state.selected)
             && !state.groupsExpanded.has(row._groupKey);
     }
     return false;
 }
 
-// True when every member of a group's FULL membership is in the selection — the
-// condition for washing its header picked. Uses the cached full membership when known
-// (so fetched siblings count); before a fetch, the in-page matched members stand in.
-function isGroupFullySelected(key) {
-    const full = state.groupMembers.get(key);
-    const anchors = full
-        ? full.map((record) => record.anchor)
-        : state.records.filter((record) => groupKey(record) === key).map((r) => r.anchor);
-    return anchors.length > 0 && anchors.every((anchor) => state.multi.has(anchorKey(anchor)));
+// True when every member of a group is in the selection — the condition for washing
+// its header picked. The daemon serves whole groups, so the page IS the full
+// membership.
+function isGroupFullySelected(group) {
+    return Boolean(group) && group.members.every(
+        (member) => state.multi.has(anchorKey(member.record.anchor)));
 }
 
 // The touch select bar only shows in touch multi-select mode, giving the count and
@@ -2290,36 +2171,13 @@ function editedSummary(overridden) {
 }
 
 // The records currently in the group selection, in working-set order (a selected
-// anchor that fell out of the set on a re-run is simply skipped).
-// The records behind the current selection, resolved from the SELECTION-VISIBLE
-// corpus: the working set PLUS the cached full group memberships. A header-select
-// (§3.2, D7) pulls in siblings that fell outside the active filter — those are not in
-// state.records but ARE in state.groupMembers, and the group verdict must fan out to
-// them (never leave a sibling unreviewed). Order follows selectionCorpus (working set
-// first), so the panel's first-member / evidence stays the in-page focus where possible.
+// anchor that fell out of the set on a re-run is simply skipped). The working set
+// is the whole selection corpus: the daemon serves whole groups per page, so a
+// header-selected sibling is always on the page.
 function selectedRecords() {
-    return selectionCorpus().filter(
+    return state.records.filter(
         (record) => state.multi.has(anchorKey(record.anchor)),
     );
-}
-
-// The union of the working set and every fetched full group membership, deduped by
-// anchor (working-set record wins — it is the freshest annotation). This is the corpus
-// a selection can resolve against: an off-page group sibling only exists here.
-function selectionCorpus() {
-    const byKey = new Map();
-    for (const record of state.records) {
-        byKey.set(anchorKey(record.anchor), record);
-    }
-    for (const members of state.groupMembers.values()) {
-        for (const record of members) {
-            const key = anchorKey(record.anchor);
-            if (!byKey.has(key)) {
-                byKey.set(key, record);
-            }
-        }
-    }
-    return [...byKey.values()];
 }
 
 // ---- definitions (read-only inline sense summary) ----
@@ -4249,17 +4107,39 @@ async function authorEntry(ctx, { flag }) {
 
 // Place a freshly-authored record into the working set and land on it. Unlike a
 // verdict (which re-annotates an existing row in place), a new record has no row
-// yet — it is prepended so the owner sees it at once, the ledger is rebuilt, and it
-// becomes the review focus. The daemon always returns the annotated record for an
-// authorship write, so an empty response is a contract violation and fails loud.
+// yet. The daemon stamps every served record with its group_key, so the new record
+// JOINS its group's run when that group is already on the page (a group verdict
+// must fan out to it — every member on the page, §3.2/D7), else it opens a fresh
+// singleton group at the top so the owner sees it at once. The daemon always
+// returns the annotated record for an authorship write, so an empty response — or
+// one without its group token — is a contract violation and fails loud.
 function insertAuthoredRecord(record) {
     if (!record) {
         throw new Error("daemon returned no record for the new entry.");
     }
-    state.records.unshift(record);
+    if (!record.group_key) {
+        throw new Error("daemon returned no group key for the new entry.");
+    }
+    let at = 0;
+    let run = null;
+    for (const group of state.groups) {
+        if (group.key === record.group_key) {
+            run = group;
+            break;
+        }
+        at += group.size;
+    }
+    if (run) {
+        state.records.splice(at, 0, record);
+        run.size += 1;
+    } else {
+        at = 0;
+        state.records.unshift(record);
+        state.groups.unshift({ key: record.group_key, size: 1 });
+    }
     countDecision();
     renderLedger();
-    select(0);
+    select(at);
     saveSession();
     refreshCommitStatus();
     refreshPatchCounts();
@@ -4402,34 +4282,13 @@ function verdictGroup(ctx) {
     }
     // A modal edit acts on its own single record, which may not sit in state.records
     // (a related entry); trust the context group directly there. The main context's
-    // group is drawn from the working set, so narrow it to what is still live.
+    // group is drawn from the working set — which carries every member of every
+    // served group (§3.2, D7) — so narrow it to what is still live.
     if (ctx === state.modalEditor) {
         return ctx.group;
     }
-    // Narrow to still-resolvable members: the working set PLUS the fetched group
-    // memberships, so a header-selected off-page sibling (§3.2, D7) survives while a
-    // truly stale anchor (dropped out by a re-run) is discarded.
-    const live = new Set(selectionCorpus().map((record) => anchorKey(record.anchor)));
+    const live = new Set(state.records.map((record) => anchorKey(record.anchor)));
     return ctx.group.filter((member) => live.has(anchorKey(member.anchor)));
-}
-
-// Re-fetch the FULL membership of every group in the current selection. A write
-// interposed after a header-select (e.g. a modal accept on a related entry) wipes
-// state.groupMembers, leaving the off-page sibling keys in state.multi unresolvable —
-// selectionCorpus would silently drop them from the verdict fan-out, breaking the
-// "every sibling ships" guarantee (§3.2, D7). Every selected group still has ≥1
-// in-page member to seed the re-fetch (ensureGroupMembers's precondition); a seedless
-// key or daemon failure throws, never trimming the fan-out silently.
-async function ensureSelectionMembership() {
-    const keys = new Set();
-    for (const record of selectionCorpus()) {
-        if (state.multi.has(anchorKey(record.anchor))) {
-            keys.add(groupKey(record));
-        }
-    }
-    for (const key of keys) {
-        await ensureGroupMembers(key);
-    }
 }
 
 // Run a verdict over the active context's group. At N=1 it is the ordinary single-record
@@ -4439,13 +4298,6 @@ async function ensureSelectionMembership() {
 // applied per member, so untouched fields keep each member's own value (§1.3).
 async function groupVerdict(verb, applyOne, { step = true } = {}) {
     const ctx = activeContext();
-    // Main-context verdicts resolve their fan-out through selectionCorpus, whose
-    // membership cache an interposed write may have wiped — re-warm it first so
-    // off-page siblings resolve again. The modal context trusts ctx.group directly
-    // (see verdictGroup) and needs no re-warm.
-    if (ctx !== state.modalEditor) {
-        await ensureSelectionMembership();
-    }
     const group = verdictGroup(ctx);
     if (!group.length) {
         return;
@@ -4636,12 +4488,9 @@ async function runGroup(verb, applyOne, group, overlay, ctx) {
 // the record). Otherwise select() renders the single-record card, back in the
 // ordinary review flow.
 function refreshAfterBulk(focusedAnchor) {
-    // A group run re-annotated members (and its harvested edits may have moved
-    // grouping-axis fields), so any cached full membership is stale — drop it before
-    // the authoritative re-fold; it re-fetches lazily on the next expand /
-    // header-select. Expansion needs no carrying: the group key is pure identity, so
-    // a verdict never re-keys a group and state.groupsExpanded stays valid.
-    state.groupMembers.clear();
+    // The partition is fixed at materialise time (the daemon re-groups on the next
+    // re-query), so a group run only re-annotated members in place — re-render and
+    // restore the cursor; expansion state stays valid as-is.
     renderLedger();
     let index = focusedAnchor
         ? state.records.findIndex((r) => sameAnchor(r.anchor, focusedAnchor))
@@ -4652,18 +4501,13 @@ function refreshAfterBulk(focusedAnchor) {
     // "collapsed here" ⇔ "was collapsed before the verdict" (a verdict never re-keys
     // a group), so a whole-group verdict on a collapsed group lands back on its
     // header, fold untouched.
-    const fold = foldLedgerGroups(state.records).find(
-        (group) => group.members.some((entry) => entry.index === index));
+    const fold = groupOfIndex(index);
     if (fold && fold.members.length >= 2 && !state.groupsExpanded.has(fold.key)) {
         selectStop({ group: fold });
     } else {
         select(index);
     }
     syncSelectBar();
-    // Prune expanded keys that no longer fold (edits may have regrouped members)
-    // and re-warm the surviving expanded groups' cleared memberships so their
-    // dimmed siblings reappear.
-    refillExpandedGroups();
 }
 
 function reportBulk(verb, done, skipped, failures) {
@@ -4755,6 +4599,7 @@ function removeRow(anchor, { refocus = true, deferRender = false } = {}) {
         return;
     }
     state.multi.delete(anchorKey(state.records[removed].anchor));
+    shrinkGroupAt(removed);
     state.records.splice(removed, 1);
     // A removal before the cursor shifts it down by one; keep the same entry
     // focused (or its neighbour if the focused row was itself removed).
@@ -4777,6 +4622,7 @@ function removeModalRow(anchor) {
     const removed = state.records.findIndex((r) => sameAnchor(r.anchor, anchor));
     if (removed >= 0) {
         state.multi.delete(anchorKey(anchor));
+        shrinkGroupAt(removed);
         state.records.splice(removed, 1);
         if (removed <= state.selected) {
             state.selected = Math.max(0, state.selected - 1);
@@ -4821,24 +4667,17 @@ function applyWriteResult(records, anchor, { step: doStep = true, refocus = true
         : state.selected;
     if (replacement && index >= 0) {
         state.records[index] = replacement;
-        // A write carrying field edits can move a GROUPING axis (§3.1: shaw, or the
-        // variation set): the record may move to a different group, so the fold must
-        // be recomputed — a surgical single-row patch cannot express regrouping. The
-        // on-demand full-membership cache holds pre-write copies of the affected
-        // records (stale stamps/content), so drop it — it re-fetches lazily on the
-        // next expand / header-select. A group run (deferRender) defers ITS one
-        // authoritative rebuild to refreshAfterBulk; every other write re-folds now
-        // and restores the cursor + selection wash (the modal path re-renders too, so
-        // the main row behind the backdrop reflects the modal's verdict before it
-        // dismisses).
-        state.groupMembers.clear();
+        // The record is re-annotated IN PLACE within its served group: the partition
+        // is the daemon's and fixed at materialise time, so even an edit that moves
+        // a grouping axis (shaw, the variation set) re-groups only on the next
+        // re-query — same policy as filter membership. A group run (deferRender)
+        // defers its one rebuild to refreshAfterBulk; every other write re-renders
+        // now and restores the cursor + selection wash (the modal path re-renders
+        // too, so the main row behind the backdrop reflects the modal's verdict
+        // before it dismisses).
         if (!deferRender) {
             renderLedger();
             paintLedgerSelection();
-            // Clearing the cache emptied the dimmed-sibling rows of any group left OPEN
-            // (they fall back to in-page members only, §3.3). Re-warm those groups so
-            // their siblings reappear without waiting for a re-interaction.
-            refillExpandedGroups();
         }
     }
     refreshPacing();
@@ -4863,26 +4702,23 @@ function applyWriteResult(records, anchor, { step: doStep = true, refocus = true
 }
 
 // The keyboard cursor's stops, in RENDER order — one stop per visible selectable row,
-// derived from the SAME fold renderLedger paints (foldLedgerGroups + groupsExpanded +
-// groupDisplayMembers), so stepping can never disagree with the screen. A singleton is
+// derived from the SAME partition renderLedger paints (ledgerGroups +
+// groupsExpanded), so stepping can never disagree with the screen. A singleton is
 // one record stop. EVERY multi-member group's HEADER is a group stop that selects the
 // whole group as a unit: a collapsed group is that one stop (its hidden members are
-// not stops), an expanded group is its header stop followed by each matched child as
-// a record stop, in rendered child order. A dimmed off-filter sibling is not a stop
-// (no working-set index, so it cannot be the review cursor, §3.3).
+// not stops), an expanded group is its header stop followed by each child as a
+// record stop, in rendered child order.
 function cursorStops() {
     const stops = [];
-    for (const group of foldLedgerGroups(state.records)) {
+    for (const group of ledgerGroups()) {
         if (group.members.length === 1) {
             stops.push({ index: group.members[0].index });
             continue;
         }
         stops.push({ group });
         if (state.groupsExpanded.has(group.key)) {
-            for (const member of groupDisplayMembers(group)) {
-                if (member.index >= 0) {
-                    stops.push({ index: member.index });
-                }
+            for (const member of group.members) {
+                stops.push({ index: member.index });
             }
         }
     }
@@ -4901,8 +4737,8 @@ function currentStopIndex(stops) {
         if (at >= 0) {
             return at;
         }
-        // The claimed group no longer folds (re-keyed by a write, or re-queried
-        // away) — fall through to the record search.
+        // The claimed group is gone (re-queried away, or emptied by a removal)
+        // — fall through to the record search.
     }
     if (state.selected < 0) {
         return -1;
@@ -4920,12 +4756,11 @@ function currentStopIndex(stops) {
 // record stop is a plain select() (a live pick survives the cursor move — select()'s
 // contract). A group stop lands on the HEADER — collapsed or expanded, WITHOUT
 // touching the fold: with no pick live it mirrors a plain header click
-// (selectWholeGroup — the group reviewed as a unit, full membership fetched once then
-// cached), painting the header as the cursor immediately while the fetch resolves;
-// with a live pick it is a pure cursor move instead, claiming nothing, so stepping
-// never clobbers a hand-made selection. state.selected anchors on the group's first
-// (fold-anchor) member so index-keyed flows stay valid, and the header — which has no
-// data-index — scrolls into view by group key.
+// (selectWholeGroup — the group reviewed as a unit); with a live pick it is a pure
+// cursor move instead, claiming nothing, so stepping never clobbers a hand-made
+// selection. state.selected anchors on the group's first (group-rank) member so
+// index-keyed flows stay valid, and the header — which has no data-index — scrolls
+// into view by group key.
 function selectStop(stop) {
     if (!stop.group) {
         select(stop.index);
@@ -4941,7 +4776,7 @@ function selectStop(stop) {
     } else {
         state.cursorGroupKey = stop.group.key;
         paintLedgerSelection();
-        selectWholeGroup(stop.group, false).catch((error) => showToast(error.message, true));
+        selectWholeGroup(stop.group, false);
     }
     const header = rowByGroupKey(stop.group.key);
     if (header) {
@@ -4980,23 +4815,18 @@ function step(delta) {
 
 // Keyboard fold control (ArrowRight/+ expand, ArrowLeft/- collapse): acts on the
 // group holding the review cursor's record — the same key a collapsed header lights
-// up under — through the one toggle path the disclosure chevron uses (so an
-// explicit expand fetches the dimmed siblings, §3.3). A no-op when the group is
-// already in the requested state or the record is a singleton, so holding the key
-// is idempotent and the fold set never collects N=1 keys.
+// up under — through the one toggle path the disclosure chevron uses. A no-op when
+// the group is already in the requested state or the record is a singleton, so
+// holding the key is idempotent and the fold set never collects N=1 keys.
 function setCursorGroupExpanded(expand) {
-    const record = state.records[state.selected];
-    if (!record) {
+    const group = groupOfIndex(state.selected);
+    if (!group || state.groupsExpanded.has(group.key) === expand) {
         return;
     }
-    const key = groupKey(record);
-    if (state.groupsExpanded.has(key) === expand) {
+    if (expand && group.members.length < 2) {
         return;
     }
-    if (expand && state.records.filter((entry) => groupKey(entry) === key).length < 2) {
-        return;
-    }
-    toggleGroupExpanded(key);
+    toggleGroupExpanded(group.key);
 }
 
 // Enter edit mode: mark the card editing so Save works. Acts on the context that owns
@@ -5338,14 +5168,16 @@ function refreshPacing() {
 
 // "Unreviewed remaining" is meaningful only while reviewing the unreviewed pool;
 // under any other filter the total is not a remaining count, so we show it only
-// when the active Review filter is exactly "unreviewed".
+// when the active Review filter is exactly "unreviewed". GROUP-denominated, like
+// the total it nets against: a group is decided once every member is.
 function countUnreviewedRemaining() {
     const review = state.filters.review;
     if (!Array.isArray(review) || review.length !== 1 || review[0] !== PATCH_STATE.UNREVIEWED) {
         return null;
     }
-    const decidedInSet = state.records.filter(
-        (r) => r.reviewed && r.patch_state !== PATCH_STATE.FLAGGED,
+    const decidedInSet = ledgerGroups().filter((group) =>
+        group.members.every(({ record }) =>
+            record.reviewed && record.patch_state !== PATCH_STATE.FLAGGED),
     ).length;
     return Math.max(0, state.total - decidedInSet);
 }

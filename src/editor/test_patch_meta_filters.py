@@ -16,8 +16,10 @@ Covers:
     calendar day counts; a two-day-old one does not)
   - _patch_counts over a synthetic store (total + today)
   - _distinct_authors ignores patchless rows
-  - group-aware filter_records (a matching member serves its whole group; the
-    group_key partitions mirror the client's groupKey)
+  - group-aware filter_records (a matching member serves its whole group)
+  - group-denominated entries paging (handle_entries: total/offset/limit count
+    GROUPS, a group is never split across pages, groups rank by their best
+    member under every sort, and offset paging is stable — no dups, no gaps)
 
 Standalone (no test framework): exits 0 on pass, non-zero on fail.
 """
@@ -28,6 +30,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -253,6 +256,101 @@ def test_group_key_splits_on_variation_never_on_verdict():
     assert editord.group_key(base) == editord.group_key(
         _annotated(word="run", pos="NN",
                    patch_state=editord.PATCH_STATE_ACCEPTED))
+
+
+# ---- group-denominated entries paging (handle_entries) ----
+
+def _entries(records, **request):
+    """handle_entries over a stub daemon state (the .view surface it touches)."""
+    state = SimpleNamespace(view=SimpleNamespace(records=records, established=None))
+    return editord.handle_entries(state, request)
+
+
+def _grouped_corpus():
+    """Three groups over six records, sizes 3 (cat), 2 (run), 1 (walk) in natural
+    order. Group identity is (word_lower, shaw, variation-set): var/pos/verdict
+    differences stay IN a group, they never split one."""
+    return [
+        _annotated(word="run", pos="NN", var="RRP",
+                   patch_state="unreviewed", confidence=90),
+        _annotated(word="run", pos="VB", var="RSSB",
+                   patch_state="unreviewed", confidence=10, freq=2),
+        _annotated(word="walk", pos="NN", var="RRP",
+                   patch_state="accepted", confidence=50),
+        _annotated(word="cat", pos="NN", var="RRP",
+                   patch_state="unreviewed", confidence=70, freq=5),
+        _annotated(word="cat", pos="NN", var="GenAm",
+                   patch_state="flagged", confidence=40),
+        _annotated(word="cat", pos="VB", var="RSSB",
+                   patch_state="unreviewed"),
+    ]
+
+
+def _group_anchors(response):
+    """Per served group, its members' natural keys, in served order."""
+    return [
+        [(r["word"], r["pos"], r["shaw"], r["var"]) for r in group["records"]]
+        for group in response["groups"]
+    ]
+
+
+def test_entries_pages_by_group_never_splitting():
+    # Natural (default) sort: cat < run < walk. limit counts GROUPS, and the
+    # 3-member cat group rides on the first page WHOLE.
+    page = _entries(_grouped_corpus(), limit=2)
+    assert page["total"] == 3
+    assert page["limit"] == 2
+    assert [len(members) for members in _group_anchors(page)] == [3, 2]
+    for group in page["groups"]:
+        assert len({editord.group_key(r) for r in group["records"]}) == 1
+        # Every serialised record carries its own wire group key (the write ops
+        # share serialisable, so authorship responses can join the partition).
+        assert all(r["group_key"] == group["key"] for r in group["records"])
+    assert len({group["key"] for group in page["groups"]}) == 2
+
+
+def test_entries_offset_counts_groups():
+    page = _entries(_grouped_corpus(), offset=2, limit=2)
+    assert page["offset"] == 2
+    assert [[member[0] for member in members]
+            for members in _group_anchors(page)] == [["walk"]]
+
+
+def test_entries_ranks_groups_by_best_member_under_the_sort():
+    response = _entries(_grouped_corpus(), sort="confidence_desc")
+    groups = _group_anchors(response)
+    # Best members: run 90 > cat 70 > walk 50 — the run group leads even though
+    # its OTHER member (10) is the weakest scored record in the corpus.
+    assert [members[0][0] for members in groups] == ["run", "cat", "walk"]
+    # Members keep flat-sort order within their group: 90 before 10; the
+    # confidence-less cat member sorts to its group's end.
+    assert [member[1] for member in groups[0]] == ["NN", "VB"]
+    assert groups[1][-1][1] == "VB"
+
+
+def test_entries_filtered_groups_arrive_whole():
+    # pos=VB matches ONE member each of run and cat; both groups are served
+    # whole (non-matching siblings included), and total counts the two groups.
+    response = _entries(_grouped_corpus(), filters={"pos": ["VB"]}, limit=500)
+    assert response["total"] == 2
+    assert sorted(len(members) for members in _group_anchors(response)) == [2, 3]
+
+
+def test_entries_offset_paging_is_stable_under_every_sort():
+    # Walking the corpus one group at a time must reproduce the one-shot order
+    # exactly — no duplicates, no gaps — for EVERY sort enum, both directions.
+    corpus = _grouped_corpus()
+    for sort in editord.SORTS:
+        whole = _entries(corpus, sort=sort, limit=500)
+        walked = []
+        for offset in range(whole["total"]):
+            walked.extend(_entries(corpus, sort=sort, offset=offset,
+                                   limit=1)["groups"])
+        assert [g["key"] for g in walked] == [
+            g["key"] for g in whole["groups"]], sort
+        assert _group_anchors({"groups": walked}) == _group_anchors(whole), sort
+        flat = [anchor for members in _group_anchors(whole) for anchor in members]
+        assert len(flat) == len(set(flat)) == len(corpus), sort
 
 
 if __name__ == "__main__":

@@ -326,42 +326,6 @@ def generate(word: str, ipa: str | None, pos: str = "",
     return p
 
 
-def proposed_record(word: str, pos: str, p: Proposal,
-                    from_rec: dict | None = None) -> dict:
-    """The record a live phase would emit for a GEN/FLAG proposal.
-
-    Schema (owner-directed, report-first):
-      source: ["generated"]  — the origin facet value for synthesized RRP
-              entries, filterable in the editor alongside wordnet/wiktionary.
-      generated_from         — the lineage: which input record (anchor key +
-              its var and source list) or bare name the spelling was
-              synthesized FROM, via which evidence path, with which
-              corroborating witnesses. Makes the kneading visible.
-    """
-    lineage = {
-        "record": (f"{from_rec['Latn']}_{from_rec['pos']}_{from_rec['Shaw']}"
-                   if from_rec else None),
-        "var": from_rec.get("var") if from_rec else None,
-        "source": from_rec.get("source") if from_rec else None,
-        "method": "ipa-converter" if p.basis == "ipa" else "shave-g2p",
-        "witnesses": (["shave"] if p.shave_agrees else []),
-    }
-    rec = {
-        "Latn": word,
-        "Shaw": p.shaw,
-        "pos": pos,
-        "var": "RRP",
-        "source": ["generated"],
-        "gen_tier": p.tier,
-        "generated_from": lineage,
-    }
-    if from_rec and from_rec.get("ipa"):
-        rec["ipa"] = from_rec["ipa"]
-    if p.flags:
-        rec["gen_flags"] = list(p.flags)
-    return rec
-
-
 def _generate_from_shave(word: str, p: Proposal) -> Proposal:
     """No IPA: shave -b is the generator. Single opinion only — a bracket
     list of alternatives is a flag, never a guess."""

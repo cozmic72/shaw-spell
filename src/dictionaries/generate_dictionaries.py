@@ -27,7 +27,6 @@ from dialect_display import (
 )
 
 _normalize_us_cache = {}
-_normalize_gb_cache = {}
 
 
 class ShyphenateSession:
@@ -153,51 +152,6 @@ def normalize_to_us_with_cache(word, wordnet_cache):
         return result
 
     _normalize_us_cache[word] = word
-    return word
-
-
-def normalize_to_gb_with_cache(word, wordnet_cache):
-    """
-    Normalize word to GB spelling using comprehensive WordNet cache.
-    Returns GB spelling if available in cache, otherwise returns word unchanged.
-    Handles hyphenated compounds by normalizing each part.
-    """
-    if word in _normalize_gb_cache:
-        return _normalize_gb_cache[word]
-
-    if '-' in word:
-        parts = word.split('-')
-        normalized_parts = [normalize_to_gb_with_cache(part, wordnet_cache) for part in parts]
-        result = '-'.join(normalized_parts)
-        _normalize_gb_cache[word] = result
-        return result
-
-    word_lower = word.lower()
-
-    if not wordnet_cache or word_lower not in wordnet_cache:
-        _normalize_gb_cache[word] = word
-        return word
-
-    # Get GB variants from cache (aggregate from all senses across all POS)
-    entry = wordnet_cache[word_lower]
-    gb_variants = []
-    for pos_data in entry.get('pos_entries', {}).values():
-        for sense in pos_data.get('sense_variants', []):
-            sense_variants = sense.get('variants', {}).get('GB', [])
-            for v in sense_variants:
-                if v not in gb_variants:
-                    gb_variants.append(v)
-
-    if gb_variants:
-        gb_variant = gb_variants[0]
-        if word and word[0].isupper():
-            result = gb_variant.capitalize()
-        else:
-            result = gb_variant
-        _normalize_gb_cache[word] = result
-        return result
-
-    _normalize_gb_cache[word] = word
     return word
 
 
@@ -1078,9 +1032,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
     merge_count = 0
 
     for key, data in readlex_entries.items():
-        if key not in entry_signatures:
-            continue
-
         entry_signature = entry_signatures[key]
         lemma = data.get('lemma', key.split('_')[0])
 

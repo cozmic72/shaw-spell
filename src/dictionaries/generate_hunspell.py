@@ -24,7 +24,7 @@ from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 from dialect_display import (
-    spellcheck_vars, is_american, US_GAP_FALLBACK_VARS,
+    spellcheck_vars, is_american, split_var, US_GAP_FALLBACK_VARS,
 )
 
 
@@ -74,8 +74,8 @@ def extract_readlex_words(readlex_data: Dict, target_dialect: str) -> Set[str]:
     # Vars that may become a HEADWORD in THIS dictionary. Foreign national
     # accents (AU/CA/NZ/ZA/IE) are deliberately excluded — they are their own
     # dialect and never pollute gb/us (see dialect_display.spellcheck_vars).
-    # trap-bath is a `mergers` flag on an RRP record now, so those forms come
-    # in under RRP (British).
+    # Variation (*Var / mergers) rides on the accent split_var recovers, so
+    # e.g. trap-bath forms come in under RRP (British).
     target_variants = spellcheck_vars(dialect)
 
     # US-gap fallback (us dict only): a lemma with NO native GenAm form falls
@@ -92,7 +92,7 @@ def extract_readlex_words(readlex_data: Dict, target_dialect: str) -> Set[str]:
             entries = [entries]
         for entry in entries:
             latn = entry.get('Latn', '').strip()
-            var = entry.get('var', '')
+            var, _ = split_var(entry.get('var', ''))
             if not latn:
                 continue
 

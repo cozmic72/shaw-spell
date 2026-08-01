@@ -53,6 +53,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from dialect_display import VARIANT_SUFFIX
 from dialect_mergers import MERGER_TRAP_BATH
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -456,9 +457,9 @@ def output_to_record(entry):
 #
 # This is stage ONE of the export boundary: the per-record whitelist. Stage TWO
 # is collapse_readlex below, which both producers run over the whole shaped
-# dict; it consumes the mergers/variant fields (reversing them into upstream's
-# var vocabulary) and strips them, so data/readlex.json itself carries only
-# Latn/Shaw/pos/ipa/freq/var (+ supplement when truthy).
+# dict; it folds variation into the var's "Var" suffix (consuming `variant`,
+# shipping `mergers`), so data/readlex.json carries Latn/Shaw/pos/ipa/freq/var
+# (+ mergers and supplement when truthy).
 PUBLISH_FIELDS = ("Latn", "Shaw", "pos", "ipa", "freq", "var",
                   "mergers", "variant", "supplement")
 
@@ -486,14 +487,14 @@ def published_entry(entry):
     return published
 
 
-# ReadLex's own var vocabulary — the only vars data/readlex.json may carry.
-# TrapBath and RRPVar never occur internally: import reinterpreted upstream's
-# TrapBath as var=RRP + mergers=[trap-bath] and RRPVar as var=RRP +
-# variant=true; collapse_readlex reverses that reinterpretation at export.
-# (Upstream's own casing/spacing typos — "RRPvar", "Gen Am" — are NOT
-# replicated; the normalised spellings are canonical.)
-READLEX_VARS = frozenset(("RRP", "TrapBath", "RRPVar", "GenAm", "GenAus",
-                          "SSB"))
+# The export var vocabulary — the only vars data/readlex.json may carry: each
+# published accent, plus accent+VARIANT_SUFFIX for a record carrying variation
+# (see dialect_display.split_var, the consumer-side inverse). Upstream's
+# TrapBath var is DELIBERATELY not emitted — a breaking change the owner has
+# accepted: a trap-bath record ships as RRPVar with mergers=["trap-bath"].
+PUBLISHED_ACCENTS = ("RRP", "GenAm", "GenAus", "SSB")
+READLEX_VARS = frozenset(PUBLISHED_ACCENTS).union(
+    accent + VARIANT_SUFFIX for accent in PUBLISHED_ACCENTS)
 
 # Our regional lanes with no upstream ReadLex counterpart: held back from
 # publication entirely. Held back, not lost — the records stay in the internal
@@ -505,18 +506,15 @@ UNPUBLISHED_VARS = frozenset(("NZ", "IrEng", "SthAfr", "GenCan"))
 _COLLAPSED_VAR = "RSSB"
 
 
-def _reversed_var(var, mergers, variant):
-    """The upstream-vocabulary var for one shaped record: the exact inverse of
-    the import reinterpretation (trap-bath merger on RRP → TrapBath, taking
-    precedence over the variant flag, which on RRP/RSSB → RRPVar). Variation
-    with no upstream counterpart — a merger on a non-RRP record, a variant flag
-    on a dialect record, any non-trap-bath merger — is held back: the record
-    falls back to its plain var."""
-    if var == "RRP" and MERGER_TRAP_BATH in mergers:
-        return "TrapBath"
-    if variant and var in ("RRP", _COLLAPSED_VAR):
-        return "RRPVar"
-    return var
+def _published_var(var, has_variation):
+    """The export var for one shaped record: the accent, suffixed "Var" when
+    the record carries variation (mergers or the variant flag). RSSB variation
+    publishes straight onto the RRP lane RSSB collapses into; plain RSSB keeps
+    its var for the slot pass."""
+    if not has_variation or var.endswith(VARIANT_SUFFIX):
+        return var
+    accent = "RRP" if var == _COLLAPSED_VAR else var
+    return accent + VARIANT_SUFFIX
 
 
 def collapse_readlex(published):
@@ -528,10 +526,9 @@ def collapse_readlex(published):
     outside the known vocabulary.
 
     Within each (word, pos) slot — the editor's grouping notion, spanning
-    group_key buckets — our richer lane model collapses to upstream ReadLex's
-    exceptions model:
-      - mergers/variant reverse into upstream's var vocabulary (_reversed_var)
-        and the fields themselves are stripped;
+    group_key buckets — our lane model maps onto the export vocabulary:
+      - variation folds into the var's "Var" suffix (_published_var); `mergers`
+        ships sorted, `variant` is consumed by the suffix;
       - UNPUBLISHED_VARS records drop;
       - RSSB drops where the slot already has an RRP record and relabels to RRP
         where it is the slot's canonical (production has always normalised
@@ -550,14 +547,9 @@ def collapse_readlex(published):
         kept = []
         for record in records:
             record = dict(record)
-            mergers = record.pop("mergers", None) or ()
+            mergers = record.get("mergers") or ()
             variant = record.pop("variant", None)
-            var = _reversed_var(record["var"], mergers, variant)
-            if var != record["var"]:
-                stats[f"reversed to {var}"] += 1
-            elif mergers or variant:
-                stats["variation held back"] += 1
-            record["var"] = var
+            var = record["var"]
             if var in UNPUBLISHED_VARS:
                 stats[f"pruned {var}"] += 1
                 continue
@@ -565,6 +557,12 @@ def collapse_readlex(published):
                 raise ValueError(
                     f"unpublishable var {var!r} on "
                     f"{record['Latn']!r} {record['pos']}")
+            var = _published_var(var, bool(mergers) or bool(variant))
+            if var != record["var"]:
+                stats[f"suffixed to {var}"] += 1
+            record["var"] = var
+            if mergers:
+                record["mergers"] = sorted(mergers)
             kept.append(record)
             slot = (record["Latn"].lower(), record["pos"])
             slots.setdefault(slot, []).append(record)

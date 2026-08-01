@@ -23,7 +23,7 @@ from build_definition_caches import POS_TO_ENGLISH, POS_TO_SHAVIAN
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 from dialect_display import (
     var_label, is_british, is_american, variations_label, rssb_role,
-    BRITISH_BASE_VAR,
+    split_var, BRITISH_BASE_VAR,
 )
 
 _normalize_us_cache = {}
@@ -464,11 +464,9 @@ def process_readlex_with_lemmas(readlex_data):
     return processed
 
 
-def variant_to_label(var_code):
-    """Convert a var code to its user-facing presentation dialect tag (GB / US /
-    AU / …). Delegates to the shared dialect_display model so the dictionaries,
-    spell-checker and any other product label a var identically."""
-    return var_label(var_code)
+def carries_variation(form):
+    """Whether a form is a variation (merged or free-variant) of its accent."""
+    return bool(form['mergers']) or form['variant']
 
 
 def form_variant_label(form, lemma_has_rrp):
@@ -480,13 +478,9 @@ def form_variant_label(form, lemma_has_rrp):
     the word's only British attestation.
     """
     var = form.get('var', '')
-    role = rssb_role(var, lemma_has_rrp)
-    if role == 'variant':
-        base = var_label(var) + ' variant'
-    elif role == 'sole':
-        base = var_label(var)
-    else:
-        base = var_label(var)
+    base = var_label(var)
+    if rssb_role(var, lemma_has_rrp) == 'variant':
+        base += ' variant'
 
     extra = variations_label(form.get('mergers'), form.get('variant'))
     if base and extra:
@@ -803,38 +797,6 @@ def pos_to_grammatical_form(pos_code, lemma, lemma_ipa='', shavian_lookup=None):
         return ''
 
 
-def format_word_form(main_text, ipa, var_code, show_variants, indent=False):
-    """
-    Format a word form with IPA (no grammatical labels).
-
-    Args:
-        main_text: The word to display (Latin, Shavian, or None for IPA-only)
-        ipa: IPA transcription
-        var_code: Variant code (RRP, GA, AU, etc.)
-        show_variants: Whether to show variant labels
-        indent: Whether to indent this form (for derived forms)
-
-    Returns:
-        HTML string for the word form
-    """
-    # Build the form display: "word /ipa/" or just "/ipa/"
-    parts = []
-    if main_text:
-        parts.append(escape(main_text))
-    if ipa:
-        parts.append(f' <span class="ipa">/{escape(ipa)}/</span>')
-    if show_variants and var_code:
-        var_label = variant_to_label(var_code)
-        parts.append(f' <span class="variant">({escape(var_label)})</span>')
-
-    form_text = ''.join(parts)
-
-    if indent:
-        return f'      <div class="derived-form">{form_text}</div>\n'
-    else:
-        return f'      <div class="lemma-form">{form_text}</div>\n'
-
-
 def group_definitions_by_pos(definitions):
     """
     Group definitions by part of speech.
@@ -1013,7 +975,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             latn = entry['Latn']
             pos = entry.get('pos', '')
             ipa = normalize_readlex_ipa(entry.get('ipa', ''), dialect=dialect)
-            var = entry.get('var', '')
+            var, has_variation = split_var(entry.get('var', ''))
+            mergers = entry.get('mergers', [])
 
             detected_variant = detect_spelling_variant_with_cache(latn, wordnet_cache)
             is_lemma_form = (shaw == canonical_shavian)
@@ -1024,11 +987,11 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                 'pos': pos,
                 'ipa': ipa,
                 'var': var,
-                'mergers': entry.get('mergers', []),
-                'variant': entry.get('variant', False),
+                'mergers': mergers,
+                # A *Var with no mergers is free variation (see split_var).
+                'variant': has_variation and not mergers,
                 'spelling_variant': detected_variant,
                 'is_lemma': is_lemma_form,
-                'is_preferred': (var == preferred_var)
             }
             forms.append(form_info)
 
@@ -1326,9 +1289,6 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
 
                     f.write(f'    <h1>{escape(h1_text)}</h1>\n')
 
-                    unique_variants = set(form['var'] for form in lemma_data['forms'] if form['var'])
-                    show_variants = len(unique_variants) > 1
-
                     # Whether ANY form of this lemma carries the British base var
                     # (RRP). Drives the owner's rule for presenting RSSB: an RSSB
                     # form is "a variant of British" when an RRP form for the word
@@ -1373,14 +1333,10 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             if spelling_var:
                                 is_home = (spelling_var == home_dialect)
                             else:
-                                # Fall back to pronunciation variant (var field):
-                                # a form is HOME when its var belongs to this
-                                # dictionary's accent family. British family (RRP,
-                                # RSSB, the southern-hemisphere accents, legacy SSB)
-                                # is home in the GB dict; American family (GenAm,
-                                # Canadian, Irish) is home in the US dict. trap-bath
-                                # is a `mergers` flag on an RRP record, so those
-                                # forms are British-home (shown as "also").
+                                # Fall back to the accent family: variation
+                                # (mergers / the *Var suffix) rides on the
+                                # accent, so e.g. trap-bath forms are
+                                # British-home (shown as "also").
                                 var = form.get('var')
                                 if dialect == 'us':
                                     is_home = is_american(var) or not var
@@ -1391,6 +1347,11 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 home_forms.append(form)
                             else:
                                 alt_forms.append(form)
+
+                        # Stable variation-last order: a merged/variant form
+                        # must never displace the base form as the headword.
+                        home_forms.sort(key=carries_variation)
+                        alt_forms.sort(key=carries_variation)
 
                         div_class = 'lemma-form' if is_lemma else 'derived-form'
                         f.write(f'      <div class="{div_class}">')

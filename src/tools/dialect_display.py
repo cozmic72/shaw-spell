@@ -20,9 +20,12 @@ national accents. Legacy SSB records (pre-rhotic-restoration Southern British)
 still occur and are treated as British.
 
 trap-bath is NO LONGER a var: ReadLex's upstream `var:"TrapBath"` is reinterpreted
-to `var:"RRP"` + `mergers:["trap-bath"]` (basis.reinterpret_upstream). A record's
-variations therefore live in `mergers` (a list) and `variant` (a bool), never in
-`var`.
+to `var:"RRP"` + `mergers:["trap-bath"]` (basis.reinterpret_upstream). Internally a
+record's variations live in `mergers` (a list) and `variant` (a bool), never in
+`var`. The PUBLISHED readlex.json folds variation back into the var as an
+accent+"Var" suffix — RRPVar, GenAmVar, … (basis.collapse_readlex) — with
+`mergers` shipped alongside. Everything in this module speaks plain accents;
+consumers of readlex.json call split_var at their read boundary.
 
 LABELS follow the project's established short-code convention (dialect tag is
 lowercase gb/us; wordnet_dialect.py: US / GB / CA / AU). We prefer those concise
@@ -40,6 +43,24 @@ inclusion rules:
     marked alternative for any word America has no native form of (the US-gap
     fallback — see spellcheck_vars / US_GAP_FALLBACK_VARS).
 """
+
+# ---------------------------------------------------------------------------
+# WIRE FORM: the published var vocabulary (data/readlex.json).
+# ---------------------------------------------------------------------------
+# The suffix marking a published var as a variation record — upstream ReadLex's
+# RRPVar convention, generalised to every accent. Shared with the producer
+# (basis.collapse_readlex): the single representation of the wire convention.
+VARIANT_SUFFIX = "Var"
+
+
+def split_var(var_code):
+    """(accent, has_variation) for a published var: "RRPVar" -> ("RRP", True),
+    "GenAm" -> ("GenAm", False). A suffixed var with no `mergers` shipped
+    alongside is a free-variation alternate (the internal `variant` flag)."""
+    if var_code.endswith(VARIANT_SUFFIX):
+        return var_code[:-len(VARIANT_SUFFIX)], True
+    return var_code, False
+
 
 # ---------------------------------------------------------------------------
 # PRESENTATION LAYER: internal var -> user-facing dialect tag.

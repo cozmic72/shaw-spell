@@ -106,16 +106,21 @@ RSSB records at combine time; the RRP reclassifier may promote to RRP. Junk stay
 RSSB/low-confidence for review.
 → `UNTAGGED_VAR` in [`src/tools/generate_wiktionary_supplement.py`](../src/tools/generate_wiktionary_supplement.py).
 
-**readlex.json stays ReadLex-shaped — export-time compatibility collapse** — SETTLED.
-The internal lane model (harvest vars, `mergers`, `variant`, RSSB) is richer than
-upstream ReadLex's; rather than impoverish the pool, `collapse_readlex()` runs in BOTH
-producers right before serialization: `mergers`/`variant` reverse into upstream's var
-vocabulary (RRP+trap-bath→`TrapBath`, variant→`RRPVar`) and are stripped; **RSSB
-collapses into RRP** (as legacy production always did); regional lanes with no upstream
-counterpart (NZ/IrEng/SthAfr/GenCan) are held back from publication, not lost; an
-unknown var fails loud. The editor keeps seeing every record and every lane. This
-resolves the old "RSSB reaches output — fate undecided" question.
-→ [`src/tools/basis.py`](../src/tools/basis.py) `collapse_readlex` (commit 6ad6c3d).
+**readlex.json export shape — accent + `*Var` suffix + `mergers` list** — SETTLED
+(supersedes the original ReadLex-shaped collapse, commit 6ad6c3d). The internal lane
+model (harvest vars, `mergers`, `variant`, RSSB) is richer than upstream ReadLex's;
+rather than impoverish the pool, `collapse_readlex()` runs in BOTH producers right
+before serialization: a record carrying variation (any merger, or the `variant` flag)
+publishes as accent+`Var` (`RRPVar`, `GenAmVar`, …— upstream's `RRPVar` convention
+generalised) with `mergers` shipped as a sorted list; the `variant` boolean is consumed
+by the suffix, never shipped. Upstream's `TrapBath` var is **deliberately not emitted**
+(a breaking change the owner accepted): those records ship as `RRPVar` +
+`mergers: ["trap-bath"]`. **RSSB collapses into RRP** (as legacy production always
+did); regional lanes with no upstream counterpart (NZ/IrEng/SthAfr/GenCan) are held
+back from publication, not lost; an unknown var fails loud. The editor keeps seeing
+every record and every lane. Consumers recover the accent with
+`dialect_display.split_var`; a `*Var` with no `mergers` is free variation.
+→ [`src/tools/basis.py`](../src/tools/basis.py) `collapse_readlex`.
 
 ---
 

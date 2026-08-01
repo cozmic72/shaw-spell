@@ -3,12 +3,12 @@
 export boundary, basis.collapse_readlex).
 
 Everything runs on hand-built publish-shape dicts — no real readlex.json.
-Covers: the reinterpretation reversal (trap-bath merger → TrapBath, variant →
-RRPVar, mergers-over-variant precedence, held-back variation on non-RRP
-carriers), the regional prunes (each UNPUBLISHED_VARS member, plus a slot whose
-only record is pruned), the RSSB slot collapse (drop beside RRP, relabel when
-canonical, cross-bucket slots), the exceptions model (GenAm/GenAus kept beside
-RRP, same-Shaw redundancy drop), the unknown-var failure, and
+Covers: the variation fold (any variation → accent+"Var" var, mergers shipped
+sorted, the variant flag consumed by the suffix, TrapBath never emitted), the
+regional prunes (each UNPUBLISHED_VARS member, plus a slot whose only record is
+pruned), the RSSB slot collapse (drop beside RRP, relabel when canonical,
+cross-bucket slots), the exceptions model (GenAm/GenAus kept beside RRP,
+same-Shaw redundancy drop), the unknown-var failure, and
 determinism/idempotency over a mixed fixture.
 """
 
@@ -40,63 +40,61 @@ def _vars(collapsed):
     return [r["var"] for records in collapsed.values() for r in records]
 
 
-# --- reinterpretation reversal ----------------------------------------------
+# --- variation fold ----------------------------------------------------------
 
-def test_trap_bath_merger_reverses_to_trapbath():
+def _only_records(collapsed):
+    return [r for records in collapsed.values() for r in records]
+
+
+def test_trap_bath_merger_publishes_as_rrpvar_with_mergers():
     collapsed, stats = collapse_readlex(_bucket(
         _rec("bath", "NN1", "𐑚𐑭𐑔", "RRP"),
         _rec("bath", "NN1", "𐑚𐑨𐑔", "RRP", mergers=["trap-bath"])))
-    assert sorted(_vars(collapsed)) == ["RRP", "TrapBath"]
-    assert stats["reversed to TrapBath"] == 1
-    assert all("mergers" not in r
-               for records in collapsed.values() for r in records)
+    assert sorted(_vars(collapsed)) == ["RRP", "RRPVar"]
+    assert stats["suffixed to RRPVar"] == 1
+    (merged,) = [r for r in _only_records(collapsed) if r["var"] == "RRPVar"]
+    assert merged["mergers"] == ["trap-bath"]
 
 
-def test_variant_flag_reverses_to_rrpvar():
+def test_variant_flag_folds_into_var_suffix():
     collapsed, stats = collapse_readlex(_bucket(
         _rec("gaol", "NN1", "𐑡𐑱𐑤", "RRP", variant=True)))
     assert _vars(collapsed) == ["RRPVar"]
-    assert stats["reversed to RRPVar"] == 1
-    assert all("variant" not in r
-               for records in collapsed.values() for r in records)
+    assert stats["suffixed to RRPVar"] == 1
+    assert all("variant" not in r for r in _only_records(collapsed))
 
 
-def test_rssb_variant_reverses_to_rrpvar():
+def test_rssb_variation_publishes_as_rrpvar():
     collapsed, _ = collapse_readlex(_bucket(
-        _rec("gaol", "NN1", "𐑡𐑱𐑤", "RSSB", variant=True)))
-    assert _vars(collapsed) == ["RRPVar"]
+        _rec("gaol", "NN1", "𐑡𐑱𐑤", "RSSB", variant=True),
+        _rec("caught", "VVN", "𐑒𐑪𐑑", "RSSB", mergers=["cot-caught"])))
+    assert sorted(_vars(collapsed)) == ["RRPVar", "RRPVar"]
 
 
-def test_mergers_take_precedence_over_variant():
+def test_mergers_and_variant_together_suffix_once():
     collapsed, _ = collapse_readlex(_bucket(
         _rec("bath", "NN1", "𐑚𐑨𐑔", "RRP",
              mergers=["trap-bath"], variant=True)))
-    assert _vars(collapsed) == ["TrapBath"]
+    (record,) = _only_records(collapsed)
+    assert record["var"] == "RRPVar"
+    assert record["mergers"] == ["trap-bath"]
 
 
-def test_variation_on_non_rrp_carrier_is_held_back():
-    # A trap-bath merger on a GenAm record and a variant flag on a GenAm record
-    # have no upstream var: the flags are stripped, the plain var stays.
+def test_genam_variation_suffixes_to_genamvar():
     collapsed, stats = collapse_readlex(_bucket(
         _rec("dance", "VVB", "𐑛𐑨𐑯𐑕", "GenAm", mergers=["trap-bath"]),
         _rec("color", "NN1", "𐑒𐑳𐑤𐑼", "GenAm", variant=True)))
-    assert sorted(_vars(collapsed)) == ["GenAm", "GenAm"]
-    assert stats["variation held back"] == 2
+    assert sorted(_vars(collapsed)) == ["GenAmVar", "GenAmVar"]
+    assert stats["suffixed to GenAmVar"] == 2
 
 
-def test_non_trap_bath_merger_is_held_back():
-    collapsed, stats = collapse_readlex(_bucket(
-        _rec("caught", "VVN", "𐑒𐑪𐑑", "RRP", mergers=["cot-caught"])))
-    assert _vars(collapsed) == ["RRP"]
-    assert stats["variation held back"] == 1
-
-
-def test_variant_beside_held_back_merger_still_reverses():
-    # A merger with no upstream counterpart never blocks the variant reversal.
+def test_multiple_mergers_ship_sorted():
     collapsed, _ = collapse_readlex(_bucket(
         _rec("caught", "VVN", "𐑒𐑪𐑑", "RRP",
-             mergers=["cot-caught"], variant=True)))
-    assert _vars(collapsed) == ["RRPVar"]
+             mergers=["lot-palm", "cot-caught"])))
+    (record,) = _only_records(collapsed)
+    assert record["var"] == "RRPVar"
+    assert record["mergers"] == ["cot-caught", "lot-palm"]
 
 
 # --- regional prunes ---------------------------------------------------------
@@ -116,6 +114,15 @@ def test_slot_with_only_pruned_var_is_dropped_and_counted():
     assert collapsed == {}
     assert stats["pruned NZ"] == 1
     assert stats["emptied groups dropped"] == 1
+
+
+def test_variation_on_regional_var_is_still_pruned():
+    # The prune reads the base var; variation must not smuggle a regional
+    # record out as e.g. "NZVar".
+    collapsed, stats = collapse_readlex(_bucket(
+        _rec("koru", "NN1", "𐑒𐑹𐑵", "NZ", variant=True)))
+    assert collapsed == {}
+    assert stats["pruned NZ"] == 1
 
 
 # --- RSSB slot collapse ------------------------------------------------------
@@ -147,14 +154,14 @@ def test_slot_spans_buckets_and_ignores_word_case():
     assert stats["RSSB collapsed to RRP"] == 1       # the NN1 slot canonical
 
 
-def test_trapbath_slot_without_plain_rrp_keeps_relabelled_rssb():
+def test_merged_slot_without_plain_rrp_keeps_relabelled_rssb():
     # The real 'polygraph' shape: a trap-bath RRP record plus an RSSB sibling
-    # and no plain RRP — the reversal takes the RRP record to TrapBath, so the
+    # and no plain RRP — the fold takes the merged record to RRPVar, so the
     # RSSB becomes the slot's canonical RRP.
     collapsed, _ = collapse_readlex(_bucket(
         _rec("polygraph", "NN1", "𐑐𐑪𐑤𐑦𐑜𐑮𐑭𐑓", "RRP", mergers=["trap-bath"]),
         _rec("polygraph", "NN1", "𐑐𐑪𐑤𐑦𐑜𐑮𐑨𐑓", "RSSB")))
-    assert sorted(_vars(collapsed)) == ["RRP", "TrapBath"]
+    assert sorted(_vars(collapsed)) == ["RRP", "RRPVar"]
 
 
 # --- exceptions model --------------------------------------------------------
@@ -175,6 +182,14 @@ def test_same_shaw_duplicate_of_rrp_drops():
     assert stats["redundant RRP duplicate dropped"] == 1
 
 
+def test_var_suffixed_duplicate_of_rrp_shaw_drops():
+    collapsed, stats = collapse_readlex(_bucket(
+        _rec("robot", "NN1", "𐑮𐑴𐑚𐑪𐑑", "RRP"),
+        _rec("robot", "NN1", "𐑮𐑴𐑚𐑪𐑑", "RRP", variant=True)))
+    assert _vars(collapsed) == ["RRP"]
+    assert stats["redundant RRP duplicate dropped"] == 1
+
+
 def test_solo_genam_survives():
     collapsed, _ = collapse_readlex(_bucket(
         _rec("zip code", "NN1", "𐑟𐑦𐑐 𐑒𐑴𐑛", "GenAm")))
@@ -190,12 +205,12 @@ def test_ssb_passes_through():
 
 def test_non_rrp_siblings_sharing_shaw_both_survive():
     # The redundancy rule is RRP-relative only: two exceptions agreeing with
-    # each other (but not with RRP) both stand, as upstream's shape allows.
+    # each other (but not with RRP) both stand.
     collapsed, _ = collapse_readlex(_bucket(
         _rec("dance", "NN1", "𐑛𐑭𐑯𐑕", "RRP"),
         _rec("dance", "NN1", "𐑛𐑨𐑯𐑕", "GenAm"),
         _rec("dance", "NN1", "𐑛𐑨𐑯𐑕", "RRP", mergers=["trap-bath"])))
-    assert sorted(_vars(collapsed)) == ["GenAm", "RRP", "TrapBath"]
+    assert sorted(_vars(collapsed)) == ["GenAm", "RRP", "RRPVar"]
 
 
 # --- failure and stability ---------------------------------------------------

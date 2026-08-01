@@ -34,7 +34,7 @@ from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 from dialect_display import (
-    spellcheck_vars, is_american, US_GAP_FALLBACK_VARS,
+    spellcheck_vars, is_american, split_var, US_GAP_FALLBACK_VARS,
 )
 
 
@@ -285,8 +285,8 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff,
     # Vars that may become a HEADWORD in THIS dictionary. Foreign national
     # accents (AU/CA/NZ/ZA/IE) are deliberately excluded — they are their own
     # dialect and never pollute gb/us (see dialect_display.spellcheck_vars).
-    # trap-bath is no longer a var — it rides as a `mergers` flag on an RRP
-    # record, which the British set admits, so the merged forms still ship.
+    # Variation (*Var / mergers) rides on the accent split_var recovers, so
+    # merged forms (e.g. trap-bath) still ship under their base accent.
     target_variants = spellcheck_vars(dialect)
 
     def record_noun_flags(shaw, pos):
@@ -320,7 +320,7 @@ def generate_simple_wordlist(readlex_data, output_dic, output_aff,
             shaw = entry.get('Shaw', '')
             if not shaw:
                 continue
-            var = entry.get('var', '')
+            var, _ = split_var(entry.get('var', ''))
 
             if dialect == 'us' and is_american(var):
                 lemma_has_american[lemma] = True

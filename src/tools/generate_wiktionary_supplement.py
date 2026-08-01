@@ -272,12 +272,6 @@ def clean_ipa(ipa: str) -> str:
     return ipa
 
 
-def is_broad_transcription(ipa_raw: str) -> bool:
-    """Check if this is a broad (phonemic) transcription in slashes."""
-    ipa_raw = ipa_raw.strip()
-    return ipa_raw.startswith('/') and ipa_raw.endswith('/')
-
-
 def make_key(word: str, pos: str, shaw: str) -> str:
     """Create a ReadLex-format key: word_POS_shaw"""
     return f"{word}_{pos}_{shaw}"
@@ -307,8 +301,6 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
             continue
 
         tags = sound.get("tags", [])
-
-        is_broad = is_broad_transcription(ipa_raw)
 
         # Skip fragment IPA (e.g. "-di", "ə-", "-ˌbiːoʊ-") — Wiktionary uses
         # leading/trailing hyphens to indicate partial pronunciations
@@ -518,8 +510,9 @@ def main():
                     if pct is not None:
                         phrase_wsd = pct if phrase_wsd is None else min(phrase_wsd, pct)
 
+                old_pct = e["confidence"]
                 new_pct, notes, override = upgrade_confidence_shave(
-                    e["confidence"], notes, e["Shaw"], shave_shaw, ml_shaw,
+                    old_pct, notes, e["Shaw"], shave_shaw, ml_shaw,
                     wsd_confidence=phrase_wsd,
                 )
                 e["confidence"] = new_pct
@@ -527,7 +520,7 @@ def main():
                 if override:
                     e["Shaw"] = override
                     shave_overridden += 1
-                elif new_pct > e.get("confidence", 0):
+                elif new_pct > old_pct:
                     shave_upgraded += 1
 
         # Rebuild keys: an override changed an entry's Shaw, and the key embeds it.

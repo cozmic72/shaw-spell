@@ -1718,6 +1718,7 @@ function renderGroupEditor(group) {
     evidence.append(related, definitions);
     DETAIL.replaceChildren(editor, evidence);
     setDetailMode();
+    syncEvidenceSections();
     loadDefinitions(record, definitions);
     loadRelated(record, related);
 }
@@ -1843,9 +1844,36 @@ function collapsibleSection(id, label) {
     section.className = id;
     section.setAttribute("aria-label", label);
     section.open = sectionExpanded(id);
-    section.addEventListener("toggle", () => setSectionExpanded(id, section.open));
+    section.addEventListener("toggle", () => {
+        if (evidenceSideBySide(section.parentElement)) {
+            section.open = true;
+            return;
+        }
+        setSectionExpanded(id, section.open);
+    });
     return section;
 }
+
+// Side by side, each section IS its grid column — collapsed it would leave a bare
+// title beside a full column — so wide forces both open (and never persists that),
+// leaving the stacked open/closed prefs untouched underneath. Wideness is read off
+// the container query's own effect, so CSS stays the single owner of the threshold.
+function evidenceSideBySide(evidence) {
+    return evidence !== null && evidence.classList.contains("evidence-cols")
+        && getComputedStyle(evidence).display === "grid";
+}
+
+function syncEvidenceSections() {
+    const evidence = DETAIL.querySelector(":scope > .evidence-cols");
+    if (!evidence) {
+        return;
+    }
+    const wide = evidenceSideBySide(evidence);
+    for (const section of evidence.querySelectorAll(":scope > details")) {
+        section.open = wide || sectionExpanded(section.className);
+    }
+}
+new ResizeObserver(syncEvidenceSections).observe(DETAIL);
 
 function collapsibleSummary(className, title, count) {
     const summary = document.createElement("summary");

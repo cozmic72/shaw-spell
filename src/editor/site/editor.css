@@ -924,15 +924,16 @@ body {
 .stamp.orphaned { color: var(--state-orphaned); }
 
 /* ---- detail (right) — the card the editor stares at while deciding ---- */
+/* A query container: the splitter makes the panel's width independent of the
+   viewport, so the column layouts below key on the panel, not on @media. */
 .detail {
     position: relative;
     overflow-y: auto;
     padding: 30px 34px;
-    max-width: 760px;
     border-left: 4px solid transparent;
     transition: border-color 0.15s;
+    container-type: inline-size;
 }
-.detail { max-width: none; }
 
 .detail-chrome {
     display: grid;
@@ -940,7 +941,9 @@ body {
     gap: 16px 34px;
     margin-bottom: 18px;
 }
-@media (min-width: 900px) {
+/* 610 ≈ the rail's 260px floor + the 34px gap + the glance stack's ~314px
+   side-by-side minimum (200px basis + 24px gap + 11ch posvar). */
+@container (min-width: 610px) {
     .detail-chrome {
         grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
         align-items: start;
@@ -948,17 +951,26 @@ body {
 }
 
 .evidence-cols { display: block; }
-@media (min-width: 900px) {
+/* 840 ≈ the related table's 482px fixed minimum (tracks 390 + gaps 72 + inset 20)
+   ÷ its 0.6 column share + the 34px gap — narrower, side-by-side squeezes it. */
+@container (min-width: 840px) {
     .evidence-cols {
         display: grid;
         grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
         gap: 34px;
         align-items: start;
     }
-    /* Kill the sections' own top margins/rules that assumed a vertical stack;
+    /* Kill the sections' own top margins that assumed a vertical stack;
        the grid supplies the separation. */
     .evidence-cols > .related,
     .evidence-cols > .definitions { margin-top: 0; }
+    /* Each section IS its column here — nothing to collapse. syncEvidenceSections
+       forces both open; the affordance goes away. */
+    .evidence-cols > details > summary {
+        cursor: default;
+        pointer-events: none;
+    }
+    .evidence-cols > details > summary > .chevron { display: none; }
 }
 
 /* ---- glance column: text stack (word / Shavian / IPA) with POS + var BESIDE it ---- */
@@ -1399,8 +1411,6 @@ body {
     flex-wrap: wrap;
     gap: 8px 16px;
     margin-bottom: 26px;
-    padding-bottom: 22px;
-    border-bottom: 1px solid var(--rule);
 }
 .reference {
     font-size: 11px;
@@ -2120,16 +2130,9 @@ kbd {
 .create-dismiss:hover { color: var(--ink); }
 
 /* ---- edit-mode modal (a related entry opened for review) ---- */
-/* The edit modal hosts the SAME record editor as the wide detail pane, but is a
-   NARROW card in a wide viewport — the viewport-keyed >=900px grid fired anyway
-   and the two chrome columns collided. Reflow to a single stacked column, scoped
-   to .create-card so the main detail pane is untouched. */
+/* The modal sits outside .detail, so no query container exists here and the
+   chrome keeps its single-column base layout. */
 .create-card:has(.detail-chrome) { max-width: min(920px, 92vw); }
-
-.create-card .detail-chrome {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-}
 
 /* The word may wrap — in the card there is vertical room, and a vanished word is
    the worse failure. */
@@ -2190,7 +2193,7 @@ kbd {
     }
     .drawer-open .drawer-backdrop { opacity: 1; pointer-events: auto; }
 
-    .detail { max-width: none; padding: 22px 18px; }
+    .detail { padding: 22px 18px; }
 
     .filters { padding: 12px 18px; gap: 10px; }
     .add-filter-wrap { flex: 1 1 auto; }

@@ -2,8 +2,8 @@
 """
 Apply the editorial patch store to the computed basis, producing data/readlex.json.
 
-This replaces generate_merged_readlex.py. The model (see
-docs/editorial-overlay-design.md, "The patch record (settled model)"):
+The model (see docs/editorial-overlay-design.md, "The patch record (settled
+model)"):
 
   - The BASIS is the combined supplement pool, computed on-demand. Upstream
     ReadLex (external/readlex/readlex.json) rides IN the pool — collated at

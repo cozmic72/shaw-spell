@@ -1,6 +1,2 @@
 # Preserve CRLF line endings for TSVs that round-trip through Apple Numbers
-data/editorial.tsv text eol=crlf
-data/editorial-duplicates.tsv text eol=crlf
-data/editorial-drops.tsv text eol=crlf
-data/readlex-reference.tsv text eol=crlf
 data/review-wiktionary-rejects.tsv text eol=crlf

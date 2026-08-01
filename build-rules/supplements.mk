@@ -320,15 +320,6 @@ setup:
 	@src/tools/setup-submodules.sh
 
 ###########################################
-# Editorial review
-###########################################
-
-.PHONY: editorial
-editorial: $(SUPPLEMENT_DEPS)
-	@echo "Updating editorial CSV files..."
-	$(RUN) python3 $(SRC_TOOLS)/generate_editorial_csv.py
-
-###########################################
 # Phrase divergence detection (flags multi-word phrases whose pronunciation
 # genuinely differs from their component words glued together — keepers — vs
 # those that are just concatenation noise. See docs/phrase-divergence.md.)

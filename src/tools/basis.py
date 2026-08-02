@@ -404,9 +404,18 @@ def _pre_transform_key(current_key, entry):
     """The natural key `entry` had before its key-moving transforms — its current
     key with each orig-tracked key slot (shaw, var) swapped back to the recorded
     pre-image. Slots without an orig_* are left as-is. Equal to current_key when the
-    record carries no key-moving orig_*."""
+    record carries no key-moving orig_*.
+
+    A SELF-REFERENCED lemma moves with its record's respell (reclassify_rrp), so
+    the pre-image of a respelled record whose lemma is its own current identity
+    is self-referenced at the OLD spelling — reconstructed here from orig_shaw,
+    no orig_lemma needed. A non-self lemma is left as-is: a dependent whose lemma
+    was re-pointed carries no pre-image, and a patch on it recovers via the weak
+    (word, pos, shaw) resort instead (apply_patches.weak_reanchor_index)."""
     word, pos, shaw, var, lemma = current_key
     if "orig_shaw" in entry:
+        if lemma == (word, pos, shaw):
+            lemma = (word, pos, entry["orig_shaw"])
         shaw = entry["orig_shaw"]
     if "orig_var" in entry:
         var = entry["orig_var"]

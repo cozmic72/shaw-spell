@@ -119,6 +119,27 @@ class ReanchorIndexTest(unittest.TestCase):
         index, _ = build_index([e])
         self.assertEqual(reanchor_index(index), {})
 
+    def test_respelled_self_lemma_reconstructs_old_slot(self):
+        # A self-referenced lemma moves with its record's respell
+        # (reclassify_rrp), so the pre-image key must be self-referenced at the
+        # OLD spelling — or the strong re-anchor misses every respelled record.
+        e = entry("x", "n", "𐑚𐑦", "RRP", orig_shaw="𐑚𐑰",
+                  lemma={"Latn": "x", "pos": "n", "Shaw": "𐑚𐑦"})
+        index, _ = build_index([e])
+        rmap = reanchor_index(index)
+        self.assertEqual(rmap[("x", "n", "𐑚𐑰", "RRP", ("x", "n", "𐑚𐑰"))],
+                         ("x", "n", "𐑚𐑦", "RRP", ("x", "n", "𐑚𐑦")))
+
+    def test_respelled_foreign_lemma_rides_unchanged(self):
+        # A respelled record filed under ANOTHER lemma keeps that lemma in its
+        # pre-image key: only a self-reference moves with a respell.
+        e = entry("x", "n", "𐑚𐑦", "RRP", orig_shaw="𐑚𐑰",
+                  lemma={"Latn": "y", "pos": "n", "Shaw": "𐑛"})
+        index, _ = build_index([e])
+        rmap = reanchor_index(index)
+        self.assertEqual(rmap[("x", "n", "𐑚𐑰", "RRP", ("y", "n", "𐑛"))],
+                         ("x", "n", "𐑚𐑦", "RRP", ("y", "n", "𐑛")))
+
     def test_collision_dropped(self):
         # Two records both claiming the same old key can't resolve to one target;
         # the ambiguous old key is dropped (patch stays orphaned, never mis-applied).

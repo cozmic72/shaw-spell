@@ -15,7 +15,10 @@ WHAT THIS STAGE DOES (and, deliberately, what it does NOT):
   PASS          -> relabel var to RRP; record orig_var (pre-relabel var).
   PASS_RESPELL  -> respell Shaw to the classifier's deterministic, Guide-table-
                    backed spelling AND relabel var to RRP; record orig_shaw and
-                   orig_var. A changed spelling correctly re-enters review.
+                   orig_var. A changed spelling correctly re-enters review. The
+                   lemma follows the respell: a self-referenced lemma moves with
+                   its record, and records filed under a respelled lemma are
+                   re-pointed at its new identity (repoint_dependent_lemmas).
   STAY          -> leave the record untouched (RSSB/GenAm stays). The rules will
                    not canonicalize it (e.g. CURE lowered to FORCE).
   REVIEW        -> leave the record's spelling/var untouched but mark it for
@@ -139,7 +142,8 @@ import os
 import sys
 from collections import Counter, defaultdict
 
-from basis import PROJECT_ROOT, is_upstream, mark_original
+from basis import (LEMMA_FIELD, PROJECT_ROOT, is_upstream, lemma_slot,
+                   mark_original, self_lemma)
 from rrp_classifier import judge_record
 
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
@@ -505,6 +509,11 @@ def reclassify_record(entry, judgment, lane_blocked, held, tallies,
             old_shaw = record["Shaw"]
             record["Shaw"] = j.respell
             mark_original(record, "shaw", old_shaw)
+            # A self-referenced lemma IS the record's identity: it moves with
+            # the respell (dependents are re-pointed by repoint_dependent_lemmas).
+            if (lemma_slot(record.get(LEMMA_FIELD))
+                    == old_identity_slot(record, old_shaw)):
+                record[LEMMA_FIELD] = self_lemma(record)
         record["var"] = CANONICAL_VAR
         mark_original(record, "var", old_var)
         tallies[f"relabelled-from-{old_var}"] += 1
@@ -517,11 +526,54 @@ def reclassify_record(entry, judgment, lane_blocked, held, tallies,
     return record
 
 
+def old_identity_slot(record, old_shaw):
+    """The (latn_lower, pos, shaw) lemma slot `record` occupied at `old_shaw` —
+    the identity a stale lemma still names after a respell."""
+    return (record["Latn"].lower(), record["pos"], old_shaw)
+
+
+def repoint_dependent_lemmas(reclassified, tallies):
+    """Re-point, in place, each record whose stated lemma names a respelled
+    record's OLD identity — where no record still carries that identity — at
+    the respelled record's NEW one. A respell moves a lemma target's
+    (word, pos, shaw) slot; anything filed under it would otherwise orphan
+    (build_supplement's lemma-orphan guard). The old->new mapping is read off
+    orig_shaw, the pre-image mark_original recorded at the respell. A re-point
+    moves the dependent's OWN anchor with no pre-image of its own (lemma is not
+    an orig-tracked field); a patch on it recovers via the weak
+    (word, pos, shaw) resort — the dependent's shaw is unchanged — not via
+    basis.reanchor_index (see apply_patches.weak_reanchor_index). Fails loud if
+    a dependent's old identity moved to several different new spellings: there
+    is no unambiguous target to re-point at."""
+    records = [r for entries in reclassified.values() for r in entries]
+    present = {lemma_slot(r) for r in records}
+    respelled = defaultdict(dict)
+    for r in records:
+        if "orig_shaw" in r:
+            old_slot = old_identity_slot(r, r["orig_shaw"])
+            respelled[old_slot][lemma_slot(r)] = self_lemma(r)
+    for r in records:
+        slot = lemma_slot(r.get(LEMMA_FIELD))
+        if not slot or slot in present or slot not in respelled:
+            continue
+        targets = respelled[slot]
+        if len(targets) > 1:
+            raise SystemExit(
+                f"reclassify_rrp: {r['Latn']}/{r['pos']} is filed under a "
+                f"respelled lemma whose old spelling {slot[2]} moved to "
+                f"{len(targets)} different new spellings — cannot re-point "
+                f"unambiguously")
+        (target,) = targets.values()
+        r[LEMMA_FIELD] = dict(target)
+        tallies["lemma-repointed"] += 1
+
+
 def reclassify_supplement(supplement, tallies, samples, enable_model_judge=None):
     """A copy of the supplement dict with every candidate reclassified. Records
     are re-bucketed by (word, pos, shaw) because a PASS_RESPELL changes the shaw
     the bucket key encodes. Nothing is dropped: every input record appears once
-    in the output (this stage judges + relabels, it never collapses).
+    in the output (this stage judges + relabels, it never collapses). Lemma
+    links are carried through respells (see repoint_dependent_lemmas).
 
     `enable_model_judge` gates the MODEL-JUDGE promotion gate (module
     docstring): None resolves SHAW_SPELL_MODEL_JUDGE from the environment
@@ -576,6 +628,7 @@ def reclassify_supplement(supplement, tallies, samples, enable_model_judge=None)
                                 tallies, samples)
         reclassified[output_bucket_key(out)].append(out)
 
+    repoint_dependent_lemmas(reclassified, tallies)
     return {key: reclassified[key] for key in sorted(reclassified)}, len(records)
 
 
@@ -611,6 +664,9 @@ def report(tallies, samples):
                 print(f"      {src:7}: {n:,}")
     print(f"  upstream core (the lane; passed through verbatim): "
           f"{tallies['upstream-lane']:,}")
+    if tallies["lemma-repointed"]:
+        print(f"  dependent lemmas re-pointed after respell: "
+              f"{tallies['lemma-repointed']:,}")
     relabelled = tallies["PASS"] + tallies["PASS_RESPELL"]
     print(f"Relabelled to RRP:         {relabelled:,}")
     for src in ("RSSB", "GenAm", "GenAus", "GenCan", "NZ", "SthAfr", "IrEng",

@@ -379,6 +379,8 @@ body {
 .menu-item[hidden] { display: none; }
 .commit-decisions { color: var(--state-edited); }
 .commit-decisions:disabled { opacity: 0.4; cursor: default; }
+.menu-item.danger { color: var(--state-dropped); }
+.menu-item[aria-pressed="true"] { background: var(--paper-raised); }
 
 .text-picker { display: flex; align-items: stretch; gap: 3px; }
 .text-filter {

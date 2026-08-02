@@ -255,6 +255,93 @@ def test_commit_nothing_to_commit():
                 {"result": "nothing-to-commit"}
 
 
+# ---- revert_uncommitted ----
+
+class _StubState:
+    """handle_revert_uncommitted's only touch on state is rebuild(); count calls
+    rather than actually reloading a view (no basis in these tests)."""
+
+    def __init__(self):
+        self.rebuilds = 0
+
+    def rebuild(self):
+        self.rebuilds += 1
+
+
+def test_revert_discards_uncommitted_and_rebuilds_view():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "repo"
+        repo.mkdir()
+        _init_repo(repo)
+        store = _write_store(repo, [_patch_line("cat")])
+        _git(repo, "add", "--", "patches/patches.jsonl")
+        _git(repo, "commit", "-q", "-m", "seed")
+        # Uncommitted edits since the last commit.
+        store.write_text(
+            "".join(l + "\n" for l in [_patch_line("cat"), _patch_line("dog")]),
+            encoding="utf-8")
+        state = _StubState()
+        with _store_at(store):
+            result = editord.handle_revert_uncommitted(state, None)
+        assert result == {"result": "reverted", "discarded": 1}, result
+        assert state.rebuilds == 1, state.rebuilds
+        # The store is back to exactly its committed content.
+        assert store.read_text(encoding="utf-8") == _patch_line("cat") + "\n"
+        dirty = subprocess.run(
+            ["git", "-C", str(repo), "status", "--porcelain"],
+            check=True, capture_output=True, text=True).stdout
+        assert dirty == "", dirty
+
+
+def test_revert_nothing_to_revert_when_clean():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "repo"
+        repo.mkdir()
+        _init_repo(repo)
+        store = _write_store(repo, [_patch_line("cat")])
+        _git(repo, "add", "--", "patches/patches.jsonl")
+        _git(repo, "commit", "-q", "-m", "seed")
+        state = _StubState()
+        with _store_at(store):
+            assert editord.handle_revert_uncommitted(state, None) == \
+                {"result": "nothing-to-revert"}
+        assert state.rebuilds == 0, "a no-op revert must not rebuild the view"
+
+
+def test_revert_unavailable_no_checkout():
+    with tempfile.TemporaryDirectory() as tmp:
+        store = Path(tmp) / "patches" / "patches.jsonl"
+        store.parent.mkdir(parents=True)
+        store.write_text(_patch_line("cat") + "\n", encoding="utf-8")
+        state = _StubState()
+        with _store_at(store):
+            result = editord.handle_revert_uncommitted(state, None)
+        assert "error" in result, result
+        assert state.rebuilds == 0
+
+
+def test_revert_errors_loud_when_never_committed():
+    """A store with uncommitted lines but no HEAD blob at all (never committed):
+    there is nothing to revert TO, so this fails loud rather than silently
+    leaving the store untouched and claiming success."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "repo"
+        repo.mkdir()
+        _init_repo(repo)
+        # A commit exists (repo root resolves) but never touched the store path.
+        (repo / "README").write_text("seed\n", encoding="utf-8")
+        _git(repo, "add", "--", "README")
+        _git(repo, "commit", "-q", "-m", "seed, no store yet")
+        store = _write_store(repo, [_patch_line("cat")])
+        state = _StubState()
+        with _store_at(store):
+            result = editord.handle_revert_uncommitted(state, None)
+        assert "error" in result, result
+        assert state.rebuilds == 0
+        # The uncommitted content survives untouched.
+        assert store.read_text(encoding="utf-8") == _patch_line("cat") + "\n"
+
+
 if __name__ == "__main__":
     import traceback
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

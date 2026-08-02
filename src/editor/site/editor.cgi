@@ -339,6 +339,11 @@ PAGE = """<!DOCTYPE html>
                 <button type="button" class="menu-item commit-decisions" id="commitDecisions"
                         disabled hidden
                         title="Commit the accumulated editorial decisions to git">Commit</button>
+                <button type="button" class="menu-item" id="viewModeToggle"
+                        aria-pressed="false"
+                        title="Toggle between the grouped and flat record view">Flat view</button>
+                <button type="button" class="menu-item danger" id="revertUncommitted"
+                        title="Discard every uncommitted editorial decision since the last commit">Revert uncommitted changes</button>
                 <button type="button" class="menu-item" id="helpToggle"
                         aria-controls="cheatsheet"
                         title="Keyboard shortcuts (?)">Keyboard shortcuts</button>

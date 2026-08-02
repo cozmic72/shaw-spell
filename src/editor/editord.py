@@ -194,7 +194,8 @@ from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
     replace_authored_patch, upsert_patch)
 
-# Entries-page size, in GROUPS (the entries op pages by group, never splitting one).
+# Entries-page size, in GROUPS (the entries op pages by group, never splitting one) —
+# or in RECORDS when the request asks for the flat (ungrouped) partition.
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
 
@@ -887,7 +888,12 @@ def handle_entries(state, request):
 
     matched = filter_records(state.view.records, query, state.view.established)
     matched = sort_records(matched, request.get("sort") or DEFAULT_SORT)
-    groups = group_sorted(matched)
+    # Flat mode (the ledger's ungrouped view) pages by RECORD: each record is its
+    # own singleton group, so offset/limit slice the flat list directly rather
+    # than group_sorted's group runs. The client never re-partitions what it is
+    # sent, so this is the only place flat pagination can live.
+    groups = [(group_key(r), [r]) for r in matched] if request.get("flat") \
+        else group_sorted(matched)
     page = groups[offset:offset + limit]
     return {
         "total": len(groups),
@@ -1787,6 +1793,31 @@ def handle_commit(state, _request):
     return result
 
 
+# The revert footgun: `git checkout -- <pathspec>` discards uncommitted store
+# changes only — never touches other files, never rewrites history. Requires a
+# committed HEAD blob to check out (a store never yet committed has nothing to
+# revert TO, so that case is a loud error, not a silent no-op).
+def handle_revert_uncommitted(state, _request):
+    root = _commit_repo_root()
+    if root is None:
+        return {"error": "revert is only supported for the default patch store"}
+    pathspec = _commit_pathspec(root)
+    try:
+        uncommitted = _uncommitted_patch_count(root, pathspec)
+    except RuntimeError as exc:
+        return {"error": str(exc)}
+    if uncommitted == 0:
+        return {"result": "nothing-to-revert"}
+    in_head = _run_git(root, "cat-file", "-e", f"HEAD:{pathspec}")
+    if in_head.returncode != 0:
+        return {"error": f"{pathspec} has no committed version to revert to"}
+    reverted = _run_git(root, "checkout", "--", pathspec)
+    if reverted.returncode != 0:
+        return {"error": reverted.stderr.strip() or "git checkout failed"}
+    state.rebuild()
+    return {"result": "reverted", "discarded": uncommitted}
+
+
 HANDLERS = {
     "entries": handle_entries,
     "facets": handle_facets,
@@ -1800,6 +1831,7 @@ HANDLERS = {
     "unpatch": handle_unpatch,
     "commit_status": handle_commit_status,
     "commit": handle_commit,
+    "revert_uncommitted": handle_revert_uncommitted,
 }
 
 

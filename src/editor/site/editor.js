@@ -259,6 +259,8 @@ const MASTHEAD_MENU = document.getElementById("mastheadMenu");
 const MASTHEAD_MENU_PANEL = document.getElementById("mastheadMenuPanel");
 const NEW_ENTRY = document.getElementById("newEntry");
 const COMMIT_DECISIONS = document.getElementById("commitDecisions");
+const VIEW_MODE_TOGGLE = document.getElementById("viewModeToggle");
+const REVERT_UNCOMMITTED = document.getElementById("revertUncommitted");
 const DRAWER_BACKDROP = document.getElementById("drawerBackdrop");
 const CHEATSHEET = document.getElementById("cheatsheet");
 const CREATE_MODAL = document.getElementById("createModal");
@@ -308,6 +310,10 @@ const state = {
     // transient view state, cleared with the working set.
     groups: [],
     groupsExpanded: new Set(),
+    // Grouped (default) or flat: flat asks the daemon for the ungrouped, per-record
+    // partition (every {key,size} run has size 1), so pagination counts records
+    // instead of groups. Persisted in the session like activeFilters/columnSort.
+    flat: false,
     // Monotonic token for the related-entries fetch: only the LATEST request may
     // render, so a slow stale response never paints over the current record.
     relatedGeneration: 0,
@@ -588,6 +594,7 @@ async function runQuery(offset = 0, preferredAnchor = null) {
         sort: daemonSort(),
         offset,
         limit: state.limit,
+        flat: state.flat,
     });
     state.groups = result.groups.map(
         (group) => ({ key: group.key, size: group.records.length }));
@@ -812,6 +819,23 @@ function onSortHeaderClick(key) {
     runQuery(0, focusedAnchor).catch((error) => showToast(error.message, true));
 }
 
+// Flat mode asks the daemon for the ungrouped partition (see runQuery); the
+// ledger rendering itself needs no branch, since a size-1 group already renders
+// byte-identical to a flat row (renderLedger's N=1 invariant).
+function toggleViewMode() {
+    state.flat = !state.flat;
+    syncViewModeIndicator();
+    const focusedAnchor = state.records[state.selected]
+        ? state.records[state.selected].anchor
+        : null;
+    runQuery(0, focusedAnchor).catch((error) => showToast(error.message, true));
+}
+
+function syncViewModeIndicator() {
+    VIEW_MODE_TOGGLE.textContent = state.flat ? "Grouped view" : "Flat view";
+    VIEW_MODE_TOGGLE.setAttribute("aria-pressed", String(state.flat));
+}
+
 function syncSortIndicators() {
     for (const header of LEDGER_HEAD.querySelectorAll(".sort-head")) {
         const active = state.columnSort && state.columnSort.key === header.dataset.sortKey;
@@ -828,9 +852,9 @@ function syncSortIndicators() {
 // shows the export-winner's cells). Every row prepends the two gutter tracks
 // (chevron, count) itself: a header fills them, flat and child rows leave them
 // blank, so all rows share one template.
-function ledgerCells(record, verdict = verdictState(record)) {
+function ledgerCells(record, verdict = verdictState(record), orphanKind = record.orphan_kind) {
     return [
-        stampCell(record, verdict),
+        stampCell(record, verdict, orphanKind),
         cell("col-word", record.word),
         cell("col-shaw", record.shaw),
         varCell(record.var),
@@ -858,13 +882,19 @@ const ORPHAN_GLYPHS = new Map([
     [ORPHAN_KIND.RESURFACED_DROP, STAMP_GLYPHS.get(PATCH_STATE.DROPPED)],
 ]);
 
-function stampCell(record, verdict) {
+// `orphanKind` defaults to the record's own (single-record callers, where it
+// trivially agrees with itself); a group render passes the GROUP's consensus
+// kind explicitly — never the arbitrary member `record` happens to be (the
+// group's export-winner, picked for its intrinsic fields, has no claim to speak
+// for the group's orphan_kind). null (members disagree) falls back to the same
+// "…" glyph GROUP_MIXED uses elsewhere for a stamp with no single true state.
+function stampCell(record, verdict, orphanKind = record.orphan_kind) {
     const orphaned = verdict === PATCH_STATE.ORPHANED;
     const glyph = orphaned
-        ? ORPHAN_GLYPHS.get(record.orphan_kind)
+        ? (ORPHAN_GLYPHS.get(orphanKind) || STAMP_GLYPHS.get(GROUP_MIXED))
         : STAMP_GLYPHS.get(verdict);
     if (!glyph) {
-        throw new Error(`no stamp glyph for verdict: ${verdict} (orphan_kind: ${record.orphan_kind})`);
+        throw new Error(`no stamp glyph for verdict: ${verdict} (orphan_kind: ${orphanKind})`);
     }
     const marked = Boolean(record.manual) && verdict !== GROUP_MIXED;
     const stamp = document.createElement("span");
@@ -881,7 +911,9 @@ function stampCell(record, verdict) {
         stamp.textContent = glyph;
     }
     const words = orphaned
-        ? `orphaned — ${ORPHAN_KIND_TAGS.get(record.orphan_kind).title}`
+        ? (ORPHAN_KIND_TAGS.get(orphanKind)
+            ? `orphaned — ${ORPHAN_KIND_TAGS.get(orphanKind).title}`
+            : "orphaned — members disagree on why")
         : verdict;
     stamp.title = marked ? `manual entry · ${words}` : words;
     return stamp;
@@ -908,11 +940,16 @@ function ledgerRow(record, index, isChild = false) {
 // chevron toggles expansion.
 function groupRow(group) {
     const winner = exportWinner(group.members).record;
+    const members = group.members.map((member) => member.record);
     // The header stamps a shared verdict only when EVERY member shares it — it must
     // never advertise one member's verdict as the group's; disagreement stamps
     // GROUP_MIXED.
-    const consensus = verdictConsensus(group.members.map((member) => member.record));
+    const consensus = verdictConsensus(members);
     const verdict = consensus.uniform ? consensus.value : GROUP_MIXED;
+    // A uniformly "orphaned" verdict does not imply a uniform orphan_kind (e.g. one
+    // member lost-accept, another resurfaced-drop) — the header's glyph must speak
+    // for the GROUP, never `winner`'s kind alone.
+    const orphanKind = fieldConsensus(members, "orphan_kind").value;
     const li = document.createElement("li");
     li.className = `ledger-row ledger-group-header state-${verdict}`;
     // The group key carries NUL separators (not attribute-safe), so it rides on a JS
@@ -924,7 +961,8 @@ function groupRow(group) {
         bindParentGutter(li);
     }
 
-    li.append(groupDisclosure(group, expanded), groupCountCell(group), ...ledgerCells(winner, verdict));
+    li.append(groupDisclosure(group, expanded), groupCountCell(group),
+        ...ledgerCells(winner, verdict, orphanKind));
     li.addEventListener("click", (event) => onGroupHeaderClick(group, event));
     return li;
 }
@@ -1134,8 +1172,10 @@ function confidenceMeter(confidence) {
     return meter;
 }
 
-// Pagination is GROUP-denominated (the daemon pages by group): the summary and the
-// offsets count groups, not records.
+// Pagination is GROUP-denominated (the daemon pages by group) in grouped mode, or
+// per-record in flat mode (every daemon group is then a singleton) — either way
+// state.groups.length is exactly what's on this page, so the summary needs no
+// mode branch.
 function renderFoot() {
     LEDGER_FOOT.replaceChildren();
     const shown = state.groups.length;
@@ -1440,12 +1480,14 @@ function recordEditor(group, opts) {
     chrome.append(glance, rail);
     container.append(chrome);
 
-    // Single-record affordances — a group has no single word to link out for.
+    const orphanNote = orphanReasonNote(group);
+    if (orphanNote) {
+        container.append(orphanNote);
+    }
+    // Single-record affordance — a group has no single word to link out for, even
+    // though every member shares the same word (group_key includes it): a link-out
+    // reads as being about the one record you are looking at, not the set.
     if (group.length === 1) {
-        const orphanNote = orphanReasonNote(record);
-        if (orphanNote) {
-            container.append(orphanNote);
-        }
         container.append(referenceLinks(record.word));
     }
     return container;
@@ -1467,7 +1509,7 @@ function recordsBar(ctx, group) {
     const bar = document.createElement("div");
     bar.className = `records-bar state-${verdict}`;
     const count = cell("records-count", `${group.length} record${group.length === 1 ? "" : "s"}`);
-    const stamp = stampCell(group[0], verdict);
+    const stamp = stampCell(group[0], verdict, fieldConsensus(group, "orphan_kind").value);
     if (ctx.scope === "detail") {
         bar.append(stepNavButton(-1), count, stamp, stepNavButton(1));
     } else {
@@ -2614,11 +2656,21 @@ function relatedProvenance(record) {
     }
 }
 
-function orphanReasonNote(record) {
-    if (record.patch_state !== PATCH_STATE.ORPHANED) {
+// The reason+Action banner is a statement about a SPECIFIC orphan_kind, so it
+// only makes sense when every member of the group shares one: a mixed set (some
+// members orphaned under a different kind, or not orphaned at all) has no single
+// reason or Action that is true of the whole selection, so it shows NOTHING
+// rather than a "mixed" placeholder — a label with no reason/Action under it
+// would be chrome, not information.
+function orphanReasonNote(group) {
+    if (!group.every((record) => record.patch_state === PATCH_STATE.ORPHANED)) {
         return null;
     }
-    const tag = ORPHAN_KIND_TAGS.get(record.orphan_kind);
+    const consensus = fieldConsensus(group, "orphan_kind");
+    if (!consensus.uniform) {
+        return null;
+    }
+    const tag = ORPHAN_KIND_TAGS.get(consensus.value);
     if (!tag) {
         return null;
     }
@@ -4438,6 +4490,7 @@ function saveSession() {
         activeFilters: state.activeFilters,
         columnSort: state.columnSort,
         anchor: selected ? selected.anchor : null,
+        flat: state.flat,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(stored));
 }
@@ -4665,9 +4718,10 @@ function hideCommitButton() {
 
 // ---- masthead stats ----
 // Scoped to the CURRENT FILTER, not the whole corpus (state.total is the last
-// query's matched-group count); uncommitted is the one figure that moves as the
-// owner works without re-querying, so it repaints independently from
-// paintCommitButton/hideCommitButton rather than waiting on the next query.
+// query's match count — groups in grouped mode, records in flat mode); uncommitted
+// is the one figure that moves as the owner works without re-querying, so it
+// repaints independently from paintCommitButton/hideCommitButton rather than
+// waiting on the next query.
 function paintMastheadStats() {
     const groups = document.createElement("span");
     groups.textContent = `${state.total.toLocaleString()} match${state.total === 1 ? "" : "es"}`;
@@ -4707,6 +4761,48 @@ async function commitDecisions() {
         showToast(error.message, true);
     }
     await refreshCommitStatus();
+}
+
+// The footgun: discards every patch-store change since the last commit (git
+// checkout -- patches.jsonl server-side — never touches committed history or any
+// other file). Re-queries commit_status for a fresh count rather than trusting
+// state.uncommitted, so the confirmation names exactly what is about to be lost.
+async function revertUncommitted() {
+    let status;
+    try {
+        status = await callDaemon({ op: "commit_status" });
+    } catch (error) {
+        showToast(error.message, true);
+        return;
+    }
+    if (status.commit_available === false) {
+        showToast("Revert is only supported for the default patch store.", true);
+        return;
+    }
+    if (!status.uncommitted) {
+        showToast("Nothing to revert — no uncommitted decisions.");
+        return;
+    }
+    const count = status.uncommitted;
+    const noun = `${count.toLocaleString()} uncommitted decision${count === 1 ? "" : "s"}`;
+    if (!window.confirm(
+        `Discard ${noun} since the last commit?\n\nThis cannot be undone — `
+        + `accepted/dropped/edited/authored rows will revert to their committed state.`,
+    )) {
+        return;
+    }
+    try {
+        const result = await callDaemon({ op: "revert_uncommitted" });
+        if (result.result === "nothing-to-revert") {
+            showToast("Nothing to revert — no uncommitted decisions.");
+            return;
+        }
+        showToast(`Reverted ${result.discarded.toLocaleString()} uncommitted decision${result.discarded === 1 ? "" : "s"}.`);
+        await refreshCommitStatus();
+        await runQuery(0);
+    } catch (error) {
+        showToast(error.message, true);
+    }
 }
 
 // Live filtering: checkboxes commit on `change`; free-text/numeric inputs debounce.
@@ -4765,6 +4861,8 @@ FILTERS_TOGGLE.addEventListener("click", toggleFilters);
 HELP_TOGGLE.addEventListener("click", () => toggleCheatsheet(true));
 NEW_ENTRY.addEventListener("click", openCreateForm);
 COMMIT_DECISIONS.addEventListener("click", () => commitDecisions());
+VIEW_MODE_TOGGLE.addEventListener("click", toggleViewMode);
+REVERT_UNCOMMITTED.addEventListener("click", () => revertUncommitted());
 CREATE_MODAL.addEventListener("click", (event) => {
     if (event.target === CREATE_MODAL) {
         if (isDefinitionModalOpen()) {
@@ -5256,8 +5354,10 @@ async function boot() {
         state.columnSort = stored.columnSort && SORTABLE_COLUMNS.has(stored.columnSort.key)
             ? stored.columnSort
             : null;
+        state.flat = Boolean(stored.flat);
     }
     syncSortIndicators();
+    syncViewModeIndicator();
     refreshCommitStatus();
     return runQuery(0, stored ? stored.anchor : null);
 }

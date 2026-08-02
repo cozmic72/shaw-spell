@@ -373,6 +373,21 @@ def test_entries_offset_paging_is_stable_under_every_sort():
         assert len(flat) == len(set(flat)) == len(corpus), sort
 
 
+def test_entries_flat_paginates_by_record_not_group():
+    # The 3-member cat group would ride whole on page 1 in grouped mode; flat
+    # mode instead slices the flat record list, so a limit of 2 splits it.
+    page = _entries(_grouped_corpus(), flat=True, limit=2)
+    assert page["total"] == 6, page["total"]
+    assert [len(members) for members in _group_anchors(page)] == [1, 1]
+    second = _entries(_grouped_corpus(), flat=True, offset=2, limit=2)
+    assert [len(members) for members in _group_anchors(second)] == [1, 1]
+    # Same natural order as the grouped flat-member walk (cat x3, run x2, walk x1).
+    flat_words = [members[0][0] for members in
+                  _group_anchors(page)] + [members[0][0] for members in
+                                           _group_anchors(second)]
+    assert flat_words == ["cat", "cat", "cat", "run"], flat_words
+
+
 if __name__ == "__main__":
     import traceback
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

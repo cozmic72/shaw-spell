@@ -34,6 +34,20 @@ deleting a patch is rollback. Derived provenance (source/confidence) is never st
 in a patch.
 → [`src/tools/basis.py`](../src/tools/basis.py) `INTRINSIC_FIELDS`, `resolve_patch`.
 
+**One-canonical-per-(word,pos,var) write guard STANDS** — SETTLED, reaffirmed 2026-08-01.
+The daemon refuses an accept when another accepted record shares (word, pos, var) with a
+DIFFERENT shaw. It was briefly removed on the reasoning that a differing shaw means a
+different lemma, and REINSTATED (revert of 9210f92): that reasoning was wrong, and dropping
+the guard throws away information the export needs — two accepted spellings in one slot
+lose the fact that says which is which.
+⚠ The 161 slots where this refuses (159 with distinct IPA — homographs like `ad` the
+advertisement vs `A.D.`) are a REAL modelling gap, not a bug in the guard. They are why the
+lemma is being moved INTO the key: a homograph pair is distinguished by its lemma, and until
+records carry one there is nothing to tell the two apart. Do NOT delete the guard again to
+make an accept succeed — fix the model.
+→ [`src/editor/editord.py`](../src/editor/editord.py) `_canonical_conflict`; the lemma work
+supersedes this once records carry a lemma.
+
 **Definition corrections use a SEPARATE store** — SETTLED (design + code).
 `data/patches/definition-patches.jsonl`, distinct from the word `patches.jsonl` — a
 definition correction has a different natural key (`word|synset-id`) and lifecycle;

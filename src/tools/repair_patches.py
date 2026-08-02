@@ -6,13 +6,20 @@ BAKED counterpart to the in-memory re-anchoring apply_patches does every build.
 WHY THIS EXISTS
 ---------------
 The natural key of a patch is (word, pos, shaw, var, lemma). When a pipeline transform
-relabels a record's `var` (the identical-dialect collapse, or a forthcoming RRP
-classifier), the record's key MOVES and every editorial patch anchored to the OLD
-key is ORPHANED. The transform preserves the pre-image on the moved record in
-orig_* (see basis.mark_original), so the applicator ALREADY follows an orphaned
-patch to the record's new key IN MEMORY every apply (basis.reanchor_index /
-reanchor_patch, hooked into apply_patches ahead of its soft-fail). That repair is
-recomputed on every build and never written down.
+relabels a record's `var` (the identical-dialect collapse, the RRP reclassifier),
+the record's key MOVES and every editorial patch anchored to the OLD key is
+ORPHANED. The applicator ALREADY follows an orphaned patch to the record's new key
+IN MEMORY every apply, ahead of its soft-fail, via two resorts in order:
+
+  1. the orig_* breadcrumb a transform preserved on the moved record
+     (basis.mark_original / reanchor_index / reanchor_patch);
+  2. failing that, the weak (word, pos, shaw) key: when exactly ONE live record
+     carries the anchor's spelling, only var/lemma drifted — not part of the
+     decision's identity — so the decision still applies verbatim
+     (apply_patches.weak_reanchor_index; e.g. a var relabel that left no
+     breadcrumb, like the RRP promotion narrowing between runs).
+
+That repair is recomputed on every build and never written down.
 
 This script writes it down. Run it ONCE after a reclassification to REWRITE the
 orphaned patches' anchors in data/patches/patches.jsonl to their new keys, so the
@@ -22,11 +29,12 @@ recomputed each build. It is also the fallback / bulk migration tool.
 WHAT IT REPAIRS vs WHAT IT LEAVES ALONE (the owner's settled principle)
 -----------------------------------------------------------------------
 It re-anchors ONLY var-relabel orphans: a patch whose anchor no longer resolves,
-which the orig_* breadcrumb path (reanchor_index) can follow to a record whose
-SPELLING is unchanged. A changed SHAW is a different spelling and needs human
-re-review, so shaw-change orphans are NEVER auto-rewritten — they are REPORTED
-(and left byte-identical) as "needs re-review, not auto-repairable". An orphan
-that no record's orig_* covers at all is REPORTED as "fully gone".
+which either resort above follows to a record whose SPELLING is unchanged. A
+changed SHAW is a different spelling and needs human re-review, so shaw-change
+orphans are NEVER auto-rewritten — they are REPORTED (and left byte-identical)
+as "needs re-review, not auto-repairable". An orphan whose spelling several live
+records share (ambiguous — which var the owner meant is unrecoverable) and one
+whose spelling no record carries at all (fully gone) are likewise REPORTED only.
 
     NOTE — reanchor_index already discriminates: it swaps BOTH orig_var and
     orig_shaw back when reconstructing the old key. A patch that only re-anchors
@@ -100,6 +108,7 @@ from basis import (                                              # noqa: E402
     build_basis_index,
     reanchor_index,
 )
+from apply_patches import weak_reanchor_index                    # noqa: E402
 import patchstore                                                # noqa: E402
 
 
@@ -108,47 +117,60 @@ def resolves(anchor, basis_index):
     return anchor is not None and anchor_key(anchor) in basis_index
 
 
-def classify_orphan(patch, basis_index, reanchor_map):
+def classify_orphan(patch, reanchor_map, weak_map):
     """Classify an orphaned patch (anchor absent from the basis) and, when it is a
-    safe var-relabel, the new anchor to rewrite it to.
+    safe var-relabel, the new anchor to rewrite it to. The two resorts run in the
+    applicator's order: orig_* breadcrumb first, weak (word, pos, shaw) key second.
 
     Returns one of:
-      ("var-relabel", new_anchor)  the orig_* breadcrumb follows the record to a
-                                   new key whose SHAW is UNCHANGED — safe to bake.
+      ("var-relabel", new_anchor)  a resort follows the record to a new key whose
+                                   SHAW is UNCHANGED — safe to bake.
       ("shaw-changed", None)       a record carries the pre-image but its SHAW
                                    differs (a respell): needs re-review, not baked.
-      ("gone", None)               no record's orig_* covers this anchor at all.
+      ("ambiguous", None)          several live records share the anchor's
+                                   spelling — which var the owner meant is
+                                   unrecoverable, never guess.
+      ("gone", None)               no record carries the anchor's spelling and no
+                                   orig_* covers it.
     """
     old_key = anchor_key(patch["anchor"])
     current_key = reanchor_map.get(old_key)
-    if current_key is None:
+    if current_key is not None:
+        # reanchor_index reconstructs the old key by swapping BOTH orig_shaw and
+        # orig_var back. If the shaw slot differs between the old (anchored) key and
+        # the current key, the record was RESPELLED — a changed spelling needs
+        # re-review, so we refuse to bake it and defer to the owner (the applicator
+        # still follows it in memory, but this persistent tool does not).
+        _, _, old_shaw, _, _ = old_key
+        _, _, current_shaw, _, _ = current_key
+        if old_shaw != current_shaw:
+            return ("shaw-changed", None)
+        return ("var-relabel", anchor_from_key(current_key))
+
+    word, pos, shaw, _var, _lemma = old_key
+    matches = weak_map.get((word, pos, shaw), ())
+    if not matches:
         return ("gone", None)
-
-    # reanchor_index reconstructs the old key by swapping BOTH orig_shaw and
-    # orig_var back. If the shaw slot differs between the old (anchored) key and the
-    # current key, the record was RESPELLED — a changed spelling needs re-review, so
-    # we refuse to bake it and defer to the owner (the applicator still follows it in
-    # memory, but this persistent tool does not).
-    _, _, old_shaw, _, _ = old_key
-    _, _, current_shaw, _, _ = current_key
-    if old_shaw != current_shaw:
-        return ("shaw-changed", None)
-
-    return ("var-relabel", anchor_from_key(current_key))
+    if len(matches) > 1:
+        return ("ambiguous", None)
+    return ("var-relabel", anchor_from_key(matches[0]))
 
 
 def plan_repairs(patches, basis_index):
-    """Partition the store into (repairs, shaw_changed, gone, untouched).
+    """Partition the store into (repairs, shaw_changed, ambiguous, gone, untouched).
 
       repairs      [(index, patch, new_anchor)]  var-relabel orphans to rewrite
       shaw_changed [(index, patch)]              respell orphans — report, re-review
-      gone         [(index, patch)]              no orig_* covers it — report
+      ambiguous    [(index, patch)]              spelling under several vars — report
+      gone         [(index, patch)]              spelling gone entirely — report
       untouched    count of patches whose anchor resolves (or authorship) — no-op
 
     Nothing is mutated here; the caller decides whether to write the repairs.
     """
     reanchor_map = reanchor_index(basis_index)
-    repairs, shaw_changed, gone = [], [], []
+    weak_map = weak_reanchor_index(basis_index)
+    outcomes = {"shaw-changed": [], "ambiguous": [], "gone": []}
+    repairs = []
     untouched = 0
 
     for i, patch in enumerate(patches):
@@ -159,15 +181,14 @@ def plan_repairs(patches, basis_index):
             untouched += 1
             continue
 
-        kind, new_anchor = classify_orphan(patch, basis_index, reanchor_map)
+        kind, new_anchor = classify_orphan(patch, reanchor_map, weak_map)
         if kind == "var-relabel":
             repairs.append((i, patch, new_anchor))
-        elif kind == "shaw-changed":
-            shaw_changed.append((i, patch))
         else:
-            gone.append((i, patch))
+            outcomes[kind].append((i, patch))
 
-    return repairs, shaw_changed, gone, untouched
+    return (repairs, outcomes["shaw-changed"], outcomes["ambiguous"],
+            outcomes["gone"], untouched)
 
 
 def _decision_of(patch, final_anchor):
@@ -288,13 +309,14 @@ def _anchor_str(anchor):
             f"shaw={anchor['shaw']} var={anchor['var']}")
 
 
-def report(store_path, total, repairs, shaw_changed, gone, untouched):
+def report(store_path, total, repairs, shaw_changed, ambiguous, gone, untouched):
     print(f"Patch store: {store_path}")
     print(f"  patches:            {total:,}")
     print(f"  resolve / untouched:{untouched:,}")
     print(f"  var-relabel repairs:{len(repairs):,}  (re-anchorable, spelling unchanged)")
     print(f"  shaw-changed:       {len(shaw_changed):,}  (respelled — needs re-review, NOT auto-repaired)")
-    print(f"  fully gone:         {len(gone):,}  (no orig_* covers the anchor — needs re-review)")
+    print(f"  ambiguous:          {len(ambiguous):,}  (spelling live under several vars — never guess, needs re-review)")
+    print(f"  fully gone:         {len(gone):,}  (no record carries the spelling — needs re-review)")
 
     if repairs:
         print("\nVAR-RELABEL RE-ANCHORS (var changes; would be rewritten with --write):")
@@ -308,8 +330,13 @@ def report(store_path, total, repairs, shaw_changed, gone, untouched):
         for _i, patch in shaw_changed:
             print(f"  [{patch['id']}] {_anchor_str(patch['anchor'])}")
 
+    if ambiguous:
+        print("\nAMBIGUOUS ORPHANS (spelling live under several vars — reported only, for re-review):")
+        for _i, patch in ambiguous:
+            print(f"  [{patch['id']}] {_anchor_str(patch['anchor'])}")
+
     if gone:
-        print("\nFULLY-GONE ORPHANS (no orig_* covers the anchor — reported only, for re-review):")
+        print("\nFULLY-GONE ORPHANS (no record carries the spelling — reported only, for re-review):")
         for _i, patch in gone:
             print(f"  [{patch['id']}] {_anchor_str(patch['anchor'])}")
 
@@ -342,8 +369,10 @@ def main():
     patches = patchstore.load_patches()
     basis_index = build_basis_index()
 
-    repairs, shaw_changed, gone, untouched = plan_repairs(patches, basis_index)
-    report(store_path, len(patches), repairs, shaw_changed, gone, untouched)
+    repairs, shaw_changed, ambiguous, gone, untouched = plan_repairs(
+        patches, basis_index)
+    report(store_path, len(patches), repairs, shaw_changed, ambiguous, gone,
+           untouched)
 
     # Classify every key two-or-more patches would share after the repairs into
     # DUPLICATE (same decision → dedup, keep one) and TRUE CONFLICT (differing

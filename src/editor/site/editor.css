@@ -1059,6 +1059,7 @@ body {
 .create-guard[data-state="ok"] { display: none; }
 .create-guard[data-state="pending"] { color: var(--ink-soft); }
 .create-guard[data-state="collision"] { color: var(--state-dropped); }
+.create-guard[data-state="warn"] { color: var(--state-flagged); }
 
 /* ---- records bar — count + verdict + stepping, one geometry at any N ---- */
 /* The verdict tints this bar's bottom rule — the ONE colour cue for the whole

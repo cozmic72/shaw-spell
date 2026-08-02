@@ -34,21 +34,6 @@ deleting a patch is rollback. Derived provenance (source/confidence) is never st
 in a patch.
 → [`src/tools/basis.py`](../src/tools/basis.py) `INTRINSIC_FIELDS`, `resolve_patch`.
 
-**One-canonical-per-(word,pos,var) write guard** — SUPERSEDED, removed (2026-08-01).
-An earlier commit (9996e76) had the daemon refuse an accept/authorship when another
-live accepted record shared (word, pos, var) but a DIFFERENT shaw, phrased as a
-conflict to resolve by flagging one side a variant/merger. The owner overruled
-this: a differing shaw is a different lemma, not a rival for one slot, so both
-may legitimately be accepted (measured: 161 same-(word,pos,var) slots hold >1
-accepted record, 159 with distinct IPA — genuine homographs like `ad` the
-advertisement vs `A.D.`). The check is no longer enforced anywhere in the
-daemon or client. The exact identity tuple for a record (whether `var`
-participates) is not settled by the owner — this entry asserts only that the
-removed rule was wrong, not a replacement invariant.
-→ was [`src/editor/editord.py`](../src/editor/editord.py) `_canonical_conflict`
-(deleted); anchor uniqueness `(word_lower, pos, shaw, var)` in
-[`src/tools/basis.py`](../src/tools/basis.py) `anchor_of` is unaffected and unchanged.
-
 **Definition corrections use a SEPARATE store** — SETTLED (design + code).
 `data/patches/definition-patches.jsonl`, distinct from the word `patches.jsonl` — a
 definition correction has a different natural key (`word|synset-id`) and lifecycle;

@@ -2455,7 +2455,7 @@ function cmpStr(a, b) {
     return 0;
 }
 
-// No additive flag (empty mergers, not variant).
+// No additive flag (empty mergers, not variant) — mirrors the daemon's _is_canonical.
 function isCanonical(record) {
     return (!record.mergers || record.mergers.length === 0) && !record.variant;
 }
@@ -3214,7 +3214,9 @@ function missingRequiredFields(record) {
 // "I" and "i" are distinct records, so a case-changed clone is legitimate. The daemon's
 // anchor_key lowercases the word, so case-variants share an anchor key there; that is a
 // read-side grouping (by_anchor holds a list; a manual record is keyed by its patch
-// id), not a uniqueness constraint the guard must mirror.
+// id), not a uniqueness constraint the guard must mirror. The one daemon uniqueness
+// gate — one CANONICAL entry per (word_lower, pos, var) — is case-folded and still
+// applies; canonicalRival mirrors it below.
 function distinctnessKey(record) {
     return [
         record.word || "",
@@ -3261,8 +3263,10 @@ function isLiveSibling(record) {
 }
 
 // Evaluate the distinctness guard LIVE. An EXACT live duplicate (word case-
-// sensitive) HARD-BLOCKS the verdicts, as does a pending sibling fetch. An
-// incomplete anchor stays quiet (submit surfaces the precise message).
+// sensitive) HARD-BLOCKS the verdicts, as does a pending sibling fetch. A CANONICAL
+// conflict (different-shaw accepted canonical on the same word/pos/var) only WARNS
+// — authoring a competing candidate is legitimate. An incomplete anchor stays
+// quiet (submit surfaces the precise message).
 const BLOCKING_GUARD_STATES = new Set(["collision", "pending"]);
 
 function evaluateDistinctness(ctx) {
@@ -3304,7 +3308,32 @@ function distinctnessStatus(record) {
                 + "Edit the Shavian, POS, dialect or letter case to make it distinct.",
         };
     }
+    const rival = canonicalRival(record, siblings);
+    if (rival) {
+        return {
+            state: "warn",
+            message: `A canonical ${record.var} entry already exists for ${record.word}/${record.pos} `
+                + `(${rival.shaw}). Flag one as a variant/merger, or author a competing candidate.`,
+        };
+    }
     return { state: "ok", message: "" };
+}
+
+// Mirrors editord ACCEPTED_STATES, for the canonical-conflict check.
+const ACCEPTED_STATES = new Set([PATCH_STATE.ACCEPTED, PATCH_STATE.EDITED]);
+
+// The daemon's one-canonical-per-(word,pos,var) rival (editord _canonical_conflict),
+// mirrored client-side to WARN before the write.
+function canonicalRival(record, siblings) {
+    if (!isCanonical(record)) {
+        return null;
+    }
+    return siblings.find((sibling) =>
+        sibling.pos === record.pos
+        && (sibling.var || "") === (record.var || "")
+        && sibling.shaw !== record.shaw
+        && isCanonical(sibling)
+        && ACCEPTED_STATES.has(sibling.patch_state)) ?? null;
 }
 
 // Author a new entry (Create or Flag): {op:"patch", anchor:null, record, author,

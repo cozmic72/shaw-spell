@@ -92,7 +92,7 @@ const DEFAULT_QUERY_SORT = "confidence_desc";
 const RRP_VAR = "RRP";
 
 // The edit surface. status is NOT here — read-only, set only by the verdict actions.
-const EDITABLE_FIELDS = ["word", "shaw", "var", "ipa", "freq"];
+const EDITABLE_FIELDS = ["word", "shaw", "var", "ipa", "freq", "lemma"];
 
 // The merger vocabulary (additive, empty == canonical): [name, label] pairs, e.g.
 // ["trap-bath", "TRAP–BATH"]. Populated at boot from the same daemon-served
@@ -1508,9 +1508,24 @@ function glanceColumn(ctx, group, overridden) {
         editField(ctx, group, "word", "Word (latin)", "latin-field", overridden.has("word")),
         editField(ctx, group, "shaw", "Shavian", "shaw-field", overridden.has("shaw")),
         editField(ctx, group, "ipa", "IPA", "ipa-field", overridden.has("ipa")),
+        editField(ctx, group, "lemma", "Lemma", "lemma-field", overridden.has("lemma")),
     );
     column.append(fields, posVar);
     return column;
+}
+
+// The human-readable form of one field VALUE (not its comparison key): an
+// object (lemma) renders as its "word pos shaw" text, a list (mergers)
+// sorts-joins, everything else is its own string. Mirrors fieldValueKey's
+// per-shape dispatch, but for DISPLAY rather than comparison.
+function fieldDisplayText(value) {
+    if (Array.isArray(value)) {
+        return [...value].sort().join(" ");
+    }
+    if (value != null && typeof value === "object") {
+        return lemmaText(value);
+    }
+    return value == null ? "" : String(value);
 }
 
 // The divergent-field display: distinct values, commonest first, on ONE ellipsis-
@@ -1520,7 +1535,7 @@ function glanceColumn(ctx, group, overridden) {
 function distinctDisplay(consensus) {
     const list = [...consensus.distinct]
         .sort((a, b) => b.count - a.count)
-        .map((entry) => entry.key || "—")
+        .map((entry) => fieldDisplayText(entry.value) || "—")
         .join(", ");
     return { text: list, title: list };
 }
@@ -1728,10 +1743,15 @@ function fieldConsensus(group, field) {
 }
 
 // A canonical, comparable string: a list-valued field (mergers) sorts-joins so
-// order creates no spurious difference; null/undefined/"" collapse to one key.
+// order creates no spurious difference; an object-valued field (lemma) keys on
+// its own JSON so equal lemmas compare equal instead of both stringifying to
+// "[object Object]"; null/undefined/"" collapse to one key.
 function fieldValueKey(value) {
     if (Array.isArray(value)) {
         return [...value].sort().join(" ");
+    }
+    if (value != null && typeof value === "object") {
+        return JSON.stringify(value);
     }
     return value == null ? "" : String(value);
 }
@@ -2818,7 +2838,7 @@ function editField(ctx, group, name, label, extraClass, overridden) {
     const consensus = fieldConsensus(group, name);
     const divergent = !consensus.uniform;
     const { wrap, caption, input } = fieldInput(
-        name, label, divergent ? "" : consensus.value, extraClass, ctx.prefix,
+        name, label, divergent ? "" : fieldDisplayText(consensus.value), extraClass, ctx.prefix,
     );
     input.addEventListener("focus", () => enterEdit(ctx));
     input.addEventListener("keydown", onFieldKey);
@@ -2921,7 +2941,7 @@ function recordFields(record) {
         result.confidence = record.confidence;
     }
     for (const name of EDITABLE_FIELDS) {
-        result[name] = record[name] ?? "";
+        result[name] = name === "lemma" ? (record.lemma ?? null) : (record[name] ?? "");
     }
     if (record.mergers && record.mergers.length) {
         result.mergers = record.mergers;
@@ -2958,10 +2978,23 @@ function editedRecord(ctx) {
     const result = recordFields(contextRecord(ctx));
     for (const name of EDITABLE_FIELDS) {
         const input = ctx.root.querySelector(`[data-field="${name}"]`);
-        result[name] = name === "freq" ? parsedFreq(input.value) : input.value.trim();
+        result[name] = fieldTextValue(name, input.value);
     }
     applyAdditiveFields(ctx, result);
     return result;
+}
+
+// The parsed value of one EDITABLE_FIELDS text box: freq and lemma each need
+// their own type (a number, a {Latn,pos,Shaw} object or null/false); every
+// other field is the trimmed string as typed.
+function fieldTextValue(name, text) {
+    if (name === "freq") {
+        return parsedFreq(text);
+    }
+    if (name === "lemma") {
+        return parsedLemma(text);
+    }
+    return text.trim();
 }
 
 function applyAdditiveFields(ctx, record) {
@@ -2992,7 +3025,7 @@ function harvestGroupOverlay(ctx) {
         if (input.dataset.consensus === "multiple" && input.dataset.touched !== "true") {
             continue;
         }
-        overlay[name] = name === "freq" ? parsedFreq(input.value) : input.value.trim();
+        overlay[name] = fieldTextValue(name, input.value);
     }
     const variations = ctx.root.querySelector(".variations-field");
     if (variations && (variations.dataset.mixed !== "true" || variations.dataset.touched === "true")) {
@@ -3033,9 +3066,46 @@ function parsedFreq(text) {
     return /^\d+$/.test(trimmed) ? Number(trimmed) : null;
 }
 
+// lemma's edit-box form is "word pos shaw" — the same three tokens lemmaText
+// renders. A blank box means "no lemma stated" (the field is optional, unlike
+// freq/shaw), so it parses to null rather than an error; the daemon self-
+// reference default takes over when a patch omits the field entirely (see
+// _validate_lemma). Anything non-blank that isn't exactly three tokens is
+// UNPARSEABLE — surfaced as false so requireLemma can reject it, never
+// silently dropped or guessed at.
+function parsedLemma(text) {
+    const trimmed = text.trim();
+    if (!trimmed) {
+        return null;
+    }
+    const tokens = trimmed.split(/\s+/);
+    if (tokens.length !== 3) {
+        return false;
+    }
+    const [word, pos, shaw] = tokens;
+    return { Latn: word, pos, Shaw: shaw };
+}
+
+// The lemma glance/edit text form: "word pos shaw", matching parsedLemma's
+// tokenisation exactly so a re-opened field round-trips byte-identical.
+function lemmaText(lemma) {
+    if (!lemma) {
+        return "";
+    }
+    return `${lemma.Latn} ${lemma.pos} ${lemma.Shaw}`;
+}
+
 function requireFreq(record) {
     if (record.freq === null) {
         showToast("Frequency must be a whole number.", true);
+        return false;
+    }
+    return true;
+}
+
+function requireLemma(record) {
+    if (record.lemma === false) {
+        showToast("Lemma must be “word POS shaw” (three parts).", true);
         return false;
     }
     return true;
@@ -3443,7 +3513,7 @@ async function saveSelected() {
         return;
     }
     const record = harvestRecord(ctx);
-    if (!requireShaw(record) || !requireFreq(record)) {
+    if (!requireShaw(record) || !requireFreq(record) || !requireLemma(record)) {
         return;
     }
     // Saving persists the edit but does NOT accept it — a save is DIRTY, exactly
@@ -3479,7 +3549,7 @@ function autoSaveMainEdit() {
     }
     const selected = contextRecord(ctx);
     const record = harvestRecord(ctx);
-    if (!requireShaw(record) || !requireFreq(record)) {
+    if (!requireShaw(record) || !requireFreq(record) || !requireLemma(record)) {
         // Invalid Shavian/frequency: leave the edit unsaved (the toast says why);
         // navigation still proceeds.
         return;
@@ -3504,7 +3574,7 @@ function mainEditIsDirty(ctx) {
     const record = contextRecord(ctx);
     const harvested = harvestRecord(ctx);
     for (const name of EDITABLE_FIELDS) {
-        if (String(harvested[name] ?? "") !== String(record[name] ?? "").trim()) {
+        if (fieldValueKey(harvested[name]) !== fieldValueKey(record[name])) {
             return true;
         }
     }

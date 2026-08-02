@@ -189,8 +189,10 @@ OP_EDIT = "edit"
 # `changes` would freeze a value the pipeline recomputes. freq is intrinsic:
 # the corpus derivation is an UPSTREAM stage that runs BEFORE the overlay, so
 # nothing recomputes it after apply — a patched freq is simply the last word.
+# lemma is intrinsic too: upstream states it via bucketing, but the owner can
+# override which lemma a record belongs to, same as any other stated fact.
 INTRINSIC_FIELDS = ("word", "shaw", "pos", "ipa", "var", "mergers", "variant",
-                    "freq")
+                    "freq", "lemma")
 
 # The status every accepted record carries. An accept IS a sanction; the old
 # finer statuses (new / pos-gap / supplement / pos-gap-shifted) collapse to this
@@ -237,13 +239,50 @@ def reinterpret_upstream(entry):
     return entry
 
 
+# The one upstream bucket key that does not encode a lemma: "centigrade" holds
+# six records (centigrade/centigrades/centigrading/centigraded across VVI/VVB/
+# VVZ/VVG/VVN/VVD) under a key with none of the `_POS_Shaw` structure every
+# other one of the other 56,648 buckets has — not an ambiguous split, just
+# absent. Its records get no `lemma`; LEMMA_FIELD absent means "unknown", same
+# convention as mergers/variant/info.
+UPSTREAM_UNKEYED_BUCKET = "centigrade"
+
+# The DERIVED lemma descriptor: the upstream bucket key an entry was loaded
+# from, split into its stated (Latn, pos, Shaw) — canonical field names, since
+# this lives on the canonical entry from load_upstream through the basis.
+# Upstream states the lemma relation via bucketing (inflections have no key of
+# their own; they sit inside their lemma's bucket) and this makes that explicit
+# without touching identity: a record whose own (Latn, pos, Shaw) equals its
+# bucket key is its own lemma (self-reference), a genuine inflection's lemma
+# differs. A dict, not a bare positional list or the raw key string — matching
+# the anchor-dict convention (anchor_from_key et al.) rather than adding a
+# second, differently-shaped natural-key encoding across the codebase.
+LEMMA_FIELD = "lemma"
+
+
+def _lemma_from_bucket_key(bucket_key):
+    """The (Latn, pos, Shaw) an upstream bucket key states, or None for the one
+    key that carries no such structure (UPSTREAM_UNKEYED_BUCKET). Fails loud on
+    any other key that doesn't split into exactly three `_`-joined parts —
+    upstream is expected to be uniform here, so a new shape is a bug to
+    surface, not paper over."""
+    if bucket_key == UPSTREAM_UNKEYED_BUCKET:
+        return None
+    latin, pos, shaw = bucket_key.rsplit("_", 2)
+    return {"Latn": latin, "pos": pos, "Shaw": shaw}
+
+
 def load_upstream():
     """Upstream ReadLex with its TrapBath records reinterpreted onto the dialect
-    model (see reinterpret_upstream). The shape every pipeline reader sees."""
+    model (see reinterpret_upstream) and every entry stamped with the `lemma`
+    its bucket states (see LEMMA_FIELD) — the shape every pipeline reader sees."""
     data = load_json(UPSTREAM_PATH)
-    for entries in data.values():
+    for bucket_key, entries in data.items():
+        lemma = _lemma_from_bucket_key(bucket_key)
         for entry in entries:
             reinterpret_upstream(entry)
+            if lemma is not None:
+                entry[LEMMA_FIELD] = lemma
     return data
 
 
@@ -410,6 +449,8 @@ def record_to_output(record):
         entry["has_definition"] = record["has_definition"]
     if record.get(INFO_FIELD):
         entry[INFO_FIELD] = record[INFO_FIELD]
+    if record.get(LEMMA_FIELD):
+        entry[LEMMA_FIELD] = record[LEMMA_FIELD]
     for orig_key in ORIG_FIELDS.values():
         if orig_key in record:
             entry[orig_key] = record[orig_key]
@@ -438,6 +479,8 @@ def output_to_record(entry):
         record["has_definition"] = entry["has_definition"]
     if entry.get(INFO_FIELD):
         record[INFO_FIELD] = entry[INFO_FIELD]
+    if entry.get(LEMMA_FIELD):
+        record[LEMMA_FIELD] = entry[LEMMA_FIELD]
     for orig_key in ORIG_FIELDS.values():
         if orig_key in entry:
             record[orig_key] = entry[orig_key]
@@ -460,16 +503,22 @@ def output_to_record(entry):
 # dict; it folds variation into the var's "Var" suffix (consuming `variant`,
 # shipping `mergers`), so data/readlex.json carries Latn/Shaw/pos/ipa/freq/var
 # (+ mergers and supplement when truthy).
+#
+# `lemma` ships alongside mergers/variant, not with the stripped editorial
+# state (has_definition/orig_*/info/confidence/source/status): those are OUR
+# pipeline's working state, but lemma is a linguistic fact upstream itself
+# asserts (which bucket an inflection belongs to) — withholding it would throw
+# away information the export's consumers can otherwise never recover.
 PUBLISH_FIELDS = ("Latn", "Shaw", "pos", "ipa", "freq", "var",
-                  "mergers", "variant", "supplement")
+                  "mergers", "variant", "supplement", "lemma")
 
 
 def published_entry(entry):
     """The PUBLISHED shape of one record (see PUBLISH_FIELDS): the whitelisted
-    core fields, then the additive variation fields (mergers/variant) and the
-    `supplement` flag only when truthy. Pure shaping — any supplement VERDICT
-    (vetted-status/upstream logic) is the caller's business and arrives as the
-    entry's own `supplement` value."""
+    core fields, then the additive variation fields (mergers/variant), `lemma`
+    when present, and the `supplement` flag only when truthy. Pure shaping —
+    any supplement VERDICT (vetted-status/upstream logic) is the caller's
+    business and arrives as the entry's own `supplement` value."""
     published = {
         "Latn": entry["Latn"],
         "Shaw": entry["Shaw"],
@@ -482,6 +531,8 @@ def published_entry(entry):
         published["mergers"] = entry["mergers"]
     if entry.get("variant"):
         published["variant"] = entry["variant"]
+    if entry.get(LEMMA_FIELD):
+        published[LEMMA_FIELD] = entry[LEMMA_FIELD]
     if entry.get("supplement"):
         published["supplement"] = True
     return published

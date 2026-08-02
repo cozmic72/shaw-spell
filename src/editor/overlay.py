@@ -78,10 +78,11 @@ decision for the owner; the overlay only surfaces the problem.
 
 import threading
 
-from basis import (INFO_FIELD, OP_ACCEPT, OP_DROP, OP_EDIT, ORIG_FIELDS,
-                   UPSTREAM_SOURCE, anchor_key, authored_freq, authored_pool,
-                   build_basis, effective_record, enrich_pool_frequency,
-                   is_dirty_patch, is_flag_patch, output_to_record)
+from basis import (INFO_FIELD, LEMMA_FIELD, OP_ACCEPT, OP_DROP, OP_EDIT,
+                   ORIG_FIELDS, UPSTREAM_SOURCE, anchor_key, authored_freq,
+                   authored_pool, build_basis, effective_record,
+                   enrich_pool_frequency, is_dirty_patch, is_flag_patch,
+                   output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
 PATCH_STATE_ACCEPTED = "accepted"
@@ -180,6 +181,10 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     obsolete/dialectal/dated). Additive and read-only — passed through only when the
     record carries it, so a record without it is unaffected.
 
+    `lemma` is the (word, pos, shaw) of the record's lemma per upstream's own
+    bucketing (see basis.LEMMA_FIELD) — read-only, never a patch field, passed
+    through only when the record carries it.
+
     `op` is the patch's operation (accept/drop/flag/edit) — None for an
     unreviewed row (no patch) and for a manual ACCEPT, whose authorship patch
     carries no op. It is carried onto the UI shape so the owner can tell WHAT verdict a
@@ -225,6 +230,8 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
             ui[orig_key] = record[orig_key]
     if record.get(INFO_FIELD):
         ui[INFO_FIELD] = record[INFO_FIELD]
+    if record.get(LEMMA_FIELD):
+        ui[LEMMA_FIELD] = record[LEMMA_FIELD]
     return ui
 
 

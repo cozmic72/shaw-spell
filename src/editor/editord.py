@@ -1101,10 +1101,10 @@ ANCHOR_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_REQUIRED_FIELDS = ("word", "pos", "shaw", "var")
 RECORD_ALLOWED_FIELDS = {"word", "pos", "shaw", "var", "ipa", "freq",
                          "source", "status", "confidence", "note", "mergers",
-                         "variant"}
+                         "variant", "lemma"}
 
 
-def _validate_patch(anchor, record):
+def _validate_patch(state, anchor, record):
     """The applicator's precondition, enforced at the write so a malformed patch
     is rejected where the actor can fix it — never deferred to a build that
     crashes on an incomplete record. The record is self-contained, so every core
@@ -1130,6 +1130,37 @@ def _validate_patch(anchor, record):
             freq_error = _validate_freq(record["freq"])
             if freq_error:
                 return freq_error
+        if "lemma" in record:
+            lemma_error = _validate_lemma(state, record)
+            if lemma_error:
+                return lemma_error
+    return None
+
+
+# lemma is a {Latn, pos, Shaw} pointer to another record. A SELF-reference
+# (the record naming its own word/pos/shaw as its lemma) is always valid —
+# checked WITHOUT a view lookup, so authoring a brand-new root record never
+# deadlocks on a lookup for a record that only exists once this very patch is
+# written. Anything else must resolve to a record the CURRENT view already
+# displays: an owner can point a lemma at a record they just accepted this
+# session, not only a pristine basis candidate, so the check reads the live
+# view (by_word), not the raw basis alone.
+def _validate_lemma(state, record):
+    lemma = record["lemma"]
+    if lemma is None:
+        return None
+    if not isinstance(lemma, dict) or set(lemma) != {"Latn", "pos", "Shaw"}:
+        return f"patch record lemma must be a {{Latn, pos, Shaw}} object, got {lemma!r}"
+    latn, pos, shaw = lemma.get("Latn"), lemma.get("pos"), lemma.get("Shaw")
+    if not latn or not pos or not shaw:
+        return f"patch record lemma has empty Latn/pos/Shaw: {lemma!r}"
+    if (latn.lower(), pos, shaw) == (record["word"].lower(), record["pos"],
+                                     record["shaw"]):
+        return None
+    if not any(candidate["pos"] == pos and candidate["shaw"] == shaw
+              for candidate in state.view.by_word(latn)):
+        return (f"patch record lemma does not resolve to an existing record: "
+                f"{latn!r} {pos} {shaw!r}")
     return None
 
 
@@ -1176,7 +1207,7 @@ def handle_patch(state, request):
         return {"error": "patch requires an author"}
     if anchor is None and record is None:
         return {"error": "patch must supply anchor (edit/drop) or record (authorship)"}
-    error = _validate_patch(anchor, record)
+    error = _validate_patch(state, anchor, record)
     if error:
         return {"error": error}
 
@@ -1253,10 +1284,12 @@ def _compute_changes(record, basis):
     return changes
 
 
-# mergers defaults to [] and variant to False when absent, freq to 0; the other
-# intrinsics default to "" — so an absent field on one side and its default on
-# the other are NOT a change. This mirrors record_to_output/output_to_record,
-# which emit these defaults for absent fields.
+# mergers defaults to [] and variant to False when absent, freq to 0, lemma to
+# None (a dict field — "" would never equal it, so an absent-on-both-sides
+# comparison would always register a spurious change); the other intrinsics
+# default to "" — so an absent field on one side and its default on the other
+# are NOT a change. This mirrors record_to_output/output_to_record, which emit
+# these defaults for absent fields.
 def _intrinsic_value(record, field):
     if field == "mergers":
         return record.get("mergers") or []
@@ -1264,6 +1297,8 @@ def _intrinsic_value(record, field):
         return bool(record.get("variant"))
     if field == "freq":
         return record.get("freq", 0)
+    if field == "lemma":
+        return record.get("lemma") or None
     return record.get(field, "")
 
 
@@ -1359,7 +1394,7 @@ def handle_flag(state, request):
 
     if not anchor:
         return {"error": "flag requires an anchor or a prior authored patch"}
-    error = _validate_patch(anchor, None)
+    error = _validate_patch(state, anchor, None)
     if error:
         return {"error": error}
 
@@ -1398,7 +1433,7 @@ def handle_unpatch(state, request):
     anchor = request.get("anchor")
     patch_id = request.get("patch_id")
     if anchor:
-        error = _validate_patch(anchor, None)
+        error = _validate_patch(state, anchor, None)
         if error:
             return {"error": error}
         key = anchor_key(anchor)

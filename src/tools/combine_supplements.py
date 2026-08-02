@@ -48,8 +48,8 @@ Usage:
 import json
 from collections import Counter
 
-from basis import (PROJECT_ROOT, UPSTREAM_PATH, UPSTREAM_SOURCE, anchor_of,
-                   load_upstream)
+from basis import (LEMMA_FIELD, PROJECT_ROOT, UPSTREAM_PATH, UPSTREAM_SOURCE,
+                   anchor_of, load_upstream)
 
 # Canonical source order: the first source to attest an anchor keeps its record
 # verbatim. ReadLex core is FIRST — the sanctioned dictionary wins content on
@@ -115,7 +115,12 @@ def combine_sources(sources_data, tallies):
     `sources_data` is a list of (label, supplement_dict) in canonical source order.
     Returns an anchor -> record map in first-seen order; each record carries a
     `source` list accumulating every origin that attested its anchor, deduped and
-    order-stable. Pure over its inputs (no disk I/O)."""
+    order-stable. Pure over its inputs (no disk I/O).
+
+    A record arriving with no `lemma` (every supplement source: they have no
+    upstream bucket structure to state one) is its OWN lemma — self-reference,
+    not a guess at which other record it might belong under (that inference is
+    a separate future job)."""
     merged = {}
     for label, supplement in sources_data:
         for entries in supplement.values():
@@ -129,6 +134,10 @@ def combine_sources(sources_data, tallies):
                 else:
                     record = dict(entry)
                     record["source"] = [label]
+                    if not record.get(LEMMA_FIELD):
+                        record[LEMMA_FIELD] = {
+                            "Latn": record["Latn"], "pos": record["pos"],
+                            "Shaw": record["Shaw"]}
                     merged[anchor] = record
                     tallies["records"] += 1
     return merged

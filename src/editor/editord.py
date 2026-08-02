@@ -198,13 +198,6 @@ from patchstore import (                                        # noqa: E402
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
 
-# The patch-states a live, sanctioned record carries — an accept whose changes
-# are empty (ACCEPTED) or non-empty (EDITED). A manual record shipping to the
-# dictionary is ACCEPTED too (see overlay.annotate_authored_record), so both
-# reach the shipped dictionary and a canonical conflict is drawn from either.
-ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED)
-
-
 class State:
     """The annotated view for the daemon's lifetime. A write updates the affected
     anchor in the view incrementally (see AnnotatedView.apply_patch); rebuild()
@@ -1193,16 +1186,6 @@ def handle_patch(state, request):
     if error:
         return {"error": error}
 
-    # Enforce the one-canonical-per-(word,pos,var) invariant on any canonical
-    # accept (authorship or anchored). A drop, a DIRTY edit (op="edit" ships
-    # nothing, so cannot create a canonical clash), or an accept carrying a
-    # merger/variant flag, is exempt (see _canonical_conflict). Nothing is written
-    # if a different-shaw canonical already exists.
-    if patch["op"] != OP_EDIT:
-        error = _canonical_conflict_error(state, record)
-        if error:
-            return {"error": error}
-
     result, _previous = upsert_patch(patch)
     state.view.apply_patch(patch)
     return _write_result(state, key, result, patch["id"])
@@ -1267,71 +1250,15 @@ def _intrinsic_value(record, field):
     return record.get(field, "")
 
 
-# A record is CANONICAL when it carries no additive flag: empty mergers AND
-# variant not true. A record with any merger or variant:true is a sanctioned
-# ALTERNATE, exempt from the one-canonical-per-(word,pos,var) invariant.
-def _is_canonical(record):
-    return not _intrinsic_value(record, "mergers") \
-        and not _intrinsic_value(record, "variant")
-
-
-# The one-canonical-per-(word,pos,var) invariant: for a given (word, pos, var)
-# there may be only ONE accepted canonical entry (different shaws are fine as
-# candidates, but only one may be sanctioned). The anchor key includes shaw, so
-# the anchor check does not catch this; enforce it here before the write.
-#
-# `wanted` is the client's wanted record. If it is not itself a canonical accept
-# (it carries a merger/variant flag, or it is a drop — record is None) it is
-# exempt: return None. Otherwise scan the other records on the same (word, pos,
-# var) with a DIFFERENT shaw and return the first that is itself a live accepted
-# canonical (an existing sanctioned entry the wanted one would duplicate), or
-# None. `exclude_patch_id` spares the row a re-authorship is about to replace —
-# its own prior version is not a rival. A read against the current view, taking
-# the view's own lock via by_word; it never mutates.
-def _canonical_conflict(state, wanted, exclude_patch_id=None):
-    if wanted is None or not _is_canonical(wanted):
-        return None
-    word, pos, var = wanted["word"], wanted["pos"], wanted.get("var", "")
-    shaw = wanted["shaw"]
-    for other in state.view.by_word(word):
-        if other["pos"] != pos or other.get("var", "") != var:
-            continue
-        if other["shaw"] == shaw:
-            continue
-        patch = other.get("patch")
-        if exclude_patch_id and patch and patch["id"] == exclude_patch_id:
-            continue
-        if other["patch_state"] in ACCEPTED_STATES and _is_canonical(other):
-            return other["shaw"]
-    return None
-
-
-def _canonical_conflict_error(state, record, exclude_patch_id=None):
-    """The one-canonical invariant as a write-rejection message, or None when the
-    write is clean — shared by the anchored/authorship accept and the manual
-    re-decision accept, so the two can never phrase the rule apart."""
-    conflict = _canonical_conflict(state, record, exclude_patch_id)
-    if conflict is None:
-        return None
-    return (f"a canonical {record.get('var', '')} entry already exists "
-            f"for {record['word']}/{record['pos']} ({conflict}) — "
-            "flag one as a variant/merger first")
-
-
 def _reauthor(state, record, meta, prior_id, dirty=False):
     """Persist a manual re-decision as a replacement of the prior authorship
     patch, keeping anchor null. `dirty` keeps it an unshipped edit (op="edit",
     verdict unreviewed); otherwise the re-decision is an ACCEPT (op None — the
-    record ships), gated by the one-canonical invariant like any other accept
-    (excluding the very patch being replaced). Fails loud if the prior patch is
-    not there (surfaced to the actor, never a silent new-patch fallback)."""
+    record ships). Fails loud if the prior patch is not there (surfaced to the
+    actor, never a silent new-patch fallback)."""
     if record is None:
         return {"error": "manual re-decision requires a record"}
     op = OP_EDIT if dirty else None
-    if op != OP_EDIT:
-        error = _canonical_conflict_error(state, record, exclude_patch_id=prior_id)
-        if error:
-            return {"error": error}
     patch = make_patch(None, op, record, meta)
     try:
         replace_authored_patch(patch, prior_id)

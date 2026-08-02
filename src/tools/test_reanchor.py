@@ -4,7 +4,7 @@ Unit + end-to-end demonstration of the orig_* provenance convention and the
 applicator's auto-re-anchor (see basis.mark_original / reanchor_index /
 reanchor_patch and apply_patches.apply_patches).
 
-The natural key is (word, pos, shaw, var). A pipeline transform that rewrites a
+The natural key is (word, pos, shaw, var, lemma). A pipeline transform that rewrites a
 record's `var` or `shaw` moves its key and orphans every patch anchored to the old
 key. The orig_* convention preserves the pre-image on the transformed record, so
 the applicator can auto-re-anchor an orphaned patch to where the record lives now.
@@ -97,14 +97,15 @@ class ReanchorIndexTest(unittest.TestCase):
         e = entry("shed", "n", "𐑖𐑧𐑛", "RRP", orig_var="RSSB")
         index, _ = build_index([e])
         rmap = reanchor_index(index)
-        old_key = ("shed", "n", "𐑖𐑧𐑛", "RSSB")
-        self.assertEqual(rmap[old_key], ("shed", "n", "𐑖𐑧𐑛", "RRP"))
+        old_key = ("shed", "n", "𐑖𐑧𐑛", "RSSB", ())
+        self.assertEqual(rmap[old_key], ("shed", "n", "𐑖𐑧𐑛", "RRP", ()))
 
     def test_respell_axis(self):
         e = entry("x", "n", "𐑚𐑦", "RRP", orig_shaw="𐑚𐑰")
         index, _ = build_index([e])
         rmap = reanchor_index(index)
-        self.assertEqual(rmap[("x", "n", "𐑚𐑰", "RRP")], ("x", "n", "𐑚𐑦", "RRP"))
+        self.assertEqual(rmap[("x", "n", "𐑚𐑰", "RRP", ())],
+                         ("x", "n", "𐑚𐑦", "RRP", ()))
 
     def test_untouched_record_absent(self):
         e = entry("x", "n", "𐑚", "RRP")  # no orig_*

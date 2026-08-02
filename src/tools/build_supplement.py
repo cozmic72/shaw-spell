@@ -78,7 +78,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from basis import PROJECT_ROOT, load_upstream
+from basis import (LEMMA_FIELD, PROJECT_ROOT, anchor_of, lemma_slot,
+                   load_upstream)
 
 import combine_supplements as combine_mod
 import annotate_definitions as annotate_mod
@@ -121,6 +122,18 @@ def count(supplement):
     return sum(len(v) for v in supplement.values())
 
 
+def lemma_orphans(supplement):
+    """Records whose stated lemma resolves to NO record in the pool by
+    (latn_lower, pos, shaw) — var-agnostic, the same resolution the editor's
+    lemma validation applies. A self-reference can never orphan; a dangling
+    lemma means the hierarchy quietly flattened."""
+    present = {lemma_slot(entry)
+               for entries in supplement.values() for entry in entries}
+    return [entry for entries in supplement.values() for entry in entries
+            if entry.get(LEMMA_FIELD)
+            and lemma_slot(entry[LEMMA_FIELD]) not in present]
+
+
 def build_supplement(shave_fn=None, enable_shave=None):
     """Run the full in-memory supplement build and return the final bucketed
     supplement dict (the thing data/supplement-combined-filtered.json holds).
@@ -161,6 +174,13 @@ def build_supplement(shave_fn=None, enable_shave=None):
     # 1. combine
     supplement = combine_mod.build_combined(sources_data, Counter())
     yield "combined", supplement
+
+    # Lemma links are born at combine (upstream bucketing + self-reference).
+    # A lemma orphan is SILENT where a record drop is not — the orphaned record
+    # stays valid and exportable — so the chain-end check below compares against
+    # this baseline set and fails the build on any NEW orphan (an identity check,
+    # not a count: one orphan resolved must never mask another created).
+    baseline_orphans = {anchor_of(e) for e in lemma_orphans(supplement)}
 
     # 2. annotate definitions (mutates in place)
     supplement = annotate_mod.annotate(supplement, def_lemmas)
@@ -253,6 +273,16 @@ def build_supplement(shave_fn=None, enable_shave=None):
             f"score_confidence: record count changed ({n_in} -> {n_out}); this "
             f"stage only rewrites confidence + adds votes — it never drops or "
             f"splits a record, so a count change is a bug")
+
+    new_orphans = [e for e in lemma_orphans(supplement)
+                   if anchor_of(e) not in baseline_orphans]
+    if new_orphans:
+        sample = ", ".join(f"{e['Latn']}/{e['pos']}" for e in new_orphans[:10])
+        raise SystemExit(
+            f"the chain created {len(new_orphans)} new lemma orphan(s) "
+            f"(baseline {len(baseline_orphans)} at combine): a stage dropped or "
+            f"respelled a lemma's record while keeping records filed under it, "
+            f"silently flattening the hierarchy. First new orphans: {sample}")
     yield "filtered", supplement
 
 

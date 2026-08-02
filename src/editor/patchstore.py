@@ -6,7 +6,7 @@ editorial artifact (see docs/editorial-overlay-design.md).
 A patch is {anchor, op, changes, meta} — a minimal diff over the live basis:
 
   id       deterministic, content-derived (p_ + sha256 of {anchor, op, changes})
-  anchor   natural key {word, pos, shaw, var} | null (null = authorship)
+  anchor   natural key {word, pos, shaw, var, lemma?} | null (null = authorship)
   op       "accept" (sanction the anchored basis record) / "drop" (remove it) /
            "flag" (production no-op). Absent for authorship (anchor null).
   changes  the intrinsic edits {word, shaw, pos, ipa, var, mergers, variant} an
@@ -14,8 +14,8 @@ A patch is {anchor, op, changes, meta} — a minimal diff over the live basis:
            authorship, the whole self-contained record.
   meta     {author, origin, ts, note?}
 
-A patch's identity for upsert is its full anchor (word, pos, shaw, var) — the
-immutable identity of the reviewed record. Writing a patch whose anchor already
+A patch's identity for upsert is its full anchor (word, pos, shaw, var, lemma) —
+the immutable identity of the reviewed record. Writing a patch whose anchor already
 has one REPLACES it, so a re-decision never duplicates. Authorship patches
 (anchor null) have no anchor and are keyed by id.
 
@@ -87,8 +87,8 @@ def upsert_patch(patch, path=None):
     """Append the patch, or replace the existing patch on the same anchor.
 
     An anchored patch (anchor present) replaces any patch with the same natural
-    key (word, pos, shaw, var). An authorship patch (anchor null) replaces one
-    with the same id. Returns ("replaced", old_patch) or ("appended", None).
+    key (word, pos, shaw, var, lemma). An authorship patch (anchor null) replaces
+    one with the same id. Returns ("replaced", old_patch) or ("appended", None).
     """
     if path is None:
         path = _store_path()

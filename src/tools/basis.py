@@ -15,8 +15,13 @@ docs/editorial-overlay-design.md.
     source label (see combine_supplements.SOURCES) and rides the whole pruning
     chain untouched. Every candidate, including the unreviewed supplemental
     ones, is a record in the basis. Nothing is frozen.
-  - A patch's `anchor` is the natural key (word.lower(), pos, shaw, var) of the
-    ONE basis record it reviews. Each dialect var is reviewed independently.
+  - A patch's `anchor` is the natural key (word.lower(), pos, shaw, var, lemma)
+    of the ONE basis record it reviews. Each dialect var is reviewed
+    independently, and the stated lemma is part of identity: two records may
+    share the wordform yet belong to different lemmas (`axes` VVZ under both
+    `ax` and `axe`). The anchor dict carries the lemma as a structured
+    {Latn, pos, Shaw} sub-object; the key tuple carries it as a nested tuple
+    (see lemma_slot).
 
 A patch is a MINIMAL DIFF over the live basis, not a full-record snapshot:
 
@@ -154,7 +159,7 @@ PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source",
                      "generated_from", "generated_flags", "merger_gate"]
 
 # ORIGINAL-VALUE provenance (orig_*): the pre-transform value of a key field a
-# pipeline transform CHANGED. The natural key is (word, pos, shaw, var), so any
+# pipeline transform CHANGED. The natural key is (word, pos, shaw, var, lemma), so any
 # transform that rewrites `var` (the identical-dialect collapse) or respells
 # `shaw` (a forthcoming RRP classifier) moves a record's key and ORPHANS every
 # editorial patch anchored to the old key. Recording the pre-image lets the
@@ -243,18 +248,20 @@ def reinterpret_upstream(entry):
 # six records (centigrade/centigrades/centigrading/centigraded across VVI/VVB/
 # VVZ/VVG/VVN/VVD) under a key with none of the `_POS_Shaw` structure every
 # other one of the other 56,648 buckets has — not an ambiguous split, just
-# absent. Its records get no `lemma`; LEMMA_FIELD absent means "unknown", same
-# convention as mergers/variant/info.
+# absent. Its records SELF-REFERENCE (see self_lemma): the lemma is part of the
+# natural key, and the combined pool self-references anything arriving without
+# one (combine_supplements), so the raw-upstream side must state the same
+# identity or the two views of one record would key apart.
 UPSTREAM_UNKEYED_BUCKET = "centigrade"
 
 # The DERIVED lemma descriptor: the upstream bucket key an entry was loaded
 # from, split into its stated (Latn, pos, Shaw) — canonical field names, since
 # this lives on the canonical entry from load_upstream through the basis.
 # Upstream states the lemma relation via bucketing (inflections have no key of
-# their own; they sit inside their lemma's bucket) and this makes that explicit
-# without touching identity: a record whose own (Latn, pos, Shaw) equals its
-# bucket key is its own lemma (self-reference), a genuine inflection's lemma
-# differs. A dict, not a bare positional list or the raw key string — matching
+# their own; they sit inside their lemma's bucket) and this makes that explicit:
+# a record whose own (Latn, pos, Shaw) equals its bucket key is its own lemma
+# (self-reference), a genuine inflection's lemma differs. Part of the natural
+# key (see anchor_of). A dict, not a bare positional list or the raw key string — matching
 # the anchor-dict convention (anchor_from_key et al.) rather than adding a
 # second, differently-shaped natural-key encoding across the codebase.
 LEMMA_FIELD = "lemma"
@@ -272,31 +279,57 @@ def _lemma_from_bucket_key(bucket_key):
     return {"Latn": latin, "pos": pos, "Shaw": shaw}
 
 
+def self_lemma(entry):
+    """The self-reference lemma of a canonical entry — the record is its own
+    lemma. The stated-nothing default (nothing guesses that doors belongs under
+    door): stamped by combine for supplement records, and here for the one
+    upstream bucket that states no lemma."""
+    return {"Latn": entry["Latn"], "pos": entry["pos"], "Shaw": entry["Shaw"]}
+
+
 def load_upstream():
     """Upstream ReadLex with its TrapBath records reinterpreted onto the dialect
     model (see reinterpret_upstream) and every entry stamped with the `lemma`
-    its bucket states (see LEMMA_FIELD) — the shape every pipeline reader sees."""
+    its bucket states — self-referenced for the one unkeyed bucket — the shape
+    every pipeline reader sees."""
     data = load_json(UPSTREAM_PATH)
     for bucket_key, entries in data.items():
         lemma = _lemma_from_bucket_key(bucket_key)
         for entry in entries:
             reinterpret_upstream(entry)
-            if lemma is not None:
-                entry[LEMMA_FIELD] = lemma
+            entry[LEMMA_FIELD] = lemma if lemma is not None else self_lemma(entry)
     return data
 
 
+def lemma_slot(lemma):
+    """The stated lemma as a natural-key slot: the nested (latn_lower, pos, shaw)
+    tuple, or () when no lemma is stated. A tuple rather than the dict so the key
+    stays hashable; () rather than None so keys stay totally orderable (the
+    applicator sorts patches on them). Accepts any {Latn, pos, Shaw}-shaped
+    mapping — a stated lemma, or a canonical record offering itself as a lemma
+    target."""
+    if not lemma:
+        return ()
+    return (lemma["Latn"].lower(), lemma["pos"], lemma["Shaw"])
+
+
 def anchor_of(entry):
-    """The natural key of a canonical basis record: (word_lower, pos, shaw, var).
-    Records identical but for var are distinct facts, so var is in the key."""
+    """The natural key of a canonical basis record:
+    (word_lower, pos, shaw, var, lemma). Records identical but for var are
+    distinct facts, so var is in the key — and so is the stated lemma: two
+    records may share the wordform yet belong to different lemmas (`axes` VVZ
+    under both `ax` and `axe`)."""
     return (entry.get("Latn", "").lower(), entry.get("pos", ""),
-            entry.get("Shaw", ""), entry.get("var", ""))
+            entry.get("Shaw", ""), entry.get("var", ""),
+            lemma_slot(entry.get(LEMMA_FIELD)))
 
 
 def anchor_key(anchor):
-    """The (word_lower, pos, shaw, var) a patch's `anchor` resolves against — the
-    single derivation shared by the applicator, the overlay and the patch store."""
-    return (anchor["word"].lower(), anchor["pos"], anchor["shaw"], anchor["var"])
+    """The (word_lower, pos, shaw, var, lemma) a patch's `anchor` resolves
+    against — the single derivation shared by the applicator, the overlay and
+    the patch store."""
+    return (anchor["word"].lower(), anchor["pos"], anchor["shaw"], anchor["var"],
+            lemma_slot(anchor.get("lemma")))
 
 
 # The canonical-entry (Latn/Shaw/...) field a transform changes, and the natural-
@@ -372,20 +405,25 @@ def _pre_transform_key(current_key, entry):
     key with each orig-tracked key slot (shaw, var) swapped back to the recorded
     pre-image. Slots without an orig_* are left as-is. Equal to current_key when the
     record carries no key-moving orig_*."""
-    word, pos, shaw, var = current_key
+    word, pos, shaw, var, lemma = current_key
     if "orig_shaw" in entry:
         shaw = entry["orig_shaw"]
     if "orig_var" in entry:
         var = entry["orig_var"]
-    return (word, pos, shaw, var)
+    return (word, pos, shaw, var, lemma)
 
 
 def anchor_from_key(key):
-    """A patch-anchor dict {word, pos, shaw, var} for a natural key tuple — the
-    inverse of anchor_key. Used to re-point an orphaned patch's anchor at the
-    current key of the record that now carries its pre-image."""
-    word, pos, shaw, var = key
-    return {"word": word, "pos": pos, "shaw": shaw, "var": var}
+    """A patch-anchor dict {word, pos, shaw, var} (+ its lemma sub-object when
+    the key carries one) for a natural key tuple — the inverse of anchor_key.
+    Used to re-point an orphaned patch's anchor at the current key of the record
+    that now carries its pre-image."""
+    word, pos, shaw, var, lemma = key
+    anchor = {"word": word, "pos": pos, "shaw": shaw, "var": var}
+    if lemma:
+        latn, lemma_pos, lemma_shaw = lemma
+        anchor["lemma"] = {"Latn": latn, "pos": lemma_pos, "Shaw": lemma_shaw}
+    return anchor
 
 
 def reanchor_patch(patch, reanchor_map):
@@ -795,7 +833,7 @@ def build_basis():
     """Traverse the basis once, returning both the record index and the origins
     of each anchor.
 
-      index   (word_lower, pos, shaw, var) -> the basis candidate. The pool is
+      index   (word_lower, pos, shaw, var, lemma) -> the basis candidate. The pool is
               the single union point: upstream ReadLex core rides IN it (collated
               at combine, first in source precedence, so a core record wins
               content on a same-anchor collision) — it is NOT unioned in again

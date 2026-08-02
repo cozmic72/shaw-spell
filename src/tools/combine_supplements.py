@@ -22,10 +22,16 @@ dialects.py) runs per group and could not see that one source's GenAm spelling
 and another source's RSSB spelling of the SAME word were the same fact. Combining
 first puts both in one group, so the prune collapses them to one record.
 
-Merge key = the FULL anchor (word.lower(), pos, Shaw, var), exactly the identity
-basis.anchor_of computes. Two records sharing all four fields are ONE record and
-their `source` labels union; two records sharing (word, pos, shaw) but differing
-in `var` are KEPT SEPARATE — the dialect prune adjudicates those downstream.
+Merge key = the FULL anchor (word.lower(), pos, Shaw, var, lemma), exactly the
+identity basis.anchor_of computes. Two records sharing all five slots are ONE
+record and their `source` labels union; two records sharing (word, pos, shaw)
+but differing in `var` are KEPT SEPARATE — the dialect prune adjudicates those
+downstream. Records differing only in lemma (`axes` under both `ax` and `axe`
+upstream) are likewise distinct facts and both survive. A LEMMA-LESS arrival
+(every supplement source) attests the WORDFORM, not a lemma, so it unions its
+label onto every record already carrying its (word, pos, shaw, var) — whatever
+their lemmas — and only becomes a record of its own (self-referenced) when no
+one does.
 
 Records gain a `source` LIST field here (they carry none in their input files).
 Sources are iterated in canonical order; the first to attest an anchor keeps its
@@ -49,7 +55,7 @@ import json
 from collections import Counter
 
 from basis import (LEMMA_FIELD, PROJECT_ROOT, UPSTREAM_PATH, UPSTREAM_SOURCE,
-                   anchor_of, load_upstream)
+                   anchor_of, load_upstream, self_lemma)
 
 # Canonical source order: the first source to attest an anchor keeps its record
 # verbatim. ReadLex core is FIRST — the sanctioned dictionary wins content on
@@ -118,27 +124,41 @@ def combine_sources(sources_data, tallies):
     order-stable. Pure over its inputs (no disk I/O).
 
     A record arriving with no `lemma` (every supplement source: they have no
-    upstream bucket structure to state one) is its OWN lemma — self-reference,
-    not a guess at which other record it might belong under (that inference is
-    a separate future job)."""
+    upstream bucket structure to state one) attests the WORDFORM: its label
+    unions onto every record already on its (word, pos, shaw, var), whatever
+    their lemmas. Only when none exists does it become a record of its own, as
+    its OWN lemma — self-reference, not a guess at which other record it might
+    belong under (that inference is a separate future job). This leans on
+    SOURCES order: the lemma-stating source (upstream) precedes every lemma-less
+    one, so a wordform's lemma-carrying records all exist before any lemma-less
+    arrival is judged — reordering would mint self-referenced twins."""
     merged = {}
+    by_wordform = {}
     for label, supplement in sources_data:
         for entries in supplement.values():
             for entry in entries:
                 anchor = anchor_of(entry)
                 if anchor in merged:
-                    sources = merged[anchor]["source"]
-                    if label not in sources:
-                        sources.append(label)
+                    targets = [merged[anchor]]
+                elif not entry.get(LEMMA_FIELD):
+                    targets = [merged[full] for full
+                               in by_wordform.get(anchor[:4], ())]
+                else:
+                    targets = []
+                if targets:
+                    for record in targets:
+                        sources = record["source"]
+                        if label not in sources:
+                            sources.append(label)
                     tallies["merged"] += 1
                 else:
                     record = dict(entry)
                     record["source"] = [label]
                     if not record.get(LEMMA_FIELD):
-                        record[LEMMA_FIELD] = {
-                            "Latn": record["Latn"], "pos": record["pos"],
-                            "Shaw": record["Shaw"]}
-                    merged[anchor] = record
+                        record[LEMMA_FIELD] = self_lemma(record)
+                    full = anchor_of(record)
+                    merged[full] = record
+                    by_wordform.setdefault(full[:4], []).append(full)
                     tallies["records"] += 1
     return merged
 

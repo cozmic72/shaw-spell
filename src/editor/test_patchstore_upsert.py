@@ -79,7 +79,7 @@ class _store:
 
 def test_anchor_key_lowercases_word_keeps_rest_verbatim():
     key = anchor_key(anchor("Cat", "NN", SHAW_A, "RRP"))
-    assert key == ("cat", "NN", SHAW_A, "RRP"), key
+    assert key == ("cat", "NN", SHAW_A, "RRP", ()), key
 
 
 def test_anchor_key_var_is_part_of_identity():

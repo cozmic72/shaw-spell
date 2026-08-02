@@ -5,7 +5,7 @@ BAKED counterpart to the in-memory re-anchoring apply_patches does every build.
 
 WHY THIS EXISTS
 ---------------
-The natural key of a patch is (word, pos, shaw, var). When a pipeline transform
+The natural key of a patch is (word, pos, shaw, var, lemma). When a pipeline transform
 relabels a record's `var` (the identical-dialect collapse, or a forthcoming RRP
 classifier), the record's key MOVES and every editorial patch anchored to the OLD
 key is ORPHANED. The transform preserves the pre-image on the moved record in
@@ -129,8 +129,8 @@ def classify_orphan(patch, basis_index, reanchor_map):
     # current key, the record was RESPELLED — a changed spelling needs re-review, so
     # we refuse to bake it and defer to the owner (the applicator still follows it in
     # memory, but this persistent tool does not).
-    _, _, old_shaw, _ = old_key
-    _, _, current_shaw, _ = current_key
+    _, _, old_shaw, _, _ = old_key
+    _, _, current_shaw, _, _ = current_key
     if old_shaw != current_shaw:
         return ("shaw-changed", None)
 
@@ -397,8 +397,9 @@ def report_collisions(duplicates, conflicts):
         print("\nTRUE CONFLICTS (differing decisions on one key — left untouched):",
               file=sys.stderr)
         for group in conflicts:
-            word, pos, shaw, var = group["key"]
-            print(f"  key: word={word!r} pos={pos} shaw={shaw} var={var}",
+            word, pos, shaw, var, lemma = group["key"]
+            print(f"  key: word={word!r} pos={pos} shaw={shaw} var={var}"
+                  + (f" lemma={lemma}" if lemma else ""),
                   file=sys.stderr)
             for _i, patch, _a in group["occupants"]:
                 print(f"    [{patch['id']}] op={patch.get('op')} "

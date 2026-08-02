@@ -43,13 +43,20 @@ Corollaries (all live in code today):
 
 Determined against `data/readlex.json` (112,385 entries at the time):
 
-**`(word, pos, shaw, var)`** is the identity of a dictionary record.
+**`(word, pos, shaw, var, lemma)`** is the identity of a dictionary record.
 
 - `word` (Latn), `pos` — identifying.
 - `shaw` — the Shavian spelling *is* the dictionary's payload; a different spelling is
   a different record.
 - `var` — **in the key.** Records identical but for `var` are distinct facts ("this
   spelling applies to this dialect"), so a spelling fix is dialect-specific.
+- `lemma` — **in the key** (2026-08, structured `{Latn, pos, Shaw}` sub-object on the
+  anchor, a nested tuple in the key). Two records can share all four other fields yet
+  belong to different lemmas (`axes` VVZ is filed under both `ax` and `axe` upstream —
+  36 dual-filed record pairs), and homograph slots (`ad` æd vs ˌeɪˈdiː) need the lemma
+  to tell records apart. Absent lemma (`()` in the key) means "none stated".
+  Migration: `src/tools/migrate_patch_lemmas.py`, run in one sitting with a pool
+  regeneration.
 - `ipa`, `freq` — **NOT in the key.** They are derivation/provenance. Of the 64
   collisions on `(word,pos,shaw,var)`, 50 were exact duplicates and 14 differed *only*
   in `ipa`/`freq` (stress-mark re-notation of the same pronunciation → same Shavian).

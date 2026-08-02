@@ -242,8 +242,10 @@ def iter_phrase_records(supplement_paths):
 
 
 def anchor_of(record):
-    """The natural key a consumer joins on: (word_lower, pos, shaw, var). Matches
-    the basis anchor shape (src/tools/basis.py) so the tag file lines up."""
+    """The tag file's OWN join key: a (word_lower, pos, shaw, var) tab-string.
+    Deliberately NOT basis.anchor_of (which since the lemma-in-the-key change
+    also carries the lemma slot): phrase tags are wordform facts, and no
+    consumer joins this file against the basis identity."""
     return f"{record['Latn'].lower()}\t{record['pos']}\t{record['Shaw']}\t{record['var']}"
 
 

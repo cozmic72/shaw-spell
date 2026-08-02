@@ -630,11 +630,21 @@ function landingIndex(preferredAnchor) {
     return after >= 0 ? after : state.records.length - 1;
 }
 
-// Mirrors the daemon's natural-key tiebreak (word.lower, pos, shaw, var).
+// The anchor's lemma sub-object as a comparable string slot — "" when no lemma
+// is stated. Mirrors the daemon's lemma_slot (lowercased Latn), so two anchors
+// compare equal exactly when their keys do server-side.
+function lemmaSlot(anchor) {
+    const lemma = anchor.lemma;
+    return lemma ? [lemma.Latn.toLowerCase(), lemma.pos, lemma.Shaw].join("\0") : "";
+}
+
+// Mirrors the daemon's natural-key tiebreak (word.lower, pos, shaw, var), with
+// the lemma as the final slot so the order is total over the full identity.
 function compareAnchors(a, b) {
     const fields = [
         [a.word.toLowerCase(), b.word.toLowerCase()],
         [a.pos, b.pos], [a.shaw, b.shaw], [a.var, b.var],
+        [lemmaSlot(a), lemmaSlot(b)],
     ];
     for (const [left, right] of fields) {
         if (left < right) return -1;
@@ -646,7 +656,8 @@ function compareAnchors(a, b) {
 function sameAnchor(a, b) {
     return a && b
         && a.word === b.word && a.pos === b.pos
-        && a.shaw === b.shaw && a.var === b.var;
+        && a.shaw === b.shaw && a.var === b.var
+        && lemmaSlot(a) === lemmaSlot(b);
 }
 
 // A stable string identity for an anchor, so the bulk selection can be a Set the
@@ -654,12 +665,13 @@ function sameAnchor(a, b) {
 // fields; the NUL separator can't occur in a value (a word may contain spaces, so a
 // space would not be collision-proof), so distinct anchors never collide.
 function anchorKey(anchor) {
-    return [anchor.word, anchor.pos, anchor.shaw, anchor.var].join("\0");
+    return [anchor.word, anchor.pos, anchor.shaw, anchor.var, lemmaSlot(anchor)].join("\0");
 }
 
-// A record's immutable anchor {word, pos, shaw, var} — its identity, unchanged
-// by any edit. A patch is always written against the anchor, never the (possibly
-// edited) displayed content, so the entry never moves out from under the writer.
+// A record's immutable anchor {word, pos, shaw, var, lemma?} — its identity,
+// unchanged by any edit. A patch is always written against the anchor, never the
+// (possibly edited) displayed content, so the entry never moves out from under
+// the writer.
 function anchorOf(record) {
     return record.anchor;
 }

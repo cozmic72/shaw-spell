@@ -46,7 +46,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
 import overlay
-from basis import authored_pool
+from basis import anchor_of, authored_pool
 from overlay import (PATCH_STATE_ACCEPTED, PATCH_STATE_DIRTY,
                      PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
                      PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
@@ -67,17 +67,13 @@ def entry(latn, pos, shaw, var, source, ipa="", freq=0):
             "var": var, "source": list(source)}
 
 
-def anchor_key_of(latn, pos, shaw, var):
-    return (latn.lower(), pos, shaw, var)
-
-
 def basis_of(*entries):
     """(index, source) over synthetic entries — the two structures AnnotatedView
-    consumes, keyed the way build_basis keys them."""
+    consumes, keyed by the real derivation (basis.anchor_of), exactly as
+    build_basis keys them."""
     index, source = {}, {}
     for candidate in entries:
-        key = anchor_key_of(candidate["Latn"], candidate["pos"],
-                            candidate["Shaw"], candidate["var"])
+        key = anchor_of(candidate)
         index[key] = candidate
         source[key] = list(candidate.get("source", []))
     return index, source
@@ -225,7 +221,7 @@ def test_authored_row_displays_pool_derived_freq():
     index, source = basis_of(entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"]))
     bases = authored_pool(patches)
     # Simulate the startup pool pass having enriched the authored base.
-    bases[("zebra", "NN", SHAW_B, "RRP")]["freq"] = 4321
+    bases[("zebra", "NN", SHAW_B, "RRP", ())]["freq"] = 4321
     view = AnnotatedView(index, source, patches, bases)
     assert only_record_for(view, "zebra")["freq"] == 4321
 
@@ -237,7 +233,7 @@ def test_authored_row_own_nonzero_freq_wins_over_derived():
     patches = [authored_patch(record)]
     index, source = basis_of(entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"]))
     bases = authored_pool(patches)
-    bases[("zebra", "NN", SHAW_B, "RRP")]["freq"] = 4321
+    bases[("zebra", "NN", SHAW_B, "RRP", ())]["freq"] = 4321
     view = AnnotatedView(index, source, patches, bases)
     assert only_record_for(view, "zebra")["freq"] == 9
 
@@ -406,7 +402,7 @@ def test_respelled_word_found_by_displayed_word_after_apply():
     assert [r["word"] for r in view.by_word("receive")] == ["receive"]
     assert view.by_word("recieve") == [], "old word must no longer resolve"
     # The pinned ANCHOR still finds the row — anchor lookups are untouched.
-    row = view.by_anchor(("recieve", "VB", SHAW_A, "RRP"))
+    row = view.by_anchor(("recieve", "VB", SHAW_A, "RRP", ()))
     assert [r["word"] for r in row] == ["receive"]
 
 
@@ -425,7 +421,7 @@ def test_case_only_edit_resolves_under_both_cases():
 def test_word_index_stays_clean_across_edit_revert_remove():
     """No stale registrations across a mutation sequence: respell, respell back,
     revert the patch, and (for an authored row) remove entirely."""
-    key = ("recieve", "VB", SHAW_A, "RRP")
+    key = ("recieve", "VB", SHAW_A, "RRP", ())
     entries = [entry("recieve", "VB", SHAW_A, "RRP", ["wiktionary"])]
     view = view_of(entries, [])
 

@@ -5,8 +5,8 @@ The annotated view: the basis with every record labelled by its patch-state.
 This is the one non-trivial piece of the editor (see
 docs/editorial-overlay-design.md). It overlays data/patches/patches.jsonl on
 the basis, resolving each patch's `anchor` against the basis by the SAME natural
-key (word, pos, shaw, var) the applicator uses — imported from src/tools/basis.py,
-never re-implemented here.
+key (word, pos, shaw, var, lemma) the applicator uses — imported from
+src/tools/basis.py, never re-implemented here.
 
 Under the settled model a patch is a MINIMAL DIFF over the live basis: an accept
 displays the basis record with the patch's intrinsic `changes` laid over it
@@ -152,9 +152,9 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     record carries (source/status/confidence) wins; the origin-derived defaults
     stand in otherwise.
 
-    `anchor` is the record's stable natural key {word, pos, shaw, var}. It never
-    changes when the record is edited, so an edited row keeps its place and is
-    still found by the anchor the patch was written against.
+    `anchor` is the record's stable natural key {word, pos, shaw, var, lemma?}.
+    It never changes when the record is edited, so an edited row keeps its place
+    and is still found by the anchor the patch was written against.
 
     `mergers` is the additive within-accent vowel-merger list — always present in
     the annotated shape (empty == canonical) so the UI can display and edit it,
@@ -181,9 +181,9 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     obsolete/dialectal/dated). Additive and read-only — passed through only when the
     record carries it, so a record without it is unaffected.
 
-    `lemma` is the (word, pos, shaw) of the record's lemma per upstream's own
-    bucketing (see basis.LEMMA_FIELD) — read-only, never a patch field, passed
-    through only when the record carries it.
+    `lemma` is the {Latn, pos, Shaw} of the record's lemma per upstream's own
+    bucketing (see basis.LEMMA_FIELD) — intrinsic and owner-editable, part of
+    the natural key, passed through only when the record carries it.
 
     `op` is the patch's operation (accept/drop/flag/edit) — None for an
     unreviewed row (no patch) and for a manual ACCEPT, whose authorship patch
@@ -235,6 +235,15 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     return ui
 
 
+def _record_anchor(word, pos, shaw, var, lemma):
+    """A row's stable anchor dict. The lemma sub-object is additive, carried only
+    when stated — mirroring anchor_key, whose lemma slot is () for both."""
+    anchor = {"word": word, "pos": pos, "shaw": shaw, "var": var}
+    if lemma:
+        anchor["lemma"] = lemma
+    return anchor
+
+
 def annotate_basis_record(candidate, source, patch, established):
     """One annotated row for a basis candidate under its overlaid patch.
 
@@ -245,8 +254,9 @@ def annotate_basis_record(candidate, source, patch, established):
     (state `accepted` when `changes` is empty, `edited` when it carries edits).
     Dropped: displays the source record, flagged dropped. Flag: displays the
     source record, reviewed-but-undecided."""
-    anchor = {"word": candidate["Latn"], "pos": candidate["pos"],
-              "shaw": candidate["Shaw"], "var": candidate.get("var", "")}
+    anchor = _record_anchor(candidate["Latn"], candidate["pos"],
+                            candidate["Shaw"], candidate.get("var", ""),
+                            candidate.get(LEMMA_FIELD))
     default_status = (UPSTREAM_STATUS if UPSTREAM_SOURCE in source
                       else SUPPLEMENT_STATUS)
 
@@ -296,8 +306,8 @@ def annotate_authored_record(patch, established, authored_bases):
     patch. It is normalised to a one-element LIST here so the whole UI/daemon sees
     a uniform list-valued `source` — the same shape a basis record carries."""
     record = patch["changes"]
-    anchor = {"word": record["word"], "pos": record["pos"],
-              "shaw": record["shaw"], "var": record.get("var", "")}
+    anchor = _record_anchor(record["word"], record["pos"], record["shaw"],
+                            record.get("var", ""), record.get(LEMMA_FIELD))
     record = {**record,
               "freq": authored_freq(record,
                                     authored_bases.get(anchor_key(anchor)))}
@@ -338,6 +348,8 @@ def annotate_orphaned_record(patch, orphan_kind, established):
     anchor = patch["anchor"]
     record = {"word": anchor["word"], "shaw": anchor["shaw"],
               "pos": anchor["pos"], "var": anchor.get("var", "")}
+    if anchor.get("lemma"):
+        record[LEMMA_FIELD] = anchor["lemma"]
     record.update(patch["changes"])
     ui = _ui_record(record, anchor, [ORPHANED_STATUS], ORPHANED_STATUS, True,
                     PATCH_STATE_ORPHANED, patch, established)
@@ -564,9 +576,9 @@ class AnnotatedView:
 
 
 def _index_patches_by_anchor(patches):
-    """Split the store: anchored patches keyed by (word_lower, pos, shaw, var),
-    authorship patches (anchor null) keyed by patch id. Both are the live overlay
-    a write mutates in step with the patch store."""
+    """Split the store: anchored patches keyed by (word_lower, pos, shaw, var,
+    lemma), authorship patches (anchor null) keyed by patch id. Both are the live
+    overlay a write mutates in step with the patch store."""
     anchored = {}
     authored = {}
     for patch in patches:
@@ -623,11 +635,11 @@ def _build_records(basis_index, basis_source, anchored, authored, established,
 def _build_resurfaced_index(basis_index):
     """Map each basis (word_lower, pos, shaw) to the set of vars carrying it — the
     fold that answers "did a dropped record resurface under a different var?". The
-    anchor key is (word_lower, pos, shaw, var), so this drops the var slot and
-    collects it into a set. Built once per view build; consulted per orphaned
-    drop."""
+    anchor key is (word_lower, pos, shaw, var, lemma), so this drops the var and
+    lemma slots and collects the vars into a set. Built once per view build;
+    consulted per orphaned drop."""
     resurfaced = {}
-    for word_lower, pos, shaw, var in basis_index:
+    for word_lower, pos, shaw, var, _lemma in basis_index:
         resurfaced.setdefault((word_lower, pos, shaw), set()).add(var)
     return resurfaced
 
@@ -651,7 +663,7 @@ def _orphan_kind(patch, key, resurfaced_index):
     if op == OP_ACCEPT:
         return ORPHAN_LOST_ACCEPT
     if op == OP_DROP:
-        word_lower, pos, shaw, _var = key
+        word_lower, pos, shaw, _var, _lemma = key
         if (word_lower, pos, shaw) in resurfaced_index:
             return ORPHAN_RESURFACED_DROP
     return None

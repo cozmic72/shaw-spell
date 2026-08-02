@@ -145,9 +145,9 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
 
     Errors:    {"error": "<message>"}
 
-An anchor is the reviewed record's IMMUTABLE natural key (word, pos, shaw, var):
-it is unchanged when the record is edited, so an entry never moves as a result of
-being edited. A `record` is the COMPLETE wanted record; null drops it. anchor null
+An anchor is the reviewed record's IMMUTABLE natural key (word, pos, shaw, var,
+lemma?): it is unchanged when the record is edited, so an entry never moves as a
+result of being edited. A `record` is the COMPLETE wanted record; null drops it. anchor null
 is authorship.
 
 Usage:
@@ -1113,6 +1113,10 @@ def _validate_patch(state, anchor, record):
         missing = [f for f in ANCHOR_FIELDS if not anchor.get(f)]
         if missing:
             return f"patch anchor missing {', '.join(missing)}"
+        if anchor.get("lemma") is not None:
+            shape_error = _lemma_shape_error(anchor["lemma"])
+            if shape_error:
+                return f"patch anchor {shape_error}"
     if record is not None:
         unknown = set(record) - RECORD_ALLOWED_FIELDS
         if unknown:
@@ -1145,15 +1149,25 @@ def _validate_patch(state, anchor, record):
 # displays: an owner can point a lemma at a record they just accepted this
 # session, not only a pristine basis candidate, so the check reads the live
 # view (by_word), not the raw basis alone.
+def _lemma_shape_error(lemma):
+    """The malformed-lemma rejection message, or None for a well-formed
+    {Latn, pos, Shaw} object — shared by the anchor and record validations so
+    the two can never phrase the shape apart."""
+    if not isinstance(lemma, dict) or set(lemma) != {"Latn", "pos", "Shaw"}:
+        return f"lemma must be a {{Latn, pos, Shaw}} object, got {lemma!r}"
+    if not (lemma["Latn"] and lemma["pos"] and lemma["Shaw"]):
+        return f"lemma has empty Latn/pos/Shaw: {lemma!r}"
+    return None
+
+
 def _validate_lemma(state, record):
     lemma = record["lemma"]
     if lemma is None:
         return None
-    if not isinstance(lemma, dict) or set(lemma) != {"Latn", "pos", "Shaw"}:
-        return f"patch record lemma must be a {{Latn, pos, Shaw}} object, got {lemma!r}"
-    latn, pos, shaw = lemma.get("Latn"), lemma.get("pos"), lemma.get("Shaw")
-    if not latn or not pos or not shaw:
-        return f"patch record lemma has empty Latn/pos/Shaw: {lemma!r}"
+    shape_error = _lemma_shape_error(lemma)
+    if shape_error:
+        return f"patch record {shape_error}"
+    latn, pos, shaw = lemma["Latn"], lemma["pos"], lemma["Shaw"]
     if (latn.lower(), pos, shaw) == (record["word"].lower(), record["pos"],
                                      record["shaw"]):
         return None
@@ -1576,8 +1590,8 @@ def _publish_readlex(view):
     offline applicator: skipped, retained in the store, summarised in one log
     line — never a blocked publish. Raises on any genuine derivation error (the
     caller aborts the commit)."""
-    from apply_patches import (OUTPUT_PATH, apply_patches, enrich_upstream,
-                               load_patches)
+    from apply_patches import (IDENTITY_MISMATCH_WARNING, OUTPUT_PATH,
+                               apply_patches, enrich_upstream, load_patches)
     from apply_frequency_data import CORPUS_PATH, load_corpus
     from basis import anchor_of, authored_pool, load_upstream
     from lrw_frequencies import load_lrw
@@ -1622,6 +1636,9 @@ def _publish_readlex(view):
             "publish: dropped %d record(s) whose emitted identity duplicates an "
             "existing output record (e.g. a word edit landed on an existing entry)",
             stats["skipped_duplicate"])
+    if stats["upstream_removal_missed"]:
+        logging.warning("publish: %d %s", stats["upstream_removal_missed"],
+                        IDENTITY_MISMATCH_WARNING)
     if orphans:
         accepts = sum(1 for p in orphans if p.get("op") == OP_ACCEPT)
         drops = sum(1 for p in orphans if p.get("op") == OP_DROP)

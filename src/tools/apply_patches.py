@@ -13,9 +13,9 @@ model)"):
     unreviewed supplemental ones, is a record in the basis. Nothing is frozen.
 
   - A PATCH (data/patches/patches.jsonl) is {anchor, op, changes, meta}:
-      anchor   the natural key {word, pos, shaw, var} of the ONE basis record it
-               reviews, or null for authorship. Immutable identity — never changed
-               when the record is edited.
+      anchor   the natural key {word, pos, shaw, var, lemma?} of the ONE basis
+               record it reviews, or null for authorship. Immutable identity —
+               never changed when the record is edited.
       op       accept (sanction the anchored basis record) / drop (remove it) /
                flag (production no-op) / edit (DIRTY — carries changes, ships
                nothing). An authorship ACCEPT has op null; an authored row can
@@ -62,6 +62,7 @@ from basis import (
     DATA_ROOT,
     PATCH_NOOP,
     PATCH_ORPHAN,
+    UPSTREAM_SOURCE,
     anchor_from_key,
     anchor_key,
     anchor_of,
@@ -81,6 +82,13 @@ from lrw_frequencies import load_lrw
 
 DEFAULT_PATCHES_PATH = DATA_ROOT / "patches" / "patches.jsonl"
 OUTPUT_PATH = DATA_ROOT / "readlex.json"
+
+# The upstream_removal_missed explanation, shared with the daemon's publish log
+# so the two producers never phrase the mixed-state diagnosis apart.
+IDENTITY_MISMATCH_WARNING = (
+    "upstream-anchored removal(s) found no output twin — the store and raw "
+    "upstream disagree on identity (accepts duplicate, drops zombie). "
+    "Regenerate the pool and run migrate_patch_lemmas in one sitting.")
 
 
 def patches_path():
@@ -119,9 +127,12 @@ def bucket_locations(output):
 
 
 def remove_anchored(output, key, locations=None):
-    """Remove from the output the single entry whose natural key matches.
-    `locations` (see bucket_locations) resolves the bucket directly; without it
-    the buckets are scanned in order — same result, linear cost."""
+    """Remove from the output the single entry whose natural key matches,
+    returning whether one was found. A miss is NORMAL for a supplement anchor
+    (the output starts as upstream only) but a mixed-state signature for an
+    upstream one — the caller tallies that case. `locations` (see
+    bucket_locations) resolves the bucket directly; without it the buckets are
+    scanned in order — same result, linear cost."""
     if locations is None:
         bucket_keys = list(output.keys())
     else:
@@ -135,7 +146,8 @@ def remove_anchored(output, key, locations=None):
                 del output[bucket_key]
             if locations is not None:
                 locations[key] = [bk for bk in locations[key] if bk != bucket_key]
-            return
+            return True
+    return False
 
 
 def insert_entry(output, entry, stats, locations=None):
@@ -175,40 +187,43 @@ def patch_order_key(patch):
     return (*anchor_key(anchor), patch["id"])
 
 
-# The var/variants of a record are NOT part of a decision's identity: the owner
-# reviews (word, pos, shaw) and the dialect var can drift under it (a non-
-# deterministic supplement respell relabels the var, or a var-collapse moves it)
-# WITHOUT changing what was reviewed. So an orphaned patch whose weaker key
-# (word_lower, pos, shaw) still resolves to EXACTLY ONE basis record is anchored to
-# that same record — the shaw (spelling) is unchanged, only var drifted — and the
-# owner's decision (whatever its op) still applies verbatim. This kills "zombie"
+# The var/variants and lemma of a record are NOT part of a decision's identity:
+# the owner reviews (word, pos, shaw) and the dialect var or stated lemma can
+# drift under it (a non-deterministic supplement respell relabels the var, a
+# var-collapse moves it, a lemma restatement re-files it) WITHOUT changing what
+# was reviewed. So an orphaned patch whose weaker key (word_lower, pos, shaw)
+# still resolves to EXACTLY ONE basis record is anchored to that same record —
+# the shaw (spelling) is unchanged, only var/lemma drifted — and the owner's
+# decision (whatever its op) still applies verbatim. This kills "zombie"
 # records: a drop the owner made re-emerging live under a drifted var is re-dropped.
 #
 # The rule is deliberately conservative on the two ways it could go wrong:
 #   - shaw CHANGED (no weak-key match): the spelling the owner reviewed is gone.
 #     A respell deserves fresh review, so leave it ORPHANED (never auto-apply a
 #     verdict to a different spelling).
-#   - AMBIGUOUS (weak key matches >1 record — multiple live vars share the
-#     word/pos/shaw): which var the owner meant is unrecoverable, so do NOT guess.
-#     Leave orphaned and surface it (safer than dropping/accepting the wrong var).
+#   - AMBIGUOUS (weak key matches >1 record — multiple live vars or lemmas share
+#     the word/pos/shaw, e.g. `axes` under both `ax` and `axe`): which record the
+#     owner meant is unrecoverable, so do NOT guess. Leave orphaned and surface
+#     it (safer than dropping/accepting the wrong one).
 def weak_reanchor_index(basis_index):
     """Map the weak key (word_lower, pos, shaw) -> the list of full basis keys that
-    share it. A single-element list is an unambiguous var-only match a patch can
-    re-anchor onto; a multi-element list is ambiguous and left orphaned."""
+    share it. A single-element list is an unambiguous var/lemma-only match a patch
+    can re-anchor onto; a multi-element list is ambiguous and left orphaned."""
     weak = {}
     for full_key in basis_index:
-        word, pos, shaw, _var = full_key
+        word, pos, shaw, _var, _lemma = full_key
         weak.setdefault((word, pos, shaw), []).append(full_key)
     return weak
 
 
 def weak_reanchor_patch(patch, weak_map):
     """A copy of an orphaned `patch` re-pointed at the CURRENT full key of the ONE
-    basis record whose (word_lower, pos, shaw) matches — var ignored — or None when
-    the weak key matches zero records (shaw drifted: re-review) or more than one
-    (ambiguous var: don't guess). Same op/changes/id/meta; only the anchor's var
-    moves, and only in memory for this apply (the store is never rewritten)."""
-    word, pos, shaw, _var = anchor_key(patch["anchor"])
+    basis record whose (word_lower, pos, shaw) matches — var and lemma ignored —
+    or None when the weak key matches zero records (shaw drifted: re-review) or
+    more than one (ambiguous: don't guess). Same op/changes/id/meta; only the
+    anchor's var/lemma move, and only in memory for this apply (the store is
+    never rewritten)."""
+    word, pos, shaw, _var, _lemma = anchor_key(patch["anchor"])
     matches = weak_map.get((word, pos, shaw))
     if matches is None or len(matches) != 1:
         return None
@@ -232,7 +247,8 @@ def enrich_upstream(output, authored_bases, corpus, lrw):
 def apply_patches(output, basis_index, basis_source, patches, authored_bases):
     stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
              "reanchored": 0, "reanchored_var": 0,
-             "skipped_numeral": 0, "skipped_shaw": 0, "skipped_duplicate": 0}
+             "skipped_numeral": 0, "skipped_shaw": 0, "skipped_duplicate": 0,
+             "upstream_removal_missed": 0}
     orphans = []
 
     # The auto-re-anchor lookup: an OLD natural key a key-moving transform rewrote
@@ -312,7 +328,14 @@ def apply_patches(output, basis_index, basis_source, patches, authored_bases):
             continue
 
         # Accept or drop: the anchored source record leaves the output first.
-        remove_anchored(output, anchor_key(patch["anchor"]), locations)
+        # An upstream-attested anchor MUST have an output twin, so a miss there
+        # means the store and the raw-upstream side disagree on identity (the
+        # basis/store lemma migration has not run in step) — tallied loudly, or
+        # a drop would silently zombie and an accept silently duplicate.
+        key = anchor_key(patch["anchor"])
+        removed = remove_anchored(output, key, locations)
+        if not removed and UPSTREAM_SOURCE in basis_source.get(key, ()):
+            stats["upstream_removal_missed"] += 1
 
         if entry is None:
             stats["removal"] += 1
@@ -416,6 +439,9 @@ def main():
           + ("  — an emitted record's identity already exists in the output "
              "(e.g. a word edit landed on an existing record); the entry was dropped"
              if stats['skipped_duplicate'] else ""))
+    if stats["upstream_removal_missed"]:
+        print(f"\nWARNING: {stats['upstream_removal_missed']} "
+              f"{IDENTITY_MISMATCH_WARNING}", file=sys.stderr)
     print(f"\nWrote {out_path}")
 
 

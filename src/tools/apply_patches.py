@@ -14,21 +14,21 @@ model)"):
 
   - A PATCH (data/patches/patches.jsonl) is {anchor, op, changes, meta}:
       anchor   the natural key {word, pos, shaw, var, lemma?} of the ONE basis
-               record it reviews, or null for authorship. Immutable identity —
+               record it reviews, or null for a manual record. Immutable identity —
                never changed when the record is edited.
       op       accept (sanction the anchored basis record) / drop (remove it) /
                flag (production no-op) / edit (DIRTY — carries changes, ships
-               nothing). An authorship ACCEPT has op null; an authored row can
+               nothing). A manual-record ACCEPT has op null; a manual row can
                also be flagged or dirty (op flag/edit with anchor null).
       changes  the intrinsic edits {word, shaw, pos, ipa, var, mergers, variant}
                an accept lays over the LIVE basis record (empty = accept as-is);
-               or, for authorship, the whole self-contained record.
+               or, for a manual patch, the whole self-contained record.
 
   - The OUTPUT starts as upstream ReadLex (an unreviewed candidate has no patch,
     so it never enters the output) and is mutated patch by patch. Each patch is
     resolved over the LIVE basis (basis.resolve_patch): an accept removes the
     anchored source record and re-emits it sanctioned with `changes` laid over
-    it; a drop removes it; a flag leaves it untouched. Authorship (anchor null)
+    it; a drop removes it; a flag leaves it untouched. A manual patch (anchor null)
     emits `changes` as a standalone record.
 
   - SOFT-FAIL on an orphaned decision: an anchor that resolves against NOTHING in
@@ -41,8 +41,8 @@ model)"):
 
   - FREQUENCY IS UPSTREAM PROCESSING, applied BEFORE the patches: the corpus
     derivation (apply_frequency_data.enrich_all) runs over the pre-patch record
-    set — the upstream output plus the authored wing of the pool (see
-    enrich_upstream / basis.authored_pool) — and anchored accepts inherit the
+    set — the upstream output plus the manual wing of the pool (see
+    enrich_upstream / basis.manual_pool) — and anchored accepts inherit the
     basis pool's enriched freq. Nothing recomputes freq after the overlay, so a
     patched freq is simply the last word, like any other intrinsic field.
 
@@ -66,8 +66,9 @@ from basis import (
     anchor_from_key,
     anchor_key,
     anchor_of,
-    authored_freq,
-    authored_pool,
+    manual_entry,
+    manual_freq,
+    manual_pool,
     build_basis,
     collapse_readlex,
     frequency_pool,
@@ -180,9 +181,9 @@ def is_emittable(word, shaw, stats):
 
 
 def patch_order_key(patch):
-    """Total, deterministic apply order over anchor identity then patch id. An
-    authorship patch (anchor null) is ordered by its record's natural key, which
-    for authorship IS its `changes`."""
+    """Total, deterministic apply order over anchor identity then patch id. A
+    manual patch (anchor null) is ordered by its record's natural key, which
+    for a manual patch IS its `changes`."""
     anchor = patch["anchor"] or patch["changes"]
     return (*anchor_key(anchor), patch["id"])
 
@@ -230,9 +231,9 @@ def weak_reanchor_patch(patch, weak_map):
     return {**patch, "anchor": anchor_from_key(matches[0])}
 
 
-def enrich_upstream(output, authored_bases, corpus, lrw):
+def enrich_upstream(output, manual_bases, corpus, lrw):
     """The UPSTREAM frequency stage of a publish: every record the overlay will
-    act on — the upstream `output` plus the authored wing of the pool — put on
+    act on — the upstream `output` plus the manual wing of the pool — put on
     the corpus scale in ONE enrich_all pass, BEFORE any patch applies. Nothing
     recomputes freq after the overlay, so a patched freq is the last word.
     Anchored accepts are not enriched here: they resolve through the basis,
@@ -240,12 +241,12 @@ def enrich_upstream(output, authored_bases, corpus, lrw):
     scale. Returns the enrichment tally. Shared by both producers (the editor's
     _publish_readlex and main below)."""
     entries = [entry for bucket in output.values() for entry in bucket]
-    entries.extend(authored_bases.values())
+    entries.extend(manual_bases.values())
     return enrich_all({None: entries}, corpus, lrw)
 
 
-def apply_patches(output, basis_index, basis_source, patches, authored_bases):
-    stats = {"authorship": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
+def apply_patches(output, basis_index, basis_source, patches, manual_bases):
+    stats = {"manual": 0, "update": 0, "removal": 0, "flag": 0, "orphaned": 0,
              "reanchored": 0, "reanchored_var": 0,
              "skipped_numeral": 0, "skipped_shaw": 0, "skipped_duplicate": 0,
              "upstream_removal_missed": 0}
@@ -317,14 +318,14 @@ def apply_patches(output, basis_index, basis_source, patches, authored_bases):
                 stats["reanchored_var"] += 1
 
         if patch["anchor"] is None:
-            # Authorship: a standalone record no source attests. Its freq is
-            # derived pre-overlay on its enriched pool base (the authored wing);
-            # the patch's own non-zero freq is the last word (see authored_freq).
-            entry["freq"] = authored_freq(
-                patch["changes"], authored_bases[anchor_of(entry)])
+            # A manual record: a standalone record no source attests. Its freq is
+            # derived pre-overlay on its enriched pool base (the manual wing);
+            # the patch's own non-zero freq is the last word (see manual_freq).
+            entry["freq"] = manual_freq(
+                patch["changes"], manual_bases[anchor_of(entry)])
             if is_emittable(entry["Latn"], entry["Shaw"], stats):
                 insert_entry(output, entry, stats, locations)
-                stats["authorship"] += 1
+                stats["manual"] += 1
             continue
 
         # Accept or drop: the anchored source record leaves the output first.
@@ -372,16 +373,16 @@ def main():
     # instructions when absent). Two pool passes, mirroring the editor daemon
     # exactly: the basis pool (what an anchored accept inherits — the daemon's
     # startup pass), then the pre-patch output (what upstream pass-throughs and
-    # authored records ship — the daemon's publish pass; the authored wing rides
+    # manual records ship — the daemon's publish pass; the manual wing rides
     # in both, the second pass idempotently settling it on the publish value).
-    authored_bases = authored_pool(patches)
+    manual_bases = manual_pool(patches)
     corpus = load_corpus()
     lrw = load_lrw()
-    enrich_all(frequency_pool(basis_index, authored_bases), corpus, lrw)
-    enrich_stats = enrich_upstream(output, authored_bases, corpus, lrw)
+    enrich_all(frequency_pool(basis_index, manual_bases), corpus, lrw)
+    enrich_stats = enrich_upstream(output, manual_bases, corpus, lrw)
 
     stats, orphans = apply_patches(output, basis_index, basis_source, patches,
-                                   authored_bases)
+                                   manual_bases)
 
     # Soft-fail on orphaned decisions: an anchor that no longer resolves means
     # upstream drifted out from under an editorial decision. LOG each one (so it is
@@ -419,7 +420,7 @@ def main():
             print(f"  {action}: {count:,}")
 
     print(f"\nMerged:   {len(published):,} keys, {sum(len(v) for v in published.values()):,} entries")
-    print(f"  authorship (added):  {stats['authorship']:,}")
+    print(f"  manual (added):      {stats['manual']:,}")
     print(f"  update/respell:      {stats['update']:,}")
     print(f"  removal:             {stats['removal']:,}")
     print(f"  flag (no-op):        {stats['flag']:,}")

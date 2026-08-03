@@ -6,16 +6,16 @@ supplements, computed on demand) overlaid with the **patch store**
 (`data/patches/patches.jsonl`, the only persisted editorial artifact). Each basis
 record is annotated with its patch-state — unreviewed / accepted / edited / dirty /
 dropped / flagged / orphaned — and a derived `reviewed` flag (a patch exists).
-Manual authorship is an ORIGIN, not a state: an authored row carries `manual: true`
+A manual record's origin is a SOURCE like any other, not a state: a manual row carries `manual: true`
 and takes a verdict like any other. See `docs/editorial-overlay-design.md`.
 
 A **persisted** patch is `{anchor, op, changes, meta}` — a minimal diff over the live basis
 (see `src/editor/patchstore.py`). `anchor` is the reviewed record's immutable natural key
 `{word, pos, shaw, var}` (never changed on edit, so an entry never moves; `anchor: null`
-is authorship). `op` is `accept` (sanction the anchored basis record), `edit` (a bare
+is a manual record). `op` is `accept` (sanction the anchored basis record), `edit` (a bare
 not-yet-reviewed edit), `drop` (remove it), or `flag` (a production no-op). `changes` are
 the intrinsic edits (`word, shaw, pos, ipa, var, mergers, variant, freq`) laid over the
-basis record — empty means accept as-is; for authorship it is the whole self-contained
+basis record — empty means accept as-is; for a manual patch it is the whole self-contained
 record.
 
 The **socket `patch` op** (below) is client-facing and still sends the COMPLETE wanted
@@ -53,7 +53,7 @@ spell-check path.
     {"op":"unpatch","anchor":{...}|"patch_id":"p_…"}                        # undo/clear
 
 `record` is the complete wanted record; `record:null` is a drop; `anchor:null`
-(with a record) is authorship. `dirty` marks a bare edit-on-navigate (persisted
+(with a record) is a manual create. `dirty` marks a bare edit-on-navigate (persisted
 `op:edit`, not reviewed/shipped); an explicit Accept (no `dirty`) reviews and ships.
 The daemon diffs the record and persists the minimal-diff patch (see above). The write
 validates the patch shape and, for an accept/edit/drop, that the anchor resolves to a

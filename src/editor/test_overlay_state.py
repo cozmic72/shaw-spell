@@ -6,13 +6,13 @@ These LOCK IN the current (correct) behaviour so a future edit can't silently
 break a subtle invariant. Everything runs over SMALL SYNTHETIC basis dicts and
 patch dicts built by hand — no basis load, no build, no live store, no Shavian
 bulk. AnnotatedView is constructed directly from (basis_index, basis_source,
-patches, authored_bases), exactly as load_view assembles it.
+patches, manual_bases), exactly as load_view assembles it.
 
 Covers:
   - every patch_state: unreviewed, accepted, edited, dirty, dropped, flagged,
     orphaned — a basis+patch that should yield each, asserting the derived
     patch_state (and the reviewed flag that partitions the review pool)
-  - MANUAL rows (authorship patches, anchor null): manual-ness is an origin
+  - MANUAL rows (manual patches, anchor null): manual-ness is an origin
     (`manual: True`), not a state — the row's patch_state is derived from the
     patch op like any other (op None = accepted/ships, op "edit" = dirty/
     unreviewed, op "flag" = flagged)
@@ -46,7 +46,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "tools"))
 
 import overlay
-from basis import anchor_of, authored_pool
+from basis import anchor_of, manual_pool
 from overlay import (PATCH_STATE_ACCEPTED, PATCH_STATE_DIRTY,
                      PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
                      PATCH_STATE_FLAGGED, PATCH_STATE_ORPHANED,
@@ -89,8 +89,8 @@ def anchored_patch(op, word, pos, shaw, var, changes=None, pid="p_test"):
                                                "ts": "2026-01-01T00:00:00Z"}}
 
 
-def authored_patch(record, pid="p_auth", op=None):
-    """An authorship patch: anchor null, `changes` is the whole self-contained
+def manual_patch(record, pid="p_auth", op=None):
+    """A manual patch: anchor null, `changes` is the whole self-contained
     record (word/shaw/pos/var — the natural-key fields at minimum). `op` picks
     the manual record's verdict: None = accepted (ships), "edit" = dirty
     (unreviewed, ships nothing), "flag" = flagged."""
@@ -101,10 +101,10 @@ def authored_patch(record, pid="p_auth", op=None):
 
 def view_of(entries, patches):
     """A fresh AnnotatedView (full rebuild) over synthetic entries + patches.
-    The authored wing is built by the real helper (basis.authored_pool), exactly
+    The manual wing is built by the real helper (basis.manual_pool), exactly
     as load_view assembles it — unenriched here (no corpus in these tests)."""
     index, source = basis_of(*entries)
-    return AnnotatedView(index, source, patches, authored_pool(patches))
+    return AnnotatedView(index, source, patches, manual_pool(patches))
 
 
 def only_record_for(view, word):
@@ -173,7 +173,7 @@ def test_manual_record_with_null_anchor_is_accepted_and_marked_manual():
     record = {"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
               "ipa": "nuː"}
     view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])],
-                   [authored_patch(record)])
+                   [manual_patch(record)])
     rec = only_record_for(view, "newword")
     assert rec["patch_state"] == PATCH_STATE_ACCEPTED, rec["patch_state"]
     assert rec["manual"] is True
@@ -187,7 +187,7 @@ def test_manual_record_created_dirty_is_unreviewed():
     # verdict dirty, reviewed False, still marked manual.
     record = {"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP"}
     view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])],
-                   [authored_patch(record, op="edit")])
+                   [manual_patch(record, op="edit")])
     rec = only_record_for(view, "newword")
     assert rec["patch_state"] == PATCH_STATE_DIRTY, rec["patch_state"]
     assert rec["manual"] is True
@@ -196,10 +196,10 @@ def test_manual_record_created_dirty_is_unreviewed():
 
 def test_manual_record_flagged_is_flagged():
     # op "flag": a flagged manual record wears the FLAGGED verdict (it used to be
-    # swallowed by the retired blanket "authored" state).
+    # swallowed by the retired blanket "manual" state).
     record = {"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP"}
     view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"])],
-                   [authored_patch(record, op="flag")])
+                   [manual_patch(record, op="flag")])
     rec = only_record_for(view, "newword")
     assert rec["patch_state"] == PATCH_STATE_FLAGGED, rec["patch_state"]
     assert rec["manual"] is True
@@ -211,29 +211,30 @@ def test_basis_rows_carry_no_manual_marker():
     assert "manual" not in only_record_for(view, "cat")
 
 
-def test_authored_row_displays_pool_derived_freq():
-    """The #115 fix: an authored row shows the freq the pool pass derived onto
-    its base (the authored wing), not the 0 a pre-fix client baked into the
-    patch — display and the applicator share basis.authored_freq."""
+def test_manual_row_displays_pool_derived_freq():
+    """The #115 fix: a manual row shows the freq the pool pass derived onto
+    its base (the manual wing), not the 0 a pre-fix client baked into the
+    patch — display and the applicator share basis.manual_freq."""
     record = {"word": "zebra", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
               "freq": 0}
-    patches = [authored_patch(record)]
+    patches = [manual_patch(record)]
     index, source = basis_of(entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"]))
-    bases = authored_pool(patches)
-    # Simulate the startup pool pass having enriched the authored base.
-    bases[("zebra", "NN", SHAW_B, "RRP", ())]["freq"] = 4321
+    bases = manual_pool(patches)
+    # Simulate the startup pool pass having enriched the manual base. The pool
+    # key carries the derived self-lemma slot (see basis.manual_entry).
+    bases[("zebra", "NN", SHAW_B, "RRP", ("zebra", "NN", SHAW_B))]["freq"] = 4321
     view = AnnotatedView(index, source, patches, bases)
     assert only_record_for(view, "zebra")["freq"] == 4321
 
 
-def test_authored_row_own_nonzero_freq_wins_over_derived():
+def test_manual_row_own_nonzero_freq_wins_over_derived():
     """A patch that asserts its own freq is the last word over the derivation."""
     record = {"word": "zebra", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
               "freq": 9}
-    patches = [authored_patch(record)]
+    patches = [manual_patch(record)]
     index, source = basis_of(entry("cat", "NN", SHAW_A, "RRP", ["wiktionary"]))
-    bases = authored_pool(patches)
-    bases[("zebra", "NN", SHAW_B, "RRP", ())]["freq"] = 4321
+    bases = manual_pool(patches)
+    bases[("zebra", "NN", SHAW_B, "RRP", ("zebra", "NN", SHAW_B))]["freq"] = 4321
     view = AnnotatedView(index, source, patches, bases)
     assert only_record_for(view, "zebra")["freq"] == 9
 
@@ -334,14 +335,14 @@ def test_incremental_apply_equals_full_rebuild_over_same_patches():
         entry("dog", "NN", SHAW_B, "RRP", ["wiktionary"], ipa="dog"),
         entry("fox", "VB", SHAW_A, "GenAm", ["wordnet"]),
     ]
-    authored = {"word": "zebra", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
+    manual_record = {"word": "zebra", "shaw": SHAW_B, "pos": "NN", "var": "RRP",
                 "ipa": "zeb"}
     final_patches = [
         anchored_patch("accept", "cat", "NN", SHAW_A, "RRP",
                        changes={"ipa": "kæt"}, pid="p_cat"),
         anchored_patch("drop", "dog", "NN", SHAW_B, "RRP", pid="p_dog"),
         anchored_patch("flag", "fox", "VB", SHAW_A, "GenAm", pid="p_fox"),
-        authored_patch(authored, pid="p_zebra"),
+        manual_patch(manual_record, pid="p_zebra"),
     ]
 
     rebuilt = view_of(copy.deepcopy(entries), copy.deepcopy(final_patches))
@@ -420,7 +421,7 @@ def test_case_only_edit_resolves_under_both_cases():
 
 def test_word_index_stays_clean_across_edit_revert_remove():
     """No stale registrations across a mutation sequence: respell, respell back,
-    revert the patch, and (for an authored row) remove entirely."""
+    revert the patch, and (for a manual row) remove entirely."""
     key = ("recieve", "VB", SHAW_A, "RRP", ())
     entries = [entry("recieve", "VB", SHAW_A, "RRP", ["wiktionary"])]
     view = view_of(entries, [])
@@ -435,7 +436,7 @@ def test_word_index_stays_clean_across_edit_revert_remove():
     view.apply_unpatch_anchor(anchor("recieve", "VB", SHAW_A, "RRP"))
     assert view.by_word_index == {"recieve": {key}}
 
-    view.apply_patch(authored_patch({"word": "Zebra", "shaw": SHAW_B,
+    view.apply_patch(manual_patch({"word": "Zebra", "shaw": SHAW_B,
                                      "pos": "NN", "var": "RRP"}, pid="p_z"))
     assert [r["word"] for r in view.by_word("zebra")] == ["Zebra"]
     view.apply_unpatch_id("p_z")

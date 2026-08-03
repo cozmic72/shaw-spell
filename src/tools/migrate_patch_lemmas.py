@@ -136,15 +136,15 @@ def plan_migration(patches, upstream_map, basis_map):
       ambiguous  [(index, patch, lemmas)]       NEVER written; blocks --write
       unresolved [(index, patch)]               pre-existing orphans, untouched
       conflicts  [(index, patch, lemma)]        stored lemma differs, untouched
-      counts     {authorship, already} untouched-and-fine tallies
+      counts     {manual, already} untouched-and-fine tallies
     """
     stamps, ambiguous, unresolved, conflicts = [], [], [], []
-    counts = {"authorship": 0, "already": 0}
+    counts = {"manual": 0, "already": 0}
 
     for i, patch in enumerate(patches):
         anchor = patch["anchor"]
         if anchor is None:
-            counts["authorship"] += 1
+            counts["manual"] += 1
             continue
 
         wordform = anchor_key(anchor)[:4]
@@ -187,7 +187,7 @@ def report(store_path, total, stamps, ambiguous, unresolved, conflicts, counts):
     n_basis = sum(1 for _i, _p, kind, _l in stamps if kind == KIND_BASIS)
     print(f"Patch store: {store_path}")
     print(f"  patches:              {total:,}")
-    print(f"  authorship (no anchor):{counts['authorship']:,}")
+    print(f"  manual (no anchor):    {counts['manual']:,}")
     print(f"  already stamped:      {counts['already']:,}")
     print(f"  to stamp — upstream:  {n_upstream:,}  (bucket lemma, unique)")
     print(f"  to stamp — basis:     {n_basis:,}  (the basis record's stated lemma)")

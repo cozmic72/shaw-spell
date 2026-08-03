@@ -16,7 +16,7 @@ Covers:
   - a DIFFERENT anchor appends a second patch (does not collide)
   - upsert keys on the FULL anchor incl. var — same word/pos/shaw under a
     different var are distinct records, both retained
-  - authorship patches (anchor null) upsert by id, not anchor
+  - manual patches (anchor null) upsert by id, not anchor
   - the store round-trips: write a set, read it back, get the same patches
   - patch_id is content-derived and stable (same anchor/op/changes → same id)
 
@@ -49,7 +49,7 @@ def accept(word, pos, shaw, var, changes=None, author="joro"):
                                  {"author": author, "origin": "editor"})
 
 
-def authored(record, author="joro"):
+def manual(record, author="joro"):
     return patchstore.make_patch(None, None, record,
                                  {"author": author, "origin": "editor"})
 
@@ -155,15 +155,15 @@ def test_word_case_folds_to_same_anchor():
         assert len(patchstore.load_patches()) == 1
 
 
-# ---- authorship patches upsert by id ----
+# ---- manual patches upsert by id ----
 
-def test_authored_patch_upserts_by_id_not_anchor():
+def test_manual_patch_upserts_by_id_not_anchor():
     with _store():
         record = {"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP"}
-        patch = authored(record)
+        patch = manual(record)
         outcome, _previous = patchstore.upsert_patch(patch)
         assert outcome == "appended", outcome
-        # Re-upserting the identical authored patch (same id) replaces in place.
+        # Re-upserting the identical manual patch (same id) replaces in place.
         outcome2, previous2 = patchstore.upsert_patch(patch)
         assert outcome2 == "replaced", outcome2
         assert previous2["id"] == patch["id"]
@@ -177,7 +177,7 @@ def test_write_read_round_trips_faithfully():
         patches = [
             accept("cat", "NN", SHAW_A, "RRP", changes={"ipa": "kæt"}),
             accept("dog", "NN", SHAW_B, "GenAm"),
-            authored({"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP"}),
+            manual({"word": "newword", "shaw": SHAW_B, "pos": "NN", "var": "RRP"}),
         ]
         patchstore.write_patches(patches)
         reread = patchstore.load_patches()

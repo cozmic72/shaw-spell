@@ -31,12 +31,13 @@ moves), a `reviewed` flag (a patch exists), and a
     orphaned    an ANCHORED patch whose anchor no longer resolves against the basis
                 (upstream drifted out from under the decision — see below)
 
-MANUAL rows (authorship patches, anchor null — a standalone record no basis anchor
+MANUAL rows (manual patches, anchor null — a standalone record no basis anchor
 attests) are NOT a state of their own: manual-ness is an ORIGIN, carried as
-`manual: True` on the row, while `patch_state` is the record's verdict like any
-other row's — `accepted` (op None, the record ships), `flagged`, or `dirty` (a
+`manual: True` on the row (and as the `manual` value in `source`, alongside the
+other origins), while `patch_state` is the record's verdict like any other
+row's — `accepted` (op None, the record ships), `flagged`, or `dirty` (a
 manual record awaiting review, shipping nothing until accepted). See
-annotate_authored_record.
+annotate_manual_record.
 
 `dropped` rows still DISPLAY the source content (flagged, not hidden — the editor
 must see a drop to roll it back). Manual rows are not in the basis; they are
@@ -79,10 +80,10 @@ decision for the owner; the overlay only surfaces the problem.
 import threading
 
 from basis import (INFO_FIELD, LEMMA_FIELD, OP_ACCEPT, OP_DROP, OP_EDIT,
-                   ORIG_FIELDS, UPSTREAM_SOURCE, anchor_key, authored_freq,
-                   authored_pool, build_basis, effective_record,
-                   enrich_pool_frequency, is_dirty_patch, is_flag_patch,
-                   output_to_record)
+                   ORIG_FIELDS, UPSTREAM_SOURCE, anchor_key, anchor_of,
+                   build_basis, effective_record, enrich_pool_frequency,
+                   is_dirty_patch, is_flag_patch, manual_entry, manual_freq,
+                   manual_pool, output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
 PATCH_STATE_ACCEPTED = "accepted"
@@ -108,7 +109,7 @@ def verdict_state(record):
 
 UPSTREAM_STATUS = "sanctioned"
 SUPPLEMENT_STATUS = "supplement"
-AUTHORED_STATUS = "manual"
+MANUAL_SOURCE = "manual"
 ORPHANED_STATUS = "orphaned"
 
 # Why an anchored patch orphaned — the sub-kind of an `orphaned` row, so the owner
@@ -186,7 +187,7 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     the natural key, passed through only when the record carries it.
 
     `op` is the patch's operation (accept/drop/flag/edit) — None for an
-    unreviewed row (no patch) and for a manual ACCEPT, whose authorship patch
+    unreviewed row (no patch) and for a manual ACCEPT, whose manual patch
     carries no op. It is carried onto the UI shape so the owner can tell WHAT verdict a
     reviewed row records — most useful on orphan rows, where a lost accept
     (redundant) and an EVADED drop (junk resurfaced under a relabelled var) need
@@ -283,11 +284,12 @@ def annotate_basis_record(candidate, source, patch, established):
                       established)
 
 
-def annotate_authored_record(patch, established, authored_bases):
-    """One annotated row from an authorship patch (anchor is null): the MANUAL
+def annotate_manual_record(patch, established, manual_bases):
+    """One annotated row from a manual patch (anchor is null): the MANUAL
     record a human invented, which has no basis anchor. Its displayed content IS
-    the record (the patch's `changes`, self-contained — no basis to diff against);
-    its stable anchor is that record's own natural key.
+    the record (the patch's `changes` through basis.manual_entry — self-contained,
+    no basis to diff against, self-lemma'd when the owner stated no lemma); its
+    stable anchor is that record's own natural key, lemma slot included.
 
     Manual-ness is an origin, not a verdict: the row carries `manual: True`, and
     its `patch_state` is derived from the patch's op exactly like a basis row's —
@@ -295,29 +297,28 @@ def annotate_authored_record(patch, established, authored_bases):
     the applicator ships nothing for it), and op None is `accepted` (the record
     ships — see basis.resolve_patch).
 
-    Its freq is the pool-derived value from `authored_bases` (the manual wing,
-    enriched at startup alongside the basis — see basis.authored_pool) unless the
-    patch asserts its own; basis.authored_freq is the same rule the applicator
-    ships, so display and production can never disagree. A record authored in
+    Its freq is the pool-derived value from `manual_bases` (the manual wing,
+    enriched at startup alongside the basis — see basis.manual_pool) unless the
+    patch asserts its own; basis.manual_freq is the same rule the applicator
+    ships, so display and production can never disagree. A record created in
     THIS session has no enriched base yet (no corpus resident) and shows 0 until
     the next startup or publish derives it.
 
     A manual record's source is a single origin (the author), a scalar in the
     patch. It is normalised to a one-element LIST here so the whole UI/daemon sees
     a uniform list-valued `source` — the same shape a basis record carries."""
-    record = patch["changes"]
+    record = output_to_record(manual_entry(patch["changes"]))
     anchor = _record_anchor(record["word"], record["pos"], record["shaw"],
-                            record.get("var", ""), record.get(LEMMA_FIELD))
-    record = {**record,
-              "freq": authored_freq(record,
-                                    authored_bases.get(anchor_key(anchor)))}
+                            record.get("var", ""), record[LEMMA_FIELD])
+    record["freq"] = manual_freq(patch["changes"],
+                                 manual_bases.get(anchor_key(anchor)))
     if is_flag_patch(patch):
         reviewed, state = True, PATCH_STATE_FLAGGED
     elif is_dirty_patch(patch):
         reviewed, state = False, PATCH_STATE_DIRTY
     else:
         reviewed, state = True, PATCH_STATE_ACCEPTED
-    ui = _ui_record(record, anchor, [AUTHORED_STATUS], AUTHORED_STATUS, reviewed,
+    ui = _ui_record(record, anchor, [MANUAL_SOURCE], MANUAL_SOURCE, reviewed,
                     state, patch, established)
     ui["manual"] = True
     if not isinstance(ui["source"], list):
@@ -363,7 +364,7 @@ class AnnotatedView:
     rebuilding the whole ~238K-record view (see apply_patch / apply_unpatch).
 
     The basis (index + per-anchor origin) and the patch overlay (anchored map +
-    authored map) are retained so a write can re-annotate one anchor in place.
+    manual map) are retained so a write can re-annotate one anchor in place.
     `by_anchor_index` maps an anchor key to the records carrying it, so both the
     per-anchor read and the in-place update are O(1). `by_word_index` maps a
     lowercased DISPLAYED Latin word to the anchor keys whose rows show it, so the
@@ -379,31 +380,31 @@ class AnnotatedView:
     every read that touches the structure. Readers hand back a snapshot, never a
     live reference the caller would iterate after releasing the lock."""
 
-    def __init__(self, basis_index, basis_source, patches, authored_bases,
+    def __init__(self, basis_index, basis_source, patches, manual_bases,
                  freq_enriched=False):
         self.basis_index = basis_index
         self.basis_source = basis_source
-        # The authored wing of the pool (basis.authored_pool), enriched by the
+        # The manual wing of the pool (basis.manual_pool), enriched by the
         # startup pool pass alongside the basis — read-only here: it supplies the
-        # derived freq an authored row displays (see annotate_authored_record).
-        # A record authored during this session gains its base at next startup.
-        self.authored_bases = authored_bases
+        # derived freq a manual row displays (see annotate_manual_record).
+        # A record created during this session gains its base at next startup.
+        self.manual_bases = manual_bases
         # Whether the startup pool pass actually ran (False = frequency data was
         # absent and the graceful skip fired). The publish path refuses to ship
         # an unenriched basis, so it checks this before deriving readlex.json.
         self.freq_enriched = freq_enriched
-        self.anchored, self.authored = _index_patches_by_anchor(patches)
+        self.anchored, self.manual = _index_patches_by_anchor(patches)
         self.established = EstablishedIndex(basis_index, basis_source)
         self.by_anchor_index = _build_records(
-            basis_index, basis_source, self.anchored, self.authored,
-            self.established, authored_bases)
+            basis_index, basis_source, self.anchored, self.manual,
+            self.established, manual_bases)
         self.by_word_index = _build_word_index(self.by_anchor_index)
         self.by_shaw_index = _build_shaw_index(self.by_anchor_index)
         self._lock = threading.Lock()
 
     @property
     def records(self):
-        """Every annotated row, in basis-then-authored order (the order a full
+        """Every annotated row, in basis-then-manual order (the order a full
         rebuild produces). Flattened from the per-anchor index on demand — the
         list the request handler filters and sorts. (Flattening the whole ~205K
         view each read is a known ~5.7ms cost, accepted for now.)"""
@@ -452,38 +453,38 @@ class AnnotatedView:
                     for record in self.by_anchor_index.get(key, ())
                     if record["shaw"] == shaw]
 
-    def authored_patch(self, patch_id):
-        """The authorship patch with `patch_id`, or None. A snapshot read under the
+    def manual_patch(self, patch_id):
+        """The manual patch with `patch_id`, or None. A snapshot read under the
         lock — the caller reads its record without racing a concurrent write."""
         with self._lock:
-            return self.authored.get(patch_id)
+            return self.manual.get(patch_id)
 
     def apply_patch(self, patch):
         """Overlay a written patch on its anchor, re-annotating only the affected
         records in place. An anchored patch re-annotates the basis record on that
-        anchor; an authorship patch (anchor null) adds or replaces the authored
+        anchor; a manual patch (anchor null) adds or replaces the manual
         record for its record's natural key. The result is identical to what a
         full rebuild would produce for that anchor — the same annotate_* function
         is applied to the same inputs."""
         with self._lock:
             if patch["anchor"] is None:
-                self._apply_authored_patch(patch)
+                self._apply_manual_patch(patch)
             else:
                 self._reannotate_basis_anchor(anchor_key(patch["anchor"]), patch)
 
-    def apply_reauthor(self, patch, prior_id):
-        """Re-annotate an authorship entry re-decided in place: drop the row for
-        `prior_id` and overlay `patch` (anchor null). A re-authorship changes the
-        record, so `patch` has a NEW id; the prior authored row is found by
-        `prior_id`, not the new one. Fails loud if no authored row carries it."""
+    def apply_manual_redecide(self, patch, prior_id):
+        """Re-annotate a manual entry re-decided in place: drop the row for
+        `prior_id` and overlay `patch` (anchor null). A re-decision changes the
+        record, so `patch` has a NEW id; the prior manual row is found by
+        `prior_id`, not the new one. Fails loud if no manual row carries it."""
         with self._lock:
-            removed = self.authored.pop(prior_id, None)
+            removed = self.manual.pop(prior_id, None)
             if removed is None:
-                raise KeyError(f"no authored patch in view: {prior_id}")
-            key = anchor_key(removed["changes"])
+                raise KeyError(f"no manual patch in view: {prior_id}")
+            key = anchor_of(manual_entry(removed["changes"]))
             self._forget_record(key, lambda r: r.get("manual")
                                 and r["patch"]["id"] == prior_id)
-            self._apply_authored_patch(patch)
+            self._apply_manual_patch(patch)
 
     def apply_unpatch_anchor(self, anchor):
         """Remove the anchored patch on the given anchor. If the basis holds the
@@ -501,12 +502,12 @@ class AnnotatedView:
                     key, lambda r: r["patch_state"] == PATCH_STATE_ORPHANED)
 
     def apply_unpatch_id(self, patch_id):
-        """Remove the authorship patch with the given id, dropping its row."""
+        """Remove the manual patch with the given id, dropping its row."""
         with self._lock:
-            removed = self.authored.pop(patch_id, None)
+            removed = self.manual.pop(patch_id, None)
             if removed is None:
-                raise KeyError(f"no authored patch in view: {patch_id}")
-            key = anchor_key(removed["anchor"] or removed["changes"])
+                raise KeyError(f"no manual patch in view: {patch_id}")
+            key = anchor_of(manual_entry(removed["changes"]))
             self._forget_record(key, lambda r: r.get("manual")
                                 and r["patch"]["id"] == patch_id)
 
@@ -524,11 +525,11 @@ class AnnotatedView:
         self._replace_record(key, annotated,
                              lambda r: not r.get("manual"))
 
-    def _apply_authored_patch(self, patch):
-        self.authored[patch["id"]] = patch
-        annotated = annotate_authored_record(patch, self.established,
-                                             self.authored_bases)
-        key = anchor_key(patch["changes"])
+    def _apply_manual_patch(self, patch):
+        self.manual[patch["id"]] = patch
+        annotated = annotate_manual_record(patch, self.established,
+                                           self.manual_bases)
+        key = anchor_key(annotated["anchor"])
         self._replace_record(
             key, annotated,
             lambda r: r.get("manual") and r["patch"]["id"] == patch["id"])
@@ -577,23 +578,23 @@ class AnnotatedView:
 
 def _index_patches_by_anchor(patches):
     """Split the store: anchored patches keyed by (word_lower, pos, shaw, var,
-    lemma), authorship patches (anchor null) keyed by patch id. Both are the live
+    lemma), manual patches (anchor null) keyed by patch id. Both are the live
     overlay a write mutates in step with the patch store."""
     anchored = {}
-    authored = {}
+    manual = {}
     for patch in patches:
         if patch["anchor"] is None:
-            authored[patch["id"]] = patch
+            manual[patch["id"]] = patch
         else:
             anchored[anchor_key(patch["anchor"])] = patch
-    return anchored, authored
+    return anchored, manual
 
 
-def _build_records(basis_index, basis_source, anchored, authored, established,
-                   authored_bases):
+def _build_records(basis_index, basis_source, anchored, manual, established,
+                   manual_bases):
     """The per-anchor record index: anchor key -> its annotated rows, built once
     from the basis and overlay. Basis anchors come first (in basis order), then
-    authored rows, then ORPHANED anchored patches (those whose anchor key is absent
+    manual rows, then ORPHANED anchored patches (those whose anchor key is absent
     from the basis) synthesized as pseudo-rows — the order the flattened `records`
     view preserves.
 
@@ -617,8 +618,8 @@ def _build_records(basis_index, basis_source, anchored, authored, established,
             annotate_basis_record(candidate, basis_source[key], anchored.get(key),
                                   established))
 
-    for patch in authored.values():
-        record = annotate_authored_record(patch, established, authored_bases)
+    for patch in manual.values():
+        record = annotate_manual_record(patch, established, manual_bases)
         index.setdefault(anchor_key(record["anchor"]), []).append(record)
 
     for key, patch in anchored.items():
@@ -762,7 +763,7 @@ def load_view():
     """Build the annotated view from the current basis and patch store.
 
     Frequency is derived here, ONCE, over the whole pre-patch pool — the basis
-    plus the authored wing (manual records, absent from the basis) — so every
+    plus the manual wing (manual records are absent from the basis) — so every
     row the editor shows carries the same corpus-scale freq production ships
     (the #115 fix: manual records used to display 0). enrich_pool_frequency
     gracefully skips when the frequency data is absent (startup must not
@@ -772,7 +773,7 @@ def load_view():
 
     basis_index, basis_source = build_basis()
     patches = load_patches()
-    authored_bases = authored_pool(patches)
-    freq_enriched = enrich_pool_frequency(basis_index, authored_bases)
-    return AnnotatedView(basis_index, basis_source, patches, authored_bases,
+    manual_bases = manual_pool(patches)
+    freq_enriched = enrich_pool_frequency(basis_index, manual_bases)
+    return AnnotatedView(basis_index, basis_source, patches, manual_bases,
                          freq_enriched)

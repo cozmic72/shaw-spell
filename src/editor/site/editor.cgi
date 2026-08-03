@@ -391,7 +391,7 @@ PAGE = """<!DOCTYPE html>
     <!-- Filter metadata: one <div data-field> per registry field, carrying its human
          label (data-label) and its kind (data-kind). A closed-vocabulary categorical
          field also lists its value→label pairs as .chip templates, so those labels stay
-         authored here rather than duplicated in JS; a field whose vocabulary can
+         defined here rather than duplicated in JS; a field whose vocabulary can
          drift (pos/var/source = observed data; attributes = MERGER_ENABLED) omits
          them and takes its values from the daemon facets op instead.
          `data-pinned="true"` marks the always-shown fields (the combined Search
@@ -468,7 +468,7 @@ PAGE = """<!DOCTYPE html>
              + variant boolean — the same tag-set the detail editor edits as toggle
              buttons. Merges the former Mergers + Variant facets. Multi-valued, so its
              picker offers any/all: ALL = the record carries EVERY selected variation.
-             Its chips are CODE-DEFINED (like pos/var/source) rather than authored
+             Its chips are CODE-DEFINED (like pos/var/source) rather than listed
              here: the merger vocabulary is env-gated (MERGER_ENABLED) so it can
              drift without a code edit, and a hardcoded list here is exactly the
              staleness bug this replaced — see editord.handle_facets. The "other"

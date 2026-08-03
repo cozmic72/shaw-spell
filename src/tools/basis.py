@@ -35,7 +35,7 @@ A patch is a MINIMAL DIFF over the live basis, not a full-record snapshot:
                         changes but ships nothing (see is_dirty_patch).
   changes   the INTRINSIC field edits {word, shaw, pos, ipa, var, mergers,
             variant} an accept lays over the basis record — and ONLY those. For
-            an authorship patch (anchor null) `changes` is the WHOLE record, as
+            a manual patch (anchor null) `changes` is the WHOLE record, as
             there is no basis to diff against.
 
 resolve_patch layers a patch over the live basis to the canonical output record,
@@ -49,7 +49,7 @@ Two record shapes meet here, and the mapping between them lives in one place:
   canonical   the ReadLex on-disk shape: Latn/Shaw/pos/ipa/freq/var (+provenance).
               What the basis holds and the applicator emits.
   record      the patch/UI shape: word/shaw/pos/ipa/freq/var/status (+provenance).
-              What the editor displays and an authorship patch's `changes` holds.
+              What the editor displays and a manual patch's `changes` holds.
 """
 
 import json
@@ -719,21 +719,22 @@ def resolve_patch(patch, basis_index, basis_source):
     the applicator and the overlay — the one place the patch model is interpreted.
 
       op flag                 PATCH_NOOP: production no-op. For an anchored flag
-                              the basis record is left as-is; for an authored
-                              flag (anchor null) the authored record is NOT
+                              the basis record is left as-is; for a manual
+                              flag (anchor null) the manual record is NOT
                               emitted — a flag is "no verdict yet" either way.
-      anchor null (authored)  record_to_output(changes): `changes` is the whole
-                              self-contained record (no basis to diff against).
+      anchor null (manual)    manual_entry(changes): `changes` is the whole
+                              self-contained record (no basis to diff against),
+                              self-lemma'd when the owner stated no lemma.
                               The applicator then lays the pool-derived freq
-                              under it (authored_pool / authored_freq).
+                              under it (manual_pool / manual_freq).
       op drop                 None: emit nothing for the anchored key.
       op accept               record_to_output(effective_record(...)): the basis
                               record with the intrinsic `changes` laid over it,
                               sanctioned. If the anchor no longer resolves against
                               the basis, PATCH_ORPHAN — the applicator soft-fails
                               (logs + skips + retains) and the editor surfaces it."""
-    # Both tests precede the authored/anchored split: a flag can sit on an
-    # authored row, and a manual record is BORN dirty (anchor null, op="edit")
+    # Both tests precede the manual/anchored split: a flag can sit on a
+    # manual row, and a manual record is BORN dirty (anchor null, op="edit")
     # — either way nothing reaches production.
     if is_flag_patch(patch):
         return PATCH_NOOP
@@ -741,7 +742,7 @@ def resolve_patch(patch, basis_index, basis_source):
         return PATCH_NOOP
 
     if patch["anchor"] is None:
-        return record_to_output(patch["changes"])
+        return manual_entry(patch["changes"])
 
     op = patch["op"]
     if op == OP_DROP:
@@ -757,39 +758,53 @@ def resolve_patch(patch, basis_index, basis_source):
         effective_record(base_entry, patch["changes"], basis_source[key]))
 
 
-def authored_pool(patches):
-    """The AUTHORED WING of the record pool: natural key -> the canonical-shape
-    base record of each authorship patch (anchor null). Manual records enter the
+def manual_entry(changes):
+    """The canonical entry a MANUAL patch's `changes` describes. A manual record
+    never passes combine, so the self-lemma default combine_sources stamps on
+    the pool is applied here — an owner-stated lemma (intrinsic, patchable)
+    wins. The lemma is a natural-key slot, so every consumer of a manual record
+    (the pool wing, the applicator, the overlay's display and key derivations)
+    must materialise it through this one function or identities would differ
+    between display and publish."""
+    entry = record_to_output(changes)
+    entry.setdefault(LEMMA_FIELD, self_lemma(entry))
+    return entry
+
+
+def manual_pool(patches):
+    """The MANUAL WING of the record pool: natural key -> the canonical-shape
+    base record of each manual patch (anchor null). Manual records enter the
     pipeline here — attested by no source, they are absent from the basis, so
     this index is what lets the ONE pre-patch frequency pass cover them (the
     live #115 fix: without it a manual record carries freq 0 everywhere).
 
     The base is `changes` as a canonical entry, built BEFORE the overlay applies;
     the derivation enriches it, then the patch content is the last word on top
-    (see authored_freq). Consumed by both producers (the applicator's authorship
-    branch) and the overlay (authored-row display), so display and shipped freq
+    (see manual_freq). Consumed by both producers (the applicator's manual-patch
+    branch) and the overlay (manual-row display), so display and shipped freq
     come from the same derivation."""
     return {anchor_of(entry): entry
-            for entry in (record_to_output(patch["changes"])
+            for entry in (manual_entry(patch["changes"])
                           for patch in patches if patch["anchor"] is None)}
 
 
-def authored_freq(changes, base):
-    """The freq an AUTHORED record shows and ships: the patch's own freq when it
+def manual_freq(changes, base):
+    """The freq a MANUAL record shows and ships: the patch's own freq when it
     asserts one, else the pool-derived value from its enriched `base` (None when
-    no derivation ran — a session-authored record before the next startup/publish
-    pass). freq 0/absent means "no data" — it is the system-wide default and the
-    value every pre-freq-patchable client baked into authored records — so only a
-    NON-ZERO stored freq is an owner override. Anchored records never come here:
-    their `changes` carry freq only when the owner actually edited it, so an
-    anchored freq 0 IS an explicit zero and wins via the ordinary overlay."""
+    no derivation ran — a record created this session, before the next
+    startup/publish pass). freq 0/absent means "no data" — it is the system-wide
+    default and the value every pre-freq-patchable client baked into manual
+    records — so only a NON-ZERO stored freq is an owner override. Anchored
+    records never come here: their `changes` carry freq only when the owner
+    actually edited it, so an anchored freq 0 IS an explicit zero and wins via
+    the ordinary overlay."""
     if changes.get("freq"):
         return changes["freq"]
     return base.get("freq", 0) if base else 0
 
 
-def enrich_pool_frequency(basis_index, authored_bases):
-    """Put the WHOLE record pool — every basis record plus the authored wing —
+def enrich_pool_frequency(basis_index, manual_bases):
+    """Put the WHOLE record pool — every basis record plus the manual wing —
     on the corpus frequency scale, in one enrich_all pass, in place: the SAME
     passes the publish path applies pre-patch (the replace-all corpus pass plus
     the LRW POS split; see apply_frequency_data), so a review-pool candidate
@@ -825,17 +840,17 @@ def enrich_pool_frequency(basis_index, authored_bases):
         print("basis: frequency data absent; review-pool candidates carry no "
               "freq. Missing: " + "; ".join(missing), file=sys.stderr)
         return False
-    enrich_all(frequency_pool(basis_index, authored_bases),
+    enrich_all(frequency_pool(basis_index, manual_bases),
                load_corpus(), load_lrw())
     return True
 
 
-def frequency_pool(basis_index, authored_bases):
+def frequency_pool(basis_index, manual_bases):
     """The full pre-overlay record pool in the {bucket: entries} shape
-    enrich_all consumes — basis records and the authored wing together, so the
+    enrich_all consumes — basis records and the manual wing together, so the
     POS-split pass sees a word's WHOLE group. The single pool assembly shared
     by the startup pass above and the offline applicator."""
-    return {None: [*basis_index.values(), *authored_bases.values()]}
+    return {None: [*basis_index.values(), *manual_bases.values()]}
 
 
 def build_basis():
@@ -853,9 +868,9 @@ def build_basis():
               record contributes the readlex label this way — the multi-source
               agreement signal, preserved for filtering.
 
-    Frequency is NOT derived here: the pool pass needs the authored wing too
+    Frequency is NOT derived here: the pool pass needs the manual wing too
     (see enrich_pool_frequency / frequency_pool), so each pool owner — the
-    editor's load_view, the offline applicator — runs it over basis + authored
+    editor's load_view, the offline applicator — runs it over basis + manual
     together after loading the patch store.
     """
     index = {}

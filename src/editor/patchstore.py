@@ -6,17 +6,17 @@ editorial artifact (see docs/editorial-overlay-design.md).
 A patch is {anchor, op, changes, meta} — a minimal diff over the live basis:
 
   id       deterministic, content-derived (p_ + sha256 of {anchor, op, changes})
-  anchor   natural key {word, pos, shaw, var, lemma?} | null (null = authorship)
+  anchor   natural key {word, pos, shaw, var, lemma?} | null (null = a MANUAL record)
   op       "accept" (sanction the anchored basis record) / "drop" (remove it) /
-           "flag" (production no-op). Absent for authorship (anchor null).
+           "flag" (production no-op). Absent for a manual patch (anchor null).
   changes  the intrinsic edits {word, shaw, pos, ipa, var, mergers, variant} an
            accept lays over the basis record (empty = accept as-is); or, for
-           authorship, the whole self-contained record.
+           a manual patch, the whole self-contained record.
   meta     {author, origin, ts, note?}
 
 A patch's identity for upsert is its full anchor (word, pos, shaw, var, lemma) —
 the immutable identity of the reviewed record. Writing a patch whose anchor already
-has one REPLACES it, so a re-decision never duplicates. Authorship patches
+has one REPLACES it, so a re-decision never duplicates. Manual patches
 (anchor null) have no anchor and are keyed by id.
 
 Redirecting the store (tests): every read/write resolves its path at CALL time
@@ -87,7 +87,7 @@ def upsert_patch(patch, path=None):
     """Append the patch, or replace the existing patch on the same anchor.
 
     An anchored patch (anchor present) replaces any patch with the same natural
-    key (word, pos, shaw, var, lemma). An authorship patch (anchor null) replaces
+    key (word, pos, shaw, var, lemma). A manual patch (anchor null) replaces
     one with the same id. Returns ("replaced", old_patch) or ("appended", None).
     """
     if path is None:
@@ -111,26 +111,26 @@ def upsert_patch(patch, path=None):
     return ("replaced", previous)
 
 
-def replace_authored_patch(patch, prior_id, path=None):
-    """Re-author an existing authorship entry: drop the patch with `prior_id` and
+def replace_manual_patch(patch, prior_id, path=None):
+    """Re-decide an existing manual entry: drop the patch with `prior_id` and
     write `patch` (anchor null) in its place, at the same position so the entry
-    keeps its order. A re-authorship changes the record (new status / flag / edited
+    keeps its order. A re-decision changes the record (new status / flag / edited
     fields), so `patch` carries a NEW content-derived id — the prior patch cannot be
     found by the new id, which is why the caller names it explicitly.
 
-    Fails loud if no authorship patch carries `prior_id` (the re-decision named a
-    prior patch that is not there) or if `patch` still carries an anchor (an
-    authored re-decision must stay authorship). Returns the replaced patch."""
+    Fails loud if no manual patch carries `prior_id` (the re-decision named a
+    prior patch that is not there) or if `patch` still carries an anchor (a
+    manual re-decision must keep anchor null). Returns the replaced patch."""
     if patch["anchor"] is not None:
-        raise ValueError(f"authored re-decision must have anchor null: {patch['anchor']}")
+        raise ValueError(f"manual re-decision must have anchor null: {patch['anchor']}")
     if path is None:
         path = _store_path()
     patches = load_patches(path)
     at = _index_of_id(patches, prior_id)
     if at is None:
-        raise KeyError(f"no authored patch with id: {prior_id}")
+        raise KeyError(f"no manual patch with id: {prior_id}")
     if patches[at]["anchor"] is not None:
-        raise ValueError(f"patch {prior_id} is not authored: {patches[at]['anchor']}")
+        raise ValueError(f"patch {prior_id} is not a manual patch: {patches[at]['anchor']}")
     previous = patches[at]
     patches[at] = patch
     write_patches(patches, path)
@@ -151,7 +151,7 @@ def delete_patch(anchor, path=None):
 
 
 def delete_patch_by_id(patch_id, path=None):
-    """Remove the patch with the given id — the deletion path for authorship
+    """Remove the patch with the given id — the deletion path for manual
     patches, whose stored anchor is null and so cannot be found by anchor. Fails
     loud if no patch carries that id. Returns the removed patch."""
     if path is None:

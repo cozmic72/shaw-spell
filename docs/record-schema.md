@@ -76,14 +76,15 @@ the live basis:
 
 | field | meaning |
 |---|---|
-| `anchor` | natural key of the ONE basis record reviewed; `null` = authorship (a brand-new record no source attests; `op` is absent) |
+| `anchor` | natural key of the ONE basis record reviewed; `null` = a MANUAL record (brand-new, no source attests it; `op` is absent) |
 | `op` | `accept` (sanction the anchored record + lay `changes` over it), `edit` (a dirty edit persisted on navigate — carries `changes` but is unreviewed and ships nothing; Accept rewrites it), `drop` (emit nothing), `flag` (looked-at, no verdict — production no-op) |
-| `changes` | the INTRINSIC edits (subset of `INTRINSIC_FIELDS`) an accept layers over the basis record. For an authorship patch, this is the WHOLE record |
+| `changes` | the INTRINSIC edits (subset of `INTRINSIC_FIELDS`) an accept layers over the basis record. For a manual patch, this is the WHOLE record |
 | `meta` | `{author, origin, ts, note?}` — patch metadata; `note` is NEVER emitted to the dictionary |
 
 `resolve_patch` (in basis.py) layers the patch over the *live* basis, so a decision
 follows upstream drift instead of freezing a stale copy. Deleting a patch is rollback.
 
-In the editor, authorship is an ORIGIN, not a verdict: an authored row carries
+In the editor, manual is an ORIGIN (a source, alongside the harvested ones), not
+a verdict: a manual row carries
 `manual: True` while its `patch_state` is the same accepted/edited/dirty/dropped/
 flagged/orphaned vocabulary as every other row (`src/editor/overlay.py`).

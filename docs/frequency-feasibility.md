@@ -149,7 +149,7 @@ able to credit the UK headword `colour`, and vice versa. Strategy:
   freq is tagged `"freq_source": "opensubtitles-2018"`. `freq_source`/`freq_readlex`
   are runtime bookkeeping — the publish whitelist keeps them out of `readlex.json`.
 - **Editor uniformity:** `basis.enrich_pool_frequency` runs the SAME `enrich_all`
-  pass at view-load over the whole pool (basis + authored records), so a
+  pass at view-load over the whole pool (basis + manual records), so a
   review-pool candidate carries the exact freq the readlex record it becomes will
   ship with. If the corpus is absent (fresh clone, pre-`make setup`) the editor
   logs a skip and starts without freq; the publish paths still fail loud on a

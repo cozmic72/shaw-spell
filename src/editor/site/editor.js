@@ -686,7 +686,7 @@ function anchorOf(record) {
 // The intrinsic fields the owner overrode when they accepted this record — the keys
 // of the accept patch's `changes` diff. A field's PRESENCE in changes is the
 // override, whatever its value, so an emptied field (e.g. mergers: []) marks.
-// Authored rows and drop/flag/unreviewed yield the empty set.
+// Manual rows and drop/flag/unreviewed yield the empty set.
 function overriddenFields(record) {
     const patch = record.patch;
     if (!patch || patch.op !== "accept" || !patch.anchor || !patch.changes) {
@@ -3018,13 +3018,13 @@ function recordFields(record) {
 
 function harvestRecord(ctx) {
     return ctx.mode === CREATE_MODE
-        ? authoredRecord(ctx)
+        ? manualRecord(ctx)
         : editedRecord(ctx);
 }
 
-// A self-contained authored record from the modal's inputs alone. No base record is
-// carried (an authored row has no basis), so no status/source/freq leaks in.
-function authoredRecord(ctx) {
+// A self-contained manual record from the modal's inputs alone. No base record is
+// carried (a manual row has no basis), so no status/source/freq leaks in.
+function manualRecord(ctx) {
     const record = {};
     for (const name of ["word", "shaw", "pos", "var", "ipa"]) {
         const value = ctx.root.querySelector(`[data-field="${name}"]`).value.trim();
@@ -3176,15 +3176,15 @@ function requireLemma(record) {
 }
 
 // A manual entry (anchor null in the store, `manual: true` on the row) exists
-// ONLY via its authorship patch — no basis record backs it. Re-deciding it must
+// ONLY via its manual patch — no basis record backs it. Re-deciding it must
 // edit THAT patch in place (anchor stays null), not write an anchored patch that
 // would resolve to nothing and orphan the decision (failing the build).
 function isManual(record) {
     return Boolean(record.manual);
 }
 
-// ---- create/clone modal (authorship from scratch or seeded from a record) ----
-// The daemon's authorship path is a patch with anchor null and a self-contained
+// ---- create/clone modal (a manual record from scratch or seeded) ----
+// The daemon's manual-record path is a patch with anchor null and a self-contained
 // record (editord.py handle_patch) — the ONLY flow that mints such a record. A new
 // manual record is created DIRTY (verdict UNREVIEWED, shipping nothing) and passes
 // through review like any other row: nothing auto-accepts. ONE dialog serves both
@@ -3226,7 +3226,7 @@ function openCloneModal(sourceRecord) {
 }
 
 function openCreateModal(seed, seeded) {
-    // Fresh guard cache per dialog session, so a sibling authored or re-decided
+    // Fresh guard cache per dialog session, so a sibling created or re-decided
     // since the last open is reflected.
     relatedGuardCache.clear();
     openModal(recordEditor([seed], { scope: "modal", mode: CREATE_MODE, seeded }));
@@ -3325,8 +3325,8 @@ function createActionBar(ctx) {
     const bar = document.createElement("div");
     bar.className = "actions create-actions";
 
-    const accept = actionButton("accept", "Create", () => authorEntry(ctx, { flag: false }));
-    const flag = actionButton("flag", "Flag", () => authorEntry(ctx, { flag: true }));
+    const accept = actionButton("accept", "Create", () => createManualEntry(ctx, { flag: false }));
+    const flag = actionButton("flag", "Flag", () => createManualEntry(ctx, { flag: true }));
     accept.classList.add("create-verdict");
     flag.classList.add("create-verdict");
     bar.append(accept, flag, actionButton("undo", "Cancel", closeModal));
@@ -3475,16 +3475,16 @@ function canonicalRival(record, siblings) {
 // the fresh record with op flag via `replaces` (create-then-flag). The distinctness
 // guard already disabled the buttons on a collision; this validation is the
 // belt-and-braces backstop.
-async function authorEntry(ctx, { flag }) {
+async function createManualEntry(ctx, { flag }) {
     const record = harvestRecord(ctx);
     const missing = missingRequiredFields(record);
     if (missing.length) {
         showToast(`Required: ${missing.join(", ")}.`, true);
         return;
     }
-    let authored;
+    let response;
     try {
-        authored = await callDaemon(
+        response = await callDaemon(
             { op: "patch", anchor: null, record, author: AUTHOR });
     } catch (error) {
         showToast(error.message, true);
@@ -3495,15 +3495,15 @@ async function authorEntry(ctx, { flag }) {
     // case-folded anchor key (a case-variant sibling may ride along), so the new
     // entry is picked by its own patch id.
     closeModal();
-    const created = authored.records.find((r) => r.patch_id === authored.id);
-    insertAuthoredRecord(created);
+    const created = response.records.find((r) => r.patch_id === response.id);
+    insertManualRecord(created);
     if (!flag) {
-        showToast(`created · ${authored.result}`);
+        showToast(`created · ${response.result}`);
         return;
     }
     try {
         const flagged = await callDaemon(
-            { op: "flag", anchor: null, author: AUTHOR, replaces: authored.id });
+            { op: "flag", anchor: null, author: AUTHOR, replaces: response.id });
         applyWriteResult(flagged.records, created.anchor, { refocus: false });
         await refreshCommitStatus();
         showToast(`flagged · ${flagged.result}`);
@@ -3514,12 +3514,12 @@ async function authorEntry(ctx, { flag }) {
     }
 }
 
-// Place a freshly-authored record into the working set and land on it: it JOINS its
+// Place a freshly-created manual record into the working set and land on it: it JOINS its
 // group's run when that group is on the page (a group verdict must fan out to it),
 // else it opens a fresh singleton group at the top. The daemon always returns the
 // annotated record — an empty response, or one without its group token, is a
 // contract violation and fails loud.
-function insertAuthoredRecord(record) {
+function insertManualRecord(record) {
     if (!record) {
         throw new Error("daemon returned no record for the new entry.");
     }
@@ -3704,7 +3704,7 @@ async function dropSelected() {
 }
 
 // Drop one record. A manual entry has no basis to revert to, so dropping it IS
-// deleting its authorship patch (same as Clear); a basis record gets a drop patch.
+// deleting its manual patch (same as Clear); a basis record gets a drop patch.
 async function dropOne(selected, options = {}) {
     if (isManual(selected)) {
         if (!selected.patch_id) {
@@ -3722,7 +3722,7 @@ async function writePatch(anchor, record, verb, selected, { step = true, toast =
     const priorReviewed = selected ? selected.reviewed : false;
     // A bare edit persisted on navigate is DIRTY (op="edit" server-side) — recorded
     // but not reviewed or shipped; only an explicit Accept writes op="accept". A
-    // manual edit stays authorship (re-authored in place, anchor null), never
+    // manual edit stays a manual patch (re-decided in place, anchor null), never
     // auto-accepted by leaving the row.
     const request = isManual(selected)
         ? { op: "patch", anchor: null, record, author: AUTHOR, replaces: selected.patch_id, dirty }
@@ -3904,7 +3904,7 @@ async function undoLast() {
     await single(() => unpatch(frame.anchor, "undone", { step: false, uncount: true }));
 }
 
-// Delete an entry's patch. The removed anchor (an authored entry the daemon returns
+// Delete an entry's patch. The removed anchor (a manual entry the daemon returns
 // nothing for) is dropped by anchor, not by state.selected, so it works whether or
 // not it is the focused row.
 async function unpatch(anchor, verb, { step = true, uncount = false, patchId = null, toast = true, refocus = true, deferRender = false } = {}) {
@@ -3929,7 +3929,7 @@ function findAnchorByPatchId(patchId) {
     return record ? record.anchor : null;
 }
 
-// Clearing an authored entry leaves no record — drop that row from the working set.
+// Clearing a manual entry leaves no record — drop that row from the working set.
 // A removal from an edit-modal targets the modal record's anchor — NEVER
 // state.selected — and closes the modal.
 function removeRow(anchor, { refocus = true } = {}) {
@@ -4244,7 +4244,7 @@ function handleModalKey(event) {
         } else if (event.key === "Enter") {
             event.preventDefault();
             if (!createVerdictBlocked(state.modalEditor)) {
-                authorEntry(state.modalEditor, { flag: false });
+                createManualEntry(state.modalEditor, { flag: false });
             }
         }
         return;
@@ -4787,7 +4787,7 @@ async function revertUncommitted() {
     const noun = `${count.toLocaleString()} uncommitted decision${count === 1 ? "" : "s"}`;
     if (!window.confirm(
         `Discard ${noun} since the last commit?\n\nThis cannot be undone — `
-        + `accepted/dropped/edited/authored rows will revert to their committed state.`,
+        + `accepted/dropped/edited/manual rows will revert to their committed state.`,
     )) {
         return;
     }
@@ -4942,7 +4942,7 @@ function fieldSpecFromMeta(meta, derived) {
     };
 }
 
-// The value→label pairs ship in the meta div so labels stay authored in one place
+// The value→label pairs ship in the meta div so labels stay defined in one place
 // (the CGI) rather than duplicated in JS.
 function harvestVocab(meta) {
     return [...meta.querySelectorAll(".chip")].map((row) => ({

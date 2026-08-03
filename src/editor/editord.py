@@ -44,7 +44,7 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # grouping). A group of ONE is still a group. Every serialised
                 # record — in EVERY op returning records — also carries its own
                 # `group_key`, so a write response can place a fresh record
-                # (authorship) into the served partition.
+                # (a manual record) into the served partition.
                 # invalid_regex names the substring field(s) whose regex value
                 # failed to compile (absent/empty when all compiled). A field
                 # with an invalid regex matches nothing rather than 500-ing.
@@ -111,24 +111,24 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
                 # record is null). `dirty` marks a bare edit-on-navigate: the patch
                 # op is "edit" (DIRTY — not reviewed, not shipped) instead of
                 # "accept"; only an explicit Accept (dirty omitted) reviews/ships.
-                # anchor null (record supplied) = authorship (a MANUAL record).
+                # anchor null (record supplied) = a MANUAL record.
                 # `dirty` applies there too: a new manual record is created dirty
                 # (unreviewed, shipping nothing) and reviews like any other row.
                 # anchor null + replaces = re-decide a MANUAL entry: edits that
-                # authorship patch in place (anchor stays null), never an anchored
-                # patch (which would orphan the decision — see _reauthor).
+                # manual patch in place (anchor stays null), never an anchored
+                # patch (which would orphan the decision — see _redecide_manual).
 
     Request:   {"op": "flag", "anchor": {"word","pos","shaw","var"}, "author": "…"}
              | {"op": "flag", "anchor": null, "replaces": "p_…", "author": "…"}
     Response:  {"result": …, "id": "p_…", "records": [...]}   # flagged, a no-op
                 for production (see is_flag_patch). anchor null + replaces flags a
-                MANUAL entry, keeping anchor null (see _flag_authored)
+                MANUAL entry, keeping anchor null (see _flag_manual)
 
     Request:   {"op": "unpatch", "anchor": {"word","pos","shaw","var"}}
              | {"op": "unpatch", "patch_id": "p_…"}
     Response:  {"result": "deleted", "id": null, "records": [...]}   # patch removed;
                 a basis record reverts to its untouched source (undo / unflag /
-                clear), keyed by anchor; an authorship record (anchor null) is
+                clear), keyed by anchor; a manual record (anchor null) is
                 cleared by patch_id and its row removed (records empty)
 
     Request:   {"op": "commit_status"}
@@ -148,7 +148,7 @@ Protocol (line-oriented, UTF-8, one request -> one response, then close):
 An anchor is the reviewed record's IMMUTABLE natural key (word, pos, shaw, var,
 lemma?): it is unchanged when the record is edited, so an entry never moves as a
 result of being edited. A `record` is the COMPLETE wanted record; null drops it. anchor null
-is authorship.
+is a manual record.
 
 Usage:
     editord.py --socket /run/shaw-spell/editord.sock
@@ -180,11 +180,12 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import (ACCEPTED_STATUS, INTRINSIC_FIELDS, OP_ACCEPT,  # noqa: E402
                    OP_DROP, OP_EDIT, OP_FLAG, PROJECT_ROOT, UPSTREAM_SOURCE,
-                   anchor_key, collapse_readlex, published_entry)
+                   anchor_key, anchor_of, collapse_readlex, manual_entry,
+                   published_entry)
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_LABELS, MERGER_SWAPS           # noqa: E402
-from overlay import (AUTHORED_STATUS, NOVELTY_NEW_POS,           # noqa: E402
+from overlay import (MANUAL_SOURCE, NOVELTY_NEW_POS,             # noqa: E402
                      NOVELTY_NEW_SPELLING, NOVELTY_NEW_WORD, ORPHANED_STATUS,
                      PATCH_STATE_ACCEPTED, PATCH_STATE_DIRTY,
                      PATCH_STATE_DROPPED, PATCH_STATE_EDITED,
@@ -192,7 +193,7 @@ from overlay import (AUTHORED_STATUS, NOVELTY_NEW_POS,           # noqa: E402
                      PATCH_STATE_UNREVIEWED, load_view, verdict_state)
 from patchstore import (                                        # noqa: E402
     PATCHES_PATH, _store_path, delete_patch, delete_patch_by_id, make_patch,
-    replace_authored_patch, upsert_patch)
+    replace_manual_patch, upsert_patch)
 
 # Entries-page size, in GROUPS (the entries op pages by group, never splitting one) —
 # or in RECORDS when the request asks for the flat (ungrouped) partition.
@@ -201,7 +202,7 @@ MAX_LIMIT = 500
 
 # The patch-states a live, sanctioned record carries — an accept whose changes
 # are empty (ACCEPTED) or non-empty (EDITED). A manual record shipping to the
-# dictionary is ACCEPTED too (see overlay.annotate_authored_record), so both
+# dictionary is ACCEPTED too (see overlay.annotate_manual_record), so both
 # reach the shipped dictionary and a canonical conflict is drawn from either.
 ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED)
 
@@ -494,10 +495,10 @@ def _matches_review(record, value):
 
 # AXIS 2 — data predicates: the origin/nature of the record, one consolidated
 # facet absorbing the former `status` and `has_definition` filters plus the
-# authored/orphaned values pulled out of Review. The values are NON-mutually-
+# manual/orphaned values pulled out of Review. The values are NON-mutually-
 # exclusive predicates (a record can be generated AND have a definition), OR-ed
 # within the facet like every other; the AND-usecases come from crossing axes.
-#   manual         a human authored the record (the row's `manual` origin marker
+#   manual         a human created the record (the row's `manual` origin marker
 #                  — anchor-null patch; the old status="manual")
 #   orphaned       an anchored patch whose basis anchor is gone (patch_state
 #                  orphaned — the old status="orphaned" / Review "orphaned")
@@ -515,10 +516,10 @@ def _matches_review(record, value):
 #                  facet, absorbed whole so the no-definition gap-hunt survives)
 GENERATED_ORIGIN = "generated"
 # Origins that are NOT harvested-supplement attestations: the upstream core, the
-# generator's synthesized label, and the pseudo-origins authored/orphaned rows
-# carry in their source list (overlay's AUTHORED_STATUS/ORPHANED_STATUS).
+# generator's synthesized label, and the origins manual/orphaned rows
+# carry in their source list (overlay's MANUAL_SOURCE/ORPHANED_STATUS).
 NON_SUPPLEMENT_ORIGINS = frozenset(
-    {UPSTREAM_SOURCE, GENERATED_ORIGIN, AUTHORED_STATUS, ORPHANED_STATUS})
+    {UPSTREAM_SOURCE, GENERATED_ORIGIN, MANUAL_SOURCE, ORPHANED_STATUS})
 
 DATA_MANUAL = "manual"
 DATA_ORPHANED = "orphaned"
@@ -842,7 +843,7 @@ def serialisable(record):
     """The record without the raw patch object (the UI reads patch_state and,
     when it needs the patch itself, the fields it carries). Every serialised
     record carries its wire group key, so a write response can place a fresh
-    record (authorship) into the client's served partition — the client never
+    record (a manual record) into the client's served partition — the client never
     computes grouping."""
     result = {k: v for k, v in record.items() if k != "patch"}
     patch = record.get("patch")
@@ -1166,6 +1167,11 @@ def _lemma_shape_error(lemma):
     return None
 
 
+def _is_self_lemma(lemma, record):
+    return (lemma["Latn"].lower(), lemma["pos"], lemma["Shaw"]) == (
+        record["word"].lower(), record["pos"], record["shaw"])
+
+
 def _validate_lemma(state, record):
     lemma = record["lemma"]
     if lemma is None:
@@ -1174,14 +1180,26 @@ def _validate_lemma(state, record):
     if shape_error:
         return f"patch record {shape_error}"
     latn, pos, shaw = lemma["Latn"], lemma["pos"], lemma["Shaw"]
-    if (latn.lower(), pos, shaw) == (record["word"].lower(), record["pos"],
-                                     record["shaw"]):
+    if _is_self_lemma(lemma, record):
         return None
     if not any(candidate["pos"] == pos and candidate["shaw"] == shaw
               for candidate in state.view.by_word(latn)):
         return (f"patch record lemma does not resolve to an existing record: "
                 f"{latn!r} {pos} {shaw!r}")
     return None
+
+
+def _manual_changes(record):
+    """A manual patch's `changes`: the wanted record, minus a lemma that merely
+    restates the self-reference default. That default is DERIVED at read/publish
+    (basis.manual_entry); storing it would freeze a derived value in the store —
+    the manual-patch analogue of _compute_changes' minimal diff. An edit-modal
+    round trip echoes the displayed self-lemma back, so the strip keeps a
+    re-save from persisting it."""
+    lemma = record.get("lemma")
+    if "lemma" in record and (lemma is None or _is_self_lemma(lemma, record)):
+        return {k: v for k, v in record.items() if k != "lemma"}
+    return record
 
 
 # freq is an INTEGER count (patchable — the corpus derivation runs before the
@@ -1226,18 +1244,20 @@ def handle_patch(state, request):
     if not author:
         return {"error": "patch requires an author"}
     if anchor is None and record is None:
-        return {"error": "patch must supply anchor (edit/drop) or record (authorship)"}
+        return {"error": "patch must supply anchor (edit/drop) or record (manual)"}
     error = _validate_patch(state, anchor, record)
     if error:
         return {"error": error}
+    if anchor is None:
+        record = _manual_changes(record)
 
-    # Re-deciding a MANUAL entry (anchor null, replacing a prior authorship
-    # patch) stays authorship: it edits that patch in place rather than minting an
+    # Re-deciding a MANUAL entry (anchor null, replacing a prior manual
+    # patch) stays a manual patch: it is edited in place rather than minting an
     # anchored patch, which would orphan the decision (a manual word has no
     # basis record for the anchor to resolve against).
     if anchor is None and replaces:
-        return _reauthor(state, record, _meta(author, request.get("note")),
-                         replaces, request.get("dirty"))
+        return _redecide_manual(state, record, _meta(author, request.get("note")),
+                                replaces, request.get("dirty"))
 
     meta = _meta(author, request.get("note"))
     patch, key, error = _build_patch(state, anchor, record, meta, request.get("dirty"))
@@ -1245,7 +1265,7 @@ def handle_patch(state, request):
         return {"error": error}
 
     # Enforce the one-canonical-per-(word,pos,var) invariant on any canonical
-    # accept (authorship or anchored). A drop, a DIRTY edit (op="edit" ships
+    # accept (manual or anchored). A drop, a DIRTY edit (op="edit" ships
     # nothing, so cannot create a canonical clash), or an accept carrying a
     # merger/variant flag, is exempt (see _canonical_conflict). Nothing is written
     # if a different-shaw canonical already exists.
@@ -1260,17 +1280,20 @@ def handle_patch(state, request):
 
 
 def _build_patch(state, anchor, record, meta, dirty):
-    """Construct the (patch, key) an accept/drop/authorship persists. Returns
+    """Construct the (patch, key) an accept/drop/manual-create persists. Returns
     (patch, key, None) on success, or (None, None, error) when the anchor
     resolves to no basis record. `dirty` selects op=edit vs op=accept for an
-    anchored change, and op=edit vs op None for an authorship."""
-    # Authorship (anchor null, record supplied): the record is self-contained, so
+    anchored change, and op=edit vs op None for a manual record."""
+    # Manual (anchor null, record supplied): the record is self-contained, so
     # `changes` IS the whole record. Creating a record IS a verdict — Create
     # sends no `dirty` and the record is accepted and shipped, exactly as Accept
     # does elsewhere. `dirty` (op="edit") is for an edit persisted on navigate.
+    # The key goes through manual_entry so it carries the derived self-lemma
+    # slot the row is indexed under.
     if anchor is None:
         op = OP_EDIT if dirty else None
-        return make_patch(None, op, record, meta), anchor_key(record), None
+        return (make_patch(None, op, record, meta),
+                anchor_of(manual_entry(record)), None)
     # An accept/drop must anchor to a record that exists in the basis right now.
     # Writing an anchor that resolves to nothing would create an orphan the build
     # later fails on; reject it here where the actor can fix it.
@@ -1340,7 +1363,7 @@ def _is_canonical(record):
 # exempt: return None. Otherwise scan the other records on the same (word, pos,
 # var) with a DIFFERENT shaw and return the first that is itself a live accepted
 # canonical (an existing sanctioned entry the wanted one would duplicate), or
-# None. `exclude_patch_id` spares the row a re-authorship is about to replace —
+# None. `exclude_patch_id` spares the row a manual re-decision is about to replace —
 # its own prior version is not a rival. A read against the current view, taking
 # the view's own lock via by_word; it never mutates.
 def _canonical_conflict(state, wanted, exclude_patch_id=None):
@@ -1363,7 +1386,7 @@ def _canonical_conflict(state, wanted, exclude_patch_id=None):
 
 def _canonical_conflict_error(state, record, exclude_patch_id=None):
     """The one-canonical invariant as a write-rejection message, or None when the
-    write is clean — shared by the anchored/authorship accept and the manual
+    write is clean — shared by the anchored/manual accept and the manual
     re-decision accept, so the two can never phrase the rule apart."""
     conflict = _canonical_conflict(state, record, exclude_patch_id)
     if conflict is None:
@@ -1373,8 +1396,8 @@ def _canonical_conflict_error(state, record, exclude_patch_id=None):
             "flag one as a variant/merger first")
 
 
-def _reauthor(state, record, meta, prior_id, dirty=False):
-    """Persist a manual re-decision as a replacement of the prior authorship
+def _redecide_manual(state, record, meta, prior_id, dirty=False):
+    """Persist a manual re-decision as a replacement of the prior manual
     patch, keeping anchor null. `dirty` keeps it an unshipped edit (op="edit",
     verdict unreviewed); otherwise the re-decision is an ACCEPT (op None — the
     record ships), gated by the one-canonical invariant like any other accept
@@ -1389,11 +1412,12 @@ def _reauthor(state, record, meta, prior_id, dirty=False):
             return {"error": error}
     patch = make_patch(None, op, record, meta)
     try:
-        replace_authored_patch(patch, prior_id)
+        replace_manual_patch(patch, prior_id)
     except (KeyError, ValueError) as exc:
         return {"error": str(exc)}
-    state.view.apply_reauthor(patch, prior_id)
-    return _write_result(state, anchor_key(record), "replaced", patch["id"])
+    state.view.apply_manual_redecide(patch, prior_id)
+    return _write_result(state, anchor_of(manual_entry(record)), "replaced",
+                         patch["id"])
 
 
 def handle_flag(state, request):
@@ -1410,10 +1434,10 @@ def handle_flag(state, request):
     # Flagging a MANUAL entry re-authors it with op flag, keeping anchor null —
     # never an anchored flag patch that would orphan the decision.
     if anchor is None and replaces:
-        return _flag_authored(state, author, request.get("note"), replaces)
+        return _flag_manual(state, author, request.get("note"), replaces)
 
     if not anchor:
-        return {"error": "flag requires an anchor or a prior authored patch"}
+        return {"error": "flag requires an anchor or a prior manual patch"}
     error = _validate_patch(state, anchor, None)
     if error:
         return {"error": error}
@@ -1427,27 +1451,28 @@ def handle_flag(state, request):
     return _write_result(state, anchor_key(anchor), result, patch["id"])
 
 
-def _flag_authored(state, author, note, prior_id):
-    """Flag an authored entry: re-author it with the SAME record the prior patch
+def _flag_manual(state, author, note, prior_id):
+    """Flag a manual entry: re-write it with the SAME record the prior patch
     holds (a flag leaves the entry unchanged), with op flag. The record is read
-    from the prior authored patch, not the client, so it provably equals it.
+    from the prior manual patch, not the client, so it provably equals it.
     Fails loud if the prior patch is not there."""
-    prior = state.view.authored_patch(prior_id)
+    prior = state.view.manual_patch(prior_id)
     if prior is None:
-        return {"error": f"no authored patch with id: {prior_id}"}
+        return {"error": f"no manual patch with id: {prior_id}"}
     patch = make_patch(None, OP_FLAG, prior["changes"], _meta(author, note))
     try:
-        replace_authored_patch(patch, prior_id)
+        replace_manual_patch(patch, prior_id)
     except (KeyError, ValueError) as exc:
         return {"error": str(exc)}
-    state.view.apply_reauthor(patch, prior_id)
-    return _write_result(state, anchor_key(prior["changes"]), "replaced", patch["id"])
+    state.view.apply_manual_redecide(patch, prior_id)
+    return _write_result(state, anchor_of(manual_entry(prior["changes"])),
+                         "replaced", patch["id"])
 
 
 def handle_unpatch(state, request):
     """Clear the patch on an entry, reverting it to its untouched source (undo a
     decision / unflag / general clear). A basis record is cleared by its `anchor`;
-    an authorship record — whose stored anchor is null — has no source to revert
+    a manual record — whose stored anchor is null — has no source to revert
     to and is cleared by its `patch_id`, removing the row entirely. Fails loud if
     the target patch is not there."""
     anchor = request.get("anchor")
@@ -1559,18 +1584,18 @@ class PublishError(Exception):
     (not a raw stack/sys.exit). handle_commit surfaces it as the commit error."""
 
 
-# The provenance statuses that mean "vetted": an accept's sanction and an
-# authored (owner-minted) record. Anything else — including the absent status of
+# The provenance statuses that mean "vetted": an accept's sanction and a
+# manual (owner-minted) record. Anything else — including the absent status of
 # an unvetted supplement-pool record — publishes as supplement=true.
-_VETTED_STATUSES = (ACCEPTED_STATUS, AUTHORED_STATUS)
+_VETTED_STATUSES = (ACCEPTED_STATUS, MANUAL_SOURCE)
 
 
 def to_published_entry(entry, sources):
     """The PUBLISHED shape of one applicator output entry: the shared whitelist
     shaping (basis.PUBLISH_FIELDS / basis.published_entry) plus the daemon-side
     supplement VERDICT — a bare `supplement: true` flag on a not-yet-vetted
-    record: one neither sanctioned/authored by a patch (status, see
-    basis.ACCEPTED_STATUS / overlay AUTHORED_STATUS) nor attested by upstream
+    record: one neither sanctioned nor owner-minted by a patch (status, see
+    basis.ACCEPTED_STATUS / overlay MANUAL_SOURCE) nor attested by upstream
     ReadLex core (`sources`, the basis origin list for its anchor — the same
     derivation as the overlay's UPSTREAM_STATUS/SUPPLEMENT_STATUS split). Any
     `supplement` value already on the entry is discarded: the verdict computed
@@ -1599,7 +1624,7 @@ def _publish_readlex(view):
     from apply_patches import (IDENTITY_MISMATCH_WARNING, OUTPUT_PATH,
                                apply_patches, enrich_upstream, load_patches)
     from apply_frequency_data import CORPUS_PATH, load_corpus
-    from basis import anchor_of, authored_pool, load_upstream
+    from basis import load_upstream, manual_pool
     from lrw_frequencies import load_lrw
 
     # The frequency corpus is REQUIRED to publish: a published readlex.json must
@@ -1624,19 +1649,19 @@ def _publish_readlex(view):
 
     output = load_upstream()
     patches = load_patches()
-    authored_bases = authored_pool(patches)
+    manual_bases = manual_pool(patches)
 
     # FREQUENCY BEFORE PATCHES — the corpus derivation is an upstream stage, so
     # it runs over the PRE-PATCH record set (the upstream output plus the
-    # authored wing; anchored accepts inherit the startup-enriched basis) and
+    # manual wing; anchored accepts inherit the startup-enriched basis) and
     # the patch overlay is the last word: a patched freq ships verbatim because
     # nothing recomputes it afterwards.
     # Unlike the corpus, the LRW list (POS split, pass 2) has no graceful
     # skip: load_lrw fails loud with download instructions if it is missing.
-    enrich_upstream(output, authored_bases, load_corpus(), load_lrw())
+    enrich_upstream(output, manual_bases, load_corpus(), load_lrw())
 
     stats, orphans = apply_patches(output, view.basis_index, view.basis_source,
-                                   patches, authored_bases)
+                                   patches, manual_bases)
     if stats["skipped_duplicate"]:
         logging.warning(
             "publish: dropped %d record(s) whose emitted identity duplicates an "

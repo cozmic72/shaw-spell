@@ -163,7 +163,7 @@ def plan_repairs(patches, basis_index):
       shaw_changed [(index, patch)]              respell orphans — report, re-review
       ambiguous    [(index, patch)]              spelling under several vars — report
       gone         [(index, patch)]              spelling gone entirely — report
-      untouched    count of patches whose anchor resolves (or authorship) — no-op
+      untouched    count of patches whose anchor resolves (or a manual patch) — no-op
 
     Nothing is mutated here; the caller decides whether to write the repairs.
     """
@@ -175,7 +175,7 @@ def plan_repairs(patches, basis_index):
 
     for i, patch in enumerate(patches):
         anchor = patch["anchor"]
-        # Authorship (anchor null) has no basis anchor to orphan; a resolving anchor
+        # A manual patch (anchor null) has no basis anchor to orphan; a resolving anchor
         # is live. Either way there is nothing to re-anchor.
         if anchor is None or resolves(anchor, basis_index):
             untouched += 1
@@ -250,7 +250,7 @@ def find_collisions(patches, repairs):
     final_key_occupants = {}
     for i, patch in enumerate(patches):
         anchor = repaired_anchor_by_index.get(i, patch["anchor"])
-        if anchor is None:  # authorship — no natural key, never collides
+        if anchor is None:  # manual patch — no natural key, never collides
             continue
         final_key_occupants.setdefault(anchor_key(anchor), []).append(
             (i, patch, anchor))
@@ -304,7 +304,7 @@ def rewrite_anchor(patch, new_anchor, basis_index):
 
 def _anchor_str(anchor):
     if anchor is None:
-        return "<authorship>"
+        return "<manual>"
     return (f"word={anchor['word']!r} pos={anchor['pos']} "
             f"shaw={anchor['shaw']} var={anchor['var']}")
 
@@ -482,7 +482,7 @@ def _assert_one_patch_per_anchor(patches):
     """Fail loud if the planned store would hold two patches on one natural key —
     the invariant the whole dedup exists to preserve. Conflict keys are the sole
     permitted exception (deliberately left for review); every other key must be
-    unique. Authorship patches (anchor null) are keyed by id, not anchor, so they do
+    unique. Manual patches (anchor null) are keyed by id, not anchor, so they do
     not participate."""
     seen = {}
     for patch in patches:

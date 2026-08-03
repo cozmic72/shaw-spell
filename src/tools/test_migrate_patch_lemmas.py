@@ -95,7 +95,7 @@ def test_plan_partitions_all_classes():
     assert [p["id"] for _i, p, _l in ambiguous] == ["p_amb"]
     assert [p["id"] for _i, p in unresolved] == ["p_gone"]
     assert [p["id"] for _i, p, _l in conflicts] == ["p_conf"]
-    assert counts == {"authorship": 1, "already": 1}
+    assert counts == {"manual": 1, "already": 1}
 
 
 def test_stamped_patch_touches_only_the_anchor_lemma():

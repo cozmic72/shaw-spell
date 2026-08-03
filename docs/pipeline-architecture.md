@@ -27,7 +27,7 @@ two halves:
 ```
 sources ─► build_supplement.py ─► supplement-combined-filtered.json
                                         │
-       apply_frequency_data ◄───────────┘  (the pre-patch corpus pass: basis + authored records)
+       apply_frequency_data ◄───────────┘  (the pre-patch corpus pass: basis + manual records)
                      │
                      ▼
               apply_patches ─► readlex.json   (+ data/patches/patches.jsonl, the editorial

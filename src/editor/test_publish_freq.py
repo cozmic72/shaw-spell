@@ -10,8 +10,8 @@ at call time. Locks in the invariants the reorder established:
   - an un-patched upstream record ships the corpus-derived freq (the upstream
     enrichment stage did run — just before the overlay, not after)
   - an accept without a freq edit inherits the startup-enriched BASIS freq
-  - a MANUAL (authored) record ships a real corpus freq (#115), including one
-    whose stored changes carry the legacy baked `freq: 0`; a non-zero authored
+  - a MANUAL record ships a real corpus freq (#115), including one
+    whose stored changes carry the legacy baked `freq: 0`; a non-zero manual
     freq is an owner override and wins
   - a daemon whose basis was never enriched (started without frequency data)
     refuses to publish (PublishError), never ships un-scaled freqs silently
@@ -73,7 +73,7 @@ def make_view():
                            freq_enriched=True)
 
 
-def authored_changes(word, shaw, freq=None):
+def manual_changes(word, shaw, freq=None):
     changes = {"word": word, "shaw": shaw, "pos": "NN1", "var": "RRP",
                "status": "manual"}
     if freq is not None:
@@ -92,13 +92,13 @@ PATCHES = [
      "meta": {"author": "joro", "ts": "2026-01-01T00:00:00Z"}},
     # Manual records: no stored freq, the legacy baked 0, and an owner override.
     {"id": "p_zebra", "anchor": None, "op": None,
-     "changes": authored_changes("zebra", SHAW_Z1),
+     "changes": manual_changes("zebra", SHAW_Z1),
      "meta": {"author": "joro", "ts": "2026-01-01T00:00:00Z"}},
     {"id": "p_okapi", "anchor": None, "op": None,
-     "changes": authored_changes("okapi", SHAW_Z2, freq=0),
+     "changes": manual_changes("okapi", SHAW_Z2, freq=0),
      "meta": {"author": "joro", "ts": "2026-01-01T00:00:00Z"}},
     {"id": "p_quagga", "anchor": None, "op": None,
-     "changes": authored_changes("quagga", SHAW_Z3, freq=9),
+     "changes": manual_changes("quagga", SHAW_Z3, freq=9),
      "meta": {"author": "joro", "ts": "2026-01-01T00:00:00Z"}},
 ]
 
@@ -168,10 +168,10 @@ def test_publish_freq_order_and_overrides():
     # An accept with no freq edit inherits the startup-enriched basis freq.
     assert freq_of(published, "dog") == 50, freq_of(published, "dog")
     # Manual records ship a real corpus freq (#115) — the pre-patch pass covers
-    # the authored wing; the legacy baked `freq: 0` is "no data", not an override.
+    # the manual wing; the legacy baked `freq: 0` is "no data", not an override.
     assert freq_of(published, "zebra") == 77, freq_of(published, "zebra")
     assert freq_of(published, "okapi") == 66, freq_of(published, "okapi")
-    # A non-zero authored freq IS an owner override and wins.
+    # A non-zero manual freq IS an owner override and wins.
     assert freq_of(published, "quagga") == 9, freq_of(published, "quagga")
 
 

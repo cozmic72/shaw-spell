@@ -263,11 +263,11 @@ def test_entries_serves_mixed_groups_via_the_review_filter():
             for members in _group_anchors(page)] == [["cat", "cat", "cat"]]
 
 
-# ---- authorship op selection (_build_patch, anchor null) ----
+# ---- manual-create op selection (_build_patch, anchor null) ----
 
-def test_authorship_dirty_selects_op_edit_never_born_accepted():
+def test_manual_dirty_selects_op_edit_never_born_accepted():
     # A NEW manual record is created dirty (op "edit": unreviewed, ships nothing)
-    # — accepting it is a separate explicit act (op None via _reauthor).
+    # — accepting it is a separate explicit act (op None via _redecide_manual).
     record = {"word": "newword", "pos": "NN", "shaw": "\U00010451", "var": "RRP"}
     meta = {"author": "joro", "ts": "2026-01-01T00:00:00Z"}
     dirty, _key, error = editord._build_patch(None, None, record, meta, True)
@@ -324,7 +324,7 @@ def test_entries_pages_by_group_never_splitting():
     for group in page["groups"]:
         assert len({editord.group_key(r) for r in group["records"]}) == 1
         # Every serialised record carries its own wire group key (the write ops
-        # share serialisable, so authorship responses can join the partition).
+        # share serialisable, so manual-create responses can join the partition).
         assert all(r["group_key"] == group["key"] for r in group["records"])
     assert len({group["key"] for group in page["groups"]}) == 2
 

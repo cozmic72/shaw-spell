@@ -9,13 +9,13 @@ with one-or-more positions swapped from the distinguished vowel to the merged
 vowel, and NOTHING else changed.
 
   trap-bath   PALM 𐑭 -> TRAP 𐑨   (BATH words spelt with the short TRAP vowel)
-  cot-caught  THOUGHT 𐑷 -> LOT 𐑪  (GenAm flattens THOUGHT onto LOT)
+  cot-caught  LOT 𐑪 -> THOUGHT 𐑷 (merged spelling shows THOUGHT: dog 𐑛𐑪𐑜/𐑛𐑷𐑜)
   lot-palm    LOT 𐑪 -> PALM 𐑭   (father-bother: GenAm flattens LOT onto PALM)
 
-All are directional: GenAm is the merged accent, RSSB/RRP the non-merged base.
-A record is tagged only when its spelling is an exact swap of a non-merged
-sibling — see classify_dialect_mergers.py (supplements) and basis.py (ReadLex's
-TrapBath var).
+All are directional: the tagged record is the merged (flattened) form, the
+distinguished form stays canonical. A record is tagged only when its spelling
+is an exact swap of a non-merged sibling — see classify_dialect_mergers.py
+(supplements) and basis.py (ReadLex's TrapBath var).
 """
 
 import os
@@ -36,6 +36,19 @@ _MERGER_SWAPS_ALL = {
     MERGER_TRAP_BATH: (PALM, TRAP),
     MERGER_COT_CAUGHT: (LOT, THOUGHT),
     MERGER_LOT_PALM: (LOT, PALM),
+}
+
+# merger name -> the accents that HAVE the merger (owner ruling, 2026-08-03). A
+# flag names variation WITHIN a variety, so an accent without the merger can
+# never carry it — GenAus/NZ ɔ-for-LOT transcriptions are a source convention,
+# not cot-caught. cot-caught and lot-palm (father-bother) are North American.
+# Flat BATH is native across North America and general in Ireland, and
+# lexically variable in Australia (dance/graph/castle commonly TRAP); NZ and
+# South Africa hold a firm split, so a TRAP spelling there is not the merger.
+MERGER_ACCENTS = {
+    MERGER_TRAP_BATH: frozenset({"GenAm", "GenCan", "IrEng", "GenAus"}),
+    MERGER_COT_CAUGHT: frozenset({"GenAm", "GenCan"}),
+    MERGER_LOT_PALM: frozenset({"GenAm", "GenCan"}),
 }
 
 # Display labels (en dash), the SINGLE source for every UI that names a merger —

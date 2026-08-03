@@ -20,12 +20,22 @@ see the `mergers` flag so it can HOLD BACK a merged form (spelt differently from
 its RRP sibling) from canonicalization, rather than collapsing it to RRP and
 erasing the merger relationship this stage detected.
 
-The non-merged sibling must be RP/SSB-ATTESTED: it is drawn solely from upstream
-ReadLex entries with a non-merged base var (see non_merged_spellings). A
-supplement candidate never attests another candidate — with two unverified
-spellings, which one is "the merged mutant" is arbitrary, and that heuristic
-produced the false and reversed flags this rule replaced. A candidate with no
-RP/SSB-attested counterpart for its (word, pos) is never flagged.
+The non-merged sibling may sit ANYWHERE in the candidate's dialect ancestry
+(owner ruling, 2026-08-03): an upstream ReadLex entry or a fellow pool
+candidate, at the candidate's own accent level (a peer) or at any ancestor up
+the dialect hierarchy (collapse_identical_dialects.PARENT), with the British
+bases RRP/RSSB eligible for every candidate. A pool source publishing multiple
+spellings of one word is exactly the signal being mined, so an unreviewed
+candidate MAY attest another — every flag is a review candidate and the
+editorial process is the net. The correctness guards stay: an attester must
+carry no merger flag and must not be a record this stage itself flags (a merged
+mutant is no witness for the distinguished form), a descendant or lateral
+accent never attests, POS must match, and the swap must be an exact
+single-vowel merger swap (which keeps foreign broad-A loanword vowel choices
+out). A candidate is only flaggable with a merger its own accent HAS
+(dialect_mergers.MERGER_ACCENTS): a flag names variation within a variety, so
+e.g. GenAus/NZ can never carry cot-caught. A candidate with no eligible
+counterpart for its (word, pos) is never flagged.
 
 A record's `mergers` is emitted only when non-empty, keeping the field additive:
 absent means the empty list. See dialect_mergers.py for the swap detection and
@@ -55,15 +65,21 @@ import json
 from collections import Counter, defaultdict
 
 from basis import PROJECT_ROOT, is_upstream, load_upstream
-from dialect_mergers import MERGER_SWAPS, merger_of
+from collapse_identical_dialects import PARENT
+from dialect_mergers import MERGER_ACCENTS, MERGER_SWAPS, merger_of
 
 # (deduped input, classified output) — one combined pool.
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-deduped.json"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
 
-# The non-merged base vars: an upstream entry attests only under one of these,
-# and a candidate carrying one is itself never tagged.
+# The non-merged British base vars: eligible to attest EVERY candidate (RRP is
+# the hierarchy root; RSSB is the unresolved-British bucket alongside it), and a
+# candidate carrying one is itself never tagged.
 BASE_NON_MERGED = ("RSSB", "RRP")
+
+# Attestation provenance, in precedence order.
+ATTEST_TIERS = ("upstream-ancestor", "upstream-peer", "pool-ancestor",
+                "pool-peer")
 
 SAMPLE_LIMIT = 12
 
@@ -73,54 +89,107 @@ def load_json(path):
         return json.load(f)
 
 
-def non_merged_spellings(upstream=None):
-    """(word_lower, pos) -> the set of RP/SSB-attested non-merged spellings a
-    candidate's merger swap is measured against: every upstream ReadLex entry
-    under a non-merged base var that carries no merger flag itself (a
-    reinterpreted TrapBath entry IS the merged 𐑨 form and must not attest).
-    Deliberately upstream-only and RP/SSB-only — never a supplement candidate,
-    never a merged-accent var (the module docstring says why)."""
-    if upstream is None:
-        upstream = load_upstream()
-    index = defaultdict(set)
-    for entries in upstream.values():
-        for entry in entries:
-            if entry.get("var") in BASE_NON_MERGED and not entry.get("mergers"):
-                index[(entry["Latn"].lower(), entry["pos"])].add(entry["Shaw"])
-    return index
+def attesting_vars(candidate_var):
+    """The accents allowed to attest a candidate: its own level, every ancestor
+    up the dialect hierarchy, and the British bases. Descendant and lateral
+    accents are excluded — attestation flows down the hierarchy, never up or
+    across."""
+    eligible = set(BASE_NON_MERGED)
+    eligible.add(candidate_var)
+    ancestor = PARENT.get(candidate_var)
+    while ancestor is not None and ancestor not in eligible:
+        eligible.add(ancestor)
+        ancestor = PARENT.get(ancestor)
+    return eligible
 
 
-def merger_for(entry, non_merged_index):
-    """The (merger, non_merged_sibling) `entry` is tagged with, or (None, None).
-    Only a merged spelling that is an exact merger swap of some RP/SSB-attested
-    upstream sibling for its (word, pos) is tagged; RSSB/RRP (and unmatched)
-    forms carry none.
+def _tier(attester_var, candidate_var, pool_record):
+    """ATTEST_TIERS index of one attester relative to one candidate."""
+    provenance = "upstream" if pool_record is None else "pool"
+    relation = "peer" if attester_var == candidate_var else "ancestor"
+    return ATTEST_TIERS.index(f"{provenance}-{relation}")
 
-    A single (sibling, entry) pair is never ambiguous — merger_of returns at most
-    one merger. But a word can carry SEVERAL non-merged siblings, and one merged
-    spelling can be a valid swap of different siblings under different mergers.
-    The candidate tags then compete. We resolve by MERGER declaration precedence,
-    not by sibling sort order: try each merger over the whole sibling set in
-    MERGER_SWAPS order and take the first that fires. This is deterministic and
-    keeps the pre-existing
-    mergers' tags stable when a later merger is added (a newly-added merger can only
-    claim records that matched NOTHING before). Which sibling is the "true" one is a
-    data question the tag doesn't settle — every tagged record is a review
-    candidate — so a stable, documented precedence is the honest resolution."""
-    if entry.get("var") in BASE_NON_MERGED:
-        return None, None
-    siblings = non_merged_index.get((entry["Latn"].lower(), entry["pos"]))
-    if not siblings:
-        return None, None
-    shaw = entry["Shaw"]
-    # Sorted siblings keep the REPORTED sibling deterministic within a merger;
-    # the outer loop is merger-precedence so an earlier merger wins a multi-sibling
-    # tie (see docstring).
-    for merger_name in MERGER_SWAPS:
-        for sibling in sorted(siblings):
-            if merger_of(sibling, shaw) == merger_name:
-                return merger_name, sibling
-    return None, None
+
+class AttestationIndex:
+    """Per-(word, pos) index of every record eligible to attest a merger swap:
+    unflagged upstream ReadLex entries and unflagged pool candidates alike.
+    Accent eligibility is judged per candidate in merger_for; a pool attester is
+    additionally rejected when this stage would flag IT (_flaggable) — a record
+    judged a merged mutant cannot witness the distinguished form. An upstream
+    attester is never so judged: core is pre-accepted reference data
+    (basis.is_upstream) carrying only the flags ReadLex itself asserts."""
+
+    def __init__(self, upstream, supplement):
+        self._attesters = defaultdict(list)  # (word, pos) -> [(shaw, var, pool record | None)]
+        self._flaggable_memo = {}
+        self._judging = set()
+        for entries in upstream.values():
+            for entry in entries:
+                self._add(entry, None)
+        for entries in supplement.values():
+            for entry in entries:
+                if not is_upstream(entry):
+                    self._add(entry, entry)
+
+    def _add(self, entry, pool_record):
+        if entry.get("mergers"):
+            return
+        key = (entry["Latn"].lower(), entry["pos"])
+        self._attesters[key].append(
+            (entry["Shaw"], entry.get("var", ""), pool_record))
+
+    def merger_for(self, entry):
+        """The (merger, non_merged_sibling, tier) `entry` is tagged with, or
+        (None, None, None). Only a spelling that is an exact merger swap of some
+        eligible sibling for its (word, pos) is tagged; RSSB/RRP (and unmatched)
+        forms carry none.
+
+        A single (sibling, entry) pair is never ambiguous — merger_of returns at
+        most one merger. But a word can carry SEVERAL eligible siblings, and one
+        merged spelling can be a valid swap of different siblings under
+        different mergers. The competing tags resolve by MERGER declaration
+        precedence first — so a newly-added merger can only claim records that
+        matched NOTHING before — then by attestation tier, then by (shaw, var).
+        Deterministic, and which sibling is the "true" one stays a data question
+        the tag doesn't settle: every tagged record is a review candidate."""
+        candidate_var = entry.get("var", "")
+        if candidate_var in BASE_NON_MERGED:
+            return None, None, None
+        eligible = attesting_vars(candidate_var)
+        ranked = [(_tier(var, candidate_var, record), shaw, var, record)
+                  for shaw, var, record in
+                  self._attesters.get((entry["Latn"].lower(), entry["pos"]), ())
+                  if var in eligible]
+        ranked.sort(key=lambda attester: attester[:3])
+        shaw = entry["Shaw"]
+        for merger_name in MERGER_SWAPS:
+            if candidate_var not in MERGER_ACCENTS[merger_name]:
+                continue
+            for tier, sibling, _var, record in ranked:
+                if merger_of(sibling, shaw) != merger_name:
+                    continue
+                if record is not None and self._flaggable(record):
+                    continue
+                return merger_name, sibling, ATTEST_TIERS[tier]
+        return None, None, None
+
+    def _flaggable(self, record):
+        """Whether this stage itself would flag `record` — the pool half of the
+        no-merger-flag guard, judged by the same rule that assigns the output
+        flags. Recursion bottoms out because the vowel swap graph is acyclic; a
+        future swap table breaking that fails loud here instead of looping."""
+        key = (record["Latn"].lower(), record["pos"], record["Shaw"],
+               record.get("var", ""))
+        if key not in self._flaggable_memo:
+            if key in self._judging:
+                raise SystemExit(
+                    f"classify_dialect_mergers: attestation cycle at {key} — "
+                    f"the merger swap table no longer precludes swap cycles")
+            self._judging.add(key)
+            merger, _, _ = self.merger_for(record)
+            self._judging.discard(key)
+            self._flaggable_memo[key] = merger is not None
+        return self._flaggable_memo[key]
 
 
 def classify_supplement(supplement, tallies, samples, upstream=None):
@@ -130,7 +199,9 @@ def classify_supplement(supplement, tallies, samples, upstream=None):
     TrapBath flag) is ReadLex's own data and is neither stripped nor added to
     (basis.is_upstream: never flag-mutate core). `upstream` (the reinterpreted
     ReadLex) is threaded in by the orchestrator; None loads it."""
-    non_merged_index = non_merged_spellings(upstream)
+    if upstream is None:
+        upstream = load_upstream()
+    index = AttestationIndex(upstream, supplement)
     classified = {}
     for key, entries in supplement.items():
         annotated = []
@@ -140,12 +211,13 @@ def classify_supplement(supplement, tallies, samples, upstream=None):
                 tallies["upstream"] += 1
                 annotated.append(record)
                 continue
-            merger, sibling = merger_for(entry, non_merged_index)
+            merger, sibling, tier = index.merger_for(entry)
             if merger is not None:
                 record["mergers"] = [merger]
                 tallies[merger] += 1
+                tallies[f"{merger}:{tier}"] += 1
                 if len(samples[merger]) < SAMPLE_LIMIT:
-                    samples[merger].append((entry, sibling))
+                    samples[merger].append((entry, sibling, tier))
             else:
                 record.pop("mergers", None)
                 tallies["none"] += 1
@@ -161,14 +233,18 @@ def report(tallies, samples):
     print(f"Records classified: {total:,}")
     for merger in MERGER_SWAPS:
         print(f"  {merger} tagged: {tallies[merger]:,}")
+        for tier in ATTEST_TIERS:
+            if tallies[f"{merger}:{tier}"]:
+                print(f"    via {tier}: {tallies[f'{merger}:{tier}']:,}")
     print(f"  no merger:        {tallies['none']:,}")
     print(f"  upstream (passed through verbatim): {tallies['upstream']:,}")
 
     for merger in MERGER_SWAPS:
         print(f"\nSample [{merger}]:")
-        for entry, sibling in samples[merger]:
+        for entry, sibling, tier in samples[merger]:
             print(f"  {entry['Latn']} [{entry['pos']}]: "
-                  f"non-merged {sibling} -> {entry.get('var', '')} {entry['Shaw']}")
+                  f"non-merged {sibling} ({tier}) -> "
+                  f"{entry.get('var', '')} {entry['Shaw']}")
 
 
 def main():

@@ -4,13 +4,11 @@ Flag divergent-from-canonical supplement records as `variant`.
 
 Per (word, pos) group, establish the CANONICAL RRP spelling, then flag every
 record whose Shavian DIVERGES from that canonical (and has the canonical present
-to contrast against) with the additive boolean `variant`. This is the settled
-half of the dialect model: WHICH specific merger a divergent record reflects
-(cot-caught / lot-palm direction, one-vs-two) is still frozen/unresolved (see
-memory merger-direction-unsettled), but "this record is a non-canonical variant
-spelling" is decidable now. The schema carries `variant` and a `mergers` flag
-independently (additive booleans/lists), so a record may hold both — this stage
-never touches `mergers`, and applying `variant` loses nothing.
+to contrast against) with the additive boolean `variant`. `variant` is the
+RESIDUAL bucket — a variation we cannot name. A record whose variation IS named
+(a `mergers` flag from the classifier) never also carries `variant`: the two
+are mutually exclusive (owner ruling, 2026-08-03), so a merger-flagged record
+is out of this stage's scope entirely.
 
 THE CANONICAL-SELECTION RULE (per word_lower + pos, EXACTLY):
 
@@ -40,7 +38,8 @@ pass-AFTER-respell (a rewritten spelling — not trusted to define the canonical
 D..F are merger/stay/review. THRESHOLD: tier in {A, B} = high-confidence. A
 record with no rrp_tier (STAY residue, merger-held-back) is NOT high-confidence.
 
-THEN, per record in the group (once a canonical is fixed):
+THEN, per record in the group (once a canonical is fixed; merger-flagged
+records are exempted before these cases — see MERGER INTERACTION below):
   a. record.shaw == canonical                              → NO flag.
   b. record.shaw != canonical, NO contrasting canonical    → NO flag (isolated
      sibling present in the group AND not ReadLex-attested    sample: nothing to
@@ -55,12 +54,11 @@ counterpart present — is never flagged (isolated-sample guard). This mirrors t
 governing rule the owner set for mergers (anchor to canonical; same=no flag,
 different-with-contrast=variant, isolated=no flag).
 
-TRAP-BATH INTERACTION: this stage reads but never writes `mergers`; a trap-bath
-record (mergers=[trap-bath]) is judged for `variant` by the SAME rule as any other
-record — if it diverges from a present RRP canonical it gains `variant` ALONGSIDE
-its existing trap-bath flag (owner: both may coexist, additive). trap-bath's own
-detection/flagging is untouched. The disabled cot-caught / lot-palm mergers are
-irrelevant here (this stage never consults MERGER_SWAPS).
+MERGER INTERACTION: a merger-flagged record is skipped — the merger names its
+variation, so the unnamed-residual `variant` never coexists with it. This stage
+is the pool's only variant-writer and enforces the exclusion by also popping
+any stale `variant` a merger record arrives with. `mergers` itself is never
+written here.
 
 COUNT-PRESERVING: only ADDS the boolean `variant` to some records; never drops,
 splits, merges, or re-buckets. The orchestrator's count guard must pass unchanged.
@@ -172,7 +170,9 @@ def canonical_for_group(word_lower, pos, records, readlex_index):
 def flag_group(word_lower, pos, records, readlex_index, tallies, samples):
     """Set `variant` on each record of a (word_lower, pos) group that diverges from
     the group's canonical AND has that canonical present to contrast against.
-    Returns new record copies (never mutates input). Count-preserving."""
+    A merger-flagged record is exempt — mutually exclusive with `variant` — and
+    any stale `variant` on it is popped. Returns new record copies (never
+    mutates input). Count-preserving."""
     canonical = canonical_for_group(word_lower, pos, records, readlex_index)
     readlex_attested = bool(readlex_index.get((word_lower, pos)))
 
@@ -192,6 +192,9 @@ def flag_group(word_lower, pos, records, readlex_index, tallies, samples):
             # diverging from the RRP canonical is a dialect fact, not a
             # free-variation alternate. Pass through verbatim.
             tallies["upstream"] += 1
+        elif record.get("mergers"):
+            record.pop("variant", None)
+            tallies["merger-named"] += 1
         elif canonical is None:
             tallies["no-canonical"] += 1
         elif record.get("Shaw", "") == canonical:
@@ -202,8 +205,6 @@ def flag_group(word_lower, pos, records, readlex_index, tallies, samples):
             already = bool(record.get("variant"))
             record["variant"] = True
             tallies["flagged"] += 1
-            if record.get("mergers"):
-                tallies["flagged-with-merger"] += 1
             if not already and len(samples["flagged"]) < SAMPLE_LIMIT:
                 samples["flagged"].append((record, canonical))
         out.append(record)
@@ -245,11 +246,11 @@ def report(tallies, samples):
     print("\n=== variant flagging report ===")
     total = (tallies["flagged"] + tallies["is-canonical"] +
              tallies["isolated"] + tallies["no-canonical"] +
-             tallies["upstream"])
+             tallies["upstream"] + tallies["merger-named"])
     print(f"Records processed:        {total:,}")
     print(f"  upstream (exempt):      {tallies['upstream']:,}")
+    print(f"  merger-named (exempt):  {tallies['merger-named']:,}")
     print(f"  variant flagged:        {tallies['flagged']:,}")
-    print(f"    (also merger-flagged: {tallies['flagged-with-merger']:,})")
     print(f"  is the canonical:       {tallies['is-canonical']:,}")
     print(f"  isolated (no contrast): {tallies['isolated']:,}")
     print(f"  no safe canonical:      {tallies['no-canonical']:,}")
@@ -257,9 +258,8 @@ def report(tallies, samples):
     print("\nSample [variant flagged] (record -> canonical it varies from):")
     for record, canonical in samples["flagged"]:
         cps = " ".join(f"U+{ord(c):04X}" for c in record.get("Shaw", ""))
-        merger = f" mergers={record['mergers']}" if record.get("mergers") else ""
         print(f"  {record['Latn']} [{record.get('pos','')}] {record.get('var','')}"
-              f" {record['Shaw']} ({cps}){merger} -> canonical {canonical}")
+              f" {record['Shaw']} ({cps}) -> canonical {canonical}")
 
 
 def main():

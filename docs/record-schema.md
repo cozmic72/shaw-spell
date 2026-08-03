@@ -27,7 +27,7 @@ them in identity would orphan patches on trivial upstream re-notation). See
 | `ipa` | source IPA pronunciation |
 | `var` | base accent (RRP / RSSB / GenAm / …) — see [dialect-mergers.md](dialect-mergers.md) |
 | `mergers` | additive list of within-accent vowel mergers the spelling reflects (`trap-bath` / `cot-caught` / `lot-palm`); empty = canonical non-merged form |
-| `variant` | additive boolean — this spelling diverges from the RRP canonical (a non-canonical variant); see [decisions.md](decisions.md) |
+| `variant` | additive boolean — this spelling diverges from the RRP canonical in a way no merger names (the residual bucket); mutually exclusive with `mergers` on pool records (a named merger clears it); see [decisions.md](decisions.md) |
 
 ## Provenance fields (derived, read-only, never patch-editable)
 

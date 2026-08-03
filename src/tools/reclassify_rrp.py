@@ -143,7 +143,7 @@ import sys
 from collections import Counter, defaultdict
 
 from basis import (LEMMA_FIELD, PROJECT_ROOT, is_upstream, lemma_slot,
-                   mark_original, self_lemma)
+                   mark_original, repoint_lemmas, self_lemma)
 from rrp_classifier import judge_record
 
 INPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-classified.json"
@@ -534,38 +534,22 @@ def old_identity_slot(record, old_shaw):
 
 def repoint_dependent_lemmas(reclassified, tallies):
     """Re-point, in place, each record whose stated lemma names a respelled
-    record's OLD identity — where no record still carries that identity — at
-    the respelled record's NEW one. A respell moves a lemma target's
-    (word, pos, shaw) slot; anything filed under it would otherwise orphan
-    (build_supplement's lemma-orphan guard). The old->new mapping is read off
-    orig_shaw, the pre-image mark_original recorded at the respell. A re-point
-    moves the dependent's OWN anchor with no pre-image of its own (lemma is not
-    an orig-tracked field); a patch on it recovers via the weak
+    record's OLD identity at the respelled record's NEW one (basis.repoint_lemmas).
+    A respell moves a lemma target's (word, pos, shaw) slot; anything filed under
+    it would otherwise orphan (build_supplement's lemma-orphan guard). The
+    old->new mapping is read off orig_shaw — valid here because this stage runs
+    before any other shaw-moving transform, so the set-once pre-image is its own.
+    A re-point moves the dependent's OWN anchor with no pre-image of its own
+    (lemma is not an orig-tracked field); a patch on it recovers via the weak
     (word, pos, shaw) resort — the dependent's shaw is unchanged — not via
-    basis.reanchor_index (see apply_patches.weak_reanchor_index). Fails loud if
-    a dependent's old identity moved to several different new spellings: there
-    is no unambiguous target to re-point at."""
+    basis.reanchor_index (see apply_patches.weak_reanchor_index)."""
     records = [r for entries in reclassified.values() for r in entries]
-    present = {lemma_slot(r) for r in records}
     respelled = defaultdict(dict)
     for r in records:
         if "orig_shaw" in r:
             old_slot = old_identity_slot(r, r["orig_shaw"])
             respelled[old_slot][lemma_slot(r)] = self_lemma(r)
-    for r in records:
-        slot = lemma_slot(r.get(LEMMA_FIELD))
-        if not slot or slot in present or slot not in respelled:
-            continue
-        targets = respelled[slot]
-        if len(targets) > 1:
-            raise SystemExit(
-                f"reclassify_rrp: {r['Latn']}/{r['pos']} is filed under a "
-                f"respelled lemma whose old spelling {slot[2]} moved to "
-                f"{len(targets)} different new spellings — cannot re-point "
-                f"unambiguously")
-        (target,) = targets.values()
-        r[LEMMA_FIELD] = dict(target)
-        tallies["lemma-repointed"] += 1
+    repoint_lemmas(records, respelled, tallies, "reclassify_rrp")
 
 
 def reclassify_supplement(supplement, tallies, samples, enable_model_judge=None):

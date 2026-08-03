@@ -160,10 +160,11 @@ PROVENANCE_FIELDS = ["confidence", "source", "status", "ipa_source",
 
 # ORIGINAL-VALUE provenance (orig_*): the pre-transform value of a key field a
 # pipeline transform CHANGED. The natural key is (word, pos, shaw, var, lemma), so any
-# transform that rewrites `var` (the identical-dialect collapse) or respells
-# `shaw` (a forthcoming RRP classifier) moves a record's key and ORPHANS every
-# editorial patch anchored to the old key. Recording the pre-image lets the
-# applicator AUTO-RE-ANCHOR such a patch (see reanchor_index / apply_patches):
+# transform that rewrites `var` (the identical-dialect collapse, reclassify_rrp)
+# or respells `shaw` (reclassify_rrp, restore_spelling_marks) moves a record's
+# key and ORPHANS every editorial patch anchored to the old key. Recording the
+# pre-image lets the applicator AUTO-RE-ANCHOR such a patch (see reanchor_index
+# / apply_patches):
 # a transformed record still carries the key its patch was written against.
 #
 # Additive, like `mergers`/`variant`: a field is present only when that field was
@@ -334,9 +335,9 @@ def anchor_key(anchor):
 
 # The canonical-entry (Latn/Shaw/...) field a transform changes, and the natural-
 # key slot it occupies. mark_original works on the canonical shape because that is
-# what pipeline transforms (collapse_identical_dialects, a future classifier) read
-# and write. `ipa` shadows no key slot — orig_ipa is pure visibility, never a
-# re-anchor axis (ipa is not in the anchor key).
+# what pipeline transforms (collapse_identical_dialects, reclassify_rrp,
+# restore_spelling_marks) read and write. `ipa` shadows no key slot — orig_ipa
+# is pure visibility, never a re-anchor axis (ipa is not in the anchor key).
 _ORIG_ENTRY_FIELD = {"var": "var", "shaw": "Shaw", "ipa": "ipa"}
 
 
@@ -368,6 +369,32 @@ def mark_original(entry, field, old_value):
     if entry.get(_ORIG_ENTRY_FIELD[field], "") == old_value:
         return  # no genuine change; stay additive
     entry[orig_key] = old_value
+
+
+def repoint_lemmas(records, moved, tallies, stage):
+    """Re-point, in place, each record whose stated lemma names a MOVED identity
+    — where no record still carries that identity — at the new one. `moved` maps
+    an old (latn_lower, pos, shaw) slot to {new lemma_slot: new lemma dict} for
+    every record a transform's respell moved; the caller derives it because only
+    the caller knows which pre-image its own transform created (orig_shaw is
+    set-once, so a later stage cannot read its pre-image back off the records).
+    A dangling lemma that no `moved` entry explains is left alone — the chain-end
+    orphan guard's baseline comparison owns it. Fails loud when an old identity
+    moved to several different new identities: no unambiguous target."""
+    present = {lemma_slot(r) for r in records}
+    for r in records:
+        slot = lemma_slot(r.get(LEMMA_FIELD))
+        if not slot or slot in present or slot not in moved:
+            continue
+        targets = moved[slot]
+        if len(targets) > 1:
+            raise SystemExit(
+                f"{stage}: {r['Latn']}/{r['pos']} is filed under a lemma whose "
+                f"old spelling {slot[2]} moved to {len(targets)} different new "
+                f"spellings — cannot re-point unambiguously")
+        (target,) = targets.values()
+        r[LEMMA_FIELD] = dict(target)
+        tallies["lemma-repointed"] += 1
 
 
 def reanchor_index(basis_index):
@@ -406,7 +433,8 @@ def _pre_transform_key(current_key, entry):
     pre-image. Slots without an orig_* are left as-is. Equal to current_key when the
     record carries no key-moving orig_*.
 
-    A SELF-REFERENCED lemma moves with its record's respell (reclassify_rrp), so
+    A SELF-REFERENCED lemma moves with its record's respell (reclassify_rrp,
+    restore_spelling_marks), so
     the pre-image of a respelled record whose lemma is its own current identity
     is self-referenced at the OLD spelling — reconstructed here from orig_shaw,
     no orig_lemma needed. A non-self lemma is left as-is: a dependent whose lemma

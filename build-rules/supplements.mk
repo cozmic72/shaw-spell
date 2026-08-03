@@ -166,7 +166,8 @@ data/supplement-generated-ipa.json: | $(SRC_TOOLS)/fill_generated_ipa.py $(SRC_T
 # build_supplement.py is the orchestrator: it LOADS the source pools + upstream +
 # patches + definition/phrase indexes ONCE, composes every preprocessing transform
 # IN MEMORY (combine -> annotate -> dedup -> classify_mergers -> reclassify_rrp ->
-# generate_rrp -> collapse -> decontaminate -> phrases), and WRITES
+# generate_rrp -> collapse -> flag_variants -> decontaminate -> phrases ->
+# score -> restore_spelling_marks), and WRITES
 # supplement-combined-filtered.json ONCE. The previous nine per-stage targets
 # (combined-raw ... combined-decontaminated) round-tripped JSON through disk and
 # encoded the real step ordering in Python hardcoded paths, not these prerequisites
@@ -205,9 +206,11 @@ SUPPLEMENT_STEP_MODULES := \
 	$(SRC_TOOLS)/reclassify_rrp.py \
 	$(SRC_TOOLS)/generate_rrp.py \
 	$(SRC_TOOLS)/collapse_identical_dialects.py \
+	$(SRC_TOOLS)/flag_variants.py \
 	$(SRC_TOOLS)/filter_supplement_contamination.py \
 	$(SRC_TOOLS)/filter_supplement_phrases.py \
 	$(SRC_TOOLS)/score_confidence_blend.py \
+	$(SRC_TOOLS)/restore_spelling_marks.py \
 	$(SRC_TOOLS)/basis.py \
 	$(SRC_TOOLS)/dialect_mergers.py \
 	$(SRC_TOOLS)/rrp_classifier.py \

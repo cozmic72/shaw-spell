@@ -18,7 +18,7 @@ THE CHAIN (identical order + behaviour to the old .mk chain):
   combine  -> annotate_definitions -> filter_duplicates -> classify_mergers ->
   reclassify_rrp -> generate_rrp -> collapse_dialects -> flag_variants ->
   filter_contamination -> filter_phrases -> score_confidence ->
-  data/supplement-combined-filtered.json
+  restore_spelling_marks -> data/supplement-combined-filtered.json
 
 Records are the bucketed `{word_pos_shaw: [record, ...]}` dict every stage
 already reads/writes; each pure function takes that dict (+ its threaded deps)
@@ -92,6 +92,7 @@ import flag_variants as variant_mod
 import filter_supplement_contamination as contam_mod
 import filter_supplement_phrases as phrase_mod
 import score_confidence_blend as score_mod
+import restore_spelling_marks as marks_mod
 from detect_phrase_divergence import build_label_classifier
 
 OUTPUT_PATH = PROJECT_ROOT / "data" / "supplement-combined-filtered.json"
@@ -120,6 +121,13 @@ def write_json(obj, path):
 
 def count(supplement):
     return sum(len(v) for v in supplement.values())
+
+
+def require_count_preserved(stage, n_in, n_out, invariant):
+    if n_out != n_in:
+        raise SystemExit(
+            f"{stage}: record count changed ({n_in} -> {n_out}); this stage "
+            f"{invariant}, so a count change is a bug")
 
 
 def lemma_orphans(supplement):
@@ -206,11 +214,8 @@ def build_supplement(shave_fn=None, enable_shave=None):
     #    relabels but never drops or merges, so a count change is a bug.
     supplement, n_in = reclassify_mod.reclassify_supplement(
         supplement, Counter(), defaultdict(list))
-    n_out = count(supplement)
-    if n_out != n_in:
-        raise SystemExit(
-            f"reclassify_rrp: record count changed ({n_in} -> {n_out}); this "
-            f"stage relabels but never drops or merges — a count change is a bug")
+    require_count_preserved("reclassify_rrp", n_in, count(supplement),
+                            "relabels but never drops or merges")
     yield "reclassified", supplement
 
     # 6. generate RRP proposals + flag-gate (shave/names path threaded, gated off
@@ -222,12 +227,10 @@ def build_supplement(shave_fn=None, enable_shave=None):
         supplement, Counter(), defaultdict(list), Counter(), defaultdict(list),
         upstream=reinterpreted_upstream, shave_fn=shave_fn,
         enable_shave=enable_shave)
-    n_out = count(supplement)
-    if n_out != n_in:
-        raise SystemExit(
-            f"generate_rrp: record count changed ({n_in} -> {n_out}); this stage "
-            f"only ADDS proposal fields and STRIPS gated flags — it never drops or "
-            f"splits a record, so a count change is a bug")
+    require_count_preserved(
+        "generate_rrp", n_in, count(supplement),
+        "only ADDS proposal fields and STRIPS gated flags — it never drops or "
+        "splits a record")
     yield "generated", supplement
 
     # 7. collapse dialects down the hierarchy (harvest accents inherit their
@@ -244,12 +247,9 @@ def build_supplement(shave_fn=None, enable_shave=None):
     supplement = variant_mod.flag_supplement(
         supplement, Counter(), defaultdict(list),
         upstream=reinterpreted_upstream)
-    n_out = count(supplement)
-    if n_out != n_in:
-        raise SystemExit(
-            f"flag_variants: record count changed ({n_in} -> {n_out}); this stage "
-            f"only ADDS the variant flag — it never drops or splits a record, so a "
-            f"count change is a bug")
+    require_count_preserved(
+        "flag_variants", n_in, count(supplement),
+        "only ADDS the variant flag — it never drops or splits a record")
     yield "varflagged", supplement
 
     # 9. contamination prune
@@ -261,18 +261,29 @@ def build_supplement(shave_fn=None, enable_shave=None):
         supplement, label_of, [], [])
     yield "phrased", supplement
 
-    # 11. blended confidence score (FINAL stage). Slotted last so every field a
+    # 11. blended confidence score. Slotted after the prunes so every field a
     #     voter reads (source, rrp_*, shaw_source, ipa, has_definition, and the
     #     survivors of the contamination/phrase prunes) is fully populated.
     #     Count-preserving: only OVERWRITES confidence + ADDS the votes dict.
     n_in = count(supplement)
     supplement = score_mod.score_supplement(supplement)
-    n_out = count(supplement)
-    if n_out != n_in:
-        raise SystemExit(
-            f"score_confidence: record count changed ({n_in} -> {n_out}); this "
-            f"stage only rewrites confidence + adds votes — it never drops or "
-            f"splits a record, so a count change is a bug")
+    require_count_preserved(
+        "score_confidence", n_in, count(supplement),
+        "only rewrites confidence + adds votes — it never drops or splits a "
+        "record")
+
+    # 12. restore the Latin word's apostrophes/hyphens onto converter-generated
+    #     Shavian (FINAL stage — every earlier judge, the confidence votes
+    #     included, compares mark-free converter output against Shaw, so a mark
+    #     restored any earlier would read as a phantom disagreement).
+    #     Count-preserving: rewrites Shaw only, never drops or splits.
+    n_in = count(supplement)
+    supplement = marks_mod.restore_supplement(
+        supplement, Counter(), defaultdict(list),
+        upstream=reinterpreted_upstream)
+    require_count_preserved(
+        "restore_spelling_marks", n_in, count(supplement),
+        "only rewrites Shaw — it never drops or splits a record")
 
     new_orphans = [e for e in lemma_orphans(supplement)
                    if anchor_of(e) not in baseline_orphans]

@@ -17,7 +17,25 @@ Everything the pipeline produces (classifier, generator, name import, merger/var
 tagging) lands as an *unreviewed candidate*. Tools assist review; the owner accepts.
 No auto-accept threshold, batch-accept, or auto-sanction tier — a near-perfect
 confidence tier still only *prioritises* review. Lifts only if the owner explicitly says so.
+The ONE exception is upstream ReadLex (next entry) — ground truth the owner already
+treats as gospel, not pipeline output.
 → enforced throughout; candidates carry `status` until an accept patch sanctions them.
+
+**Upstream ReadLex arrives accepted — a derivation, never patches** — SETTLED (owner,
+2026-08: "Acceptance in schema, no reason needed. The source says it all here.").
+An unpatched upstream record (`readlex` in `source`, the `is_upstream` test) wears
+`patch_state: accepted` by derivation in the overlay; no patch is materialised
+(`patches.jsonl` stays the owner's decisions only, and the uncommitted badge never
+counts the floor). Any patch overrides the floor — drop/flag/edit on an upstream
+anchor behaves exactly as before. Hold-out: upstream canonicals that contradict each
+other on a (word, pos, var, lemma) slot (27 slots / 54 records — homograph pairs
+upstream filed under one lemma, e.g. `axes` NN2 under `axe` for both axe-plural and
+axis-plural) stay unreviewed for the owner to adjudicate via the editable lemma;
+auto-accepting both would assert two accepted canonicals in one slot, which the write
+guard exists to refuse. Covers upstream ReadLex ONLY — never widen to any
+pipeline-produced source.
+→ [`src/editor/overlay.py`](../src/editor/overlay.py) `annotate_basis_record` /
+`upstream_clash_keys`.
 
 **`patches.jsonl` is sacred — owner decisions, never machine-written** — SETTLED, absolute.
 `data/patches/patches.jsonl` is the owner's alone. The pipeline only READS it (via

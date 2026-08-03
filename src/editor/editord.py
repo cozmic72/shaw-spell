@@ -180,8 +180,8 @@ sys.path.insert(0, str(HERE.parent / "tools"))
 
 from basis import (ACCEPTED_STATUS, INTRINSIC_FIELDS, OP_ACCEPT,  # noqa: E402
                    OP_DROP, OP_EDIT, OP_FLAG, PROJECT_ROOT, UPSTREAM_SOURCE,
-                   anchor_key, anchor_of, collapse_readlex, manual_entry,
-                   published_entry)
+                   anchor_key, anchor_of, collapse_readlex, is_canonical,
+                   manual_entry, published_entry)
 from definitions import load_definitions_index                   # noqa: E402
 import definition_patches                                        # noqa: E402
 from dialect_mergers import MERGER_LABELS, MERGER_SWAPS           # noqa: E402
@@ -202,8 +202,10 @@ MAX_LIMIT = 500
 
 # The patch-states a live, sanctioned record carries — an accept whose changes
 # are empty (ACCEPTED) or non-empty (EDITED). A manual record shipping to the
-# dictionary is ACCEPTED too (see overlay.annotate_manual_record), so both
-# reach the shipped dictionary and a canonical conflict is drawn from either.
+# dictionary is ACCEPTED too (see overlay.annotate_manual_record), and an
+# unpatched upstream ReadLex record wears ACCEPTED by derivation (the upstream
+# acceptance floor — see overlay.annotate_basis_record), so all of them
+# reach the shipped dictionary and a canonical conflict is drawn from any.
 ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED)
 
 
@@ -415,7 +417,7 @@ def _confidence_max(record, value):
 
 def _patch_days(record, value):
     # A SCALAR "days back" filter: the record's patch was made within the last N
-    # days. A record with no patch (no patch_ts — an unreviewed/basis row) is
+    # days. A record with no patch (no patch_ts — an unpatched row) is
     # excluded, like a numeric sort excludes records missing the value.
     return _within_days(record.get("patch_ts"), value)
 
@@ -468,7 +470,11 @@ def _field_matches(record, key, value, established):
 
 
 # AXIS 1 — process status. The Review facet is the review-lifecycle filter: the
-# verdicts a record can be in (matched on patch_state). Manual rows carry a real
+# verdicts a record can be in (matched on patch_state). Unpatched upstream
+# ReadLex rows wear `accepted` by derivation (the upstream acceptance floor,
+# see overlay.annotate_basis_record), so `unreviewed` selects the records
+# actually awaiting a decision: supplement candidates plus the upstream clash
+# hold-outs. Manual rows carry a real
 # verdict like any other (their origin lives in the data facet as `manual`);
 # orphaned is a patch_state too, but it describes the record's LIFECYCLE, not a
 # review verdict, so it lives in the data facet (axis 2) as `orphaned` — an
@@ -685,7 +691,7 @@ def _matches_attribute(record, value):
 # made no more than N days before now. `patch_ts` is ISO-8601 UTC (patchstore
 # _now_iso); the cutoff is computed in UTC too, so the comparison is timezone-clean
 # (unlike the "today" count below, which is a local-calendar-day question). A record
-# with no patch_ts (unreviewed/basis) never matches — there is no decision to date.
+# with no patch_ts (unpatched) never matches — there is no decision to date.
 def _within_days(patch_ts, days):
     if not patch_ts:
         return False
@@ -929,9 +935,9 @@ def handle_facets(state, _request):
     facets = {facet: _distinct_values(state.view, facet)
               for facet in DATA_DERIVED_FACETS}
     facets["attributes"] = _attribute_facet_entries()
-    # patch_author is present only on patched rows (absent on unreviewed/basis
+    # patch_author is present only on patched rows (absent on unpatched
     # ones), so it cannot go through _distinct_values' record[field] access; it is
-    # collected with .get so unreviewed rows contribute nothing.
+    # collected with .get so unpatched rows contribute nothing.
     facets["patch_author"] = _distinct_authors(state.view)
     return facets
 
@@ -939,7 +945,7 @@ def handle_facets(state, _request):
 def _distinct_authors(view):
     """The sorted distinct patch authors across the view — the author facet's chips.
     Read under the view lock (like _distinct_values), collecting patch_author with
-    .get since it is absent on unreviewed/basis rows."""
+    .get since it is absent on unpatched rows."""
     with view._lock:
         authors = {record.get("patch_author")
                    for group in view.by_anchor_index.values()
@@ -1268,9 +1274,10 @@ def handle_patch(state, request):
     # accept (manual or anchored). A drop, a DIRTY edit (op="edit" ships
     # nothing, so cannot create a canonical clash), or an accept carrying a
     # merger/variant flag, is exempt (see _canonical_conflict). Nothing is written
-    # if a different-shaw canonical already exists.
+    # if a different-shaw canonical already exists on ANOTHER anchor (the
+    # anchor being written is its own row's replacement, not a rival).
     if patch["op"] != OP_EDIT:
-        error = _canonical_conflict_error(state, record)
+        error = _canonical_conflict_error(state, record, exclude_anchor=anchor)
         if error:
             return {"error": error}
 
@@ -1345,17 +1352,10 @@ def _intrinsic_value(record, field):
     return record.get(field, "")
 
 
-# A record is CANONICAL when it carries no additive flag: empty mergers AND
-# variant not true. A record with any merger or variant:true is a sanctioned
-# ALTERNATE, exempt from the one-canonical-per-(word,pos,var) invariant.
-def _is_canonical(record):
-    return not _intrinsic_value(record, "mergers") \
-        and not _intrinsic_value(record, "variant")
-
-
 # The one-canonical-per-(word,pos,var) invariant: for a given (word, pos, var)
 # there may be only ONE accepted canonical entry (different shaws are fine as
-# candidates, but only one may be sanctioned). The anchor key includes shaw, so
+# candidates, but only one may be sanctioned; basis.is_canonical — a merger/
+# variant alternate is exempt). The anchor key includes shaw, so
 # the anchor check does not catch this; enforce it here before the write.
 #
 # `wanted` is the client's wanted record. If it is not itself a canonical accept
@@ -1363,12 +1363,17 @@ def _is_canonical(record):
 # exempt: return None. Otherwise scan the other records on the same (word, pos,
 # var) with a DIFFERENT shaw and return the first that is itself a live accepted
 # canonical (an existing sanctioned entry the wanted one would duplicate), or
-# None. `exclude_patch_id` spares the row a manual re-decision is about to replace —
-# its own prior version is not a rival. A read against the current view, taking
+# None. A record is never its OWN rival — the write REPLACES its verdict:
+# `exclude_patch_id` spares the row a manual re-decision is about to replace,
+# and `exclude_anchor` its anchored counterpart, the row an accept is being
+# written against (without it, respelling the shaw of an already-accepted row —
+# every unpatched upstream record, under the acceptance floor — would collide
+# with its own pre-write annotation). A read against the current view, taking
 # the view's own lock via by_word; it never mutates.
-def _canonical_conflict(state, wanted, exclude_patch_id=None):
-    if wanted is None or not _is_canonical(wanted):
+def _canonical_conflict(state, wanted, exclude_patch_id=None, exclude_anchor=None):
+    if wanted is None or not is_canonical(wanted):
         return None
+    excluded_key = anchor_key(exclude_anchor) if exclude_anchor else None
     word, pos, var = wanted["word"], wanted["pos"], wanted.get("var", "")
     shaw = wanted["shaw"]
     for other in state.view.by_word(word):
@@ -1376,19 +1381,22 @@ def _canonical_conflict(state, wanted, exclude_patch_id=None):
             continue
         if other["shaw"] == shaw:
             continue
+        if excluded_key and anchor_key(other["anchor"]) == excluded_key:
+            continue
         patch = other.get("patch")
         if exclude_patch_id and patch and patch["id"] == exclude_patch_id:
             continue
-        if other["patch_state"] in ACCEPTED_STATES and _is_canonical(other):
+        if other["patch_state"] in ACCEPTED_STATES and is_canonical(other):
             return other["shaw"]
     return None
 
 
-def _canonical_conflict_error(state, record, exclude_patch_id=None):
+def _canonical_conflict_error(state, record, exclude_patch_id=None,
+                              exclude_anchor=None):
     """The one-canonical invariant as a write-rejection message, or None when the
     write is clean — shared by the anchored/manual accept and the manual
     re-decision accept, so the two can never phrase the rule apart."""
-    conflict = _canonical_conflict(state, record, exclude_patch_id)
+    conflict = _canonical_conflict(state, record, exclude_patch_id, exclude_anchor)
     if conflict is None:
         return None
     return (f"a canonical {record.get('var', '')} entry already exists "

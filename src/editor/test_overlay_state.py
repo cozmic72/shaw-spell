@@ -239,6 +239,84 @@ def test_manual_row_own_nonzero_freq_wins_over_derived():
     assert only_record_for(view, "zebra")["freq"] == 9
 
 
+# ---- the upstream acceptance floor (owner ruling: ReadLex arrives accepted) ----
+
+def test_unpatched_upstream_record_is_derived_accepted():
+    # No patch is materialised: the acceptance is a derivation (patch None,
+    # op None, no author/ts), overriding nothing the owner decided.
+    view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["readlex"])], [])
+    rec = only_record_for(view, "cat")
+    assert rec["patch_state"] == PATCH_STATE_ACCEPTED, rec["patch_state"]
+    assert rec["reviewed"] is True
+    assert rec["patch"] is None
+    assert rec["op"] is None
+    assert "patch_author" not in rec
+
+
+def test_pipeline_sources_never_auto_accept():
+    # The floor covers upstream ReadLex ONLY — generated/supplement sources stay
+    # unreviewed (the standing never-auto-accept rule).
+    view = view_of([entry("cat", "NN", SHAW_A, "RRP", ["generated"]),
+                    entry("dog", "NN", SHAW_B, "RRP", ["wordnet", "wiktionary"])],
+                   [])
+    for word in ("cat", "dog"):
+        rec = only_record_for(view, word)
+        assert rec["patch_state"] == PATCH_STATE_UNREVIEWED, (word, rec["patch_state"])
+        assert rec["reviewed"] is False
+
+
+def test_patch_overrides_the_upstream_floor():
+    # The floor is a default, not an override: an owner drop/flag on an upstream
+    # anchor wins.
+    entries = [entry("cat", "NN", SHAW_A, "RRP", ["readlex"])]
+    dropped = only_record_for(view_of(entries, [anchored_patch(
+        "drop", "cat", "NN", SHAW_A, "RRP")]), "cat")
+    assert dropped["patch_state"] == PATCH_STATE_DROPPED
+    flagged = only_record_for(view_of(entries, [anchored_patch(
+        "flag", "cat", "NN", SHAW_A, "RRP")]), "cat")
+    assert flagged["patch_state"] == PATCH_STATE_FLAGGED
+
+
+def test_clashing_upstream_canonicals_are_held_out_unreviewed():
+    # Two upstream CANONICALS with different shaws on one (word,pos,var,lemma)
+    # slot contradict each other: neither is auto-accepted, both await the owner.
+    entries = [entry("axes", "NN2", SHAW_A, "RRP", ["readlex"]),
+               entry("axes", "NN2", SHAW_B, "RRP", ["readlex"])]
+    records = view_of(entries, []).records
+    assert [r["patch_state"] for r in records] == [PATCH_STATE_UNREVIEWED] * 2, records
+
+
+def test_lemma_distinct_upstream_pair_is_not_a_clash():
+    # Same (word,pos,var), different LEMMA: distinct words upstream asserts side
+    # by side (`axes` under `ax` vs `axe`) — both accept.
+    ax = entry("axes", "VVZ", SHAW_A, "RRP", ["readlex"])
+    ax["lemma"] = {"Latn": "ax", "pos": "VVZ", "Shaw": SHAW_A}
+    axe = entry("axes", "VVZ", SHAW_B, "RRP", ["readlex"])
+    axe["lemma"] = {"Latn": "axe", "pos": "VVZ", "Shaw": SHAW_B}
+    records = view_of([ax, axe], []).records
+    assert [r["patch_state"] for r in records] == [PATCH_STATE_ACCEPTED] * 2, records
+
+
+def test_variant_sibling_is_exempt_from_the_clash_hold_out():
+    # A merger/variant alternate is outside the one-canonical invariant: it never
+    # forms a clash with the slot's canonical, and both auto-accept.
+    canonical = entry("cat", "NN", SHAW_A, "RRP", ["readlex"])
+    alternate = entry("cat", "NN", SHAW_B, "RRP", ["readlex"])
+    alternate["variant"] = True
+    records = view_of([canonical, alternate], []).records
+    assert [r["patch_state"] for r in records] == [PATCH_STATE_ACCEPTED] * 2, records
+
+
+def test_unpatch_reverts_an_upstream_row_to_the_floor():
+    # Clearing a patch on an upstream anchor restores the DERIVED acceptance,
+    # not unreviewed.
+    entries = [entry("cat", "NN", SHAW_A, "RRP", ["readlex"])]
+    view = view_of(copy.deepcopy(entries), [])
+    view.apply_patch(anchored_patch("drop", "cat", "NN", SHAW_A, "RRP"))
+    view.apply_unpatch_anchor(anchor("cat", "NN", SHAW_A, "RRP"))
+    assert view.records == view_of(copy.deepcopy(entries), []).records
+
+
 # ---- accept layering: accept = basis record + intrinsic changes ----
 
 def test_accept_lays_changes_over_basis_not_replacing_untouched_fields():

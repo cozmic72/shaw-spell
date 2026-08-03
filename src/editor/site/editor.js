@@ -2529,7 +2529,7 @@ function cmpStr(a, b) {
     return 0;
 }
 
-// No additive flag (empty mergers, not variant) — mirrors the daemon's _is_canonical.
+// No additive flag (empty mergers, not variant) — mirrors basis.is_canonical.
 function isCanonical(record) {
     return (!record.mergers || record.mergers.length === 0) && !record.variant;
 }
@@ -2645,13 +2645,20 @@ function relatedProvenance(record) {
                      label: ORPHAN_KIND_TAGS.get(kind).label };
         }
         case PATCH_STATE.ACCEPTED:
-            return { state: "accepted", glyph: STAMP_GLYPHS.get(PATCH_STATE.ACCEPTED), label: "sanctioned" };
+            // No patch = the upstream acceptance floor, not an owner sanction.
+            return {
+                state: "accepted",
+                glyph: STAMP_GLYPHS.get(PATCH_STATE.ACCEPTED),
+                label: record.patch_id ? "sanctioned" : "upstream",
+            };
         default:
             if (record.manual) {
                 return { state: "unreviewed", glyph: "✎", label: "manual" };
             }
+            // An unreviewed upstream row is a clash hold-out awaiting
+            // adjudication — a candidate's ○, not the trusted-upstream ✓.
             return record.source.includes("readlex")
-                ? { state: "unreviewed", glyph: "✓", label: "upstream" }
+                ? { state: "unreviewed", glyph: "○", label: "upstream" }
                 : { state: "unreviewed", glyph: "○", label: "candidate" };
     }
 }
@@ -3719,7 +3726,7 @@ async function dropOne(selected, options = {}) {
 // place. `step`/`toast` are off per record in a group run. Throws on failure so the
 // group loop can fail loud per record.
 async function writePatch(anchor, record, verb, selected, { step = true, toast = true, refocus = true, dirty = false, deferRender = false } = {}) {
-    const priorReviewed = selected ? selected.reviewed : false;
+    const priorPatched = Boolean(selected && selected.patch_id);
     // A bare edit persisted on navigate is DIRTY (op="edit" server-side) — recorded
     // but not reviewed or shipped; only an explicit Accept writes op="accept". A
     // manual edit stays a manual patch (re-decided in place, anchor null), never
@@ -3728,7 +3735,7 @@ async function writePatch(anchor, record, verb, selected, { step = true, toast =
         ? { op: "patch", anchor: null, record, author: AUTHOR, replaces: selected.patch_id, dirty }
         : { op: "patch", anchor, record, author: AUTHOR, dirty };
     const result = await callDaemon(request);
-    pushUndo(anchor, priorReviewed);
+    pushUndo(anchor, priorPatched);
     countDecision();
     applyWriteResult(result.records, anchor, { step, refocus, deferRender });
     if (toast) {
@@ -3744,12 +3751,12 @@ async function flagSelected() {
 }
 
 async function flagOne(selected, { step = true, toast = true, refocus = true, deferRender = false } = {}) {
-    const priorReviewed = selected.reviewed;
+    const priorPatched = Boolean(selected.patch_id);
     const request = isManual(selected)
         ? { op: "flag", anchor: null, author: AUTHOR, replaces: selected.patch_id }
         : { op: "flag", anchor: anchorOf(selected), author: AUTHOR };
     const result = await callDaemon(request);
-    pushUndo(anchorOf(selected), priorReviewed);
+    pushUndo(anchorOf(selected), priorPatched);
     applyWriteResult(result.records, anchorOf(selected), { step, refocus, deferRender });
     if (toast) {
         showToast(`flagged · ${result.result}`);
@@ -3757,7 +3764,8 @@ async function flagOne(selected, { step = true, toast = true, refocus = true, de
     return result;
 }
 
-// Unflag: revert to unreviewed — an explicit "actually, back to the pool".
+// Unflag: delete the flag, back to the untouched source — unreviewed for a
+// candidate, derived-accepted for an upstream row.
 async function unflagSelected() {
     const selected = contextRecord(activeContext());
     if (!selected || selected.patch_state !== PATCH_STATE.FLAGGED) {
@@ -3786,17 +3794,15 @@ async function clearSelected() {
 // row) — tallied apart from the writes so the summary count is honest.
 const GROUP_SKIPPED = Symbol("bulk-skipped");
 
-// Only a truly unreviewed record holds no patch to clear. A dirty record is
-// unreviewed BY VERDICT but carries an unshipped edit patch, which Clear deletes
-// like any other (the reviewed bit would wrongly skip it).
+// Skip by PATCH PRESENCE, not verdict: an unreviewed row holds no patch, and an
+// upstream row accepted by derivation (no patch) has nothing to clear either. A
+// dirty record is unreviewed BY VERDICT but carries an unshipped edit patch,
+// which Clear deletes like any other.
 async function clearOne(selected, options = {}) {
-    if (selected.patch_state === PATCH_STATE.UNREVIEWED) {
+    if (!selected.patch_id) {
         return GROUP_SKIPPED;
     }
     if (isManual(selected)) {
-        if (!selected.patch_id) {
-            throw new Error(`${selected.word}: manual entry has no patch id.`);
-        }
         return unpatch(null, "cleared", { ...options, patchId: selected.patch_id });
     }
     return unpatch(anchorOf(selected), "cleared", options);
@@ -3884,16 +3890,17 @@ function capitalise(word) {
 }
 
 // Undo: if the last decision created a patch, delete it to restore the untouched
-// source. If the anchor already had a patch before, we cannot faithfully restore it
-// from the client — surface that and leave the current patch (the honest behaviour).
+// source (for an upstream row, its derived acceptance). If the anchor already held
+// a patch before — even a dirty one — we cannot faithfully restore it from the
+// client — surface that and leave the current patch (the honest behaviour).
 async function undoLast() {
     const frame = session.undoStack.pop();
     if (!frame) {
         showToast("Nothing to undo.", true);
         return;
     }
-    if (frame.priorReviewed) {
-        showToast("Can't undo: the entry already had a decision before this one.", true);
+    if (frame.priorPatched) {
+        showToast("Can't undo: the entry already carried a patch before this one.", true);
         renderGroupEditor(selectedGroup());
         return;
     }
@@ -3973,8 +3980,8 @@ function removeModalRow(anchor) {
     reloadRelatedForDetail();
 }
 
-function pushUndo(anchor, priorReviewed) {
-    session.undoStack.push({ anchor, priorReviewed });
+function pushUndo(anchor, priorPatched) {
+    session.undoStack.push({ anchor, priorPatched });
 }
 
 function countDecision() {
@@ -4324,7 +4331,7 @@ const SHORTCUT_GROUPS = [
             { keys: ["X"], state: "dropped", action: "Drop — reject & step on" },
             { keys: ["F"], state: "flagged", action: "Flag — looked at, no verdict yet" },
             { keys: ["E"], state: null, action: "Edit — focus the Shavian field (auto-saves on leave)" },
-            { keys: ["C"], state: "unreviewed", action: "Clear — delete the patch, back to unreviewed" },
+            { keys: ["C"], state: "unreviewed", action: "Clear — delete the patch, back to the untouched source" },
         ],
     },
     {

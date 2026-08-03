@@ -475,6 +475,16 @@ def is_dirty_patch(patch):
     return patch.get("op") == OP_EDIT
 
 
+def is_canonical(record):
+    """Whether a record carries no additive variation flag (empty mergers, not
+    variant) — the records subject to the one-canonical-per-slot invariant; a
+    merger/variant record is a sanctioned ALTERNATE, exempt. Works on both
+    shapes: `mergers`/`variant` keep their names across record and canonical
+    entry. Shared by the editor's write guard (editord._canonical_conflict)
+    and the overlay's upstream-clash hold-out (overlay.upstream_clash_keys)."""
+    return not record.get("mergers") and not record.get("variant")
+
+
 def record_to_output(record):
     """The canonical dictionary entry (Latn/Shaw/...) for a resolved `record`
     (word/shaw/...). The single UI-shape → canonical mapping shared by the

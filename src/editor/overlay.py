@@ -17,11 +17,12 @@ whether `changes` is non-empty, which `patch_state` reflects.
 
 Each annotated record carries the displayed content (word/shaw/pos/ipa/freq/var
 plus provenance), its stable `anchor` (immutable identity, so an edited row never
-moves), a `reviewed` flag (a patch exists), and a
-`patch_state` for the ledger stamp:
+moves), a `reviewed` flag (the record carries a verdict — a patch, or the
+upstream acceptance floor below), and a `patch_state` for the ledger stamp:
 
-    unreviewed  no patch resolves to this anchor
-    accepted    an accept with no edits (changes empty) — sanctioned as-is
+    unreviewed  no patch resolves to this anchor and no acceptance floor applies
+    accepted    an accept with no edits (changes empty) — sanctioned as-is; ALSO
+                the derived floor of an unpatched upstream ReadLex record (below)
     edited      an accept carrying intrinsic edits (accept-with-edits / respell)
     dirty       an EDIT persisted on navigate but not yet accepted (op == "edit")
                 — reviewed=False; its edits are shown but do NOT ship, until an
@@ -30,6 +31,17 @@ moves), a `reviewed` flag (a patch exists), and a
     flagged     a flag "looked at, no verdict yet" (see is_flag_patch)
     orphaned    an ANCHORED patch whose anchor no longer resolves against the basis
                 (upstream drifted out from under the decision — see below)
+
+UPSTREAM AUTO-ACCEPT (owner ruling, 2026-08): an upstream ReadLex record with no
+patch arrives ACCEPTED — a DERIVATION over `patch is None`, never a materialised
+patch (patches.jsonl records the OWNER's decisions only; `source` already says
+where the acceptance comes from). Any patch overrides the floor: a drop/flag/
+edit/accept on an upstream anchor annotates exactly as on any other row. The
+one hold-out is upstream_clash_keys — upstream canonicals that contradict each
+other on a (word, pos, var, lemma) slot stay unreviewed for the owner to
+adjudicate. ⚠ The floor covers upstream ReadLex ONLY (is_upstream): everything
+the PIPELINE produces — classifier, generator, names, model output — still
+lands unreviewed (the standing never-auto-accept rule; see docs/decisions.md).
 
 MANUAL rows (manual patches, anchor null — a standalone record no basis anchor
 attests) are NOT a state of their own: manual-ness is an ORIGIN, carried as
@@ -82,8 +94,8 @@ import threading
 from basis import (INFO_FIELD, LEMMA_FIELD, OP_ACCEPT, OP_DROP, OP_EDIT,
                    ORIG_FIELDS, UPSTREAM_SOURCE, anchor_key, anchor_of,
                    build_basis, effective_record, enrich_pool_frequency,
-                   is_dirty_patch, is_flag_patch, manual_entry, manual_freq,
-                   manual_pool, output_to_record)
+                   is_canonical, is_dirty_patch, is_flag_patch, is_upstream,
+                   manual_entry, manual_freq, manual_pool, output_to_record)
 
 PATCH_STATE_UNREVIEWED = "unreviewed"
 PATCH_STATE_ACCEPTED = "accepted"
@@ -187,8 +199,8 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     the natural key, passed through only when the record carries it.
 
     `op` is the patch's operation (accept/drop/flag/edit) — None for an
-    unreviewed row (no patch) and for a manual ACCEPT, whose manual patch
-    carries no op. It is carried onto the UI shape so the owner can tell WHAT verdict a
+    unpatched row (unreviewed, or accepted under the upstream floor) and for a
+    manual ACCEPT, whose manual patch carries no op. It is carried onto the UI shape so the owner can tell WHAT verdict a
     reviewed row records — most useful on orphan rows, where a lost accept
     (redundant) and an EVADED drop (junk resurfaced under a relabelled var) need
     distinct triage. The daemon strips the raw `patch` object from the wire shape
@@ -216,7 +228,7 @@ def _ui_record(record, anchor, source, default_status, reviewed, patch_state, pa
     }
     # The patch's meta (author + ISO-8601 UTC timestamp) surfaced onto the row so
     # the UI can filter/count on WHO made a decision and WHEN. Present only for a
-    # patched row — an unreviewed/basis record has no patch, so neither field is
+    # patched row — an unpatched record has no patch, so neither field is
     # emitted (the author/date filters and counts skip it). meta always carries both
     # (see patchstore._meta), so a patch that lacks either is malformed and left
     # absent rather than defaulted.
@@ -245,10 +257,38 @@ def _record_anchor(word, pos, shaw, var, lemma):
     return anchor
 
 
-def annotate_basis_record(candidate, source, patch, established):
+def upstream_clash_keys(basis_index):
+    """The anchor keys held OUT of the upstream acceptance floor: upstream
+    CANONICAL records (merger/variant alternates are exempt from the
+    one-canonical invariant) that contradict each other — more than one shaw on
+    the same (word, pos, var, lemma) slot. Upstream filed genuine homographs
+    under one lemma (`axes` NN2 under `axe` covers both axe-plural and
+    axis-plural); auto-accepting both would assert two accepted canonicals in
+    one slot, the exact state the write guard (editord._canonical_conflict)
+    exists to refuse. Held back — never discarded — they stay in the unreviewed
+    queue for the owner to adjudicate (re-lemma one and accept). Records whose
+    slots differ by LEMMA are not clashes: they are distinct words upstream
+    itself asserts side by side, and both accept. Static per basis; computed
+    once per view."""
+    keys_by_slot = {}
+    for key, entry in basis_index.items():
+        if is_upstream(entry) and is_canonical(entry):
+            word, pos, shaw, var, lemma = key
+            keys_by_slot.setdefault((word, pos, var, lemma), []).append(key)
+    return frozenset(
+        key
+        for keys in keys_by_slot.values()
+        if len({shaw for _word, _pos, shaw, _var, _lemma in keys}) > 1
+        for key in keys)
+
+
+def annotate_basis_record(candidate, source, patch, established, upstream_clashes):
     """One annotated row for a basis candidate under its overlaid patch.
 
-    Unpatched: displays the source record, unreviewed. Dirty (op="edit"): displays
+    Unpatched: displays the source record — ACCEPTED when the upstream floor
+    applies (an upstream ReadLex record outside `upstream_clashes` — see the
+    module doc; supplement candidates and the clash hold-outs stay unreviewed).
+    Dirty (op="edit"): displays
     the basis record with the edits laid over it, NOT reviewed — a bare edit
     persisted on navigate, awaiting explicit Accept. Accepted (op="accept"):
     displays the basis record with the intrinsic `changes` laid over it, sanctioned
@@ -262,7 +302,13 @@ def annotate_basis_record(candidate, source, patch, established):
                       else SUPPLEMENT_STATUS)
 
     if patch is None:
-        shown, reviewed, state = output_to_record(candidate), False, PATCH_STATE_UNREVIEWED
+        # UPSTREAM ONLY (is_upstream) — never any pipeline-produced source:
+        # never-auto-accept stands for everything else (docs/decisions.md).
+        accepted = (is_upstream(candidate)
+                    and anchor_key(anchor) not in upstream_clashes)
+        shown = output_to_record(candidate)
+        reviewed = accepted
+        state = PATCH_STATE_ACCEPTED if accepted else PATCH_STATE_UNREVIEWED
     elif is_flag_patch(patch):
         shown, reviewed, state = output_to_record(candidate), True, PATCH_STATE_FLAGGED
     elif patch["op"] == OP_DROP:
@@ -395,9 +441,10 @@ class AnnotatedView:
         self.freq_enriched = freq_enriched
         self.anchored, self.manual = _index_patches_by_anchor(patches)
         self.established = EstablishedIndex(basis_index, basis_source)
+        self.upstream_clashes = upstream_clash_keys(basis_index)
         self.by_anchor_index = _build_records(
             basis_index, basis_source, self.anchored, self.manual,
-            self.established, manual_bases)
+            self.established, manual_bases, self.upstream_clashes)
         self.by_word_index = _build_word_index(self.by_anchor_index)
         self.by_shaw_index = _build_shaw_index(self.by_anchor_index)
         self._lock = threading.Lock()
@@ -521,7 +568,7 @@ class AnnotatedView:
         if patch is not None:
             self.anchored[key] = patch
         annotated = annotate_basis_record(candidate, self.basis_source[key], patch,
-                                          self.established)
+                                          self.established, self.upstream_clashes)
         self._replace_record(key, annotated,
                              lambda r: not r.get("manual"))
 
@@ -591,7 +638,7 @@ def _index_patches_by_anchor(patches):
 
 
 def _build_records(basis_index, basis_source, anchored, manual, established,
-                   manual_bases):
+                   manual_bases, upstream_clashes):
     """The per-anchor record index: anchor key -> its annotated rows, built once
     from the basis and overlay. Basis anchors come first (in basis order), then
     manual rows, then ORPHANED anchored patches (those whose anchor key is absent
@@ -616,7 +663,7 @@ def _build_records(basis_index, basis_source, anchored, manual, established,
     for key, candidate in basis_index.items():
         index.setdefault(key, []).append(
             annotate_basis_record(candidate, basis_source[key], anchored.get(key),
-                                  established))
+                                  established, upstream_clashes))
 
     for patch in manual.values():
         record = annotate_manual_record(patch, established, manual_bases)

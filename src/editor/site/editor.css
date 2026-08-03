@@ -582,6 +582,12 @@ body {
     overflow: hidden;
 }
 
+/* Quiet in-flight cue for a re-running filter query: the stale list stays fully
+   legible (pull-and-refresh keeps showing it until the new page lands) but dims
+   slightly so a query that outlasts the debounce reads as "still working",
+   not "did my filter change register?" (setLedgerBusy in editor.js). */
+.ledger-busy .ledger-list { opacity: 0.55; transition: opacity 0.15s ease; }
+
 /* ---- ledger/detail splitter ----
    Dragging sets --ledger-w on .workbench (see initWorkbenchSplitter in editor.js). */
 .splitter {

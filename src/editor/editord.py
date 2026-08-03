@@ -159,6 +159,7 @@ Run under systemd (see shaw-spell-editord.service).
 import argparse
 import calendar
 import functools
+import gc
 import json
 import logging
 import os
@@ -209,10 +210,28 @@ MAX_LIMIT = 500
 ACCEPTED_STATES = (PATCH_STATE_ACCEPTED, PATCH_STATE_EDITED)
 
 
+def _freeze_view_generation():
+    """Every `entries` query allocates a full-corpus-sized batch of temporary
+    tuples/sets/dicts (filter_records' keyed list, group_sorted's partition,
+    etc.) — enough that the cyclic GC's generational threshold trips mid-query,
+    and it then re-scans the ~289K long-lived view objects that can never
+    actually be part of a new cycle. gc.freeze() moves everything reachable
+    right now (the view) into the permanent generation the collector skips,
+    cutting a measured ~2.5s query to ~1.4s. Objects frozen by an earlier
+    generation (a prior view, after rebuild() replaces it) stay frozen forever
+    rather than re-joining the collected pool — acceptable because rebuild()
+    only runs on the rare revert-uncommitted path, and annotated records are
+    plain dicts/lists with no reference cycles for the collector to reclaim
+    anyway; refcounting alone frees them once the old view is unreferenced."""
+    gc.collect()
+    gc.freeze()
+
+
 class State:
     """The annotated view for the daemon's lifetime. A write updates the affected
     anchor in the view incrementally (see AnnotatedView.apply_patch); rebuild()
-    reloads the whole view from disk and is kept for startup only.
+    reloads the whole view from disk and is used by handle_revert_uncommitted,
+    the one path where the store changes outside the view's own write ops.
 
     `definitions` is a SEPARATE, read-only index of the Shavian definitions corpus
     (definitions.py) — the inline sense summary reads it, but it never touches the
@@ -222,9 +241,11 @@ class State:
     def __init__(self, view, definitions):
         self.view = view
         self.definitions = definitions
+        _freeze_view_generation()
 
     def rebuild(self):
         self.view = load_view()
+        _freeze_view_generation()
 
 
 # The two per-field free-text filters that match a substring (default) or a regex
@@ -736,7 +757,14 @@ def filter_records(records, query, established, flat=False):
     facet, UNIONED with the record-level leg — OR within the review axis, AND
     across axes, exactly the per-record composition lifted to the group. A
     review facet reduced to mixed alone offers no record-level value, so that
-    leg matches nothing (review_only_mixed), never everything."""
+    leg matches nothing (review_only_mixed), never everything.
+
+    Returns (matched_records, key_by_id): key_by_id carries this call's
+    already-computed group_key for every matched record (by id()), so the
+    caller can pass it to group_sorted instead of recomputing group_key over
+    the same records a second time — group_key is the dominant per-query cost
+    (it builds a fresh mergers/variant set per record), and every record here
+    was already keyed once above."""
     keyed = [(group_key(record), record) for record in records]
     if query.review_only_mixed:
         record_matches = set()
@@ -746,12 +774,14 @@ def filter_records(records, query, established, flat=False):
     if flat:
         mixed_groups = _mixed_group_keys(keyed, query, established) \
             if query.review_mixed else set()
-        return [record for key, record in keyed
-                if id(record) in record_matches or key in mixed_groups]
-    matched_groups = {key for key, record in keyed if id(record) in record_matches}
-    if query.review_mixed:
-        matched_groups |= _mixed_group_keys(keyed, query, established)
-    return [record for key, record in keyed if key in matched_groups]
+        matched = [(key, record) for key, record in keyed
+                   if id(record) in record_matches or key in mixed_groups]
+    else:
+        matched_groups = {key for key, record in keyed if id(record) in record_matches}
+        if query.review_mixed:
+            matched_groups |= _mixed_group_keys(keyed, query, established)
+        matched = [(key, record) for key, record in keyed if key in matched_groups]
+    return [record for _key, record in matched], {id(record): key for key, record in matched}
 
 
 def _mixed_group_keys(keyed, query, established):
@@ -878,11 +908,14 @@ def serialisable(record):
 # group, and distinct groups have distinct first members — so the group sequence
 # is itself a deterministic total order, and offset paging over it is stable
 # across requests (no duplicates, no gaps).
-def group_sorted(records):
+def group_sorted(records, key_by_id):
+    """key_by_id supplies each record's group_key (by id()) — filter_records
+    already computed it over this same record set; recomputing it here would
+    double the dominant per-query cost for no new information."""
     ordered = []
     by_key = {}
     for record in records:
-        key = group_key(record)
+        key = key_by_id[id(record)]
         members = by_key.get(key)
         if members is None:
             by_key[key] = members = []
@@ -907,14 +940,15 @@ def handle_entries(state, request):
     limit = min(int(request.get("limit", DEFAULT_LIMIT)), MAX_LIMIT)
 
     flat = bool(request.get("flat"))
-    matched = filter_records(state.view.records, query, state.view.established, flat=flat)
+    matched, key_by_id = filter_records(
+        state.view.records, query, state.view.established, flat=flat)
     matched = sort_records(matched, request.get("sort") or DEFAULT_SORT)
     # Flat mode (the ledger's ungrouped view) pages by RECORD: each record is its
     # own singleton group, so offset/limit slice the flat list directly rather
     # than group_sorted's group runs. The client never re-partitions what it is
     # sent, so this is the only place flat pagination can live.
-    groups = [(group_key(r), [r]) for r in matched] if flat \
-        else group_sorted(matched)
+    groups = [(key_by_id[id(r)], [r]) for r in matched] if flat \
+        else group_sorted(matched, key_by_id)
     page = groups[offset:offset + limit]
     return {
         "total": len(groups),

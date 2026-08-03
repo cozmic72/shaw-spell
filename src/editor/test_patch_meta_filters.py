@@ -163,14 +163,14 @@ def test_filter_serves_whole_group_when_one_member_matches():
     sibling_miss = _annotated(word="run", pos="VB")
     unrelated = _annotated(word="walk", pos="JJ")
     query = editord.QueryFilters({"pos": ["NN"]})
-    result = editord.filter_records(
+    result, _key_by_id = editord.filter_records(
         [sibling_hit, sibling_miss, unrelated], query, None)
     assert result == [sibling_hit, sibling_miss]
 
 
 def test_filter_no_filters_is_identity():
     records = [_annotated(word="run", pos="NN"), _annotated(word="walk", pos="JJ")]
-    result = editord.filter_records(records, editord.QueryFilters({}), None)
+    result, _key_by_id = editord.filter_records(records, editord.QueryFilters({}), None)
     assert result == records
 
 
@@ -211,7 +211,7 @@ def test_queryfilters_strips_mixed_into_the_group_leg():
 
 
 def test_mixed_serves_only_groups_spanning_verdicts():
-    result = editord.filter_records(
+    result, _key_by_id = editord.filter_records(
         _mixed_corpus(), editord.QueryFilters({"review": ["mixed"]}), None)
     assert [r["word"] for r in result] == ["run", "run"], result
 
@@ -223,7 +223,7 @@ def test_mixed_uses_the_verdict_collapse_not_raw_patch_state():
         _annotated(word="run", pos="NN", patch_state="unreviewed"),
         _annotated(word="run", pos="VB", patch_state="dirty"),
     ]
-    result = editord.filter_records(
+    result, _key_by_id = editord.filter_records(
         records, editord.QueryFilters({"review": ["mixed"]}), None)
     assert result == [], result
 
@@ -232,10 +232,11 @@ def test_mixed_ands_with_the_other_axes():
     # AND across axes: the mixed group must also hold a member matching the other
     # facets (which then serves the group whole, non-matching siblings included).
     query = editord.QueryFilters({"review": ["mixed"], "pos": ["VB"]})
-    result = editord.filter_records(_mixed_corpus(), query, None)
+    result, _key_by_id = editord.filter_records(_mixed_corpus(), query, None)
     assert [r["word"] for r in result] == ["run", "run"], result
     none = editord.QueryFilters({"review": ["mixed"], "pos": ["JJ"]})
-    assert editord.filter_records(_mixed_corpus(), none, None) == []
+    none_result, _key_by_id = editord.filter_records(_mixed_corpus(), none, None)
+    assert none_result == []
 
 
 def test_mixed_ors_with_record_level_review_values():
@@ -243,13 +244,13 @@ def test_mixed_ors_with_record_level_review_values():
     records = _mixed_corpus() + [
         _annotated(word="cat", pos="NN", patch_state="flagged"),
     ]
-    result = editord.filter_records(
+    result, _key_by_id = editord.filter_records(
         records, editord.QueryFilters({"review": ["mixed", "flagged"]}), None)
     assert [r["word"] for r in result] == ["run", "run", "cat"], result
 
 
 def test_review_without_mixed_stays_record_level():
-    result = editord.filter_records(
+    result, _key_by_id = editord.filter_records(
         _mixed_corpus(), editord.QueryFilters({"review": ["accepted"]}), None)
     assert [r["word"] for r in result] == ["run", "run", "walk", "walk"], result
 

@@ -314,6 +314,12 @@ const state = {
     // partition (every {key,size} run has size 1), so pagination counts records
     // instead of groups. Persisted in the session like activeFilters/columnSort.
     flat: false,
+    // Monotonic token for the ledger query, mirroring relatedGeneration/
+    // definitionsGeneration: only the LATEST runQuery may materialise its result,
+    // so a slow stale response (e.g. an earlier, heavier filter) can never land
+    // after and clobber a faster later one.
+    queryGeneration: 0,
+
     // Monotonic token for the related-entries fetch: only the LATEST request may
     // render, so a slow stale response never paints over the current record.
     relatedGeneration: 0,
@@ -588,14 +594,29 @@ function markInvalidRegex(invalidFields) {
 async function runQuery(offset = 0, preferredAnchor = null) {
     state.filters = filtersFromState();
     state.offset = offset;
-    const result = await callDaemon({
-        op: "entries",
-        filters: daemonFilters(state.filters),
-        sort: daemonSort(),
-        offset,
-        limit: state.limit,
-        flat: state.flat,
-    });
+    const generation = ++state.queryGeneration;
+    setLedgerBusy(true);
+    let result;
+    try {
+        result = await callDaemon({
+            op: "entries",
+            filters: daemonFilters(state.filters),
+            sort: daemonSort(),
+            offset,
+            limit: state.limit,
+            flat: state.flat,
+        });
+    } finally {
+        if (generation === state.queryGeneration) {
+            setLedgerBusy(false);
+        }
+    }
+    // A newer runQuery has since started (and owns the busy indicator): this
+    // response is stale, so it must not overwrite the newer one's in-flight or
+    // materialised state.
+    if (generation !== state.queryGeneration) {
+        return;
+    }
     state.groups = result.groups.map(
         (group) => ({ key: group.key, size: group.records.length }));
     state.records = result.groups.flatMap((group) => group.records);
@@ -614,6 +635,25 @@ async function runQuery(offset = 0, preferredAnchor = null) {
     select(landingIndex(preferredAnchor));
     syncSelectBar();
     refreshPacing();
+}
+
+// Quiet in-flight feedback for the slowest, most frequent query (every filter
+// change re-runs it): aria-busy plus a delayed dim, so a fast response never
+// flickers. Mirrors the ledger pane the definitions/related panels already dim
+// while loading, but the ledger's own content must stay visible and stable
+// underneath (pull-and-refresh — see the file banner) rather than being replaced
+// by a "Loading…" placeholder.
+let ledgerBusyTimer = null;
+const LEDGER_BUSY_DELAY_MS = 150;
+
+function setLedgerBusy(busy) {
+    clearTimeout(ledgerBusyTimer);
+    LEDGER_PANE.setAttribute("aria-busy", String(busy));
+    if (!busy) {
+        LEDGER_PANE.classList.remove("ledger-busy");
+        return;
+    }
+    ledgerBusyTimer = setTimeout(() => LEDGER_PANE.classList.add("ledger-busy"), LEDGER_BUSY_DELAY_MS);
 }
 
 // Where to land after a query: the exact anchor, else the first entry sorting at or

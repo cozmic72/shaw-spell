@@ -388,6 +388,29 @@ def test_entries_flat_paginates_by_record_not_group():
     assert flat_words == ["cat", "cat", "cat", "run"], flat_words
 
 
+def test_entries_flat_filters_at_record_level_no_sibling_widening():
+    # pos=VB matches one member each of run and cat (test_entries_filtered_
+    # groups_arrive_whole widens both groups whole in grouped mode). Flat mode
+    # must return exactly those two matching records — no pulled-in siblings —
+    # and total/pagination must count the matching RECORDS, not the widened ones.
+    response = _entries(_grouped_corpus(), flat=True, filters={"pos": ["VB"]}, limit=500)
+    assert response["total"] == 2, response["total"]
+    anchors = _group_anchors(response)
+    assert [len(members) for members in anchors] == [1, 1]
+    assert [members[0][1] for members in anchors] == ["VB", "VB"], anchors
+
+
+def test_entries_flat_review_mixed_still_widens_to_group_members():
+    # "mixed" is inherently a group property (members disagree); in flat mode
+    # it is read as "show me the records inside contested groups", so it keeps
+    # serving every member of a mixed group even though flat mode otherwise
+    # returns only self-matching records.
+    response = _entries(_grouped_corpus(), flat=True, filters={"review": ["mixed"]})
+    assert response["total"] == 3, response["total"]
+    words = sorted(members[0][0] for members in _group_anchors(response))
+    assert words == ["cat", "cat", "cat"], words
+
+
 if __name__ == "__main__":
     import traceback
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

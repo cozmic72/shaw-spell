@@ -716,26 +716,39 @@ def group_key(record):
             frozenset(_record_attributes(record)))
 
 
-def filter_records(records, query, established):
-    """Group-aware filtering: a group (group_key) is served WHOLE when at least
-    one member matches the active filters — a matching record pulls its
-    non-matching siblings into the result, so the whole group reaches the
-    client together (handle_entries pages by GROUP, so it arrives unsplit).
+def filter_records(records, query, established, flat=False):
+    """Grouped mode serves a group (group_key) WHOLE when at least one member
+    matches the active filters — a matching record pulls its non-matching
+    siblings into the result, so the whole group reaches the client together
+    (handle_entries pages by GROUP, so it arrives unsplit). Flat mode has no
+    groups to keep unsplit, so it drops that widening and returns exactly the
+    records that themselves match — sibling pulling would silently reintroduce
+    non-matching rows into what is supposed to be a record-level view.
     Record order is preserved (the caller sorts). With no active filters every
     record matches, so this degenerates to the identity.
 
-    Review "mixed" is the one GROUP-level value: its leg serves the groups whose
-    members span more than one verdict AND hold a member matching every
-    non-review facet, UNIONED with the record-level leg — OR within the review
-    axis, AND across axes, exactly the per-record composition lifted to the
-    group. A review facet reduced to mixed alone offers no record-level value,
-    so that leg matches nothing (review_only_mixed), never everything."""
+    Review "mixed" names a GROUP property (members disagree), which still
+    means something with groups off-screen: "this record's group is
+    contested". So its leg keeps widening to full groups even in flat mode —
+    read as "show me the records inside contested groups", not "show me
+    every group" — while the record-level leg stays per-record. Its groups
+    span more than one verdict AND hold a member matching every non-review
+    facet, UNIONED with the record-level leg — OR within the review axis, AND
+    across axes, exactly the per-record composition lifted to the group. A
+    review facet reduced to mixed alone offers no record-level value, so that
+    leg matches nothing (review_only_mixed), never everything."""
     keyed = [(group_key(record), record) for record in records]
     if query.review_only_mixed:
-        matched_groups = set()
+        record_matches = set()
     else:
-        matched_groups = {key for key, record in keyed
-                          if matches(record, query, established)}
+        record_matches = {id(record) for _key, record in keyed
+                           if matches(record, query, established)}
+    if flat:
+        mixed_groups = _mixed_group_keys(keyed, query, established) \
+            if query.review_mixed else set()
+        return [record for key, record in keyed
+                if id(record) in record_matches or key in mixed_groups]
+    matched_groups = {key for key, record in keyed if id(record) in record_matches}
     if query.review_mixed:
         matched_groups |= _mixed_group_keys(keyed, query, established)
     return [record for key, record in keyed if key in matched_groups]
@@ -893,13 +906,14 @@ def handle_entries(state, request):
     offset = int(request.get("offset", 0))
     limit = min(int(request.get("limit", DEFAULT_LIMIT)), MAX_LIMIT)
 
-    matched = filter_records(state.view.records, query, state.view.established)
+    flat = bool(request.get("flat"))
+    matched = filter_records(state.view.records, query, state.view.established, flat=flat)
     matched = sort_records(matched, request.get("sort") or DEFAULT_SORT)
     # Flat mode (the ledger's ungrouped view) pages by RECORD: each record is its
     # own singleton group, so offset/limit slice the flat list directly rather
     # than group_sorted's group runs. The client never re-partitions what it is
     # sent, so this is the only place flat pagination can live.
-    groups = [(group_key(r), [r]) for r in matched] if request.get("flat") \
+    groups = [(group_key(r), [r]) for r in matched] if flat \
         else group_sorted(matched)
     page = groups[offset:offset + limit]
     return {

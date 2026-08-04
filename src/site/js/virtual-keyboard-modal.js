@@ -30,6 +30,10 @@
     if (!window.VirtualKeyboard) {
       throw new Error('ShawSpellKeyboard: window.VirtualKeyboard missing — load /virtual-keyboard/virtual-keyboard.js first');
     }
+    if (!window.VirtualKeyboard._internal ||
+        typeof window.VirtualKeyboard._internal.openSettings !== 'function') {
+      throw new Error('ShawSpellKeyboard: VirtualKeyboard._internal.openSettings missing — shaw-type moved it; re-point openSettings');
+    }
 
     let host = document.getElementById('virtual-keyboard-host');
     if (!host) {
@@ -99,7 +103,11 @@
     return {
       toggle: function () { window.VirtualKeyboard.toggle(); },
       openSettings: function () {
-        return ready.then(function () { return window.VirtualKeyboard.openSettings(); });
+        // The self-contained settings dialog lives on _internal; the public
+        // mountSettings needs a host container we don't have.
+        return ready.then(function () {
+          return window.VirtualKeyboard._internal.openSettings();
+        });
       },
       ready: ready,
     };

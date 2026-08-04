@@ -14,6 +14,7 @@ crawlers and platforms cache by URL and long-lived HTTP caching does the rest.
 import io
 import json
 import os
+import re
 import socket
 import sys
 from urllib.parse import parse_qs
@@ -35,9 +36,13 @@ CARD_RADIUS = 22
 PAD_X, PAD_Y = 56, 44
 HEAD_TOP_OFFSET = 12
 HEAD_GAP = 36
+HEAD_LINE_GAP = 14
+BADGE_CLEARANCE = 32
 SUB_GAP = 32
 PILLS_GAP = 36
 PILL_SPACING = 14
+PILL_PAD_X, PILL_PAD_Y = 24, 8
+FOOTER_CLEARANCE = 24
 
 GRADIENT_FROM = (0x66, 0x7e, 0xea)
 GRADIENT_TO = (0x9d, 0x42, 0x68)
@@ -59,6 +64,10 @@ MAX_POS_PILLS = 4
 MAX_SUB_LINES = 2
 MAX_HEAD_LATINS = 3
 LARGE_ENTRY_DEFS = 10
+
+SUB_SIZE = 36
+# The unlabelled related-entries row: size, not a label, marks it out.
+RELATED_SUB_SIZE = 44
 
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
 SANS_FONT = 'BernieSansBetaVF.ttf'
@@ -106,8 +115,18 @@ def contains_shavian(text):
     return any('\U00010450' <= c <= '\U0001047F' for c in text)
 
 
+def font_path(filename):
+    """PIL's truetype() falls back to searching system font directories by
+    basename when the path cannot be opened; refuse that — a missing shipped
+    font must be a hard error, never a silent substitute."""
+    path = os.path.join(FONT_DIR, filename)
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f'font missing: {path}')
+    return path
+
+
 def load_font(size, weight=WEIGHT_REGULAR):
-    font = ImageFont.truetype(os.path.join(FONT_DIR, SANS_FONT), size * SCALE)
+    font = ImageFont.truetype(font_path(SANS_FONT), size * SCALE)
     # Axis order per fvar: wght, slnt, wdth, opsz. Optical size follows the
     # text size like browser auto optical sizing (opsz is in points, px*0.75).
     font.set_variation_by_axes([weight, 0, 100, min(24, max(8, size * 0.75))])
@@ -115,7 +134,7 @@ def load_font(size, weight=WEIGHT_REGULAR):
 
 
 def load_ipa_font(size):
-    return ImageFont.truetype(os.path.join(FONT_DIR, IPA_FONT), size * SCALE)
+    return ImageFont.truetype(font_path(IPA_FONT), size * SCALE)
 
 
 def unique(items):
@@ -130,18 +149,49 @@ def ipa_segment(ipa):
     return (f' {ipa}', SUB_MUTED, True)
 
 
-def form_sub_line(form):
-    """One derived-form row as styled (text, colour, is_ipa) segments,
-    e.g. 'US: 𐑛𐑵 /duː/' or 'plural: 𐑛𐑿𐑟 /djuːz/ (US)'."""
-    prefix = form['label'] or form['variant']
-    if not (prefix and form['text']):
+IPA_SPAN = re.compile(r'(/[^/]+/)')
+
+
+def group_segments(text):
+    """A variant group as segments, its /IPA/ stretches in the IPA font —
+    Bernie has no IPA coverage, and the group arrives from the summary as
+    one flat string (e.g. '𐑛𐑵𐑟, US /duːz/')."""
+    return [(part, SUB_MUTED, bool(i % 2))
+            for i, part in enumerate(IPA_SPAN.split(text)) if part]
+
+
+def form_row(form):
+    """One derived form in the dictionary's own row markup:
+    text /ipa/ form-label (variant-group)."""
+    if not form['text']:
         return None
-    segments = [segment(f'{prefix}: ', SUB_MUTED), segment(form['text'], INK)]
+    row = [segment(form['text'], INK)]
     if form['ipa']:
-        segments.append(ipa_segment(form['ipa']))
-    if form['label'] and form['variant']:
-        segments.append(segment(f' ({form["variant"]})', SUB_MUTED))
-    return segments
+        row.append(ipa_segment(form['ipa']))
+    if form['label']:
+        row.append(segment(f' {form["label"]}', SUB_MUTED))
+    if form['variant']:
+        row += group_segments(f' ({form["variant"]})')
+    return row
+
+
+def related_line(summaries, head_shaw, head_latins):
+    """Unlabelled row of the other entries' pairs — their Shavian, plus
+    their Latin when the headline doesn't already show it, so a searched
+    inflection still names its lemma next to the lemma's definitions."""
+    alternates = unique(
+        (s['shaw'], '' if s['latin'] in head_latins else s['latin'], s['ipa'])
+        for s in summaries if s['shaw'] and s['shaw'] != head_shaw)
+    line = []
+    for i, (shaw, latin, ipa) in enumerate(alternates):
+        if i:
+            line.append(segment(' · ', SUB_MUTED))
+        line.append(segment(shaw, INK))
+        if latin:
+            line.append(segment(f' {latin}', ACCENT))
+        if ipa:
+            line.append(ipa_segment(ipa))
+    return line
 
 
 def searched_first(word, summaries, shavian_input):
@@ -165,35 +215,36 @@ def card_content(word, summaries, dialect):
     first = summaries[0]
 
     if shavian_input:
-        latins = unique(s['latin'] for s in summaries
-                        if s['latin'] and s['shaw'] == first['shaw'])
-        head = (first['shaw'], ' · '.join(latins[:MAX_HEAD_LATINS]))
+        head_latins = unique(s['latin'] for s in summaries
+                             if s['latin'] and s['shaw'] == first['shaw']
+                             )[:MAX_HEAD_LATINS]
+        head = (first['shaw'], ' · '.join(head_latins))
     else:
+        head_latins = [first['latin']]
         head = (first['latin'], first['shaw'])
 
     subs = []
+    related = related_line(summaries[1:], first['shaw'], head_latins)
+    if related:
+        subs.append((RELATED_SUB_SIZE, related))
     if shavian_input:
         defs = [d for s in summaries for d in s['defs']]
-        subs = [[segment(f'{n}. ', SUB_MUTED), segment(text, SUB_TEXT)]
-                for n, text in enumerate(defs[:MAX_SUB_LINES], start=1)]
+        subs += [(SUB_SIZE, [segment(f'{n}. ', SUB_MUTED),
+                             segment(text, SUB_TEXT)])
+                 for n, text in
+                 enumerate(defs[:MAX_SUB_LINES - len(subs)], start=1)]
     else:
-        alternates = unique((s['shaw'], s['ipa']) for s in summaries[1:]
-                            if s['shaw'] and s['shaw'] != first['shaw'])
-        if alternates:
-            line = [segment('also: ', SUB_MUTED)]
-            for i, (shaw, ipa) in enumerate(alternates):
-                if i:
-                    line.append(segment(' · ', SUB_MUTED))
-                line.append(segment(shaw, INK))
-                if ipa:
-                    line.append(ipa_segment(ipa))
-            subs.append(line)
+        # The renderer's width truncation bounds this flow.
+        flow = []
         for form in first['forms']:
-            if len(subs) >= MAX_SUB_LINES:
-                break
-            line = form_sub_line(form)
-            if line:
-                subs.append(line)
+            row = form_row(form)
+            if not row:
+                continue
+            if flow:
+                flow.append(segment(' · ', SUB_MUTED))
+            flow += row
+        if flow:
+            subs.append((SUB_SIZE, flow))
 
     pos_names = unique(pos['name'] for s in summaries for pos in s['pos']
                        if pos['name'])
@@ -264,7 +315,7 @@ def truncate_run(draw, run, max_width):
 def draw_pill(draw, x, y, text, font, background, foreground):
     """Rounded pill with centred text; returns its right edge."""
     ascent, descent = font.getmetrics()
-    pad_x, pad_y = 24 * SCALE, 8 * SCALE
+    pad_x, pad_y = PILL_PAD_X * SCALE, PILL_PAD_Y * SCALE
     width = draw.textlength(text, font=font) + 2 * pad_x
     height = ascent + descent + 2 * pad_y
     draw.rounded_rectangle((x, y, x + width, y + height),
@@ -273,22 +324,98 @@ def draw_pill(draw, x, y, text, font, background, foreground):
     return x + width
 
 
-def head_fonts(draw, content, available_width):
-    """Fonts for the headline row, shrunk proportionally if the nominal
-    132/68/46 px sizes would overflow the card."""
-    sizes = (132, 68, 46)
-    loaders = (load_font,
-               lambda size: load_font(size, weight=WEIGHT_MEDIUM),
-               load_ipa_font)
-    fonts = tuple(load(size) for load, size in zip(loaders, sizes))
-    texts = content['head']
-    gaps = HEAD_GAP * SCALE * (sum(1 for t in texts if t) - 1)
-    width = sum(draw.textlength(t, font=f) for t, f in zip(texts, fonts)) + gaps
-    if width <= available_width:
-        return fonts
-    ratio = available_width / width * 0.98
-    return tuple(load(max(1, int(size * ratio)))
-                 for load, size in zip(loaders, sizes))
+# Headline nominals (lead / twin / IPA). The twin (translation) is
+# deliberately a touch larger than the searched word — it is the answer —
+# and the layout keeps that ratio inside TWIN_RATIO_* even when wrapped
+# lines are fitted independently.
+HEAD_SIZES = (76, 92, 40)
+HEAD_COLORS = (INK, ACCENT, IPA_GREY)
+HEAD_LOADERS = (load_font,
+                lambda size: load_font(size, weight=WEIGHT_MEDIUM),
+                load_ipa_font)
+TWIN_RATIO_MIN, TWIN_RATIO_MAX = 1.1, 1.25
+# The wrap-before-illegible ladder's floors (see layout_head).
+ONE_LINE_MIN_SCALE = 0.75
+LINE_MIN_SCALE = 0.6
+SHARED_TWIN_IPA_MIN_SCALE = 0.8
+
+
+def head_units(content):
+    return [(text, color, loader, size)
+            for text, color, loader, size
+            in zip(content['head'], HEAD_COLORS, HEAD_LOADERS, HEAD_SIZES)
+            if text]
+
+
+def head_line_run(units, scale):
+    return [(text, color, loader(round(size * scale)))
+            for text, color, loader, size in units]
+
+
+def head_gap(scale):
+    return round(HEAD_GAP * SCALE * scale)
+
+
+def head_line_width(draw, run, scale):
+    return run_width(draw, run) + head_gap(scale) * (len(run) - 1)
+
+
+def fit_head_line(draw, units, available, floor):
+    """A scale in [floor, 1], close to the largest, at which the units fit
+    side by side — or None if even the floor overflows."""
+    scale = 1.0
+    while True:
+        width = head_line_width(draw, head_line_run(units, scale), scale)
+        if width <= available:
+            return scale
+        if scale <= floor:
+            return None
+        scale = max(floor, scale * available / width * 0.995)
+
+
+def layout_head(draw, content, first_available, full_available):
+    """The headline as fitted (run, scale) lines. One line while a gradual
+    shrink keeps it readable; otherwise wrapped, the lead alone on the first
+    line (which must clear the badge) and the twin + IPA below on the full
+    width. Wrapping trades the unused vertical space for size instead of
+    collapsing everything onto an illegible single line. The twin:lead size
+    ratio is held inside TWIN_RATIO_* (shrink-only, so fitted lines stay
+    fitted), and the share-vs-split choice for the twin + IPA line is made
+    against the twin's already-capped scale."""
+    units = head_units(content)
+    scale = fit_head_line(draw, units, first_available, ONE_LINE_MIN_SCALE)
+    if scale is not None:
+        plans = [(units, first_available, scale)]
+    else:
+        lead, rest = units[0], units[1:]
+        has_twin = bool(content['head'][1])
+        lead_scale = (fit_head_line(draw, [lead], first_available, LINE_MIN_SCALE)
+                      or LINE_MIN_SCALE)
+        twin_cap = (TWIN_RATIO_MAX * HEAD_SIZES[0] * lead_scale / HEAD_SIZES[1]
+                    if has_twin else 1.0)
+        shared = (fit_head_line(draw, rest, full_available,
+                                SHARED_TWIN_IPA_MIN_SCALE)
+                  if len(rest) > 1 else None)
+        if shared is not None and min(shared, twin_cap) >= SHARED_TWIN_IPA_MIN_SCALE:
+            rest_plans = [(rest, min(shared, twin_cap))]
+        else:
+            rest_plans = [(row, fit_head_line(draw, row, full_available,
+                                              LINE_MIN_SCALE) or LINE_MIN_SCALE)
+                          for row in ([unit] for unit in rest)]
+            if has_twin and rest_plans:
+                row, row_scale = rest_plans[0]
+                rest_plans[0] = (row, min(row_scale, twin_cap))
+        if has_twin and rest_plans:
+            twin_px = HEAD_SIZES[1] * rest_plans[0][1]
+            lead_scale = min(lead_scale,
+                             twin_px / (TWIN_RATIO_MIN * HEAD_SIZES[0]))
+        plans = ([([lead], first_available, lead_scale)]
+                 + [(row, full_available, row_scale)
+                    for row, row_scale in rest_plans])
+    return [(truncate_run(draw, head_line_run(row, row_scale),
+                          avail - head_gap(row_scale) * (len(row) - 1)),
+             row_scale)
+            for row, avail, row_scale in plans]
 
 
 def render_card(content):
@@ -327,24 +454,42 @@ def render_card(content):
     draw.text((badge_left + 18 * SCALE, head_top + 4 * SCALE),
               content['badge'], font=badge_font, fill='white')
 
-    # Headline: searched word + twin script + IPA on a shared baseline.
-    head_available = badge_left - 24 * SCALE - inner_left
-    lead_font, twin_font, ipa_font = head_fonts(draw, content, head_available)
-    baseline = head_top + lead_font.getmetrics()[0]
-    head_run = [(t, c, f) for t, c, f in zip(
-        content['head'], (INK, ACCENT, IPA_GREY),
-        (lead_font, twin_font, ipa_font)) if t]
-    x = inner_left
-    for i, segment in enumerate(head_run):
-        if i:
-            x += HEAD_GAP * SCALE
-        x = draw_run(draw, x, baseline, [segment])
-    y = head_top + sum(lead_font.getmetrics())
+    # The footer zone is measured up front: everything above it (subs,
+    # pills) is dropped rather than drawn into it when a wrapped headline
+    # has eaten the room.
+    footer_font = load_font(28)
+    signature_font = load_font(SIGNATURE_SIZE)
+    footer_baseline = (height - margin - PAD_Y * SCALE
+                       - signature_font.getmetrics()[1])
+    content_floor = (footer_baseline - FOOTER_CLEARANCE * SCALE
+                     - max(footer_font.getmetrics()[0],
+                           signature_font.getmetrics()[0]))
 
-    sub_font = load_font(36)
-    sub_ipa_font = load_ipa_font(36)
-    sub_ascent, sub_descent = sub_font.getmetrics()
-    for sub in content['subs']:
+    # Headline lines; within a line the segments share a baseline, which
+    # must be the tallest font's — the twin outsizes the lead.
+    head_first_available = badge_left - BADGE_CLEARANCE * SCALE - inner_left
+    y = head_top
+    for i, (run, scale) in enumerate(
+            layout_head(draw, content, head_first_available, inner_width)):
+        if i:
+            y += HEAD_LINE_GAP * SCALE
+        ascent = max(font.getmetrics()[0] for _, _, font in run)
+        descent = max(font.getmetrics()[1] for _, _, font in run)
+        x = inner_left
+        for j, piece in enumerate(run):
+            if j:
+                x += head_gap(scale)
+            x = draw_run(draw, x, y + ascent, [piece])
+        y += ascent + descent
+
+    for size, sub in content['subs']:
+        sub_font = load_font(size)
+        sub_ipa_font = load_ipa_font(size)
+        sub_ascent, sub_descent = (
+            max(a, b) for a, b in zip(sub_font.getmetrics(),
+                                      sub_ipa_font.getmetrics()))
+        if y + SUB_GAP * SCALE + sub_ascent + sub_descent > content_floor:
+            break
         y += SUB_GAP * SCALE
         run = truncate_run(
             draw, [(text, color, sub_ipa_font if is_ipa else sub_font)
@@ -354,23 +499,23 @@ def render_card(content):
         y += sub_ascent + sub_descent
 
     if content['pills']:
-        y += PILLS_GAP * SCALE
         pill_font = load_font(30)
-        x = inner_left
-        for text, emphasized in content['pills']:
-            pill_width = draw.textlength(text, font=pill_font) + 2 * 24 * SCALE
-            if x + pill_width > inner_right:
-                break
-            background, foreground = ((ACCENT, 'white') if emphasized
-                                      else (PILL_BG, PILL_FG))
-            x = draw_pill(draw, x, y, text, pill_font,
-                          background, foreground) + PILL_SPACING * SCALE
+        pill_ascent, pill_descent = pill_font.getmetrics()
+        pill_height = pill_ascent + pill_descent + 2 * PILL_PAD_Y * SCALE
+        if y + PILLS_GAP * SCALE + pill_height <= content_floor:
+            y += PILLS_GAP * SCALE
+            x = inner_left
+            for text, emphasized in content['pills']:
+                pill_width = (draw.textlength(text, font=pill_font)
+                              + 2 * PILL_PAD_X * SCALE)
+                if x + pill_width > inner_right:
+                    break
+                background, foreground = ((ACCENT, 'white') if emphasized
+                                          else (PILL_BG, PILL_FG))
+                x = draw_pill(draw, x, y, text, pill_font,
+                              background, foreground) + PILL_SPACING * SCALE
 
     # Footer: definition count left, brand signature right, shared baseline.
-    footer_font = load_font(28)
-    signature_font = load_font(SIGNATURE_SIZE)
-    footer_baseline = (height - margin - PAD_Y * SCALE
-                       - signature_font.getmetrics()[1])
     draw_run(draw, inner_left, footer_baseline,
              [(content['footer'], FOOTER_GREY, footer_font)])
     signature_x = inner_right - draw.textlength(SIGNATURE, font=signature_font)

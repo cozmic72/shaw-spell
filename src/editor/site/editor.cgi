@@ -544,6 +544,7 @@ PAGE = """<!DOCTYPE html>
 
     <script src="editor.js?v={js_v}"></script>
     <script src="virtual-keyboard/virtual-keyboard.js"></script>
+    <script src="virtual-keyboard/custom-layouts.js"></script>
     <script src="virtual-keyboard-modal.js"></script>
 </body>
 </html>"""

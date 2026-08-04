@@ -309,6 +309,7 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
     </script>
     <script src="js/app.js"></script>
     <script src="virtual-keyboard/virtual-keyboard.js"></script>
+    <script src="virtual-keyboard/custom-layouts.js"></script>
     <script src="js/virtual-keyboard-modal.js"></script>
     <script>
         // Per-platform shortcut in the burger item. Fail-soft on the label only:

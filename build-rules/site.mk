@@ -124,13 +124,15 @@ install-site: $(VK_SITE_STAMP)
 	  echo "  and the /fonts default is wrong for production. Create it first:" >&2; \
 	  echo "      cp .site-config.example .site-config   # then set FONT_URL" >&2; \
 	  exit 1; }; \
+	echo "==> Advancing the data submodule to the pinned commit"; \
+	git submodule update --init --recursive data; \
 	for f in $(SITE_DATA_FILES) $(DATA_HUNSPELL_FILES); do \
 	  [ -f "$$f" ] || { \
-	    echo "install-site: prebuilt dictionary data missing: $$f" >&2; \
+	    echo "install-site: prebuilt dictionary data missing after submodule update: $$f" >&2; \
 	    echo "  This machine NEVER builds dictionaries — it is far too slow for the" >&2; \
-	    echo "  generators. On the build machine: 'make site', commit data/site-data" >&2; \
-	    echo "  + data/hunspell in the data repo and push; then update the data" >&2; \
-	    echo "  checkout here and re-run." >&2; \
+	    echo "  generators, and without shyphenate its output would differ. Build on" >&2; \
+	    echo "  the Mac: 'make site', commit data/site-data + data/hunspell in the" >&2; \
+	    echo "  data repo, push, then re-run here." >&2; \
 	    exit 1; }; \
 	done; \
 	echo "==> Staging site from src/ + prebuilt data/ -> $(BUILD_SITE)"; \

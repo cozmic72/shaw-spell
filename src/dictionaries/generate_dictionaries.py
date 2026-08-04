@@ -1418,7 +1418,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                     alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
 
                                 # The friendly accent/variation label for this alt form
-                                # (General American, broad A, an RSSB variant …), falling
+                                # (General American, trap-bath, an RSSB variant …), falling
                                 # back to the coarse home/alt dialect name.
                                 alt_label = form_variant_label(alt_form, lemma_has_rrp) or alt_dialect
 

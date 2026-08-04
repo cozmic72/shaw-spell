@@ -107,12 +107,10 @@ FOREIGN_VARS = {"GenAus", "GenCan", "NZ", "SthAfr", "IrEng"}
 # (see rssb_role).
 BRITISH_BASE_VAR = "RRP"
 
-# Merger code -> friendly label. Mergers are additive on a base var.
-MERGER_LABELS = {
-    "trap-bath": "broad A",
-    "cot-caught": "cot-caught merged",
-    "lot-palm": "lot-palm merged",
-}
+# Merger code -> displayed label. The codes ARE the terminology the Shavian
+# community already uses, so they display as-is; only add an entry here for a
+# code whose display form genuinely differs.
+MERGER_LABELS = {}
 
 # The friendly label for a `variant: true` record — the "other", disfavoured
 # member of a pronunciation pair on the same base accent.
@@ -172,7 +170,7 @@ def merger_label(merger_code):
 
 def variations_label(mergers=None, variant=False):
     """A friendly, comma-joined label for a record's variations (mergers +
-    variant flag), or "" when it carries none. e.g. ["trap-bath"] -> "broad A";
+    variant flag), or "" when it carries none. e.g. ["trap-bath"] -> "trap-bath";
     variant=True -> "variant"."""
     parts = [merger_label(m) for m in (mergers or [])]
     if variant:

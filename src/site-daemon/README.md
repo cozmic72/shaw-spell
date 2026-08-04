@@ -5,10 +5,11 @@ loaded state that would otherwise be paid for on each CGI invocation:
 
 - Six dictionary indexes (`{direction}-{dialect}-index.json`)
 - Six entry caches (`…-entries.json`)
+- Six link-preview summary caches (`…-summaries.json`)
 - Four Hunspell dictionaries (`shavian-{gb,us}`, `en_{GB,US}`)
 
-The CGI (`index.cgi`) is a thin client: parse the request, one JSON round
-trip over a Unix socket, render the page.
+The CGIs (`index.cgi`, `card.cgi`) are thin clients: parse the request, one
+JSON round trip over a Unix socket, render the page (or the preview card).
 
 ## Files
 
@@ -24,8 +25,11 @@ Line-oriented JSON over `AF_UNIX`. One request, one response, then close.
 ```json
 → {"op": "lookup", "dict_type": "english-shavian-gb",
    "word": "dog", "suggest_dict": "en_GB"}
-← {"entry_html": "<h1>dog</h1>…", "suggestions": []}
+← {"entry_html": "<h1>dog</h1>…", "summary": [{…}], "suggestions": []}
 ```
+
+`summary` holds one link-preview summary per matched entry, in entry order
+(shape: see `extract_summary` in `src/site/build_site_index.py`).
 
 On a miss `entry_html` is `null` and `suggestions` contains Hunspell
 corrections filtered against the index (so clicking any suggestion lands

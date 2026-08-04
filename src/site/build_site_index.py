@@ -5,6 +5,8 @@ Build searchable JSON indexes from dictionary XML files for the web frontend.
 This script parses the Apple Dictionary XML files and creates:
 1. Search indexes mapping query terms to entry IDs
 2. Entry content cache for fast lookups
+3. Entry summaries (headword forms, POS, definition counts) for social-media
+   link previews
 
 Usage:
     python build_site_index.py
@@ -183,6 +185,109 @@ def extract_entry_html(entry_elem):
     return '\n'.join(parts)
 
 
+# The dictionary XML carries POS headings and form labels as display text
+# (Shavian in the english→shavian direction). Map them back to English for
+# preview cards; unmapped values (already-English ones in the shavian→english
+# direction) pass through as their own display form. Inverses of the POS and
+# GRAMMAR_TERM_SHAVIAN translations in src/dictionaries.
+POS_ENGLISH = {
+    '𐑯𐑬𐑯': 'noun',
+    '𐑝𐑻𐑚': 'verb',
+    '𐑨𐑡𐑩𐑒𐑑𐑦𐑝': 'adjective',
+    '𐑨𐑡𐑦𐑒𐑑𐑦𐑝': 'adjective',
+    '𐑨𐑛𐑝𐑻𐑚': 'adverb',
+    '𐑦𐑯𐑑𐑼𐑡𐑧𐑒𐑖𐑩𐑯': 'interjection',
+    '𐑐𐑮𐑧𐑐𐑩𐑟𐑦𐑖𐑩𐑯': 'preposition',
+    '𐑒𐑩𐑯𐑡𐑳𐑙𐑒𐑖𐑩𐑯': 'conjunction',
+}
+
+FORM_LABEL_ENGLISH = {
+    '𐑐𐑤𐑫𐑼𐑩𐑤': 'plural',
+    '𐑐𐑭𐑕𐑑 𐑑𐑧𐑯𐑕': 'past tense',
+    '𐑐𐑮𐑧𐑟𐑩𐑯𐑑 𐑐𐑸𐑑𐑦𐑕𐑦𐑐𐑩𐑤': 'present participle',
+    '𐑐𐑭𐑕𐑑 𐑐𐑸𐑑𐑦𐑕𐑦𐑐𐑩𐑤': 'past participle',
+    '𐑔𐑻𐑛 𐑐𐑻𐑕𐑩𐑯 𐑕𐑦𐑙𐑜𐑘𐑫𐑤𐑼': 'third person singular',
+    '𐑒𐑩𐑥𐑐𐑨𐑮𐑩𐑑𐑦𐑝': 'comparative',
+    '𐑕𐑵𐑐𐑻𐑤𐑩𐑑𐑦𐑝': 'superlative',
+}
+
+# Matches MAX_SUB_LINES in card.cgi — the card can never show more
+# definitions than the build baked into the summary.
+MAX_SUMMARY_DEFS = 2
+
+
+def element_text(elem):
+    return ''.join(elem.itertext()).strip()
+
+
+def extract_form(form_div):
+    """One lemma-form/derived-form row → {text, ipa, label, variant}."""
+    fields = {'ipa': '', 'label': '', 'variant': ''}
+    classes = {'ipa': 'ipa', 'form-label': 'label', 'variant': 'variant'}
+    for span in form_div.findall('xhtml:span', NS):
+        field = classes.get(span.get('class'))
+        if field:
+            fields[field] = element_text(span)
+    fields['variant'] = fields['variant'].strip('()')
+    fields['label'] = FORM_LABEL_ENGLISH.get(fields['label'], fields['label'])
+    fields['text'] = (form_div.text or '').strip()
+    return fields
+
+
+def extract_summary(entry, dict_type):
+    """Preview summary for one entry: headword in both scripts, IPA,
+    derived forms, POS with definition counts, and (for shavian→english,
+    where definitions are Latin and preview-safe) the first definitions."""
+    title = ''
+    h1 = entry.find('xhtml:h1', NS)
+    if h1 is not None:
+        title = element_text(h1)
+
+    lemma = {'text': '', 'ipa': ''}
+    forms = []
+    forms_div = entry.find('xhtml:div[@class="forms"]', NS)
+    if forms_div is not None:
+        for form_div in forms_div.findall('xhtml:div', NS):
+            cls = form_div.get('class')
+            if cls == 'lemma-form':
+                lemma = extract_form(form_div)
+            elif cls == 'derived-form':
+                forms.append(extract_form(form_div))
+
+    pos = []
+    defs = []
+    want_defs = dict_type.startswith('shavian-english')
+    for group in entry.iterfind(
+            'xhtml:div[@class="definitions"]/xhtml:div[@class="pos-group"]', NS):
+        heading = group.find('xhtml:h3/xhtml:i', NS)
+        definitions = group.findall(
+            './/xhtml:li[@class="definition"]', NS)
+        name = element_text(heading) if heading is not None else ''
+        pos.append({'name': POS_ENGLISH.get(name, name),
+                    'ndefs': len(definitions)})
+        if want_defs:
+            defs.extend(element_text(li) for li in
+                        definitions[:MAX_SUMMARY_DEFS - len(defs)])
+
+    if dict_type.startswith('shavian-shavian'):
+        # Immersive dicts have no Latin anywhere — the lemma-form is Shavian.
+        shaw, latin = title, ''
+    elif dict_type.startswith('shavian-english'):
+        shaw, latin = title, lemma['text']
+    else:
+        shaw, latin = lemma['text'], title
+    summary = {
+        'shaw': shaw,
+        'latin': latin,
+        'ipa': lemma['ipa'],
+        'forms': forms,
+        'pos': pos,
+    }
+    if want_defs:
+        summary['defs'] = defs
+    return summary
+
+
 def build_index(xml_path, dict_type):
     """Build search index from an XML dictionary file.
 
@@ -191,10 +296,11 @@ def build_index(xml_path, dict_type):
         dict_type: Type identifier (e.g., 'english-shavian-gb')
 
     Returns:
-        Tuple of (search_index, entry_cache, entry_order)
+        Tuple of (search_index, entry_cache, entry_order, summaries)
         - search_index: dict mapping search terms to list of entry IDs
         - entry_cache: dict mapping entry IDs to HTML content
         - entry_order: dict mapping entry IDs to document order number
+        - summaries: dict mapping entry IDs to preview summaries
     """
     print(f"Parsing {xml_path}...")
     tree = ET.parse(xml_path)
@@ -203,6 +309,7 @@ def build_index(xml_path, dict_type):
     search_index = {}
     entry_cache = {}
     entry_order = {}  # Track document order
+    summaries = {}
     entry_count = 0
 
     for entry in root.findall('d:entry', NS):
@@ -216,6 +323,8 @@ def build_index(xml_path, dict_type):
 
         # Track document order
         entry_order[entry_id] = entry_count
+
+        summaries[entry_id] = extract_summary(entry, dict_type)
 
         # Extract HTML content
         html_content = extract_entry_html(entry)
@@ -246,7 +355,7 @@ def build_index(xml_path, dict_type):
             print(f"  Processed {entry_count} entries...")
 
     print(f"  Total: {entry_count} entries, {len(search_index)} index terms")
-    return search_index, entry_cache, entry_order
+    return search_index, entry_cache, entry_order, summaries
 
 
 def main():
@@ -292,7 +401,7 @@ def main():
             print(f"Warning: {xml_path} not found, skipping")
             continue
 
-        search_index, entry_cache, entry_order = build_index(xml_path, dict_type)
+        search_index, entry_cache, entry_order, summaries = build_index(xml_path, dict_type)
 
         # Deduplicate and sort entry lists by document order
         search_index_serializable = {}
@@ -320,6 +429,12 @@ def main():
         with open(cache_file, 'w', encoding='utf-8') as f:
             json.dump(entry_cache, f, ensure_ascii=False)
         print(f"  → {cache_file} ({len(entry_cache)} entries)")
+
+        # Save preview summaries
+        summaries_file = output_dir / f'{dict_type}-summaries.json'
+        with open(summaries_file, 'w', encoding='utf-8') as f:
+            json.dump(summaries, f, ensure_ascii=False)
+        print(f"  → {summaries_file} ({len(summaries)} summaries)")
         print()
 
     print("✅ Index building complete!")

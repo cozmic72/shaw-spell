@@ -22,6 +22,12 @@ DAEMON_SOCKET = os.environ.get('SHAW_SPELL_SUGGEST_SOCKET',
                                '/run/shaw-spell/suggestd.sock')
 DAEMON_TIMEOUT_SEC = 2.0
 
+# Public origin for canonical/preview URLs (crawlers need absolute URLs).
+SITE_BASE_URL = 'https://shaw-spell.joro.io'
+SITE_NAME = 'Shaw-Spell Dictionary'
+GENERIC_DESCRIPTION = ('Online Shavian-English dictionary. '
+                       'Look up words in both Shavian and Latin scripts.')
+
 
 class DaemonError(Exception):
     """Raised when the daemon is unreachable or returns an error. Caller
@@ -70,7 +76,8 @@ def contains_shavian(text):
 
 
 def get_settings(query_params, cookie):
-    """Merge settings from query params and cookies; params win."""
+    """Merge settings from query params and cookies; params win. Values are
+    whitelisted — they are interpolated into HTML and inline JS."""
     settings = {'dialect': 'gb', 'shavianDefs': 'english'}
 
     if 'dialect' in query_params:
@@ -83,6 +90,10 @@ def get_settings(query_params, cookie):
     elif cookie and 'shavianDefs' in cookie:
         settings['shavianDefs'] = cookie['shavianDefs'].value
 
+    if settings['dialect'] not in ('gb', 'us'):
+        settings['dialect'] = 'gb'
+    if settings['shavianDefs'] not in ('english', 'shavian'):
+        settings['shavianDefs'] = 'english'
     return settings
 
 
@@ -125,8 +136,79 @@ def render_suggestions(suggestions, settings):
     )
 
 
+def preview_description(word, summaries):
+    """One-line preview text: the twin-script translation of the searched
+    word, its IPA, one variant/derived form, the POS list, and how many
+    definitions await. Shavian is included deliberately — it renders on
+    Windows/Android preview clients and degrades to tofu elsewhere."""
+    first = summaries[0]
+    twin = first['latin'] if contains_shavian(word) else first['shaw']
+    head = ' '.join(part for part in (twin, first['ipa']) if part)
+
+    forms = first['forms']
+    if forms:
+        prefix = forms[0]['label'] or forms[0]['variant']
+        detail = ' '.join(p for p in (forms[0]['text'], forms[0]['ipa']) if p)
+        if prefix and detail:
+            head += f' ({prefix}: {detail})'
+
+    pos_names = []
+    ndefs = 0
+    for summary in summaries:
+        for pos in summary['pos']:
+            if pos['name'] and pos['name'] not in pos_names:
+                pos_names.append(pos['name'])
+            ndefs += pos['ndefs']
+
+    if ndefs == 0:
+        defs_text = 'No definitions'
+    else:
+        defs_text = f'{ndefs} definition{"s" if ndefs != 1 else ""}'
+
+    description = head
+    if pos_names:
+        description += f' — {", ".join(pos_names)}'
+    return f'{description} · {defs_text}'
+
+
+def preview_meta_tags(word, summaries, settings):
+    """OpenGraph tags for link previews (targets: Reddit, Bluesky, Mastodon,
+    Discord). Entry pages get a per-word card image; other pages get
+    text-only site tags."""
+    esc = html_module.escape
+    common = (
+        f'<meta property="og:type" content="website">\n'
+        f'    <meta property="og:site_name" content="{SITE_NAME}">'
+    )
+    if not (word and summaries):
+        return (
+            f'{common}\n'
+            f'    <meta property="og:title" content="{SITE_NAME}">\n'
+            f'    <meta property="og:description" content="{GENERIC_DESCRIPTION}">\n'
+            f'    <meta property="og:url" content="{SITE_BASE_URL}/">'
+        )
+
+    page_query = urlencode({'word': word, 'dialect': settings['dialect']})
+    card_query = urlencode({'word': word, 'dialect': settings['dialect'],
+                            'v': '$VERSION$'})
+    description = preview_description(word, summaries)
+    # twitter:card is kept for Discord, which keys its large-image embed on
+    # it — X/Twitter itself is not a target platform.
+    return (
+        f'{common}\n'
+        f'    <meta property="og:title" content="{SITE_NAME}: {esc(word)}">\n'
+        f'    <meta property="og:description" content="{esc(description)}">\n'
+        f'    <meta property="og:url" content="{SITE_BASE_URL}/index.cgi?{esc(page_query)}">\n'
+        f'    <meta property="og:image" content="{SITE_BASE_URL}/card.cgi?{esc(card_query)}">\n'
+        f'    <meta property="og:image:width" content="1200">\n'
+        f'    <meta property="og:image:height" content="630">\n'
+        f'    <meta property="og:image:alt" content="Dictionary card for {esc(word)}">\n'
+        f'    <meta name="twitter:card" content="summary_large_image">'
+    )
+
+
 def generate_page(word=None, entry_html=None, error=None, settings=None,
-                  suggestions=None):
+                  suggestions=None, summaries=None):
     """Assemble the full HTML page."""
     settings = settings or {'dialect': 'gb', 'shavianDefs': 'english'}
 
@@ -151,13 +233,18 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
     else:
         entry_section = '<div class="entry-container hidden"></div>'
 
+    meta_tags = preview_meta_tags(word, summaries, settings)
+    description = (preview_description(word, summaries)
+                   if word and summaries else GENERIC_DESCRIPTION)
+
     return f'''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shaw-Spell Dictionary{f' - {word}' if word else ''}</title>
-    <meta name="description" content="Online Shavian-English dictionary. Look up words in both Shavian and Latin scripts.">
+    <title>Shaw-Spell Dictionary{f' - {html_module.escape(word)}' if word else ''}</title>
+    <meta name="description" content="{html_module.escape(description)}">
+    {meta_tags}
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png">
     <link rel="apple-touch-icon" sizes="192x192" href="apple-touch-icon-192x192.png">
@@ -250,6 +337,7 @@ def main():
     entry_html = None
     error = None
     suggestions = None
+    summaries = None
 
     if word:
         response = daemon_request({
@@ -259,11 +347,16 @@ def main():
             'suggest_dict': choose_suggest_dict(word, settings['dialect']),
         })
         entry_html = response.get('entry_html')
+        if entry_html and 'summary' not in response:
+            raise DaemonError('lookup hit but no summary in response — '
+                              'suggestd predates the summaries data; restart it')
+        summaries = response.get('summary')
         if not entry_html:
             suggestions = response.get('suggestions') or []
             error = f'No entry found for "{word}"'
 
-    html = generate_page(word, entry_html, error, settings, suggestions)
+    html = generate_page(word, entry_html, error, settings, suggestions,
+                         summaries)
 
     print('Content-Type: text/html; charset=utf-8')
 

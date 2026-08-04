@@ -8,43 +8,49 @@
 # Note: BUILD_SITE and BUILD_SITE_DATA are defined in common.mk
 
 # Site data files (JSON indexes) - individual targets for parallel builds
-$(BUILD_SITE_DATA)/english-shavian-gb-index.json $(BUILD_SITE_DATA)/english-shavian-gb-entries.json: $(BUILD_DICT_XML)/english-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(BUILD_SITE_DATA)/english-shavian-gb-index.json $(BUILD_SITE_DATA)/english-shavian-gb-entries.json $(BUILD_SITE_DATA)/english-shavian-gb-summaries.json: $(BUILD_DICT_XML)/english-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
 	@echo "Building English-Shavian (GB) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py english-shavian-gb
 
-$(BUILD_SITE_DATA)/english-shavian-us-index.json $(BUILD_SITE_DATA)/english-shavian-us-entries.json: $(BUILD_DICT_XML)/english-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(BUILD_SITE_DATA)/english-shavian-us-index.json $(BUILD_SITE_DATA)/english-shavian-us-entries.json $(BUILD_SITE_DATA)/english-shavian-us-summaries.json: $(BUILD_DICT_XML)/english-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
 	@echo "Building English-Shavian (US) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py english-shavian-us
 
-$(BUILD_SITE_DATA)/shavian-english-gb-index.json $(BUILD_SITE_DATA)/shavian-english-gb-entries.json: $(BUILD_DICT_XML)/shavian-english-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(BUILD_SITE_DATA)/shavian-english-gb-index.json $(BUILD_SITE_DATA)/shavian-english-gb-entries.json $(BUILD_SITE_DATA)/shavian-english-gb-summaries.json: $(BUILD_DICT_XML)/shavian-english-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
 	@echo "Building Shavian-English (GB) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-english-gb
 
-$(BUILD_SITE_DATA)/shavian-english-us-index.json $(BUILD_SITE_DATA)/shavian-english-us-entries.json: $(BUILD_DICT_XML)/shavian-english-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(BUILD_SITE_DATA)/shavian-english-us-index.json $(BUILD_SITE_DATA)/shavian-english-us-entries.json $(BUILD_SITE_DATA)/shavian-english-us-summaries.json: $(BUILD_DICT_XML)/shavian-english-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
 	@echo "Building Shavian-English (US) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-english-us
 
-$(BUILD_SITE_DATA)/shavian-shavian-gb-index.json $(BUILD_SITE_DATA)/shavian-shavian-gb-entries.json: $(BUILD_DICT_XML)/shavian-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(BUILD_SITE_DATA)/shavian-shavian-gb-index.json $(BUILD_SITE_DATA)/shavian-shavian-gb-entries.json $(BUILD_SITE_DATA)/shavian-shavian-gb-summaries.json: $(BUILD_DICT_XML)/shavian-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
 	@echo "Building Shavian-Shavian (GB) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-shavian-gb
 
-$(BUILD_SITE_DATA)/shavian-shavian-us-index.json $(BUILD_SITE_DATA)/shavian-shavian-us-entries.json: $(BUILD_DICT_XML)/shavian-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(BUILD_SITE_DATA)/shavian-shavian-us-index.json $(BUILD_SITE_DATA)/shavian-shavian-us-entries.json $(BUILD_SITE_DATA)/shavian-shavian-us-summaries.json: $(BUILD_DICT_XML)/shavian-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
 	@echo "Building Shavian-Shavian (US) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-shavian-us
 
 # Collect all site data files for convenience
 SITE_DATA_FILES = $(BUILD_SITE_DATA)/english-shavian-gb-index.json \
                   $(BUILD_SITE_DATA)/english-shavian-gb-entries.json \
+                  $(BUILD_SITE_DATA)/english-shavian-gb-summaries.json \
                   $(BUILD_SITE_DATA)/english-shavian-us-index.json \
                   $(BUILD_SITE_DATA)/english-shavian-us-entries.json \
+                  $(BUILD_SITE_DATA)/english-shavian-us-summaries.json \
                   $(BUILD_SITE_DATA)/shavian-english-gb-index.json \
                   $(BUILD_SITE_DATA)/shavian-english-gb-entries.json \
+                  $(BUILD_SITE_DATA)/shavian-english-gb-summaries.json \
                   $(BUILD_SITE_DATA)/shavian-english-us-index.json \
                   $(BUILD_SITE_DATA)/shavian-english-us-entries.json \
+                  $(BUILD_SITE_DATA)/shavian-english-us-summaries.json \
                   $(BUILD_SITE_DATA)/shavian-shavian-gb-index.json \
                   $(BUILD_SITE_DATA)/shavian-shavian-gb-entries.json \
+                  $(BUILD_SITE_DATA)/shavian-shavian-gb-summaries.json \
                   $(BUILD_SITE_DATA)/shavian-shavian-us-index.json \
-                  $(BUILD_SITE_DATA)/shavian-shavian-us-entries.json
+                  $(BUILD_SITE_DATA)/shavian-shavian-us-entries.json \
+                  $(BUILD_SITE_DATA)/shavian-shavian-us-summaries.json
 
 # Deploy site files to build/site (using index.cgi as representative target)
 # Depends on:
@@ -92,7 +98,7 @@ install-site: site
 	for d in css js fonts templates virtual-keyboard site-daemon site-data hunspell; do \
 	  [ -d "$$HERE/$$d" ] || { echo "install-site: expected dir missing from build: $$d (run 'make site')" >&2; exit 1; }; \
 	done; \
-	for f in index.cgi .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
+	for f in index.cgi card.cgi .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
 	  [ -f "$$HERE/$$f" ] || { echo "install-site: expected file missing from build: $$f (run 'make site')" >&2; exit 1; }; \
 	done; \
 	echo "==> Installing Shaw-Spell site"; \
@@ -102,6 +108,7 @@ install-site: site
 	echo "==> Web tier -> $(WWW_ROOT_SITE)"; \
 	sudo mkdir -p "$(WWW_ROOT_SITE)"; \
 	sudo install -m 755 "$$HERE/index.cgi" "$(WWW_ROOT_SITE)/index.cgi"; \
+	sudo install -m 755 "$$HERE/card.cgi" "$(WWW_ROOT_SITE)/card.cgi"; \
 	sudo install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
 	[ -f "$$HERE/.version" ] && sudo install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
 	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),css js fonts templates virtual-keyboard); \
@@ -110,6 +117,12 @@ install-site: site
 	$(call replace-dir-tree,$$HERE,$(OPT_ROOT),site-daemon site-data hunspell); \
 	sudo install -m 644 "$$HERE/site-daemon/shaw-spell-suggestd.service" \
 	                    /etc/systemd/system/shaw-spell-suggestd.service; \
+	if ! python3 -c "import PIL" 2>/dev/null; then \
+	  echo "==> Installing python3-pil (card.cgi renders the social-preview images)"; \
+	  sudo apt-get install -y python3-pil; \
+	  python3 -c "import PIL" || { \
+	    echo "install-site: python3-pil installed but 'import PIL' still fails" >&2; exit 1; }; \
+	fi; \
 	HUNSPELL_OK=1; \
 	if ! python3 -c "import hunspell" 2>/dev/null; then \
 	  HUNSPELL_OK=0; \
@@ -123,7 +136,8 @@ install-site: site
 	echo "==> systemd daemon-reload + enable"; \
 	sudo systemctl daemon-reload; \
 	if [ "$$HUNSPELL_OK" -eq 1 ]; then \
-	  sudo systemctl enable --now shaw-spell-suggestd; \
+	  sudo systemctl enable shaw-spell-suggestd; \
+	  sudo systemctl restart shaw-spell-suggestd; \
 	else \
 	  sudo systemctl enable shaw-spell-suggestd; \
 	  echo "   (enabled but NOT started — install hunspell then: sudo systemctl start shaw-spell-suggestd)"; \
@@ -131,7 +145,7 @@ install-site: site
 	echo; \
 	echo "============================================================"; \
 	echo "Installed:"; \
-	echo "  web tier   -> $(WWW_ROOT_SITE) (index.cgi, css/, js/, fonts/, templates/, virtual-keyboard/)"; \
+	echo "  web tier   -> $(WWW_ROOT_SITE) (index.cgi, card.cgi, css/, js/, fonts/, templates/, virtual-keyboard/)"; \
 	echo "  daemon     -> $(OPT_ROOT)/site-daemon + /etc/systemd/system/shaw-spell-suggestd.service"; \
 	echo "  data       -> $(OPT_ROOT)/{site-data,hunspell}"; \
 	echo "  (the editor's $(WWW_ROOT_SITE)/editor and $(OPT_ROOT)/{src,external,data} are untouched)"; \

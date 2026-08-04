@@ -6,6 +6,7 @@ Holds every piece of state the CGI would otherwise load on each request:
   - 4 Hunspell dictionaries (shavian-{gb,us}, en_{GB,US})
   - 6 search indexes (dict_type → {word: [entry_ids]})
   - 6 entry caches   (dict_type → {entry_id: html_fragment})
+  - 6 summary caches (dict_type → {entry_id: preview summary})
 
 The CGI connects per request over a Unix socket, asks for a lookup by
 (dict_type, word), and gets back JSON containing either the entry HTML or
@@ -15,7 +16,9 @@ Protocol (line-oriented, UTF-8, one request → one response, then close):
 
     Request:   {"op": "lookup", "dict_type": "english-shavian-gb",
                 "word": "dog", "suggest_dict": "en_GB"}
-    Response:  {"entry_html": "<h1>…</h1>…", "suggestions": []}
+    Response:  {"entry_html": "<h1>…</h1>…", "summary": [{…}], "suggestions": []}
+               # summary: one link-preview summary per matched entry, in
+               # entry order (see build_site_index.extract_summary)
                # or on miss:
                {"entry_html": null, "suggestions": ["dog", "dot", "fog"]}
 
@@ -63,29 +66,45 @@ MAX_SUGGESTIONS = 8
 class State:
     """All loaded state. One instance lives for the daemon's lifetime."""
 
-    def __init__(self, hunspell_dicts, indexes, entries):
+    def __init__(self, hunspell_dicts, indexes, entries, summaries):
         self.hunspell_dicts = hunspell_dicts  # name → Hunspell
         self.indexes = indexes                 # dict_type → {word: [entry_id]}
         self.entries = entries                 # dict_type → {entry_id: html}
+        # dict_type → {entry_id: summary as JSON string} — held serialized
+        # because ~340k parsed summary dicts cost ~430 MB of object overhead
+        # vs ~165 MB as ASCII-escaped strings (astral Shavian chars would
+        # force UCS-4 strings); a lookup parses only its own 1–4 matches.
+        self.summaries = summaries
 
 
 def lookup_entry(state, dict_type, word):
-    """Return concatenated entry HTML for a hit, or None on a miss."""
+    """Return (concatenated entry HTML, summaries) for a hit, or (None, [])."""
     index = state.indexes.get(dict_type)
     entries = state.entries.get(dict_type)
     if index is None or entries is None:
-        return None
+        return None, []
 
     entry_ids = index.get(word) or index.get(word.lower())
     if not entry_ids:
-        return None
+        return None, []
 
+    summaries = state.summaries.get(dict_type, {})
     parts = []
+    matched_summaries = []
     for entry_id in entry_ids:
         html = entries.get(entry_id)
         if html:
             parts.append(html)
-    return '\n'.join(parts) if parts else None
+            summary = summaries.get(entry_id)
+            if summary:
+                matched_summaries.append(json.loads(summary))
+            else:
+                # The build writes a summary for every entry — a miss here
+                # means the site-data files are out of sync with each other.
+                logging.warning('no summary for %s/%s', dict_type, entry_id)
+    if not parts:
+        return None, []
+    return '\n'.join(parts), matched_summaries
 
 
 def spelling_suggestions(state, suggest_dict, word, dict_type_for_filter=None):
@@ -117,9 +136,10 @@ def handle_request(state, request):
         if dict_type not in state.indexes:
             return {'error': f'unknown dict_type: {dict_type}'}
 
-        entry_html = lookup_entry(state, dict_type, word)
+        entry_html, summary = lookup_entry(state, dict_type, word)
         if entry_html:
-            return {'entry_html': entry_html, 'suggestions': []}
+            return {'entry_html': entry_html, 'summary': summary,
+                    'suggestions': []}
 
         # Miss — also look up suggestions (filtered to in-index words).
         suggestions = []
@@ -226,24 +246,31 @@ def load_hunspell(hunspell_dir):
 
 
 def load_dict_data(data_dir):
-    """Load all 6 search indexes and entry caches. Fail fast on missing files."""
+    """Load all 6 search indexes, entry caches and summary caches.
+    Fail fast on missing files."""
     indexes = {}
     entries = {}
+    summaries = {}
     for dict_type in DICT_TYPES:
         index_file = data_dir / f'{dict_type}-index.json'
         entries_file = data_dir / f'{dict_type}-entries.json'
-        if not index_file.exists():
-            raise FileNotFoundError(f'missing index: {index_file}')
-        if not entries_file.exists():
-            raise FileNotFoundError(f'missing entries: {entries_file}')
+        summaries_file = data_dir / f'{dict_type}-summaries.json'
+        for path in (index_file, entries_file, summaries_file):
+            if not path.exists():
+                raise FileNotFoundError(f'missing site data: {path}')
         logging.info('loading %s', dict_type)
         with open(index_file, 'r', encoding='utf-8') as f:
             indexes[dict_type] = json.load(f)
         with open(entries_file, 'r', encoding='utf-8') as f:
             entries[dict_type] = json.load(f)
+        with open(summaries_file, 'r', encoding='utf-8') as f:
+            summaries[dict_type] = {
+                entry_id: json.dumps(summary)
+                for entry_id, summary in json.load(f).items()
+            }
         logging.info('  %s: %d index terms, %d entries',
                      dict_type, len(indexes[dict_type]), len(entries[dict_type]))
-    return indexes, entries
+    return indexes, entries, summaries
 
 
 def main():
@@ -264,7 +291,8 @@ def main():
 
     state = State(
         hunspell_dicts=load_hunspell(args.hunspell_dir),
-        **dict(zip(('indexes', 'entries'), load_dict_data(args.data_dir))),
+        **dict(zip(('indexes', 'entries', 'summaries'),
+                   load_dict_data(args.data_dir))),
     )
     logging.info('all state loaded; ready')
 

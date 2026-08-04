@@ -235,9 +235,10 @@ def extract_form(form_div):
 
 
 def extract_summary(entry, dict_type):
-    """Preview summary for one entry: headword in both scripts, IPA,
-    derived forms, POS with definition counts, and (for shavian→english,
-    where definitions are Latin and preview-safe) the first definitions."""
+    """Preview summary for one entry: headword in both scripts, IPA, derived
+    forms, POS with definition counts, and the first definitions. Every
+    dictionary carries definitions — english→shavian's are transliterated
+    into Shavian — so the preview shows them whichever way it was searched."""
     title = ''
     h1 = entry.find('xhtml:h1', NS)
     if h1 is not None:
@@ -256,7 +257,6 @@ def extract_summary(entry, dict_type):
 
     pos = []
     defs = []
-    want_defs = dict_type.startswith('shavian-english')
     for group in entry.iterfind(
             'xhtml:div[@class="definitions"]/xhtml:div[@class="pos-group"]', NS):
         heading = group.find('xhtml:h3/xhtml:i', NS)
@@ -265,9 +265,8 @@ def extract_summary(entry, dict_type):
         name = element_text(heading) if heading is not None else ''
         pos.append({'name': POS_ENGLISH.get(name, name),
                     'ndefs': len(definitions)})
-        if want_defs:
-            defs.extend(element_text(li) for li in
-                        definitions[:MAX_SUMMARY_DEFS - len(defs)])
+        defs.extend(element_text(li) for li in
+                    definitions[:MAX_SUMMARY_DEFS - len(defs)])
 
     if dict_type.startswith('shavian-shavian'):
         # Immersive dicts have no Latin anywhere — the lemma-form is Shavian.
@@ -283,8 +282,7 @@ def extract_summary(entry, dict_type):
         'forms': forms,
         'pos': pos,
     }
-    if want_defs:
-        summary['defs'] = defs
+    summary['defs'] = defs
     return summary
 
 

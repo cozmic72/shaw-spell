@@ -555,14 +555,28 @@ def is_foreign_dialect_lemma(lemma, synset_id, home_dialect, wordnet_cache):
     return False
 
 
-def get_synsets_from_cache(lemma, pos_filter, wordnet_cache):
+def _ipa_key(ipa):
+    """IPA reduced to comparable segments: WordNet writes ɹ where ReadLex writes
+    r, and neither is consistent about stress marks or length."""
+    return ''.join(c for c in (ipa or '').replace('ɹ', 'r') if c not in 'ˈˌː.')
+
+
+def get_synsets_from_cache(lemma, pos_filter, wordnet_cache, ipa=None):
     """
     Extract synset IDs for a lemma with a specific POS from the comprehensive cache.
+
+    A heteronym's senses are split across pronunciation-partitioned keys —
+    `row` is 'n-1' (ɹəʊ, a line) and 'n-2' (ɹaʊ, a quarrel) — so a bare 'n'
+    matches nothing and the word loses every noun sense. Pass the record's own
+    IPA to pick its partition; without one, every partition of that POS
+    contributes, which over-reports but never attributes a sense to the wrong
+    homograph on its own.
 
     Args:
         lemma: The lemma to look up (normalized to lowercase)
         pos_filter: POS code to filter (e.g., 'n', 'v', 'a', 'r')
         wordnet_cache: The comprehensive WordNet cache
+        ipa: The record's IPA, used to choose among partitioned keys
 
     Returns:
         List of synset IDs for this lemma+POS, e.g., ['07582704-n', '04963771-n']
@@ -570,17 +584,25 @@ def get_synsets_from_cache(lemma, pos_filter, wordnet_cache):
     if not wordnet_cache or lemma.lower() not in wordnet_cache:
         return []
 
-    entry = wordnet_cache[lemma.lower()]
+    pos_entries = wordnet_cache[lemma.lower()].get('pos_entries', {})
+    matching = [key for key in pos_entries
+                if key == pos_filter or key.startswith(f'{pos_filter}-')]
+
+    if len(matching) > 1 and ipa:
+        want = _ipa_key(ipa)
+        for key in matching:
+            senses = pos_entries[key].get('sense_variants', [])
+            prons = (senses[0].get('pronunciations', {}) if senses else {})
+            if any(_ipa_key(p) == want for p in prons.values()):
+                matching = [key]
+                break
+
     synsets = []
-
-    # Look for matching POS entry
-    pos_data = entry.get('pos_entries', {}).get(pos_filter, {})
-
-    # Extract synset IDs from sense_variants
-    for sense in pos_data.get('sense_variants', []):
-        synset_id = sense.get('synset')
-        if synset_id:
-            synsets.append(synset_id)
+    for key in matching:
+        for sense in pos_entries[key].get('sense_variants', []):
+            synset_id = sense.get('synset')
+            if synset_id:
+                synsets.append(synset_id)
 
     return synsets
 
@@ -688,7 +710,12 @@ def pos_to_form_label(pos_code):
 
 
 def wordnet_pos_to_label(pos_code):
-    """Convert WordNet-style single-letter POS code to readable label."""
+    """Convert WordNet-style single-letter POS code to readable label.
+
+    Heteronym senses arrive under pronunciation-partitioned codes ('n-1' is
+    row-the-line, 'n-2' row-the-quarrel). The partition index picks the sense
+    set; it is not something to show a reader, who sees only "noun"."""
+    pos_code = pos_code.split('-')[0]
     pos_labels = {
         'v': 'verb',
         'n': 'noun',
@@ -875,7 +902,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             synsets = []
             if wordnet_cache and key_pos_set:
                 first_pos = sorted(key_pos_set)[0]
-                synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache)
+                entry_ipa = next((e.get('ipa') for e in data['entries'] if e.get('ipa')), None)
+                synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache, entry_ipa)
 
             lemma_defs = []
             if synsets:
@@ -908,7 +936,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
             synsets = []
             if wordnet_cache and key_pos_set:
                 first_pos = sorted(key_pos_set)[0]
-                synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache)
+                entry_ipa = next((e.get('ipa') for e in data['entries'] if e.get('ipa')), None)
+                synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache, entry_ipa)
 
             lemma_defs = []
             for synset_id in synsets:
@@ -1003,7 +1032,8 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
         if wordnet_cache and pos_tuple:
             first_pos = pos_tuple[0] if pos_tuple else None
             if first_pos:
-                synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache)
+                entry_ipa = next((f.get('ipa') for f in data['forms'] if f.get('ipa')), None)
+                synsets = get_synsets_from_cache(lemma, first_pos, wordnet_cache, entry_ipa)
 
         # Check for foreign dialect lemmas
         # E.g., in GB dictionary, "color" is foreign if "colour" exists in the synset
@@ -1388,8 +1418,12 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                     additional_display_text = capitalize_if_proper_noun(
                                         additional_display_text, additional_form['pos'])
 
+                                # The Shavian tells the two apart even when the Latin
+                                # cannot: row's plurals are both "rows" but 𐑮𐑬𐑟 and
+                                # 𐑮𐑴𐑟. A different word gets no accent label — it is
+                                # not a GB variant of the form above it.
                                 variant_label = form_variant_label(additional_form, lemma_has_rrp)
-                                if additional_display_text != home_display_text:
+                                if additional_form.get('shaw') != home_form.get('shaw'):
                                     f.write(f' <span class="variant">({escape(additional_display_text)}'
                                             f' /{additional_form["ipa"]}/)</span>')
                                 elif variant_label:

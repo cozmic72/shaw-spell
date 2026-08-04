@@ -162,6 +162,15 @@ every record and every lane. Consumers recover the accent with
 `dialect_display.split_var`; a `*Var` with no `mergers` is free variation.
 → [`src/tools/basis.py`](../src/tools/basis.py) `collapse_readlex`.
 
+**Merger codes display as themselves** — SETTLED (commit 0edb828). The codes are
+already the Shavian community's own terminology, so relabelling `trap-bath` as
+"broad A" or appending "merged" invented a second vocabulary for a settled one.
+`dialect_display` no longer maps them at all; the single label map is
+`dialect_mergers.MERGER_LABELS`, whose small-caps forms (`TRAP–BATH`) are the
+editor's chip styling, not a competing name.
+→ [`src/tools/dialect_display.py`](../src/tools/dialect_display.py)
+`variations_label`.
+
 ---
 
 ## Vocabulary admission
@@ -190,6 +199,17 @@ models — not the per-source intermediates (all `supplement-<source>*.json` are
 gitignored, regenerated on demand). Build and editor are dumb readers of the checkpoint;
 they never re-derive it. Source-specific processing belongs upstream in the generators.
 → [`data/.gitignore`](../data/.gitignore); [data-files.md](data-files.md).
+
+**The web indexes and hunspell dictionaries are committed too** — SETTLED
+(commit bd314d4, extending the policy above). `data/site-data/` (~505 MB) and
+`data/hunspell/` join the checkpoint. The server cannot build them: the
+generators want CPU-minutes and ~2 GB of resident memory, and it lacks
+`shyphenate`, so a build there would silently ship unhyphenated dictionaries.
+`make site` on the build machine publishes them; `install-site` verifies they
+are present and fails loudly rather than rebuilding. Committing derived data
+is justified only because it is byte-deterministic — verified before landing.
+⚠ The editor's data clone carries them too; one repo serves both.
+→ [`build-rules/site.mk`](../build-rules/site.mk).
 
 **shave-names path is feature-flagged OFF by default** — SETTLED.
 The IPA-basis path is pure/deterministic. The `generate_rrp` shave/names path (no-IPA names)

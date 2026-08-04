@@ -107,11 +107,6 @@ FOREIGN_VARS = {"GenAus", "GenCan", "NZ", "SthAfr", "IrEng"}
 # (see rssb_role).
 BRITISH_BASE_VAR = "RRP"
 
-# Merger code -> displayed label. The codes ARE the terminology the Shavian
-# community already uses, so they display as-is; only add an entry here for a
-# code whose display form genuinely differs.
-MERGER_LABELS = {}
-
 # The friendly label for a `variant: true` record — the "other", disfavoured
 # member of a pronunciation pair on the same base accent.
 VARIANT_LABEL = "variant"
@@ -163,16 +158,11 @@ def spellcheck_vars(dialect):
 US_GAP_FALLBACK_VARS = set(BRITISH_VARS)
 
 
-def merger_label(merger_code):
-    """The friendly label for a merger code, or the code itself if unmapped."""
-    return MERGER_LABELS.get(merger_code, merger_code)
-
-
 def variations_label(mergers=None, variant=False):
-    """A friendly, comma-joined label for a record's variations (mergers +
-    variant flag), or "" when it carries none. e.g. ["trap-bath"] -> "trap-bath";
-    variant=True -> "variant"."""
-    parts = [merger_label(m) for m in (mergers or [])]
+    """A comma-joined label for a record's variations, or "" when it carries
+    none. Merger codes ARE the terminology the Shavian community uses, so they
+    display as themselves; only `variant` needs a word putting to it."""
+    parts = list(mergers or [])
     if variant:
         parts.append(VARIANT_LABEL)
     return ", ".join(parts)

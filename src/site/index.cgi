@@ -136,12 +136,27 @@ def render_suggestions(suggestions, settings):
     )
 
 
+def searched_first(word, summaries):
+    """The daemon's index maps an inflection to its lemma's entry, so a
+    searched form that is also a headword in its own right arrives mixed in
+    with the lemma's. Lead with the searched word's own entry so the preview
+    describes what was looked up. Mirrors card.cgi's function of the same
+    name — the two previews must not disagree about which word they are for."""
+    shavian_input = contains_shavian(word)
+    key = word if shavian_input else word.lower()
+    hits, rest = [], []
+    for summary in summaries:
+        headword = summary['shaw'] if shavian_input else summary['latin'].lower()
+        (hits if headword == key else rest).append(summary)
+    return hits + rest
+
+
 def preview_description(word, summaries):
     """One-line preview text: the twin-script translation of the searched
     word, its IPA, one variant/derived form, the POS list, and how many
-    definitions await. Shavian is included deliberately — it renders on
-    Windows/Android preview clients and degrades to tofu elsewhere."""
-    first = summaries[0]
+    definitions await. Shavian is included deliberately, and the card image
+    carries it too — the image is the copy whose font we control."""
+    first = searched_first(word, summaries)
     twin = first['latin'] if contains_shavian(word) else first['shaw']
     head = ' '.join(part for part in (twin, first['ipa']) if part)
 

@@ -37,27 +37,15 @@ on a real entry).
 
 ## Install (Linux + systemd)
 
-The site tarball extracts to a directory containing `site/`,
-`site/site-daemon/`, `site/hunspell/`, and `site/site-data/`.
+`make install-site`, run from a checkout on the server, installs the daemon,
+its data and the systemd unit. See `build-rules/site.mk` — it is the authority
+on paths and ordering, and it installs `python3-pil` for the card renderer.
+
+Hunspell is the one dependency it cannot install for you:
 
 ```sh
-# Python dep (Debian/Ubuntu)
-sudo apt install python3-pip libhunspell-dev
+sudo apt install libhunspell-dev
 sudo pip3 install hunspell   # pyhunspell — provides `hunspell.HunSpell`
-# (or, from a checkout: `sudo pip3 install -r requirements.txt`)
-
-# Install the three pieces the daemon needs. Paths match the systemd unit.
-sudo mkdir -p /opt/shaw-spell
-sudo cp -r site/site-daemon /opt/shaw-spell/
-sudo cp -r site/hunspell    /opt/shaw-spell/
-sudo cp -r site/site-data   /opt/shaw-spell/
-
-# Install + enable the systemd unit.
-sudo cp /opt/shaw-spell/site-daemon/shaw-spell-suggestd.service \
-        /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now shaw-spell-suggestd.service
-sudo systemctl status shaw-spell-suggestd.service
 ```
 
 The CGI expects the socket at `/run/shaw-spell/suggestd.sock`. Override

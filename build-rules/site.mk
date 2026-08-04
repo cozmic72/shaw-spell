@@ -1,56 +1,78 @@
 # Build rules for web frontend
 #
-# Builds the shaw-dict.com web dictionary application
-# - Converts XML dictionaries to JSON indexes
-# - Stages the static frontend (HTML, CSS, JS) into build/site
-# - install-site copies the staged tree into place (web tier + suggestd daemon)
+# Builds the shaw-dict.com web dictionary application.
+#
+# BUILD MACHINE (`make site`): builds the XML dictionaries, derives the JSON
+# indexes and hunspell dictionaries into the DATA repo (data/site-data,
+# data/hunspell — committed artifacts, byte-deterministic), and stages the
+# frontend into build/site. Commit + push the data repo to publish.
+#
+# SERVER (`make install-site`): stages from src/ + the data checkout and
+# installs (web tier + suggestd daemon). It NEVER runs the dictionary/index
+# generators — the server is far too slow for them (and lacks shyphenate, so
+# its output would silently differ). Missing prebuilt data is a loud failure,
+# never a fallback build.
 
-# Note: BUILD_SITE and BUILD_SITE_DATA are defined in common.mk
+# Note: BUILD_SITE is defined in common.mk
+SITE_DATA_DIR := data/site-data
+DATA_HUNSPELL_DIR := data/hunspell
+
+$(SITE_DATA_DIR) $(DATA_HUNSPELL_DIR):
+	@mkdir -p $@
 
 # Site data files (JSON indexes) - individual targets for parallel builds
-$(BUILD_SITE_DATA)/english-shavian-gb-index.json $(BUILD_SITE_DATA)/english-shavian-gb-entries.json $(BUILD_SITE_DATA)/english-shavian-gb-summaries.json: $(BUILD_DICT_XML)/english-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(SITE_DATA_DIR)/english-shavian-gb-index.json $(SITE_DATA_DIR)/english-shavian-gb-entries.json $(SITE_DATA_DIR)/english-shavian-gb-summaries.json: $(BUILD_DICT_XML)/english-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(SITE_DATA_DIR)
 	@echo "Building English-Shavian (GB) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py english-shavian-gb
 
-$(BUILD_SITE_DATA)/english-shavian-us-index.json $(BUILD_SITE_DATA)/english-shavian-us-entries.json $(BUILD_SITE_DATA)/english-shavian-us-summaries.json: $(BUILD_DICT_XML)/english-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(SITE_DATA_DIR)/english-shavian-us-index.json $(SITE_DATA_DIR)/english-shavian-us-entries.json $(SITE_DATA_DIR)/english-shavian-us-summaries.json: $(BUILD_DICT_XML)/english-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(SITE_DATA_DIR)
 	@echo "Building English-Shavian (US) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py english-shavian-us
 
-$(BUILD_SITE_DATA)/shavian-english-gb-index.json $(BUILD_SITE_DATA)/shavian-english-gb-entries.json $(BUILD_SITE_DATA)/shavian-english-gb-summaries.json: $(BUILD_DICT_XML)/shavian-english-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(SITE_DATA_DIR)/shavian-english-gb-index.json $(SITE_DATA_DIR)/shavian-english-gb-entries.json $(SITE_DATA_DIR)/shavian-english-gb-summaries.json: $(BUILD_DICT_XML)/shavian-english-gb.xml $(SRC_SITE)/build_site_index.py | $(SITE_DATA_DIR)
 	@echo "Building Shavian-English (GB) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-english-gb
 
-$(BUILD_SITE_DATA)/shavian-english-us-index.json $(BUILD_SITE_DATA)/shavian-english-us-entries.json $(BUILD_SITE_DATA)/shavian-english-us-summaries.json: $(BUILD_DICT_XML)/shavian-english-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(SITE_DATA_DIR)/shavian-english-us-index.json $(SITE_DATA_DIR)/shavian-english-us-entries.json $(SITE_DATA_DIR)/shavian-english-us-summaries.json: $(BUILD_DICT_XML)/shavian-english-us.xml $(SRC_SITE)/build_site_index.py | $(SITE_DATA_DIR)
 	@echo "Building Shavian-English (US) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-english-us
 
-$(BUILD_SITE_DATA)/shavian-shavian-gb-index.json $(BUILD_SITE_DATA)/shavian-shavian-gb-entries.json $(BUILD_SITE_DATA)/shavian-shavian-gb-summaries.json: $(BUILD_DICT_XML)/shavian-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(SITE_DATA_DIR)/shavian-shavian-gb-index.json $(SITE_DATA_DIR)/shavian-shavian-gb-entries.json $(SITE_DATA_DIR)/shavian-shavian-gb-summaries.json: $(BUILD_DICT_XML)/shavian-shavian-gb.xml $(SRC_SITE)/build_site_index.py | $(SITE_DATA_DIR)
 	@echo "Building Shavian-Shavian (GB) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-shavian-gb
 
-$(BUILD_SITE_DATA)/shavian-shavian-us-index.json $(BUILD_SITE_DATA)/shavian-shavian-us-entries.json $(BUILD_SITE_DATA)/shavian-shavian-us-summaries.json: $(BUILD_DICT_XML)/shavian-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(BUILD_SITE_DATA)
+$(SITE_DATA_DIR)/shavian-shavian-us-index.json $(SITE_DATA_DIR)/shavian-shavian-us-entries.json $(SITE_DATA_DIR)/shavian-shavian-us-summaries.json: $(BUILD_DICT_XML)/shavian-shavian-us.xml $(SRC_SITE)/build_site_index.py | $(SITE_DATA_DIR)
 	@echo "Building Shavian-Shavian (US) web indexes..."
 	$(RUN) $(SRC_SITE)/build_site_index.py shavian-shavian-us
 
 # Collect all site data files for convenience
-SITE_DATA_FILES = $(BUILD_SITE_DATA)/english-shavian-gb-index.json \
-                  $(BUILD_SITE_DATA)/english-shavian-gb-entries.json \
-                  $(BUILD_SITE_DATA)/english-shavian-gb-summaries.json \
-                  $(BUILD_SITE_DATA)/english-shavian-us-index.json \
-                  $(BUILD_SITE_DATA)/english-shavian-us-entries.json \
-                  $(BUILD_SITE_DATA)/english-shavian-us-summaries.json \
-                  $(BUILD_SITE_DATA)/shavian-english-gb-index.json \
-                  $(BUILD_SITE_DATA)/shavian-english-gb-entries.json \
-                  $(BUILD_SITE_DATA)/shavian-english-gb-summaries.json \
-                  $(BUILD_SITE_DATA)/shavian-english-us-index.json \
-                  $(BUILD_SITE_DATA)/shavian-english-us-entries.json \
-                  $(BUILD_SITE_DATA)/shavian-english-us-summaries.json \
-                  $(BUILD_SITE_DATA)/shavian-shavian-gb-index.json \
-                  $(BUILD_SITE_DATA)/shavian-shavian-gb-entries.json \
-                  $(BUILD_SITE_DATA)/shavian-shavian-gb-summaries.json \
-                  $(BUILD_SITE_DATA)/shavian-shavian-us-index.json \
-                  $(BUILD_SITE_DATA)/shavian-shavian-us-entries.json \
-                  $(BUILD_SITE_DATA)/shavian-shavian-us-summaries.json
+SITE_DATA_FILES = $(SITE_DATA_DIR)/english-shavian-gb-index.json \
+                  $(SITE_DATA_DIR)/english-shavian-gb-entries.json \
+                  $(SITE_DATA_DIR)/english-shavian-gb-summaries.json \
+                  $(SITE_DATA_DIR)/english-shavian-us-index.json \
+                  $(SITE_DATA_DIR)/english-shavian-us-entries.json \
+                  $(SITE_DATA_DIR)/english-shavian-us-summaries.json \
+                  $(SITE_DATA_DIR)/shavian-english-gb-index.json \
+                  $(SITE_DATA_DIR)/shavian-english-gb-entries.json \
+                  $(SITE_DATA_DIR)/shavian-english-gb-summaries.json \
+                  $(SITE_DATA_DIR)/shavian-english-us-index.json \
+                  $(SITE_DATA_DIR)/shavian-english-us-entries.json \
+                  $(SITE_DATA_DIR)/shavian-english-us-summaries.json \
+                  $(SITE_DATA_DIR)/shavian-shavian-gb-index.json \
+                  $(SITE_DATA_DIR)/shavian-shavian-gb-entries.json \
+                  $(SITE_DATA_DIR)/shavian-shavian-gb-summaries.json \
+                  $(SITE_DATA_DIR)/shavian-shavian-us-index.json \
+                  $(SITE_DATA_DIR)/shavian-shavian-us-entries.json \
+                  $(SITE_DATA_DIR)/shavian-shavian-us-summaries.json
+
+# The suggest daemon's hunspell dictionaries are derived data too (built from
+# readlex/wordnet by spellcheck.mk), so they ship the same way as site-data:
+# published into the data repo on the build machine, read from the data
+# checkout on the server.
+DATA_HUNSPELL_FILES = $(patsubst $(BUILD_HUNSPELL)/%,$(DATA_HUNSPELL_DIR)/%,$(HUNSPELL_FILES))
+
+$(DATA_HUNSPELL_DIR)/%: $(BUILD_HUNSPELL)/% | $(DATA_HUNSPELL_DIR)
+	install -m 644 $< $@
 
 # Deploy site files to build/site (using index.cgi as representative target)
 # Depends on:
@@ -63,7 +85,7 @@ $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
                          $(VK_SITE_STAMP) \
                          $(shell find $(SRC_SITE) -type f 2>/dev/null) \
                          $(shell find $(SRC_SITE_DAEMON) -type f 2>/dev/null) \
-                         $(HUNSPELL_FILES) \
+                         $(DATA_HUNSPELL_FILES) \
                          Makefile \
                          $(wildcard $(SRC_FONTS)/*)
 	@echo "Deploying web frontend..."
@@ -71,12 +93,16 @@ $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
 
 .PHONY: site install-site clean-site
 
-# --- install-site: deploy the staged site from build/site into place ---
+# --- install-site: stage from prebuilt data, then install into place ---
 #
-# Installs directly from the staged build tree (build/site, produced by
-# `make site`): $HERE is that tree. Run as the normal user: `make install-site`.
+# Runs ON THE SERVER, in this repo's checkout. Deliberately NOT dependent on
+# `site`: that graph reaches back through the index/XML generators, and the
+# server must never run those (see the header above). Instead the recipe
+# verifies the prebuilt artifacts are in the data checkout, stages build/site
+# from src/ + data/ (cheap copies + $VERSION$ substitution), and installs the
+# staged tree. Run as the normal user: `make install-site`.
 # Only the privileged commands (writing /var/www, /opt, /etc/systemd, systemctl)
-# escalate via sudo; the build itself never runs as root.
+# escalate via sudo; the staging itself never runs as root.
 #
 # This server ALSO hosts the editor (make install-editor). The two share
 # /opt/shaw-spell and the /var/www/shaw-spell docroot, so every removal here is
@@ -91,15 +117,31 @@ WWW_ROOT_SITE ?= /var/www/shaw-spell
 OPT_ROOT ?= /opt/shaw-spell
 SERVICE_USER ?= www-data
 
-install-site: site
+install-site: $(VK_SITE_STAMP)
 	@set -eu; \
+	[ -f .site-config ] || { \
+	  echo "install-site: .site-config not found — staging bakes FONT_URL into the pages," >&2; \
+	  echo "  and the /fonts default is wrong for production. Create it first:" >&2; \
+	  echo "      cp .site-config.example .site-config   # then set FONT_URL" >&2; \
+	  exit 1; }; \
+	for f in $(SITE_DATA_FILES) $(DATA_HUNSPELL_FILES); do \
+	  [ -f "$$f" ] || { \
+	    echo "install-site: prebuilt dictionary data missing: $$f" >&2; \
+	    echo "  This machine NEVER builds dictionaries — it is far too slow for the" >&2; \
+	    echo "  generators. On the build machine: 'make site', commit data/site-data" >&2; \
+	    echo "  + data/hunspell in the data repo and push; then update the data" >&2; \
+	    echo "  checkout here and re-run." >&2; \
+	    exit 1; }; \
+	done; \
+	echo "==> Staging site from src/ + prebuilt data/ -> $(BUILD_SITE)"; \
+	$(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL); \
 	HERE="$(BUILD_SITE)"; \
 	echo "==> Preflight: verifying staged site tree in $$HERE"; \
 	for d in css js fonts templates virtual-keyboard site-daemon site-data hunspell; do \
-	  [ -d "$$HERE/$$d" ] || { echo "install-site: expected dir missing from build: $$d (run 'make site')" >&2; exit 1; }; \
+	  [ -d "$$HERE/$$d" ] || { echo "install-site: expected dir missing from staged tree: $$d" >&2; exit 1; }; \
 	done; \
 	for f in index.cgi card.cgi .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
-	  [ -f "$$HERE/$$f" ] || { echo "install-site: expected file missing from build: $$f (run 'make site')" >&2; exit 1; }; \
+	  [ -f "$$HERE/$$f" ] || { echo "install-site: expected file missing from staged tree: $$f" >&2; exit 1; }; \
 	done; \
 	echo "==> Installing Shaw-Spell site"; \
 	echo "    web:      $(WWW_ROOT_SITE)"; \
@@ -170,7 +212,9 @@ site: $(BUILD_SITE)/index.cgi
 	@echo "Location: $(BUILD_SITE)/"
 	@echo "To test: src/tools/test_site.py 8000"
 
+# data/site-data + data/hunspell are committed artifacts, not build output —
+# clean never touches them.
 clean-site:
 	@echo "Cleaning web frontend artifacts..."
-	@rm -rf $(BUILD_SITE) $(BUILD_SITE_DATA)
+	@rm -rf $(BUILD_SITE)
 	@echo "Site clean complete"

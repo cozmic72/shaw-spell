@@ -368,7 +368,9 @@ def main():
     project_root = Path(__file__).parent.parent.parent
     build_dir = project_root / 'build'
     xml_dir = build_dir / 'dictionaries' / 'xml'
-    output_dir = build_dir / 'site-data'
+    # Committed artifact: the indexes are published into the data repo and
+    # shipped to the server via git (the server never runs this script).
+    output_dir = project_root / 'data' / 'site-data'
 
     output_dir.mkdir(parents=True, exist_ok=True)
 

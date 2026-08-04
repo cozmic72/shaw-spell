@@ -21,8 +21,10 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
     site_daemon_src = project_root / 'src' / 'site-daemon'
     fonts_src = project_root / 'src' / 'fonts'
     output_path = project_root / output_dir
-    data_dir = project_root / 'build' / 'site-data'
-    hunspell_dir = project_root / 'build' / 'spellcheck' / 'hunspell'
+    # Prebuilt committed artifacts from the data repo — built by `make site`
+    # on the build machine, shipped to the server via git. Never built here.
+    data_dir = project_root / 'data' / 'site-data'
+    hunspell_dir = project_root / 'data' / 'hunspell'
 
     if not site_src.exists():
         print(f"Error: Site source directory not found: {site_src}")
@@ -30,7 +32,12 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
 
     if not data_dir.exists():
         print(f"Error: Site data directory not found: {data_dir}")
-        print("Run src/site/build_site_index.py first to build indexes")
+        print("Run 'make site' on the build machine and pull the data repo")
+        return 1
+
+    if not hunspell_dir.exists():
+        print(f"Error: Hunspell directory not found: {hunspell_dir}")
+        print("Run 'make site' on the build machine and pull the data repo")
         return 1
 
     if output_path.exists():
@@ -174,20 +181,16 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
     # installs them under /opt/shaw-spell/hunspell/ (matches the path in
     # the systemd unit). Stage them into build/site so install-site copies
     # them into place in one pass.
-    if hunspell_dir.exists():
-        print()
-        print("Copying Hunspell dictionaries...")
-        hunspell_output = output_path / 'hunspell'
-        hunspell_output.mkdir(exist_ok=True)
-        for hunspell_file in hunspell_dir.iterdir():
-            if hunspell_file.suffix in ('.aff', '.dic') and hunspell_file.is_file():
-                dest = hunspell_output / hunspell_file.name
-                shutil.copy2(hunspell_file, dest)
-                print(f"  ✓ hunspell/{hunspell_file.name}")
-                stats['other'] += 1
-    else:
-        print()
-        print(f"Warning: {hunspell_dir} not found — run 'make spellcheck' first")
+    print()
+    print("Copying Hunspell dictionaries...")
+    hunspell_output = output_path / 'hunspell'
+    hunspell_output.mkdir(exist_ok=True)
+    for hunspell_file in hunspell_dir.iterdir():
+        if hunspell_file.suffix in ('.aff', '.dic') and hunspell_file.is_file():
+            dest = hunspell_output / hunspell_file.name
+            shutil.copy2(hunspell_file, dest)
+            print(f"  ✓ hunspell/{hunspell_file.name}")
+            stats['other'] += 1
 
     print()
     print(f"Deployed {stats['html']} HTML files, {stats['css']} CSS files, "

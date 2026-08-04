@@ -65,7 +65,6 @@ BUILD_DMG_STAGING := $(BUILD_DMG)/staging
 BUILD_DMG_FILE := $(BUILD_DMG)/Shaw-Spell-$(VERSION).dmg
 
 BUILD_SITE := $(BUILD_ROOT)/site
-BUILD_SITE_DATA := $(BUILD_ROOT)/site-data
 
 BUILD_ICONS := $(BUILD_ROOT)/icons
 
@@ -74,7 +73,7 @@ BUILD_DIRS := $(BUILD_DICT_XML) $(BUILD_DICT_PLISTS) $(BUILD_DICT_BUNDLES) \
               $(BUILD_HUNSPELL) $(BUILD_SERVER_OBJS) \
               $(BUILD_INSTALLER_OBJS) $(BUILD_INSTALLER_RES) \
               $(BUILD_UNINSTALLER_OBJS) $(BUILD_UNINSTALLER_RES) \
-              $(BUILD_DMG) $(BUILD_SITE_DATA) $(BUILD_ICONS)
+              $(BUILD_DMG) $(BUILD_ICONS)
 
 # Create all build directories
 $(BUILD_DIRS):

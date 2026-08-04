@@ -4,9 +4,9 @@
 # /opt/shaw-spell/src and the mutable DATA is a live git clone the daemon's
 # Commit button commits+pushes (see the install-editor comment below for the
 # full model). The editor is PURE PYTHON + committed data — it needs no
-# model/dictionary build, so this target pulls NO heavy deps (contrast
-# build-rules/site.mk, whose site-data indexes depend on the built XML
-# dictionaries).
+# model/dictionary build, so this target pulls NO heavy deps. The site's
+# indexes DO depend on the built XML dictionaries, which is why site.mk builds
+# them on the build machine and install-site ships the prebuilt data.
 
 .PHONY: install-editor
 

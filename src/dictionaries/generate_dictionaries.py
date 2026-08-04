@@ -1365,18 +1365,37 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                                                                 break
                                                                 alt_spellings.append((variant_word, dialect, variant_ipa))
 
-                            # Check for additional pronunciations in home_forms (e.g., due /djuː/ and /duː/)
+                            # Additional home_forms are either another pronunciation of
+                            # the SAME spelling (due /djuː/ ~ /duː/) or a genuinely
+                            # different word sharing this slot — heteronyms fill one
+                            # bucket with both their plurals (row: 𐑮𐑬𐑟 raʊz and 𐑮𐑴𐑟
+                            # rəʊz). Only the first is a variant; the second must carry
+                            # its own spelling or it is lost from the dictionary.
+                            # VVI/VVB and VVN/VVD share a spelling and an IPA, so
+                            # without this the same parenthetical is written twice.
+                            seen_additional = set()
                             for additional_form in home_forms[1:]:
-                                if additional_form['ipa'] != home_form['ipa']:
-                                    # Different pronunciation - show it with its friendly
-                                    # dialect/variation label (broad-A merger, national
-                                    # accent, RSSB-variant …). No distinguishing label →
-                                    # a plain "also".
-                                    variant_label = form_variant_label(additional_form, lemma_has_rrp)
-                                    if variant_label:
-                                        f.write(f' <span class="variant">({escape(home_display_text)}, {escape(variant_label)} /{additional_form["ipa"]}/)</span>')
-                                    else:
-                                        f.write(f' <span class="variant">(also /{additional_form["ipa"]}/)</span>')
+                                if additional_form['ipa'] == home_form['ipa']:
+                                    continue
+                                if (additional_form[display_key], additional_form['ipa']) in seen_additional:
+                                    continue
+                                seen_additional.add((additional_form[display_key], additional_form['ipa']))
+                                additional_display_text = additional_form[display_key]
+                                if display_key == 'shaw':
+                                    additional_display_text = add_namer_dot_if_proper_noun(
+                                        additional_display_text, additional_form['pos'])
+                                else:
+                                    additional_display_text = capitalize_if_proper_noun(
+                                        additional_display_text, additional_form['pos'])
+
+                                variant_label = form_variant_label(additional_form, lemma_has_rrp)
+                                if additional_display_text != home_display_text:
+                                    f.write(f' <span class="variant">({escape(additional_display_text)}'
+                                            f' /{additional_form["ipa"]}/)</span>')
+                                elif variant_label:
+                                    f.write(f' <span class="variant">({escape(home_display_text)}, {escape(variant_label)} /{additional_form["ipa"]}/)</span>')
+                                else:
+                                    f.write(f' <span class="variant">(also /{additional_form["ipa"]}/)</span>')
 
                             # The shaw-shaw dictionary skips Latin alphabet variants.
                             if alt_spellings and dict_type != 'shaw-shaw':

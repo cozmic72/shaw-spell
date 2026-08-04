@@ -156,7 +156,7 @@ def preview_description(word, summaries):
     word, its IPA, one variant/derived form, the POS list, and how many
     definitions await. Shavian is included deliberately, and the card image
     carries it too — the image is the copy whose font we control."""
-    first = searched_first(word, summaries)
+    first = searched_first(word, summaries)[0]
     twin = first['latin'] if contains_shavian(word) else first['shaw']
     head = ' '.join(part for part in (twin, first['ipa']) if part)
 

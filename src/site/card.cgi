@@ -227,13 +227,7 @@ def card_content(word, summaries, dialect):
     related = related_line(summaries[1:], first['shaw'], head_latins)
     if related:
         subs.append((RELATED_SUB_SIZE, related))
-    if shavian_input:
-        defs = [d for s in summaries for d in s['defs']]
-        subs += [(SUB_SIZE, [segment(f'{n}. ', SUB_MUTED),
-                             segment(text, SUB_TEXT)])
-                 for n, text in
-                 enumerate(defs[:MAX_SUB_LINES - len(subs)], start=1)]
-    else:
+    if not shavian_input:
         # The renderer's width truncation bounds this flow.
         flow = []
         for form in first['forms']:
@@ -245,6 +239,17 @@ def card_content(word, summaries, dialect):
             flow += row
         if flow:
             subs.append((SUB_SIZE, flow))
+
+    # Whatever room the forms did not want goes to glosses — a definition
+    # says more than the footer's bare count. 58% of entries carry at most
+    # one form, so on most cards this is space that was going spare.
+    # english-shavian summaries carry no `defs`, so those cards show none
+    # until build_site_index emits them in that direction too.
+    defs = [d for s in summaries for d in s.get('defs', ())]
+    subs += [(SUB_SIZE, [segment(f'{n}. ', SUB_MUTED),
+                         segment(text, SUB_TEXT)])
+             for n, text in
+             enumerate(defs[:MAX_SUB_LINES - len(subs)], start=1)]
 
     pos_names = unique(pos['name'] for s in summaries for pos in s['pos']
                        if pos['name'])

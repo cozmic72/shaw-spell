@@ -144,15 +144,32 @@ def form_sub_line(form):
     return segments
 
 
+def searched_first(word, summaries, shavian_input):
+    """The index maps inflections to their lemma's entry, so a searched
+    inflection that is also a headword in its own right (e.g. 'spelling'
+    under 'spell') arrives mixed in with the lemma's entries. Reorder so
+    the word's own entries lead and the card shows the searched form."""
+    key = word if shavian_input else word.lower()
+    hits, rest = [], []
+    for summary in summaries:
+        headword = summary['shaw'] if shavian_input else summary['latin'].lower()
+        (hits if headword == key else rest).append(summary)
+    return hits + rest
+
+
 def card_content(word, summaries, dialect):
-    """Distill the matched entry summaries into the card's fixed slots."""
+    """Distill the matched entry summaries into the card's fixed slots.
+    head is (searched-script text, twin-script text, IPA)."""
     shavian_input = contains_shavian(word)
+    summaries = searched_first(word, summaries, shavian_input)
     first = summaries[0]
 
-    latin = first['latin']
     if shavian_input:
-        latin = ' · '.join(unique(
-            s['latin'] for s in summaries if s['latin'])[:MAX_HEAD_LATINS])
+        latins = unique(s['latin'] for s in summaries
+                        if s['latin'] and s['shaw'] == first['shaw'])
+        head = (first['shaw'], ' · '.join(latins[:MAX_HEAD_LATINS]))
+    else:
+        head = (first['latin'], first['shaw'])
 
     subs = []
     if shavian_input:
@@ -192,9 +209,7 @@ def card_content(word, summaries, dialect):
         footer = f'{ndefs} definition{"s" if ndefs != 1 else ""}'
 
     return {
-        'shaw': first['shaw'],
-        'latin': latin,
-        'ipa': first['ipa'],
+        'head': (*head, first['ipa']),
         'badge': dialect.upper(),
         'subs': subs,
         'pills': pills,
@@ -266,7 +281,7 @@ def head_fonts(draw, content, available_width):
                lambda size: load_font(size, weight=WEIGHT_MEDIUM),
                load_ipa_font)
     fonts = tuple(load(size) for load, size in zip(loaders, sizes))
-    texts = (content['shaw'], content['latin'], content['ipa'])
+    texts = content['head']
     gaps = HEAD_GAP * SCALE * (sum(1 for t in texts if t) - 1)
     width = sum(draw.textlength(t, font=f) for t, f in zip(texts, fonts)) + gaps
     if width <= available_width:
@@ -312,21 +327,19 @@ def render_card(content):
     draw.text((badge_left + 18 * SCALE, head_top + 4 * SCALE),
               content['badge'], font=badge_font, fill='white')
 
-    # Headline: Shavian + Latin + IPA on a shared baseline.
+    # Headline: searched word + twin script + IPA on a shared baseline.
     head_available = badge_left - 24 * SCALE - inner_left
-    shaw_font, latin_font, ipa_font = head_fonts(draw, content, head_available)
-    baseline = head_top + shaw_font.getmetrics()[0]
-    head_run = [(t, c, f) for t, c, f in (
-        (content['shaw'], INK, shaw_font),
-        (content['latin'], ACCENT, latin_font),
-        (content['ipa'], IPA_GREY, ipa_font),
-    ) if t]
+    lead_font, twin_font, ipa_font = head_fonts(draw, content, head_available)
+    baseline = head_top + lead_font.getmetrics()[0]
+    head_run = [(t, c, f) for t, c, f in zip(
+        content['head'], (INK, ACCENT, IPA_GREY),
+        (lead_font, twin_font, ipa_font)) if t]
     x = inner_left
     for i, segment in enumerate(head_run):
         if i:
             x += HEAD_GAP * SCALE
         x = draw_run(draw, x, baseline, [segment])
-    y = head_top + sum(shaw_font.getmetrics())
+    y = head_top + sum(lead_font.getmetrics())
 
     sub_font = load_font(36)
     sub_ipa_font = load_ipa_font(36)

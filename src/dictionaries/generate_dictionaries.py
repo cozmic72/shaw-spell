@@ -294,6 +294,14 @@ def add_namer_dot_if_proper_noun(text, pos_code):
     return text
 
 
+def form_display_text(form, display_key):
+    """A form's headword text, marked as a proper noun the way its script does."""
+    text = form[display_key]
+    if display_key == 'shaw':
+        return add_namer_dot_if_proper_noun(text, form['pos'])
+    return capitalize_if_proper_noun(text, form['pos'])
+
+
 # Voicing classes for the Shavian sibilant suffix (used by plural and
 # canonical apostrophe-free possessive). Last char of the stem decides:
 #   sibilant ending → 𐑩𐑟
@@ -1346,11 +1354,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         if home_forms:
                             home_form = home_forms[0]
 
-                            home_display_text = home_form[display_key]
-                            if display_key == 'shaw':
-                                home_display_text = add_namer_dot_if_proper_noun(home_display_text, home_form['pos'])
-                            else:
-                                home_display_text = capitalize_if_proper_noun(home_display_text, home_form['pos'])
+                            home_display_text = form_display_text(home_form, display_key)
 
                             f.write(escape(home_display_text))
                             f.write(f' <span class="ipa">/{home_form["ipa"]}/</span>')
@@ -1395,14 +1399,9 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                                                                 break
                                                                 alt_spellings.append((variant_word, dialect, variant_ipa))
 
-                            # Additional home_forms are either another pronunciation of
-                            # the SAME spelling (due /djuː/ ~ /duː/) or a genuinely
-                            # different word sharing this slot — heteronyms fill one
-                            # bucket with both their plurals (row: 𐑮𐑬𐑟 raʊz and 𐑮𐑴𐑟
-                            # rəʊz). Only the first is a variant; the second must carry
-                            # its own spelling or it is lost from the dictionary.
-                            # VVI/VVB and VVN/VVD share a spelling and an IPA, so
-                            # without this the same parenthetical is written twice.
+                            # A heteronym fills one slot with both its plurals (row:
+                            # 𐑮𐑬𐑟 raʊz and 𐑮𐑴𐑟 rəʊz), so an additional form is not
+                            # necessarily another pronunciation of the one above it.
                             seen_additional = set()
                             for additional_form in home_forms[1:]:
                                 if additional_form['ipa'] == home_form['ipa']:
@@ -1410,18 +1409,10 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                                 if (additional_form[display_key], additional_form['ipa']) in seen_additional:
                                     continue
                                 seen_additional.add((additional_form[display_key], additional_form['ipa']))
-                                additional_display_text = additional_form[display_key]
-                                if display_key == 'shaw':
-                                    additional_display_text = add_namer_dot_if_proper_noun(
-                                        additional_display_text, additional_form['pos'])
-                                else:
-                                    additional_display_text = capitalize_if_proper_noun(
-                                        additional_display_text, additional_form['pos'])
+                                additional_display_text = form_display_text(additional_form, display_key)
 
-                                # The Shavian tells the two apart even when the Latin
-                                # cannot: row's plurals are both "rows" but 𐑮𐑬𐑟 and
-                                # 𐑮𐑴𐑟. A different word gets no accent label — it is
-                                # not a GB variant of the form above it.
+                                # Discriminate on shaw, not the display text: row's two
+                                # plurals are both "rows" in Latin but 𐑮𐑬𐑟 and 𐑮𐑴𐑟.
                                 variant_label = form_variant_label(additional_form, lemma_has_rrp)
                                 if additional_form.get('shaw') != home_form.get('shaw'):
                                     f.write(f' <span class="variant">({escape(additional_display_text)}'
@@ -1464,11 +1455,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                             if alt_forms:
                                 alt_form = alt_forms[0]
 
-                                alt_display_text = alt_form[display_key]
-                                if display_key == 'shaw':
-                                    alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
-                                else:
-                                    alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
+                                alt_display_text = form_display_text(alt_form, display_key)
 
                                 # The friendly accent/variation label for this alt form
                                 # (General American, trap-bath, an RSSB variant …), falling
@@ -1483,11 +1470,7 @@ def generate_dictionary(readlex_data, definitions, output_path, dict_type, diale
                         elif alt_forms:
                             alt_form = alt_forms[0]
 
-                            alt_display_text = alt_form[display_key]
-                            if display_key == 'shaw':
-                                alt_display_text = add_namer_dot_if_proper_noun(alt_display_text, alt_form['pos'])
-                            else:
-                                alt_display_text = capitalize_if_proper_noun(alt_display_text, alt_form['pos'])
+                            alt_display_text = form_display_text(alt_form, display_key)
 
                             f.write(escape(alt_display_text))
                             f.write(f' <span class="ipa">/{alt_form["ipa"]}/</span>')

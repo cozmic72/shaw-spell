@@ -49,6 +49,11 @@ from dialect_display import (
 #
 # Keep this list SHORT and ordered by how much value each rule adds —
 # when a word hits PH_CAP variants, later rules are skipped for it.
+#
+# `id` names a CONFUSION CLASS, not a dialect merger. Where one coincides
+# with a merger name the data still differs — direction is (what the dict
+# has, what to offer), and `dialects` is which dictionary ships the rule,
+# not which accents have the merger. Do not wire these to MERGER_SWAPS.
 
 # --- Affix flags for Shavian noun morphology ---
 #

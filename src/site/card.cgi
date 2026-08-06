@@ -12,20 +12,18 @@ crawlers and platforms cache by URL and long-lived HTTP caching does the rest.
 """
 
 import io
-import json
 import os
 import re
-import socket
 import sys
 from urllib.parse import parse_qs
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-
-# Unix socket served by suggestd. Must match the path in the systemd unit.
-DAEMON_SOCKET = os.environ.get('SHAW_SPELL_SUGGEST_SOCKET',
-                               '/run/shaw-spell/suggestd.sock')
-DAEMON_TIMEOUT_SEC = 2.0
+# CGI does not guarantee the script's directory is on the path.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sitecommon import (  # noqa: E402
+    DaemonError, contains_shavian, daemon_request, searched_first,
+)
 
 WIDTH, HEIGHT = 1200, 630
 # Draw at 2x and downsample for smooth corners and pill edges.
@@ -73,46 +71,6 @@ FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
 SANS_FONT = 'BernieSansBetaVF.ttf'
 IPA_FONT = 'InterAlia-Regular.otf'
 WEIGHT_REGULAR, WEIGHT_MEDIUM = 400, 500
-
-
-class DaemonError(Exception):
-    pass
-
-
-def daemon_request(request):
-    """Send one JSON request to suggestd, return its JSON response.
-    Raises DaemonError on any failure — no fallbacks."""
-    payload = (json.dumps(request, ensure_ascii=False) + '\n').encode('utf-8')
-    try:
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.settimeout(DAEMON_TIMEOUT_SEC)
-        sock.connect(DAEMON_SOCKET)
-        sock.sendall(payload)
-        chunks = []
-        while True:
-            chunk = sock.recv(65536)
-            if not chunk:
-                break
-            chunks.append(chunk)
-        sock.close()
-    except (OSError, socket.timeout) as exc:
-        raise DaemonError(f'cannot reach suggestd: {exc}') from exc
-
-    raw = b''.join(chunks).decode('utf-8').strip()
-    if not raw:
-        raise DaemonError('empty response from suggestd')
-    try:
-        response = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise DaemonError(f'malformed response: {exc}') from exc
-
-    if 'error' in response:
-        raise DaemonError(response['error'])
-    return response
-
-
-def contains_shavian(text):
-    return any('\U00010450' <= c <= '\U0001047F' for c in text)
 
 
 def font_path(filename):
@@ -194,24 +152,11 @@ def related_line(summaries, head_shaw, head_latins):
     return line
 
 
-def searched_first(word, summaries, shavian_input):
-    """The index maps inflections to their lemma's entry, so a searched
-    inflection that is also a headword in its own right (e.g. 'spelling'
-    under 'spell') arrives mixed in with the lemma's entries. Reorder so
-    the word's own entries lead and the card shows the searched form."""
-    key = word if shavian_input else word.lower()
-    hits, rest = [], []
-    for summary in summaries:
-        headword = summary['shaw'] if shavian_input else summary['latin'].lower()
-        (hits if headword == key else rest).append(summary)
-    return hits + rest
-
-
 def card_content(word, summaries, dialect):
     """Distill the matched entry summaries into the card's fixed slots.
     head is (searched-script text, twin-script text, IPA)."""
     shavian_input = contains_shavian(word)
-    summaries = searched_first(word, summaries, shavian_input)
+    summaries = searched_first(word, summaries)
     first = summaries[0]
 
     if shavian_input:

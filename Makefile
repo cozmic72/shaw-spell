@@ -3,7 +3,7 @@
 
 # NOTE: site/install-site/clean-site, install-editor, dictionaries, and the
 # supplement/regenerate targets declare their own .PHONY in build-rules/*.mk.
-.PHONY: all clean install uninstall help setup spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache test
+.PHONY: all clean install uninstall help setup spellcheck spellserver transliterations shavian-english english-shavian shavian-shavian notarize staple wordnet-cache test test-unit test-dictionary
 .PHONY: shavian-english-gb shavian-english-us english-shavian-gb english-shavian-us shavian-shavian-gb shavian-shavian-us
 .DEFAULT_GOAL := help
 
@@ -238,6 +238,27 @@ clean:
 # Testing
 ###########################################
 
-test: $(BUILD_DICT_XML)/shavian-english-gb.xml
+# Discovered, not listed: a hand-maintained roster silently stops covering the
+# suite someone forgot to add. Excludes are by PATH, and each is a misnamed
+# non-test (see task #144) — test_editor/test_site are dev servers that hang,
+# test_dictionary is a CLI query tool that exits 2 on missing argv.
+UNIT_TEST_EXCLUDES := src/tools/test_editor.py src/tools/test_site.py \
+                      src/test_dictionary.py src/test/test_dictionaries.py
+
+test: test-unit test-dictionary
+
+test-unit:
+	@echo "Running unit suites..."
+	@set -eu; failed=""; \
+	for t in $$(find src -name 'test_*.py' | sort); do \
+	  case " $(UNIT_TEST_EXCLUDES) " in *" $$t "*) continue;; esac; \
+	  python3 "$$t" >/dev/null 2>&1 || failed="$$failed $$t"; \
+	done; \
+	if [ -n "$$failed" ]; then \
+	  echo "FAILED:" >&2; for t in $$failed; do echo "  $$t" >&2; done; exit 1; \
+	fi; \
+	echo "✓ unit suites pass"
+
+test-dictionary: $(BUILD_DICT_XML)/shavian-english-gb.xml
 	@echo "Running dictionary tests..."
 	$(RUN) python3 src/test/test_dictionaries.py $(BUILD_DICT_XML)/shavian-english-gb.xml

@@ -142,7 +142,7 @@ install-site: $(VK_SITE_STAMP)
 	for d in css js fonts templates virtual-keyboard site-daemon site-data hunspell; do \
 	  [ -d "$$HERE/$$d" ] || { echo "install-site: expected dir missing from staged tree: $$d" >&2; exit 1; }; \
 	done; \
-	for f in index.cgi card.cgi .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
+	for f in index.cgi card.cgi sitecommon.py .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
 	  [ -f "$$HERE/$$f" ] || { echo "install-site: expected file missing from staged tree: $$f" >&2; exit 1; }; \
 	done; \
 	echo "==> Installing Shaw-Spell site"; \

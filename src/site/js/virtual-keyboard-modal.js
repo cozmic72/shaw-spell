@@ -1,4 +1,4 @@
-// Lean wrapper around the shaw-type submodule's window.VirtualKeyboard.
+// Lean wrapper around the virtual-keyboard submodule's window.VirtualKeyboard.
 // Assets are served at /virtual-keyboard/ so the widget resolves its own
 // html/layout/png relative to its <script src> — no urlResolver needed.
 // Exposes window.ShawSpellKeyboard = { toggle, openSettings } for buttons.
@@ -32,7 +32,7 @@
     }
     if (!window.VirtualKeyboard._internal ||
         typeof window.VirtualKeyboard._internal.openSettings !== 'function') {
-      throw new Error('ShawSpellKeyboard: VirtualKeyboard._internal.openSettings missing — shaw-type moved it; re-point openSettings');
+      throw new Error('ShawSpellKeyboard: VirtualKeyboard._internal.openSettings missing — virtual-keyboard moved it; re-point openSettings');
     }
 
     let host = document.getElementById('virtual-keyboard-host');
@@ -52,7 +52,7 @@
       return window.VirtualKeyboard.setLayout((st && st.layout) || 'imperial');
     });
 
-    // Capture phase + stopImmediatePropagation shadows shaw-type's own
+    // Capture phase + stopImmediatePropagation shadows virtual-keyboard's own
     // bubble-phase Mac Cmd+K handler so the toggle never double-fires.
     document.addEventListener('keydown', function (e) {
       if (!isShortcutMatch(e)) return;

@@ -1,8 +1,8 @@
 # Build directory (all build artifacts)
 build/
 
-# Virtual keyboard assets — generated from the external/shaw-type submodule
-# (source of truth) into each docroot by the `virtual-keyboard-*` make targets.
+# Virtual keyboard assets — generated from the external/virtual-keyboard
+# submodule (source of truth) into each docroot by the `virtual-keyboard` target.
 src/site/virtual-keyboard/
 src/editor/site/virtual-keyboard/
 data/wordnet-comprehensive.json

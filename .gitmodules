@@ -15,9 +15,9 @@
 	path = external/cmudict
 	url = https://github.com/cmusphinx/cmudict.git
 	shallow = true
-[submodule "external/shaw-type"]
-	path = external/shaw-type
-	url = git@github.com:cozmic72/shaw-type.git
 [submodule "data"]
 	path = data
 	url = ssh://joro.io/var/git/shaw-spell-data.git
+[submodule "external/virtual-keyboard"]
+	path = external/virtual-keyboard
+	url = git@github.com:cozmic72/virtual-keyboard.git

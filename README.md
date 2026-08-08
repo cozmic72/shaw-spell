@@ -146,8 +146,8 @@ The dialect model separates a record's **base accent** (scalar `var`) from the
 | `GenAus` `GenCan` `SthAfr` `NZ` `IrEng` | regional lanes harvested from Wiktionary accent tags (review pool; lanes with no upstream ReadLex counterpart are held back from readlex.json at export) |
 
 Mergers are NOT `var` values — they live in `mergers`, e.g. `["trap-bath"]` (PALM 𐑭→TRAP 𐑨 in
-BATH words). `cot-caught` and `lot-palm` are defined but currently disabled (see `MERGER_ENABLED`
-in `src/tools/dialect_mergers.py`).
+BATH words). All three — `trap-bath`, `cot-caught`, `lot-palm` — are enabled; each stays
+individually gated by `MERGER_ENABLED` in `src/tools/dialect_mergers.py`.
 
 ### Regenerating Caches
 

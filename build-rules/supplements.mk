@@ -51,11 +51,11 @@ READLEX_JSON := external/readlex/readlex.json
 # silently trigger. Hence ALL prerequisites are order-only (after `|`): make
 # rebuilds -reliable.json only when it is MISSING (e.g. a fresh clone), not when
 # a prereq is merely newer. To re-baseline on purpose, use `regenerate-supplements`.
-data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json: | $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WORDNET_CACHE)
+data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json: | require-shave $(SRC_TOOLS)/generate_wordnet_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WORDNET_CACHE)
 	@echo "Generating WordNet supplement..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_wordnet_supplement.py
 
-data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json: | $(SRC_TOOLS)/generate_wiktionary_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WIKTIONARY_JSONL)
+data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json: | require-shave $(SRC_TOOLS)/generate_wiktionary_supplement.py $(SRC_TOOLS)/ipa_to_shavian.py $(WIKTIONARY_JSONL)
 	@echo "Generating Wiktionary supplement (this takes a few minutes)..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_wiktionary_supplement.py
 
@@ -69,7 +69,7 @@ data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.
 # so this is a deliberateness/cost guard, not an anti-drift one. To re-baseline on
 # purpose, delete it and re-make (or use regenerate-supplements below). See
 # generate_supplement_speculative.py.
-data/supplement-generated.json: | $(SRC_TOOLS)/generate_supplement_speculative.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/apply_frequency_data.py data/supplement-wordnet-speculative.json $(FREQUENCY_CORPUS)
+data/supplement-generated.json: | require-shave $(SRC_TOOLS)/generate_supplement_speculative.py $(SRC_TOOLS)/ipa_to_shavian.py $(SRC_TOOLS)/apply_frequency_data.py data/supplement-wordnet-speculative.json $(FREQUENCY_CORPUS)
 	@echo "Generating shave-spelled supplement from no-IPA WordNet words..."
 	$(RUN) python3 $(SRC_TOOLS)/generate_supplement_speculative.py
 
@@ -77,7 +77,7 @@ data/supplement-generated.json: | $(SRC_TOOLS)/generate_supplement_speculative.p
 # tool — minutes of work; only run when you intend to re-baseline. shave is
 # deterministic, so this is idempotent — it won't drift Shaw or orphan patches).
 .PHONY: regenerate-supplements
-regenerate-supplements:
+regenerate-supplements: require-shave
 	rm -f data/supplement-wordnet-reliable.json data/supplement-wordnet-speculative.json \
 	      data/supplement-wiktionary-reliable.json data/supplement-wiktionary-speculative.json \
 	      data/supplement-generated.json
@@ -89,11 +89,11 @@ regenerate-supplements:
 ###########################################
 
 .PHONY: rescore rescore-full
-rescore: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+rescore: require-shave data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring supplement confidence..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py
 
-rescore-full: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+rescore-full: require-shave data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring supplement confidence (full shave consultation)..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
 
@@ -362,7 +362,7 @@ review-files: $(SUPPLEMENT_DEPS) $(READLEX_PATH)
 supplements: $(READLEX_PATH) check-readlex
 	@echo "✓ All supplements and merged readlex up to date"
 
-supplements-from-source: data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
+supplements-from-source: require-shave data/supplement-wordnet-reliable.json data/supplement-wiktionary-reliable.json
 	@echo "Re-scoring with full shave..."
 	$(RUN) python3 $(SRC_TOOLS)/rescore_supplements.py --full-shave
 	@echo "Generating review files..."

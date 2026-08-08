@@ -67,6 +67,7 @@ help:
 	@echo "Supplement targets:"
 	@echo "  supplements         Check only: is the merged readlex current? (builds nothing)"
 	@echo "  check-readlex       Verify readlex.json publish isn't behind patches.jsonl"
+	@echo "  require-shave       Check the shave binary is on \$$PATH (see README.md)"
 	@echo "  regenerate-supplement-pool  Rebuild the COMBINED pool from the per-source"
 	@echo "                      files after a pipeline code change (combine->classify"
 	@echo "                      ->prune; minutes). Deterministic: won't orphan patches."

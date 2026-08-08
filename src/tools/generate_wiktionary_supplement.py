@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from ipa_to_shavian import (contains_shavian, ipa_to_shavian, normalize_ipa,
                             score_confidence, upgrade_confidence_shave)
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
+from shave_tool import require_shave
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 WIKTIONARY_JSONL = PROJECT_ROOT / "external" / "wiktionary" / "kaikki.org-dictionary-English.jsonl"
@@ -389,6 +390,8 @@ def process_entry(entry: dict, reliable: dict, speculative: dict, stats: Counter
 
 
 def main():
+    require_shave()
+
     if not WIKTIONARY_JSONL.exists():
         print(f"ERROR: Input file not found: {WIKTIONARY_JSONL}", file=sys.stderr)
         sys.exit(1)

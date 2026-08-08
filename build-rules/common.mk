@@ -32,6 +32,27 @@ define replace-dir-tree
 	done
 endef
 
+# The external Roman->Shavian transliterator (github.com/Shavian-info/shave),
+# invoked as a bare binary by seven call sites. Four of them CATCH
+# FileNotFoundError and carry on with an empty result, so a missing shave does
+# not stop the build — it silently produces a pool with every shave
+# consultation dropped. That is why require-shave exists and why it is a
+# prerequisite of every target whose recipe can reach a shave call site: the
+# only reliable moment to detect the absence is before the build starts.
+SHAVE ?= shave
+
+.PHONY: require-shave
+require-shave:
+	@command -v $(SHAVE) >/dev/null 2>&1 || { \
+	  echo "$(SHAVE): not found on \$$PATH." >&2; \
+	  echo "  The supplement generators transliterate Roman to Shavian by" >&2; \
+	  echo "  shelling out to it, and most of them treat its absence as an" >&2; \
+	  echo "  empty result — the build would SUCCEED and produce an" >&2; \
+	  echo "  under-transliterated pool." >&2; \
+	  echo "  Build and install it from https://github.com/Shavian-info/shave," >&2; \
+	  echo "  or set SHAVE=/path/to/shave. See README.md, 'The bootstrap cycle'." >&2; \
+	  exit 1; }
+
 # Version from root
 VERSION := $(shell cat current-version | tr -d '\n')
 export VERSION

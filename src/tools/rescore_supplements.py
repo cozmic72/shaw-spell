@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from ipa_to_shavian import (contains_shavian, score_confidence,
                             upgrade_confidence_shave)
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
+from shave_tool import require_shave
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
@@ -249,6 +250,8 @@ def main():
     parser.add_argument("--britfone-only", action="store_true",
                         help="Only re-score Britfone (fast)")
     args = parser.parse_args()
+
+    require_shave()
 
     try:
         ml_model = load_model()

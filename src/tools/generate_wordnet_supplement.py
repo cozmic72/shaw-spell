@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from ipa_to_shavian import (contains_shavian, ipa_to_shavian, normalize_ipa,
                             score_confidence, upgrade_confidence_shave)
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
+from shave_tool import require_shave
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_DIR = ROOT / "external" / "english-wordnet" / "src" / "yaml"
@@ -181,6 +182,8 @@ def _compute_ml_shaw(word: str, ipa: str, have_ml: bool, ml_model) -> str | None
 
 
 def main():
+    require_shave()
+
     yaml_files = sorted(glob(str(YAML_DIR / "entries-*.yaml")))
     if not yaml_files:
         print(f"ERROR: No YAML files found in {YAML_DIR}", file=sys.stderr)

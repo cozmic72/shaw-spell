@@ -29,6 +29,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 
 from ipa_to_shavian import ipa_to_shavian, normalize_ipa, score_confidence, upgrade_confidence_shave
 from ml_ipa_normalizer import ml_normalize_ipa, load_model, strip_stress
+from shave_tool import require_shave
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 BRITFONE_CSV = PROJECT_ROOT / "external" / "britfone" / "britfone.main.3.0.1.csv"
@@ -105,6 +106,8 @@ def _compute_ml_shaw(word: str, ipa: str, have_ml: bool, ml_model) -> str | None
 
 
 def main():
+    require_shave()
+
     if not BRITFONE_CSV.exists():
         print(f"Error: Britfone CSV not found: {BRITFONE_CSV}", file=sys.stderr)
         sys.exit(1)

@@ -72,6 +72,27 @@ only `content/2018/en/en_full.txt`. `make setup` checks it out with a
 sparse-checkout so the tree stays ~30 MB instead of 1.4 GB; the other submodules
 init normally. The target is re-runnable and safe to run on an existing tree.
 
+### Version
+
+The version is a single hand-maintained line in `current-version` at the repository root. It is
+read into the `VERSION` Make variable by `build-rules/common.mk`, exported, and reaches three
+kinds of output: the DMG filename, the `$VERSION$` placeholders that `src/site/deploy_site.py`
+substitutes when staging the web frontend, and the dictionary bundles built by
+`build-rules/dictionaries.mk`. The `Info.plist.template` files under `src/installer/`,
+`src/server/` and `src/uninstaller/` carry the same placeholder.
+
+⚠ **Bumping `current-version` regenerates nothing.** It is not a prerequisite of any rule that
+consumes it — verified against Make's own expanded rule database, in which no target lists it. Make
+tracks file prerequisites, not variable values, and `VERSION` is a variable assigned at parse time
+by `$(shell cat current-version)`. So editing the file changes what the *next* rebuild would stamp,
+while leaving every already-built artifact holding the version it was built with, until something
+unrelated forces it to rebuild. The site rule is the clearest case: it lists an exhaustive
+prerequisite set, down to the `Makefile` itself, and still not `current-version`.
+
+**After a version bump, force the affected outputs to rebuild rather than trusting the graph.**
+A release built without doing so ships artifacts stamped with the previous version, and nothing
+in the build reports it.
+
 ## Supplement Data Pipeline
 
 Shaw-Spell supplements the core ReadLex dictionary with pronunciation and definition data from several open-source datasources. See [`docs/pipeline-architecture.md`](docs/pipeline-architecture.md) for the full pipeline.

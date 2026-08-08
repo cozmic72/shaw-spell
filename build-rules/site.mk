@@ -119,10 +119,10 @@ SERVICE_USER ?= www-data
 
 install-site: $(VK_SITE_STAMP)
 	@set -eu; \
-	[ -f .site-config ] || { \
-	  echo "install-site: .site-config not found — staging bakes FONT_URL into the pages," >&2; \
-	  echo "  and the /fonts default is wrong for production. Create it first:" >&2; \
-	  echo "      cp .site-config.example .site-config   # then set FONT_URL" >&2; \
+	[ "$(FONT_URL)" != "/fonts" ] || { \
+	  echo "install-site: FONT_URL is still the local default — staging bakes it into" >&2; \
+	  echo "  the pages, and /fonts is wrong for production. Supply it here:" >&2; \
+	  echo "      make install-site FONT_URL=https://joro.io/fonts" >&2; \
 	  exit 1; }; \
 	echo "==> Advancing the data submodule to the pinned commit"; \
 	git submodule update --init --recursive data; \

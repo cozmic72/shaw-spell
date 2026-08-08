@@ -110,13 +110,12 @@ SIGN_BUNDLE := $(SRC_TOOLS)/sign-bundle.sh
 BUILD_DMG_TOOL := $(SRC_TOOLS)/build-dmg.sh
 BUILD_DICT_BUNDLE := $(SRC_TOOLS)/build-dictionary-bundle.sh
 
-# Font URL for web frontend (can be overridden for CDN hosting)
+# Baked into the pages' @font-face at build time. The local default is what
+# makes a fresh checkout serve its own fonts; production supplies the shared
+# origin on the deploy invocation:
+#   make install-site FONT_URL=https://joro.io/fonts
 FONT_URL ?= /fonts
 export FONT_URL
-
-# Load site deployment configuration if it exists (sets FONT_URL for the
-# site / install-site build; falls back to the /fonts default otherwise).
--include .site-config
 
 # Load signing configuration if it exists
 -include .signing-config

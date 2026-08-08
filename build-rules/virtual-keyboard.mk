@@ -28,12 +28,8 @@ $(VK_SITE_STAMP) $(VK_EDITOR_STAMP): $(VK_SRC)/virtual-keyboard.js
 		echo "Error: $(VK_SRC) not found. Run 'git submodule update --init external/virtual-keyboard' first."; \
 		exit 1; \
 	}
-	@mkdir -p $(@D)
-	@# Glob, not `/.`: the source is a submodule ROOT, so copying dotfiles would
-	@# publish its .git gitlink and .gitignore into the docroot.
-	cp -R $(VK_SRC)/* $(@D)/
+	$(VK_SRC)/tools/stage.sh --font-url $(FONT_URL) $(@D)
 	@touch $@
-	@echo "Virtual keyboard assets copied to $(@D)/"
 
 $(VK_EDITOR_WRAPPER): $(VK_WRAPPER_SRC)
 	@ln -sfn $(abspath $<) $@

@@ -10,11 +10,55 @@ Usage:
 
 import sys
 import os
+import re
 import shutil
 from pathlib import Path
 
 
-def deploy(version, font_url='fonts', output_dir='build/site'):
+def serves_own_fonts(font_url):
+    """Whether the build must copy fonts into its own docroot.
+
+    True when FONT_URL is a path this docroot serves, false when it names a
+    different origin. Raises on a relative path: '../fonts' and 'fonts/' point
+    outside or below the docroot root, and guessing which produces a build whose
+    pages render in a fallback face with nothing logged.
+    """
+    if font_url.startswith(('http://', 'https://', '//')):
+        return False
+    if font_url.startswith('/'):
+        return True
+    raise ValueError(
+        f"FONT_URL must be absolute — an origin or a docroot-rooted path: {font_url!r}. "
+        "A relative path resolves against each page's own directory, so it silently "
+        "breaks on pages served from a subdirectory."
+    )
+
+
+def find_unsubstituted_tokens(output_path):
+    """Locate `{{TOKEN}}` placeholders left in the staged tree.
+
+    Returns (path, token) pairs. Only text formats a browser or CGI consumes are
+    scanned; a token surviving into one of those is a build defect, not a
+    cosmetic blemish.
+    """
+    token_pattern = re.compile(r'\{\{[A-Z0-9_]+\}\}')
+    scanned_suffixes = {'.html', '.css', '.js', '.cgi', '.py', '.json'}
+    found = []
+
+    for path in output_path.rglob('*'):
+        if not path.is_file() or path.suffix not in scanned_suffixes:
+            continue
+        try:
+            content = path.read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            continue
+        for match in token_pattern.findall(content):
+            found.append((path, match))
+
+    return found
+
+
+def deploy(version, font_url='/fonts', output_dir='build/site'):
     """Deploy site files with variable interpolation to output directory."""
     project_root = Path(__file__).parent.parent.parent
     site_src = project_root / 'src' / 'site'
@@ -132,16 +176,19 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
                 stats['other'] += 1
 
     print()
-    print("Copying fonts...")
-    fonts_output = output_path / 'fonts'
-    fonts_output.mkdir(exist_ok=True)
+    if serves_own_fonts(font_url):
+        print("Copying fonts...")
+        fonts_output = output_path / 'fonts'
+        fonts_output.mkdir(exist_ok=True)
 
-    for pattern in ('*.otf', '*.ttf', '*.woff', '*.woff2'):
-        for font_file in fonts_src.glob(pattern):
-            dest = fonts_output / font_file.name
-            shutil.copy2(font_file, dest)
-            print(f"  ✓ fonts/{font_file.name}")
-            stats['other'] += 1
+        for pattern in ('*.otf', '*.ttf', '*.woff', '*.woff2'):
+            for font_file in fonts_src.glob(pattern):
+                dest = fonts_output / font_file.name
+                shutil.copy2(font_file, dest)
+                print(f"  ✓ fonts/{font_file.name}")
+                stats['other'] += 1
+    else:
+        print(f"Not copying fonts: the pages fetch them from {font_url}")
 
     # Copy dictionary JSONs. These are read by the suggest daemon, not by
     # the CGI — ops installs this directory at /opt/shaw-spell/site-data/
@@ -192,6 +239,17 @@ def deploy(version, font_url='fonts', output_dir='build/site'):
             print(f"  ✓ hunspell/{hunspell_file.name}")
             stats['other'] += 1
 
+    leftover = find_unsubstituted_tokens(output_path)
+    if leftover:
+        print()
+        print("Error: template tokens survived into the staged tree:", file=sys.stderr)
+        for path, token in leftover:
+            print(f"  {path.relative_to(output_path)}: {token}", file=sys.stderr)
+        print("A token in served output is not a working value — the browser drops the",
+              file=sys.stderr)
+        print("rule and the page renders wrongly with nothing logged.", file=sys.stderr)
+        return 1
+
     print()
     print(f"Deployed {stats['html']} HTML files, {stats['css']} CSS files, "
           f"{stats['js']} JS files, {stats['cgi']} CGI scripts, {stats['other']} other files")
@@ -230,7 +288,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Deploy Shaw Dict web frontend with version replacement')
     parser.add_argument('-v', '--version', help='Version number (default: read from current-version file)')
-    parser.add_argument('-f', '--font-url', default='fonts', help='Font URL/directory (default: fonts)')
+    parser.add_argument('-f', '--font-url', default='/fonts', help='Font URL/directory (default: /fonts)')
     parser.add_argument('-o', '--output-dir', default='build/site', help='Output directory (default: build/site)')
 
     args = parser.parse_args()

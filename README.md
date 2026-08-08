@@ -41,6 +41,20 @@ pip3 install -r requirements.txt
 
 You'll also need the [Apple Dictionary Development Kit](https://github.com/SebastianSzturo/apple-dictionary-dev-kit) installed at `/Library/Developer/Dictionary Development Kit`.
 
+#### The bootstrap cycle
+
+**This project needs a `shave` binary that must already exist, because `shave` builds its own dictionaries from what this project publishes.**
+
+Seven call sites shell out to `shave` — six supplement generators under `src/tools/`, plus `src/dictionaries/build_definition_caches.py`. `shave`, in turn, regenerates its dictionaries from `readlex.json`, which it takes from the `shaw-spell-data` repository that this project's editor publishes into.
+
+**A fresh clone of both repositories cannot bootstrap either one.** The cycle is broken by time, not by architecture: whichever artefact already happens to be on the machine seeds the next build. That works on a machine with a history and nowhere else.
+
+Get a `shave` binary first, by any means — it need not be current, only present. This is survivable because the expensive outputs are committed checkpoints: a plain build consults `shave` not at all, and only a deliberate regeneration (`make rescore-full`, `make transliterations`, `make supplements-from-source`) invokes it.
+
+⚠ **A missing `shave` does not reliably fail loudly.** Four of the seven call sites — in `generate_britfone_supplement.py`, `generate_wordnet_supplement.py`, `generate_wiktionary_supplement.py` and `rescore_supplements.py` — catch `FileNotFoundError` alongside a timeout and return an empty result. That is the right response to a timeout and the wrong one to an absent binary: every batch takes that branch, the generator warns on stderr but exits 0, and it writes a pool with every `shave` consultation dropped, in a file nothing distinguishes from a good one. Confirm `shave` is on `$PATH` before regenerating anything.
+
+The cycle is stated from `shave`'s side in that repository's README.
+
 ### Build
 
 ```bash
@@ -81,6 +95,10 @@ the sources once and writes `data/supplement-combined-filtered.json`. The shippi
 single command `apply_patches.py`, which runs the corpus frequency pass over the
 pre-patch record set (frequency is upstream processing), then applies the patch store
 (the editorial last word), then writes the publish shape.
+
+`data/readlex.json` is not a private build artefact. It is published into the `shaw-spell-data` repository and taken from there by `shave`, which regenerates its own `shavian.csv` from it — so a field dropped from the publish shape can break a build outside this repository. `src/tools/basis.py` `PUBLISH_FIELDS` is the whole of what is published.
+
+It is also a different dataset from the upstream ReadLex under `external/readlex/`, despite sharing the filename. The export adds `lemma` and `mergers` over upstream's `Latn`/`Shaw`/`pos`/`ipa`/`freq`/`var`, and `shave` reads the enriched shape. Upstream is not a drop-in substitute for it — `shaw-type`, `pangram` and `shcrabble` vendor upstream directly and consume something else.
 
 ```bash
 # Regenerate the supplement pool, re-score, apply editorial patches, build review files

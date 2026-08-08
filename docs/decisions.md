@@ -227,6 +227,20 @@ Stages contracted as 1:1 (reclassify, generate) assert count preservation (fail-
 future edit can't silently build a wrong basis. Drop-stages are unguarded by design.
 → orchestrator in `build_supplement.py` (commit a257dbb).
 
+**`readlex.json`'s publish shape is an external contract** — PROPOSED (an agent wrote this
+entry from the code; the decision itself is live).
+`data/readlex.json` is published into `shaw-spell-data`, from which `shave` takes it and
+regenerates its own `shavian.csv` — so `PUBLISH_FIELDS` is a surface outside this repository, not
+an internal shape. Dropping a published field breaks a build nothing here tests.
+⚠ Not to be confused with `external/readlex/readlex.json`, the upstream basis — **same filename,
+different dataset.** The export adds `lemma` and `mergers` over upstream, and `shave` reads the
+enriched shape. `shaw-type`, `pangram` and `shcrabble` vendor upstream directly and consume
+something else, so "ReadLex" names two datasets across the family.
+⚠ This is the far end of the **bootstrap cycle**: producing this file runs `shave`, and building
+`shave`'s dictionaries needs this file. Nobody decided that — it emerged — so it is stated in
+[`../README.md`](../README.md) rather than recorded as a decision here.
+→ [`src/tools/basis.py`](../src/tools/basis.py) `PUBLISH_FIELDS`, `published_entry`.
+
 ---
 
 ## Definitions

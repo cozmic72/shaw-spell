@@ -1,8 +1,17 @@
-// Lean wrapper around the virtual-keyboard submodule's window.VirtualKeyboard.
+// Lean wrapper around the virtual-keyboard submodule's VirtualKeyboard.
 // Assets are served at /virtual-keyboard/ so the widget resolves its own
-// html/layout/png relative to its <script src> — no urlResolver needed.
+// html/layout/png relative to import.meta.url — no urlResolver needed.
 // Exposes window.ShawSpellKeyboard = { toggle, openSettings } for buttons.
 // Cmd+K (Mac) / Ctrl+K toggles; openSettings opens the layout picker.
+//
+// The import pulls in custom-layouts.js and layout-editor.js as well: the
+// library is one module graph, so the load order a host used to hand-write
+// is now the browser's job.
+//
+// Root-relative, not './': this one file is served at /js/ by the site and at
+// the docroot root by the editor, and both mount the library at
+// /virtual-keyboard/.
+import { VirtualKeyboard } from '/virtual-keyboard/virtual-keyboard.js';
 
 (function () {
   'use strict';
@@ -27,11 +36,8 @@
   }
 
   function create() {
-    if (!window.VirtualKeyboard) {
-      throw new Error('ShawSpellKeyboard: window.VirtualKeyboard missing — load /virtual-keyboard/virtual-keyboard.js first');
-    }
-    if (!window.VirtualKeyboard._internal ||
-        typeof window.VirtualKeyboard._internal.openSettings !== 'function') {
+    if (!VirtualKeyboard._internal ||
+        typeof VirtualKeyboard._internal.openSettings !== 'function') {
       throw new Error('ShawSpellKeyboard: VirtualKeyboard._internal.openSettings missing — virtual-keyboard moved it; re-point openSettings');
     }
 
@@ -44,12 +50,12 @@
 
     // init() renders blank keys until setLayout() registers labels + the
     // interception map — chain it so both arrive together.
-    const ready = window.VirtualKeyboard.init(host, '', null, {
+    const ready = VirtualKeyboard.init(host, '', null, {
       autoShowOnFocus: false,
       autoLigatures: true,
     }).then(function () {
-      const st = window.VirtualKeyboard.getState && window.VirtualKeyboard.getState();
-      return window.VirtualKeyboard.setLayout((st && st.layout) || 'imperial');
+      const st = VirtualKeyboard.getState && VirtualKeyboard.getState();
+      return VirtualKeyboard.setLayout((st && st.layout) || 'imperial');
     });
 
     // Capture phase + stopImmediatePropagation shadows virtual-keyboard's own
@@ -58,14 +64,14 @@
       if (!isShortcutMatch(e)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
-      window.VirtualKeyboard.toggle();
+      VirtualKeyboard.toggle();
     }, true);
 
     let attachReady = false;
     function attach(el) {
       if (el._ssvkAttached) return;
       el._ssvkAttached = true;
-      window.VirtualKeyboard.enableInterception(el);
+      VirtualKeyboard.enableInterception(el);
     }
     function scan(root) {
       const list = root.querySelectorAll ? root.querySelectorAll('input, textarea') : [];
@@ -101,12 +107,12 @@
     }
 
     return {
-      toggle: function () { window.VirtualKeyboard.toggle(); },
+      toggle: function () { VirtualKeyboard.toggle(); },
       openSettings: function () {
         // The self-contained settings dialog lives on _internal; the public
         // mountSettings needs a host container we don't have.
         return ready.then(function () {
-          return window.VirtualKeyboard._internal.openSettings();
+          return VirtualKeyboard._internal.openSettings();
         });
       },
       ready: ready,

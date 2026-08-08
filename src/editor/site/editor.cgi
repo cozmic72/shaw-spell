@@ -543,9 +543,7 @@ PAGE = """<!DOCTYPE html>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="editor.js?v={js_v}"></script>
-    <script src="virtual-keyboard/virtual-keyboard.js"></script>
-    <script src="virtual-keyboard/custom-layouts.js"></script>
-    <script src="virtual-keyboard-modal.js"></script>
+    <script type="module" src="virtual-keyboard-modal.js"></script>
 </body>
 </html>"""
 

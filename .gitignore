@@ -3,8 +3,11 @@ build/
 
 # Virtual keyboard assets — generated from the external/virtual-keyboard
 # submodule (source of truth) into each docroot by the `virtual-keyboard` target.
+# The wrapper is a symlink the same target stages into the editor's docroot root;
+# src/site/js/virtual-keyboard-modal.js is the tracked original.
 src/site/virtual-keyboard/
 src/editor/site/virtual-keyboard/
+src/editor/site/virtual-keyboard-modal.js
 data/wordnet-comprehensive.json
 data/definitions-latin-us.json
 data/definitions-latin-gb.json

@@ -260,18 +260,13 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
         }};
     </script>
     <script src="js/app.js"></script>
-    <script src="virtual-keyboard/virtual-keyboard.js"></script>
-    <script src="virtual-keyboard/custom-layouts.js"></script>
-    <script src="js/virtual-keyboard-modal.js"></script>
-    <script>
-        // Per-platform shortcut in the burger item. Fail-soft on the label only:
-        // if the keyboard lib is absent, leave the default Ctrl+K text.
-        (function () {{
-            var el = document.getElementById('vk-shortcut');
-            if (el && window.ShawSpellKeyboard && window.ShawSpellKeyboard.shortcutLabel) {{
-                el.textContent = window.ShawSpellKeyboard.shortcutLabel;
-            }}
-        }})();
+    <script type="module">
+        // Importing the wrapper rather than giving it its own tag is what
+        // orders these two: the label needs window.ShawSpellKeyboard, and a
+        // module body runs only after everything it imports has.
+        import './js/virtual-keyboard-modal.js';
+        document.getElementById('vk-shortcut').textContent =
+            window.ShawSpellKeyboard.shortcutLabel;
     </script>
 </body>
 </html>'''

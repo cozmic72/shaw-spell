@@ -123,13 +123,31 @@ WWW_ROOT_SITE ?= /var/www/shaw-spell
 OPT_ROOT ?= /opt/shaw-spell
 SERVICE_USER ?= www-data
 
+# deploy_site.py stages fonts/ only when FONT_URL names this docroot; a remote
+# origin leaves no fonts/ to check or install. All three uses of SITE_WEB_DIRS
+# below must ask it the same question, or a remote-origin deploy hard-fails on a
+# directory the staging step correctly declined to write. `:=` so the answer
+# costs one fork, not one per expansion.
+#
+# Only 0 and 3 are answers. Any other status is the tool failing to answer, and
+# 1 in particular is Python's status for an uncaught exception — which is why
+# the "remote origin" answer is 3 and not 1. Reading 1 as an answer would let a
+# broken interpreter ship a site with no fonts/.
+SITE_FONTS_VERDICT := $(shell $(SRC_SITE)/deploy_site.py --serves-own-fonts $(FONT_URL) >/dev/null 2>&1; echo $$?)
+ifeq ($(SITE_FONTS_VERDICT),0)
+SITE_WEB_DIRS := css js templates virtual-keyboard fonts
+else ifeq ($(SITE_FONTS_VERDICT),3)
+SITE_WEB_DIRS := css js templates virtual-keyboard
+else ifeq ($(SITE_FONTS_VERDICT),2)
+$(error FONT_URL is invalid: $(shell $(SRC_SITE)/deploy_site.py --serves-own-fonts $(FONT_URL) 2>&1 >/dev/null))
+else
+$(error deploy_site.py --serves-own-fonts failed with exit status \
+$(SITE_FONTS_VERDICT) and gave no font verdict. Run it directly to see why: \
+$(SRC_SITE)/deploy_site.py --serves-own-fonts $(FONT_URL))
+endif
+
 install-site: $(VK_SITE_STAMP)
 	@set -eu; \
-	[ "$(FONT_URL)" != "/fonts" ] || { \
-	  echo "install-site: FONT_URL is still the local default — staging bakes it into" >&2; \
-	  echo "  the pages, and /fonts is wrong for production. Supply it here:" >&2; \
-	  echo "      make install-site FONT_URL=https://joro.io/fonts" >&2; \
-	  exit 1; }; \
 	echo "==> Advancing the data submodule to the pinned commit"; \
 	git submodule update --init --recursive data; \
 	for f in $(SITE_DATA_FILES) $(DATA_HUNSPELL_FILES); do \
@@ -142,10 +160,10 @@ install-site: $(VK_SITE_STAMP)
 	    exit 1; }; \
 	done; \
 	echo "==> Staging site from src/ + prebuilt data/ -> $(BUILD_SITE)"; \
-	$(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL); \
+	$(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL) --installing; \
 	HERE="$(BUILD_SITE)"; \
 	echo "==> Preflight: verifying staged site tree in $$HERE"; \
-	for d in css js fonts templates virtual-keyboard site-daemon site-data hunspell; do \
+	for d in $(SITE_WEB_DIRS) site-daemon site-data hunspell; do \
 	  [ -d "$$HERE/$$d" ] || { echo "install-site: expected dir missing from staged tree: $$d" >&2; exit 1; }; \
 	done; \
 	for f in index.cgi card.cgi sitecommon.py .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
@@ -161,7 +179,7 @@ install-site: $(VK_SITE_STAMP)
 	sudo install -m 755 "$$HERE/card.cgi" "$(WWW_ROOT_SITE)/card.cgi"; \
 	sudo install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
 	[ -f "$$HERE/.version" ] && sudo install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
-	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),css js fonts templates virtual-keyboard); \
+	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),$(SITE_WEB_DIRS)); \
 	echo "==> Daemon + data -> $(OPT_ROOT)"; \
 	sudo mkdir -p "$(OPT_ROOT)"; \
 	$(call replace-dir-tree,$$HERE,$(OPT_ROOT),site-daemon site-data hunspell); \
@@ -195,7 +213,7 @@ install-site: $(VK_SITE_STAMP)
 	echo; \
 	echo "============================================================"; \
 	echo "Installed:"; \
-	echo "  web tier   -> $(WWW_ROOT_SITE) (index.cgi, card.cgi, css/, js/, fonts/, templates/, virtual-keyboard/)"; \
+	echo "  web tier   -> $(WWW_ROOT_SITE) (index.cgi, card.cgi, $(patsubst %,%/,$(SITE_WEB_DIRS)))"; \
 	echo "  daemon     -> $(OPT_ROOT)/site-daemon + /etc/systemd/system/shaw-spell-suggestd.service"; \
 	echo "  data       -> $(OPT_ROOT)/{site-data,hunspell}"; \
 	echo "  (the editor's $(WWW_ROOT_SITE)/editor and $(OPT_ROOT)/{src,external,data} are untouched)"; \

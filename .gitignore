@@ -63,6 +63,5 @@ data/supplement-wiktionary-filtered.json
 *.swo
 *~
 
-# No longer read by the build (FONT_URL is supplied on the install-site
-# invocation). Kept ignored so a leftover local copy cannot be committed.
+# Site deployment configuration (per-machine font origin)
 .site-config

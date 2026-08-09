@@ -58,8 +58,13 @@ def find_unsubstituted_tokens(output_path):
     return found
 
 
-def deploy(version, font_url='/fonts', output_dir='build/site'):
-    """Deploy site files with variable interpolation to output directory."""
+def deploy(version, font_url='/fonts', output_dir='build/site', installing=False):
+    """Deploy site files with variable interpolation to output directory.
+
+    `installing` says an install-site run is driving this and will put the tree
+    into place itself, so the closing advice must not tell the reader to go and
+    run the thing they are already inside.
+    """
     project_root = Path(__file__).parent.parent.parent
     site_src = project_root / 'src' / 'site'
     site_daemon_src = project_root / 'src' / 'site-daemon'
@@ -265,8 +270,12 @@ def deploy(version, font_url='/fonts', output_dir='build/site'):
     print(f"To test locally:")
     print(f"  cd {output_path} && python3 -m http.server --cgi 8000")
     print()
-    print("To deploy on the server: run  make install-site  (copies this staged")
-    print("  tree into place and enables the suggestd daemon).")
+    if installing:
+        print("install-site continues from here: it copies this staged tree into")
+        print("  place and enables the suggestd daemon.")
+    else:
+        print("To deploy on the server: run  make install-site  there (it restages")
+        print("  from src/ + data/, so this local tree is not what ships).")
 
     return 0
 
@@ -290,12 +299,29 @@ def main():
     parser.add_argument('-v', '--version', help='Version number (default: read from current-version file)')
     parser.add_argument('-f', '--font-url', default='/fonts', help='Font URL/directory (default: /fonts)')
     parser.add_argument('-o', '--output-dir', default='build/site', help='Output directory (default: build/site)')
+    parser.add_argument('--installing', action='store_true',
+                        help='An install-site run is driving this and installs the staged tree itself')
+    parser.add_argument('--serves-own-fonts', metavar='FONT_URL',
+                        help='Exit 0 if a build with this FONT_URL stages its own fonts/, '
+                             '3 if the pages fetch them from another origin, 2 if the URL is '
+                             'invalid. Stages nothing; lets the build rules ask the same '
+                             'question the copy step asks.')
 
     args = parser.parse_args()
 
+    if args.serves_own_fonts is not None:
+        try:
+            # Not 1: Python exits 1 on any uncaught exception, so a broken
+            # interpreter would be indistinguishable from this answer and the
+            # build would ship a site with no fonts/.
+            return 0 if serves_own_fonts(args.serves_own_fonts) else 3
+        except ValueError as invalid_url:
+            print(invalid_url, file=sys.stderr)
+            return 2
+
     version = args.version or read_version_file()
 
-    return deploy(version, args.font_url, args.output_dir)
+    return deploy(version, args.font_url, args.output_dir, args.installing)
 
 
 if __name__ == '__main__':

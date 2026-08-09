@@ -131,12 +131,39 @@ SIGN_BUNDLE := $(SRC_TOOLS)/sign-bundle.sh
 BUILD_DMG_TOOL := $(SRC_TOOLS)/build-dmg.sh
 BUILD_DICT_BUNDLE := $(SRC_TOOLS)/build-dictionary-bundle.sh
 
-# Baked into the pages' @font-face at build time. The local default is what
-# makes a fresh checkout serve its own fonts; production supplies the shared
-# origin on the deploy invocation:
-#   make install-site FONT_URL=https://joro.io/fonts
-FONT_URL ?= /fonts
-export FONT_URL
-
-# Load signing configuration if it exists
+# Per-machine, untracked, never committed. See the .example files for the keys.
 -include .signing-config
+-include .site-config
+
+# .site-config's font URL is for deploys only; every other build serves its own
+# fonts from /fonts. `:=` captures the value now, before the pin below discards
+# it — `?=` would defer the reference and read back /fonts.
+ifeq ($(origin FONT_URL),file)
+ifeq ($(origin DEPLOY_FONT_URL),undefined)
+DEPLOY_FONT_URL := $(FONT_URL)
+endif
+endif
+
+# `-include` has already run, so `?=` would let .site-config's value through as
+# the local default. Only the command line outranks it.
+ifneq ($(origin FONT_URL),command line)
+FONT_URL := /fonts
+endif
+
+# Staging runs as a prerequisite of install-site and bakes the URL in, so a
+# recipe guard fires too late. Validate at parse time.
+ifneq ($(filter install-site,$(MAKECMDGOALS)),)
+ifeq ($(origin FONT_URL),command line)
+DEPLOY_FONT_URL := $(FONT_URL)
+endif
+ifeq ($(strip $(DEPLOY_FONT_URL)),)
+$(error install-site: no deploy font URL. Set FONT_URL in .site-config, or pass \
+FONT_URL=<url> on this command line. See .site-config.example)
+endif
+ifeq ($(DEPLOY_FONT_URL),/fonts)
+$(error install-site: the deploy font URL is /fonts, the local default. Staging \
+bakes it into the pages and the server has no /fonts to serve. Set the shared \
+origin in .site-config — see .site-config.example)
+endif
+FONT_URL := $(DEPLOY_FONT_URL)
+endif

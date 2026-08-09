@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
-Test server for Shaw-Spell Dictionary web frontend.
+Local server for the Shaw-Spell web frontend — the only one that works.
 
-Also spawns the suggestd daemon in the background, pointed at the built
-site's data and hunspell dirs. The CGI is configured via environment to
-use a socket under the current build tree — no /opt/shaw-spell/ or root
-needed for local testing.
+Despite the "test" in its name this is not an optional convenience, and
+`python3 -m http.server --cgi` is NOT an alternative. Stock http.server
+executes CGI only for scripts under /cgi-bin/; this site's index.cgi sits
+at the docroot ROOT, so http.server serves it as a plain file and every
+page 404s or returns the unexecuted template. RootCGIHTTPRequestHandler
+below exists to override exactly that.
+
+It also spawns the suggestd daemon the CGI talks to, pointed at the built
+site's data and hunspell dirs, with the socket under the current build
+tree — so no /opt/shaw-spell/ and no root are needed.
 
 Usage:
     ./src/tools/test_site.py [port]

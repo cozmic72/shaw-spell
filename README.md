@@ -74,6 +74,27 @@ only `content/2018/en/en_full.txt`. `make setup` checks it out with a
 sparse-checkout so the tree stays ~30 MB instead of 1.4 GB; the other submodules
 init normally. The target is re-runnable and safe to run on an existing tree.
 
+### Serving the web frontend
+
+```bash
+make site
+src/tools/test_site.py 8020
+```
+
+**`test_site.py` is the only way to serve this site locally.** The name says "test"
+and it is not optional: `index.cgi` sits at the docroot *root*, and Python's stock
+`http.server` executes CGI only for scripts under `/cgi-bin/` — **even when given
+`--cgi`**. So `python3 -m http.server --cgi` serves `index.cgi` as a plain file, and
+every page either 404s or returns the raw unexecuted template. It looks like it is
+working, which is what makes it costly.
+
+`test_site.py` subclasses `CGIHTTPRequestHandler` to run CGI at the docroot root, and
+starts the `suggestd` daemon the CGI talks to, with its socket under the build tree —
+so no `/opt/shaw-spell/` and no root privileges are needed.
+
+If a page renders but suggestions or lookups do nothing, check what is serving it
+before looking anywhere else.
+
 ### Version
 
 The version is a single hand-maintained line in `current-version` at the repository root. It is

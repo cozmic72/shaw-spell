@@ -212,7 +212,16 @@ install-site: $(VK_SITE_STAMP)
 site: $(BUILD_SITE)/index.cgi
 	@echo "Web dictionary frontend built successfully!"
 	@echo "Location: $(BUILD_SITE)/"
-	@echo "To test: src/tools/test_site.py 8000"
+	@echo ""
+	@echo "Serve it with:  src/tools/test_site.py <port>"
+	@echo ""
+	@echo "That script is the ONLY way to serve this site locally. It is not"
+	@echo "merely a convenience: index.cgi sits at the docroot ROOT, and stock"
+	@echo "http.server executes CGI only under /cgi-bin/ — even with --cgi. So"
+	@echo "'python3 -m http.server --cgi' serves index.cgi as a FILE and every"
+	@echo "request 404s or returns the unexecuted template. test_site.py"
+	@echo "subclasses CGIHTTPRequestHandler to fix exactly that, and starts the"
+	@echo "suggestd daemon the CGI needs."
 
 # data/site-data + data/hunspell are committed artifacts, not build output —
 # clean never touches them.

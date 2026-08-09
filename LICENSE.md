@@ -131,6 +131,35 @@ Full license texts:
 
 ---
 
+### 4. Bundled fonts
+
+`src/fonts/` vendors the faces the site and the virtual keyboard load. The
+keyboard needs the variable cut `InterAlia-VF.otf` specifically: its CSS asks
+for that filename, and any other cut leaves Shavian letters carrying a
+variation selector rendering as their bare base letter.
+
+**Inter Alia** (`InterAlia-VF.otf`, `InterAlia-Regular/-Medium/-Bold/-Italic/-BoldItalic.otf`)
+from https://github.com/Shavian-info/InterAlia
+
+**License**: SIL Open Font License, Version 1.1
+**Copyright**: (c) 2016-2020 The Inter Project Authors ("Inter" is a trademark
+of Rasmus Andersson, https://github.com/rsms/inter); (c) 2022 Evan from
+Shavian.info (https://www.shavian.info), with Reserved Font Name Inter Alia.
+
+**Ormin** (`Ormin-Regular.otf`) from http://www.shavian.info/
+
+**License**: SIL Open Font License, Version 1.1
+**Copyright**: (c) 2020, Ed Greville (www.shavian.info), with Reserved Font
+Name Ormin.
+
+The OFL permits bundling and redistribution with any software provided each
+copy carries the copyright notice and the license, and provided the fonts are
+not sold by themselves. Modified versions may not use the Reserved Font Names.
+
+Full license text: http://scripts.sil.org/OFL
+
+---
+
 ## Summary
 
 | Component | License | Usage |
@@ -140,6 +169,7 @@ Full license texts:
 | Open English WordNet | CC BY 4.0 | Dictionary definitions and spell-checking word lists |
 | Princeton WordNet 3.0 | WordNet License | Source for Open English WordNet |
 | Hunspell | GPL-2/LGPL-2.1/MPL-1.1 | Spell checking library (used under LGPL-2.1) |
+| Inter Alia, Ormin | SIL OFL 1.1 | Shavian fonts served to the site and keyboard |
 
 ---
 
@@ -152,7 +182,9 @@ When redistributing Shaw-Spell or its derivative works:
    derived from Princeton WordNet 3.0 (Copyright 2006 Princeton University)"
 3. **Credit Readlex**: "Shavian word data from Readlex (Copyright 2024 Shavian-info)"
 4. **Credit Hunspell**: "Spell checking powered by Hunspell (Copyright 2002-2022 Németh László)"
-5. **Indicate modifications** if you've modified any of the bundled data
+5. **Include the font copyright notices and the OFL** with any copy of the bundled
+   fonts, and do not sell the fonts by themselves
+6. **Indicate modifications** if you've modified any of the bundled data
 
 ---
 

@@ -81,10 +81,16 @@ $(DATA_HUNSPELL_DIR)/%: $(BUILD_HUNSPELL)/% | $(DATA_HUNSPELL_DIR)
 #   - everything under src/site-daemon (suggestd.py, systemd unit)
 #   - font source files (any format)
 #   - hunspell dictionaries (bundled for the daemon)
+# find expands at parse time, but $(VK_SITE_DEST) is regenerated at recipe time
+# by the stamp rule below — globbing it would demand files stage.sh has since
+# deleted. The stamp is the keyboard's dependency edge, so excluding it is free.
 $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
                          $(VK_SITE_STAMP) \
-                         $(shell find $(SRC_SITE) -type f 2>/dev/null) \
-                         $(shell find $(SRC_SITE_DAEMON) -type f 2>/dev/null) \
+                         $(shell find $(SRC_SITE) -type f \
+                             -not -path '$(VK_SITE_DEST)/*' \
+                             -not -path '*/__pycache__/*' 2>/dev/null) \
+                         $(shell find $(SRC_SITE_DAEMON) -type f \
+                             -not -path '*/__pycache__/*' 2>/dev/null) \
                          $(DATA_HUNSPELL_FILES) \
                          Makefile \
                          $(wildcard $(SRC_FONTS)/*)

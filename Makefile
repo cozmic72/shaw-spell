@@ -14,6 +14,7 @@ include build-rules/icons.mk
 include build-rules/dictionaries.mk
 include build-rules/spellcheck.mk
 include build-rules/virtual-keyboard.mk
+include build-rules/fonts.mk
 include build-rules/site.mk
 include build-rules/editor.mk
 

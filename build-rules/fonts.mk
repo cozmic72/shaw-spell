@@ -32,9 +32,16 @@ INSTALLED_FONTS := $(addprefix $(FONT_ROOT)/,$(WEB_FONTS))
 # Order-only, so the checks run before the first copy rather than after the last
 # one. A precondition hung on install-fonts itself would fire with the origin
 # already rewritten, which is no precondition at all.
+# The origin is shared and arbitration is "latest source timestamp wins", so the
+# destination must carry the SOURCE's mtime, not the install's. `install` alone
+# stamps now, which makes an older font deployed later win. `touch -r` rather
+# than `install -p`: BSD's -p implies compare-and-copy, GNU's does not.
+# Preserved mtimes also make make's own check correct — an older source is then
+# skipped as up to date instead of overwriting a newer origin.
 $(FONT_ROOT)/%: $(SRC_FONTS)/% | fonts-preconditions
 	$(SUDO) mkdir -p $(@D)
 	$(SUDO) install -m 644 $< $@
+	$(SUDO) touch -r $< $@
 
 .PHONY: install-fonts
 install-fonts: $(INSTALLED_FONTS)

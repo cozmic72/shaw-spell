@@ -178,6 +178,7 @@ install-site: $(VK_SITE_STAMP)
 	$(SUDO) mkdir -p "$(WWW_ROOT_SITE)"; \
 	$(SUDO) install -m 755 "$$HERE/index.cgi" "$(WWW_ROOT_SITE)/index.cgi"; \
 	$(SUDO) install -m 755 "$$HERE/card.cgi" "$(WWW_ROOT_SITE)/card.cgi"; \
+	$(SUDO) install -m 644 "$$HERE/sitecommon.py" "$(WWW_ROOT_SITE)/sitecommon.py"; \
 	$(SUDO) install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
 	[ -f "$$HERE/.version" ] && $(SUDO) install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
 	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),$(SITE_WEB_DIRS),$(SUDO)); \

@@ -95,7 +95,7 @@ $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
                          Makefile \
                          $(wildcard $(SRC_FONTS)/*)
 	@echo "Deploying web frontend..."
-	$(RUN) $(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL)
+	$(RUN) $(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL) --output-dir $(BUILD_SITE)
 
 .PHONY: site install-site clean-site
 
@@ -118,6 +118,7 @@ $(BUILD_SITE)/index.cgi: $(SITE_DATA_FILES) \
 # Override any path on the command line, e.g.
 #   make install-site WWW_ROOT_SITE=/srv/www/shaw-spell
 WWW_ROOT_SITE ?= /var/www/shaw-spell
+SYSTEMD_UNIT_DIR ?= /etc/systemd/system
 # OPT_ROOT / SERVICE_USER default in editor.mk (shared); redeclare defensively
 # in case site.mk is used without editor.mk.
 OPT_ROOT ?= /opt/shaw-spell
@@ -160,7 +161,7 @@ install-site: $(VK_SITE_STAMP)
 	    exit 1; }; \
 	done; \
 	echo "==> Staging site from src/ + prebuilt data/ -> $(BUILD_SITE)"; \
-	$(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL) --installing; \
+	$(SRC_SITE)/deploy_site.py --version $(VERSION) --font-url $(FONT_URL) --output-dir $(BUILD_SITE) --installing; \
 	HERE="$(BUILD_SITE)"; \
 	echo "==> Preflight: verifying staged site tree in $$HERE"; \
 	for d in $(SITE_WEB_DIRS) site-daemon site-data hunspell; do \
@@ -174,17 +175,20 @@ install-site: $(VK_SITE_STAMP)
 	echo "    daemon:   $(OPT_ROOT)/{site-daemon,site-data,hunspell}"; \
 	echo; \
 	echo "==> Web tier -> $(WWW_ROOT_SITE)"; \
-	sudo mkdir -p "$(WWW_ROOT_SITE)"; \
-	sudo install -m 755 "$$HERE/index.cgi" "$(WWW_ROOT_SITE)/index.cgi"; \
-	sudo install -m 755 "$$HERE/card.cgi" "$(WWW_ROOT_SITE)/card.cgi"; \
-	sudo install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
-	[ -f "$$HERE/.version" ] && sudo install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
-	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),$(SITE_WEB_DIRS)); \
+	$(SUDO) mkdir -p "$(WWW_ROOT_SITE)"; \
+	$(SUDO) install -m 755 "$$HERE/index.cgi" "$(WWW_ROOT_SITE)/index.cgi"; \
+	$(SUDO) install -m 755 "$$HERE/card.cgi" "$(WWW_ROOT_SITE)/card.cgi"; \
+	$(SUDO) install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
+	[ -f "$$HERE/.version" ] && $(SUDO) install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
+	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),$(SITE_WEB_DIRS),$(SUDO)); \
 	echo "==> Daemon + data -> $(OPT_ROOT)"; \
-	sudo mkdir -p "$(OPT_ROOT)"; \
-	$(call replace-dir-tree,$$HERE,$(OPT_ROOT),site-daemon site-data hunspell); \
-	sudo install -m 644 "$$HERE/site-daemon/shaw-spell-suggestd.service" \
-	                    /etc/systemd/system/shaw-spell-suggestd.service; \
+	$(SUDO) mkdir -p "$(OPT_ROOT)"; \
+	$(call replace-dir-tree,$$HERE,$(OPT_ROOT),site-daemon site-data hunspell,$(SUDO)); \
+	$(SUDO) install -m 644 "$$HERE/site-daemon/shaw-spell-suggestd.service" \
+	                       "$(SYSTEMD_UNIT_DIR)/shaw-spell-suggestd.service"; \
+	if [ "$(SYSTEMD_UNIT_DIR)" != /etc/systemd/system ]; then \
+	  echo "    (unit written to $(SYSTEMD_UNIT_DIR), not the system unit dir — systemd will not see it)"; \
+	fi; \
 	if ! python3 -c "import PIL" 2>/dev/null; then \
 	  echo "==> Installing python3-pil (card.cgi renders the social-preview images)"; \
 	  sudo apt-get install -y python3-pil; \
@@ -201,20 +205,26 @@ install-site: $(VK_SITE_STAMP)
 	  echo "!!     sudo pip3 install hunspell" >&2; \
 	  echo; \
 	fi; \
-	echo "==> systemd daemon-reload + enable"; \
-	sudo systemctl daemon-reload; \
-	if [ "$$HUNSPELL_OK" -eq 1 ]; then \
-	  sudo systemctl enable shaw-spell-suggestd; \
-	  sudo systemctl restart shaw-spell-suggestd; \
+	if [ "$(SYSTEMD_UNIT_DIR)" != /etc/systemd/system ]; then \
+	  echo "==> SKIP systemctl: unit went to $(SYSTEMD_UNIT_DIR), not the system unit dir"; \
+	elif [ "$(OPT_ROOT)" != /opt/shaw-spell ]; then \
+	  echo "==> SKIP systemctl: OPT_ROOT is $(OPT_ROOT), but the unit hardcodes"; \
+	  echo "    /opt/shaw-spell, so the system daemon would read the wrong tree"; \
 	else \
-	  sudo systemctl enable shaw-spell-suggestd; \
-	  echo "   (enabled but NOT started — install hunspell then: sudo systemctl start shaw-spell-suggestd)"; \
+	  echo "==> systemd daemon-reload + enable"; \
+	  $(SUDO) systemctl daemon-reload; \
+	  $(SUDO) systemctl enable shaw-spell-suggestd; \
+	  if [ "$$HUNSPELL_OK" -eq 1 ]; then \
+	    $(SUDO) systemctl restart shaw-spell-suggestd; \
+	  else \
+	    echo "   (enabled but NOT started — install hunspell then: sudo systemctl start shaw-spell-suggestd)"; \
+	  fi; \
 	fi; \
 	echo; \
 	echo "============================================================"; \
 	echo "Installed:"; \
 	echo "  web tier   -> $(WWW_ROOT_SITE) (index.cgi, card.cgi, $(patsubst %,%/,$(SITE_WEB_DIRS)))"; \
-	echo "  daemon     -> $(OPT_ROOT)/site-daemon + /etc/systemd/system/shaw-spell-suggestd.service"; \
+	echo "  daemon     -> $(OPT_ROOT)/site-daemon + $(SYSTEMD_UNIT_DIR)/shaw-spell-suggestd.service"; \
 	echo "  data       -> $(OPT_ROOT)/{site-data,hunspell}"; \
 	echo "  (the editor's $(WWW_ROOT_SITE)/editor and $(OPT_ROOT)/{src,external,data} are untouched)"; \
 	echo; \

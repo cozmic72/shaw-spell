@@ -52,13 +52,14 @@
 WWW_ROOT_EDITOR ?= /var/www/shaw-spell/editor
 OPT_ROOT ?= /opt/shaw-spell
 VAR_LIB ?= /var/lib/shaw-spell
+SYSTEMD_UNIT_DIR ?= /etc/systemd/system
 # The mutable data clone. MUST match the systemd unit's SHAW_SPELL_DATA_DIR.
 DATA_DIR ?= $(VAR_LIB)/data
 SERVICE_USER ?= www-data
 # git author on the daemon's commits (the Commit button). Override if you like.
 EDITOR_GIT_NAME ?= Shaw-Spell Editor
 EDITOR_GIT_EMAIL ?= editor@joro.io
-AUTH_DB = $(VAR_LIB)/auth/users.sqlite
+AUTH_DB ?= $(VAR_LIB)/auth/users.sqlite
 # The bare remote the DATA clone is cloned from and the daemon pushes to. It is
 # local to the server (the daemon has no ssh keys for ssh://joro.io), reached over
 # file:// (needs protocol.file.allow=always for CVE-2022-39253).
@@ -98,30 +99,45 @@ install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
 	echo "    data:     $(DATA_DIR)  (git clone of $(DATA_REMOTE) — daemon commits+pushes this)"; \
 	echo "    auth db:  $(VAR_LIB)/auth  (owner: $(SERVICE_USER))"; \
 	echo; \
+	if [ "$(SERVICE_USER)" = "$$(id -un)" ]; then \
+	  OWN_SERVICE_USER=1; \
+	  echo "    (SERVICE_USER $(SERVICE_USER) is the invoking user — chown and"; \
+	  echo "     git config --system steps are no-ops and will be SKIPPED)"; \
+	else \
+	  OWN_SERVICE_USER=0; \
+	fi; \
 	echo "==> Daemon code -> $(OPT_ROOT)/src/{editor,tools} (copied)"; \
-	sudo mkdir -p "$(OPT_ROOT)/src"; \
-	sudo rm -rf "$(OPT_ROOT)/src/editor" "$(OPT_ROOT)/src/tools"; \
-	sudo cp -R "$(SRC_EDITOR)" "$(OPT_ROOT)/src/editor"; \
-	sudo cp -R "$(SRC_TOOLS)"  "$(OPT_ROOT)/src/tools"; \
+	$(SUDO) mkdir -p "$(OPT_ROOT)/src"; \
+	$(SUDO) rm -rf "$(OPT_ROOT)/src/editor" "$(OPT_ROOT)/src/tools"; \
+	$(SUDO) cp -R "$(SRC_EDITOR)" "$(OPT_ROOT)/src/editor"; \
+	$(SUDO) cp -R "$(SRC_TOOLS)"  "$(OPT_ROOT)/src/tools"; \
 	echo "==> ReadLex basis -> $(OPT_ROOT)/external/readlex (copied, read-only)"; \
-	sudo mkdir -p "$(OPT_ROOT)/external/readlex"; \
-	sudo install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
+	$(SUDO) mkdir -p "$(OPT_ROOT)/external/readlex"; \
+	$(SUDO) install -m 644 "external/readlex/readlex.json" "$(OPT_ROOT)/external/readlex/readlex.json"; \
 	echo "==> Frequency corpus -> $(OPT_ROOT)/$(FREQUENCY_CORPUS) (copied, read-only)"; \
-	sudo mkdir -p "$(OPT_ROOT)/$(dir $(FREQUENCY_CORPUS))"; \
-	sudo install -m 644 "$(FREQUENCY_CORPUS)" "$(OPT_ROOT)/$(FREQUENCY_CORPUS)"; \
+	$(SUDO) mkdir -p "$(OPT_ROOT)/$(dir $(FREQUENCY_CORPUS))"; \
+	$(SUDO) install -m 644 "$(FREQUENCY_CORPUS)" "$(OPT_ROOT)/$(FREQUENCY_CORPUS)"; \
 	echo "==> Data clone -> $(DATA_DIR) (from $(DATA_REMOTE), owned by $(SERVICE_USER))"; \
 	if [ -e "$(DATA_DIR)/.git" ]; then \
 	  echo "    already a clone — repairing ownership then rebasing onto origin/main (daemon's local patch-commits replayed on top, working tree + patches preserved, no reset)"; \
-	  sudo chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(DATA_DIR)"; \
+	  if [ "$$OWN_SERVICE_USER" -eq 1 ]; then \
+	    echo "    SKIP chown $(DATA_DIR): already owned by $(SERVICE_USER)"; \
+	  else \
+	    $(SUDO) chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(DATA_DIR)"; \
+	  fi; \
 	  echo "    (a real rebase conflict here is a legitimate stop-and-fix — resolve it in $(DATA_DIR) then re-run)"; \
-	  sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" -c protocol.file.allow=always pull --rebase origin main; \
+	  $(RUN_AS) git -C "$(DATA_DIR)" -c protocol.file.allow=always pull --rebase origin main; \
 	else \
 	  [ -e "$(DATA_DIR)" ] && { \
 	    echo "install-editor: $(DATA_DIR) exists but is not a git clone — refusing" >&2; \
 	    echo "  to overwrite it. Move it aside and re-run." >&2; exit 1; }; \
-	  sudo mkdir -p "$(VAR_LIB)"; \
-	  sudo chown "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)"; \
-	  sudo -u "$(SERVICE_USER)" git -c protocol.file.allow=always clone "$(DATA_REMOTE)" "$(DATA_DIR)"; \
+	  $(SUDO) mkdir -p "$(VAR_LIB)"; \
+	  if [ "$$OWN_SERVICE_USER" -eq 1 ]; then \
+	    echo "    SKIP chown $(VAR_LIB): already owned by $(SERVICE_USER)"; \
+	  else \
+	    $(SUDO) chown "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)"; \
+	  fi; \
+	  $(RUN_AS) git -c protocol.file.allow=always clone "$(DATA_REMOTE)" "$(DATA_DIR)"; \
 	fi; \
 	for f in $(EDITOR_DATA_RUNTIME_FILES); do \
 	  [ -e "$(DATA_DIR)/$$f" ] || { \
@@ -130,30 +146,49 @@ install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
 	    exit 1; }; \
 	done; \
 	echo "==> Web tier -> $(WWW_ROOT_EDITOR)"; \
-	sudo mkdir -p "$(WWW_ROOT_EDITOR)" "$(WWW_ROOT_EDITOR)/fonts"; \
-	sudo install -m 755 "$$SITE/editor.cgi"   "$(WWW_ROOT_EDITOR)/editor.cgi"; \
-	sudo install -m 755 "$$SITE/editor.cgi"   "$(WWW_ROOT_EDITOR)/index.cgi"; \
-	sudo install -m 644 "$$SRC_EDITOR/authstore.py" "$(WWW_ROOT_EDITOR)/authstore.py"; \
-	sudo install -m 644 "$$SITE/editor.js"    "$(WWW_ROOT_EDITOR)/editor.js"; \
-	sudo install -m 644 "$$SITE/editor.css"   "$(WWW_ROOT_EDITOR)/editor.css"; \
-	sudo install -m 644 "$(SRC_FONTS)"/*.woff2 "$(WWW_ROOT_EDITOR)/fonts/"; \
-	sudo install -m 644 "$(SRC_SITE)/js/virtual-keyboard-modal.js" "$(WWW_ROOT_EDITOR)/virtual-keyboard-modal.js"; \
-	$(call replace-dir-tree,$$SITE,$(WWW_ROOT_EDITOR),virtual-keyboard); \
-	echo "==> systemd unit -> /etc/systemd/system/shaw-spell-editord.service"; \
-	sudo install -m 644 "$$SRC_EDITOR/shaw-spell-editord.service" \
-	                    /etc/systemd/system/shaw-spell-editord.service; \
+	$(SUDO) mkdir -p "$(WWW_ROOT_EDITOR)" "$(WWW_ROOT_EDITOR)/fonts"; \
+	$(SUDO) install -m 755 "$$SITE/editor.cgi"   "$(WWW_ROOT_EDITOR)/editor.cgi"; \
+	$(SUDO) install -m 755 "$$SITE/editor.cgi"   "$(WWW_ROOT_EDITOR)/index.cgi"; \
+	$(SUDO) install -m 644 "$$SRC_EDITOR/authstore.py" "$(WWW_ROOT_EDITOR)/authstore.py"; \
+	$(SUDO) install -m 644 "$$SITE/editor.js"    "$(WWW_ROOT_EDITOR)/editor.js"; \
+	$(SUDO) install -m 644 "$$SITE/editor.css"   "$(WWW_ROOT_EDITOR)/editor.css"; \
+	$(SUDO) install -m 644 "$(SRC_FONTS)"/*.woff2 "$(WWW_ROOT_EDITOR)/fonts/"; \
+	$(SUDO) install -m 644 "$(SRC_SITE)/js/virtual-keyboard-modal.js" "$(WWW_ROOT_EDITOR)/virtual-keyboard-modal.js"; \
+	$(call replace-dir-tree,$$SITE,$(WWW_ROOT_EDITOR),virtual-keyboard,$(SUDO)); \
+	echo "==> systemd unit -> $(SYSTEMD_UNIT_DIR)/shaw-spell-editord.service"; \
+	$(SUDO) install -m 644 "$$SRC_EDITOR/shaw-spell-editord.service" \
+	                       "$(SYSTEMD_UNIT_DIR)/shaw-spell-editord.service"; \
+	if [ "$(SYSTEMD_UNIT_DIR)" != /etc/systemd/system ]; then \
+	  echo "    (unit written to $(SYSTEMD_UNIT_DIR), not the system unit dir — systemd will not see it)"; \
+	fi; \
 	echo "==> Auth DB dir -> $(VAR_LIB)/auth (created + chowned; data preserved)"; \
-	sudo mkdir -p "$(VAR_LIB)/auth"; \
-	sudo chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)/auth"; \
+	$(SUDO) mkdir -p "$(VAR_LIB)/auth"; \
+	if [ "$$OWN_SERVICE_USER" -eq 1 ]; then \
+	  echo "    SKIP chown $(VAR_LIB)/auth: already owned by $(SERVICE_USER)"; \
+	else \
+	  $(SUDO) chown -R "$(SERVICE_USER):$(SERVICE_USER)" "$(VAR_LIB)/auth"; \
+	fi; \
 	echo "==> Commit+push config -> data clone trusted + daemon git identity ($(SERVICE_USER))"; \
-	sudo git config --system --add safe.directory "$(DATA_DIR)"; \
-	sudo git config --system --add safe.directory "$(DATA_REMOTE)"; \
-	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.name  "$(EDITOR_GIT_NAME)"; \
-	sudo -u "$(SERVICE_USER)" git -C "$(DATA_DIR)" config user.email "$(EDITOR_GIT_EMAIL)"; \
-	echo "==> systemd daemon-reload + (re)start"; \
-	sudo systemctl daemon-reload; \
-	sudo systemctl enable shaw-spell-editord; \
-	sudo systemctl restart shaw-spell-editord; \
+	if [ "$$OWN_SERVICE_USER" -eq 1 ]; then \
+	  echo "    SKIP git config --system safe.directory: the clone is owned by the"; \
+	  echo "    invoking user, so git raises no dubious-ownership error to suppress."; \
+	else \
+	  $(SUDO) git config --system --add safe.directory "$(DATA_DIR)"; \
+	  $(SUDO) git config --system --add safe.directory "$(DATA_REMOTE)"; \
+	fi; \
+	$(RUN_AS) git -C "$(DATA_DIR)" config user.name  "$(EDITOR_GIT_NAME)"; \
+	$(RUN_AS) git -C "$(DATA_DIR)" config user.email "$(EDITOR_GIT_EMAIL)"; \
+	if [ "$(SYSTEMD_UNIT_DIR)" != /etc/systemd/system ]; then \
+	  echo "==> SKIP systemctl: unit went to $(SYSTEMD_UNIT_DIR), not the system unit dir"; \
+	elif [ "$(OPT_ROOT)" != /opt/shaw-spell ]; then \
+	  echo "==> SKIP systemctl: OPT_ROOT is $(OPT_ROOT), but the unit hardcodes"; \
+	  echo "    /opt/shaw-spell, so the system daemon would read the wrong tree"; \
+	else \
+	  echo "==> systemd daemon-reload + (re)start"; \
+	  $(SUDO) systemctl daemon-reload; \
+	  $(SUDO) systemctl enable shaw-spell-editord; \
+	  $(SUDO) systemctl restart shaw-spell-editord; \
+	fi; \
 	echo; \
 	echo "============================================================"; \
 	echo "Installed:"; \
@@ -166,8 +201,10 @@ install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
 	echo "  patches    -> $(DATA_DIR)/patches/ (IN the clone → Commit button can commit+push)"; \
 	echo "  auth db    -> $(VAR_LIB)/auth (owned by $(SERVICE_USER); existing data preserved)"; \
 	echo; \
-	echo "The daemon is enabled and running. Remaining MANUAL steps (this target"; \
-	echo "cannot safely guess these):"; \
+	if [ "$(SYSTEMD_UNIT_DIR)" = /etc/systemd/system ] && [ "$(OPT_ROOT)" = /opt/shaw-spell ]; then \
+	  echo "The daemon is enabled and running."; \
+	fi; \
+	echo "Remaining MANUAL steps (this target cannot safely guess these):"; \
 	echo; \
 	echo "1. Point the CGI at the auth DB via Apache (paste into the editor <Directory>):"; \
 	echo "     <Directory $(WWW_ROOT_EDITOR)>"; \

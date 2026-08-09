@@ -11,9 +11,9 @@ else
 RUN =
 endif
 
-# Idempotent replace of one or more asset subdirs during a privileged deploy.
-# Both install-editor and install-site hand-rolled the same "sudo rm -rf the old
-# copy, then sudo cp -R the new one" idiom to stage web/opt asset trees — it is
+# Idempotent replace of one or more asset subdirs during a deploy.
+# Both install-editor and install-site hand-rolled the same "rm -rf the old
+# copy, then cp -R the new one" idiom to stage web/opt asset trees — it is
 # the single most-duplicated deploy step. This canned recipe factors it (DRY),
 # in the same $(@D)-style parametrised-recipe spirit as virtual-keyboard.mk.
 #
@@ -21,16 +21,24 @@ endif
 # body line is backslash-continued, so the whole loop collapses to one recipe
 # line and splices between the caller's own `; \`-joined statements (put a `; \`
 # after the $(call)). Call as:
-#   $(call replace-dir-tree,SRC_BASE,DEST_BASE,dir1 dir2 ...)
+#   $(call replace-dir-tree,SRC_BASE,DEST_BASE,dir1 dir2 ...[,PRIVILEGE])
 # where each `dirN` is copied from SRC_BASE/dirN to DEST_BASE/dirN. Pass a shell
 # variable (e.g. $$HERE) for either base to defer it to run time; pass a make
-# path to expand it now.
+# path to expand it now. PRIVILEGE prefixes each command: `sudo` when installing
+# to a system path, empty (omitted) for a destination the build user owns.
 define replace-dir-tree
 	for d in $(3); do \
-	  sudo rm -rf "$(2)/$$d"; \
-	  sudo cp -R "$(1)/$$d" "$(2)/$$d"; \
+	  $(4) rm -rf "$(2)/$$d"; \
+	  $(4) cp -R "$(1)/$$d" "$(2)/$$d"; \
 	done
 endef
+
+# Privilege escalation, behind variables so a deploy to a destination the
+# invoking user owns can run unprivileged: `make install-site SUDO= RUN_AS= ...`.
+# RUN_AS is separate because an empty SUDO would leave a bare `-u $(SERVICE_USER)`
+# on the line rather than dropping the escalation.
+SUDO ?= sudo
+RUN_AS ?= sudo -u $(SERVICE_USER)
 
 # The external Roman->Shavian transliterator (github.com/Shavian-info/shave),
 # invoked as a bare binary by seven call sites. Four of them CATCH
@@ -85,7 +93,9 @@ BUILD_DMG := $(BUILD_ROOT)/dmg
 BUILD_DMG_STAGING := $(BUILD_DMG)/staging
 BUILD_DMG_FILE := $(BUILD_DMG)/Shaw-Spell-$(VERSION).dmg
 
-BUILD_SITE := $(BUILD_ROOT)/site
+# Overridable so a deploy aimed at a temp docroot stages somewhere private
+# rather than clobbering the working site the dev server is serving.
+BUILD_SITE ?= $(BUILD_ROOT)/site
 
 BUILD_ICONS := $(BUILD_ROOT)/icons
 

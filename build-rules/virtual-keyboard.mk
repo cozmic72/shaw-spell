@@ -42,10 +42,26 @@ define vk-stage-docroot
 	@touch $@
 endef
 
-$(VK_SITE_DEST)/.stamp-%: $(VK_SRC)/virtual-keyboard.js
+# Staging is a MUTATION: it rewrites the docroot's virtual-keyboard/ tree. A
+# deploy must therefore clear its preconditions before the stamp is built, not
+# merely before the install commands — an order-only prerequisite on the deploy
+# target itself is too late, because make satisfies the stamp first and the
+# owner's docroot is already rewritten by the time the checks run. Only the
+# deploy goals get this edge; `make site`, `make virtual-keyboard` and every
+# other target keep staging with no preconditions attached.
+VK_SITE_STAGE_GATE :=
+VK_EDITOR_STAGE_GATE :=
+ifneq ($(filter install-site,$(MAKECMDGOALS)),)
+VK_SITE_STAGE_GATE := site-preconditions
+endif
+ifneq ($(filter install-editor,$(MAKECMDGOALS)),)
+VK_EDITOR_STAGE_GATE := editor-preconditions
+endif
+
+$(VK_SITE_DEST)/.stamp-%: $(VK_SRC)/virtual-keyboard.js | $(VK_SITE_STAGE_GATE)
 	$(vk-stage-docroot)
 
-$(VK_EDITOR_DEST)/.stamp-%: $(VK_SRC)/virtual-keyboard.js
+$(VK_EDITOR_DEST)/.stamp-%: $(VK_SRC)/virtual-keyboard.js | $(VK_EDITOR_STAGE_GATE)
 	$(vk-stage-docroot)
 
 $(VK_EDITOR_WRAPPER): $(VK_WRAPPER_SRC)

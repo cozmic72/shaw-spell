@@ -89,6 +89,25 @@ def deploy(version, font_url='/fonts', output_dir='build/site', installing=False
         print("Run 'make site' on the build machine and pull the data repo")
         return 1
 
+    if not site_daemon_src.exists():
+        print(f"Error: Suggest daemon source not found: {site_daemon_src}")
+        return 1
+
+    # Everything below writes. The font verdict decides whether fonts/ is staged,
+    # so an unusable FONT_URL must stop the run here rather than after the
+    # existing tree has been removed — that rmtree is what destroys a live
+    # docroot when a later step turns out to be impossible.
+    try:
+        needs_own_fonts = serves_own_fonts(font_url)
+    except ValueError as invalid_url:
+        print(f"Error: {invalid_url}", file=sys.stderr)
+        return 1
+
+    if needs_own_fonts and not fonts_src.is_dir():
+        print(f"Error: FONT_URL {font_url} makes this docroot serve its own fonts, "
+              f"but the font source is not there: {fonts_src}", file=sys.stderr)
+        return 1
+
     if output_path.exists():
         print(f"Removing existing output directory: {output_path}")
         shutil.rmtree(output_path)
@@ -181,7 +200,7 @@ def deploy(version, font_url='/fonts', output_dir='build/site', installing=False
                 stats['other'] += 1
 
     print()
-    if serves_own_fonts(font_url):
+    if needs_own_fonts:
         print("Copying fonts...")
         fonts_output = output_path / 'fonts'
         fonts_output.mkdir(exist_ok=True)
@@ -212,22 +231,18 @@ def deploy(version, font_url='/fonts', output_dir='build/site', installing=False
     # Copy spelling-suggestion daemon sources. These live alongside the
     # site but aren't served directly — ops installs them under
     # /opt/shaw-spell/site-daemon/ and enables the systemd unit.
-    if site_daemon_src.exists():
-        print()
-        print("Copying suggest daemon...")
-        daemon_output = output_path / 'site-daemon'
-        daemon_output.mkdir(exist_ok=True)
-        for src_file in site_daemon_src.rglob('*'):
-            if src_file.is_file() and src_file.name != '.DS_Store':
-                rel = src_file.relative_to(site_daemon_src)
-                dest = daemon_output / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src_file, dest)
-                print(f"  ✓ site-daemon/{rel}")
-                stats['other'] += 1
-    else:
-        print()
-        print(f"Warning: {site_daemon_src} not found — skipping daemon bundle")
+    print()
+    print("Copying suggest daemon...")
+    daemon_output = output_path / 'site-daemon'
+    daemon_output.mkdir(exist_ok=True)
+    for src_file in site_daemon_src.rglob('*'):
+        if src_file.is_file() and src_file.name != '.DS_Store':
+            rel = src_file.relative_to(site_daemon_src)
+            dest = daemon_output / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_file, dest)
+            print(f"  ✓ site-daemon/{rel}")
+            stats['other'] += 1
 
     # Copy Hunspell dictionaries. The daemon needs these at runtime; ops
     # installs them under /opt/shaw-spell/hunspell/ (matches the path in

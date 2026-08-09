@@ -40,6 +40,83 @@ endef
 SUDO ?= sudo
 RUN_AS ?= sudo -u $(SERVICE_USER)
 
+# --- Deploy preconditions ---------------------------------------------------
+#
+# The deploy targets check everything they need BEFORE they mutate anything —
+# before staging, not merely before installing. Every deploy defect found so far
+# was a check that ran too late or looked at the wrong tree: the FONT_URL guard
+# fired after staging had baked the URL, and the staged-tree preflight never
+# examined the docroot it writes, so sitecommon.py was absent from production
+# until the site fell over. A check that runs after the first write cannot
+# prevent a broken deploy; it can only describe one.
+#
+# These helpers are $(call)ed into a single-shell `@set -eu; \ ...` recipe, like
+# replace-dir-tree above: every body line is backslash-continued, so each call
+# collapses to one recipe line. Put a `; \` after the $(call).
+
+# $(call require-files,FILE...,CONTEXT)
+define require-files
+	for f in $(1); do \
+	  [ -e "$$f" ] || { \
+	    echo "$(2): missing source file: $$f" >&2; \
+	    exit 1; }; \
+	done
+endef
+
+# $(call require-dest-dirs,DIR...,PRIVILEGE,CONTEXT)
+# A destination passes if it exists or if its nearest existing ancestor is
+# writable. mkdir -p dies at exit 71 partway through an install otherwise, which
+# is how a redirected SYSTEMD_UNIT_DIR takes a deploy down mid-run.
+define require-dest-dirs
+	for d in $(1); do \
+	  [ -d "$$d" ] && continue; \
+	  probe="$$d"; \
+	  while [ ! -e "$$probe" ] && [ "$$probe" != / ] && [ "$$probe" != . ]; do \
+	    probe="$$(dirname "$$probe")"; \
+	  done; \
+	  [ -d "$$probe" ] || { \
+	    echo "$(3): destination $$d cannot be created: $$probe exists and is not a directory" >&2; \
+	    exit 1; }; \
+	  $(2) test -w "$$probe" || { \
+	    echo "$(3): destination $$d cannot be created: no write permission on $$probe" >&2; \
+	    exit 1; }; \
+	done
+endef
+
+# $(call require-tools,TOOL...,CONTEXT)
+define require-tools
+	for t in $(1); do \
+	  command -v "$$t" >/dev/null 2>&1 || { \
+	    echo "$(2): required tool not on \$$PATH: $$t" >&2; \
+	    exit 1; }; \
+	done
+endef
+
+# $(call require-submodule-not-ahead,PATH,CONTEXT)
+# `git submodule update` checks the pin out unconditionally, so any commit the
+# checkout has that the pin cannot reach is discarded without a word. Refuse
+# instead: those commits are the owner's, and losing them is not a cost this
+# target gets to accept.
+#
+# The question is "what would be lost", i.e. `pin..head` — NOT "is the pin an
+# ancestor". A diverged checkout loses commits too, and an ancestor test calls
+# that case safe.
+define require-submodule-not-ahead
+	pin="$$(git rev-parse "HEAD:$(1)")"; \
+	head="$$(git -C "$(1)" rev-parse HEAD)"; \
+	lost="$$(git -C "$(1)" --no-pager log --no-color --oneline "$$pin..$$head")"; \
+	if [ -n "$$lost" ]; then \
+	  echo "$(2): the $(1) submodule holds commits the pinned commit cannot reach." >&2; \
+	  echo "  pinned:   $$pin" >&2; \
+	  echo "  checkout: $$head" >&2; \
+	  echo "  Updating it would discard these commits:" >&2; \
+	  printf '%s\n' "$$lost" | sed 's/^/    /' >&2; \
+	  echo "  Push them, then advance the pin:" >&2; \
+	  echo "    git -C $(1) push && git add $(1) && git commit -m 'Advance $(1) pin'" >&2; \
+	  exit 1; \
+	fi
+endef
+
 # The external Roman->Shavian transliterator (github.com/Shavian-info/shave),
 # invoked as a bare binary by seven call sites. Four of them CATCH
 # FileNotFoundError and carry on with an empty result, so a missing shave does

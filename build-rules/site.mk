@@ -147,7 +147,58 @@ $(SITE_FONTS_VERDICT) and gave no font verdict. Run it directly to see why: \
 $(SRC_SITE)/deploy_site.py --serves-own-fonts $(FONT_URL))
 endif
 
-install-site: $(VK_SITE_STAMP)
+# The docroot-relative files the web tier installs one by one. ONE list drives
+# three things: the staged-tree preflight, the install commands, and the
+# post-install docroot verification. They were three hand-written lists, and
+# sitecommon.py was in the install but not the preflight — so it went missing
+# from production and stayed missing until the site died with ModuleNotFoundError.
+# A file added here is checked and installed; a file installed without being
+# added here is a drift this list exists to prevent.
+SITE_INSTALLED_FILES = index.cgi card.cgi sitecommon.py .htaccess \
+                       site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service
+
+# Installed with the executable bit; everything else in the list is data.
+SITE_EXECUTABLE_FILES = index.cgi card.cgi
+
+# Every destination the recipe writes to. SYSTEMD_UNIT_DIR is here because it is
+# the one path the recipe used with no mkdir -p and no check: a redirected
+# install reached `install -m 644 ... $(SYSTEMD_UNIT_DIR)/...` and died at exit
+# 71 with the web tier already replaced.
+SITE_DEST_DIRS = $(WWW_ROOT_SITE) $(OPT_ROOT) $(SYSTEMD_UNIT_DIR)
+
+# Commands the recipe shells out to unconditionally: git for the submodule
+# update, python3 for the PIL/hunspell probes, install for every file copy.
+# systemctl is NOT here — the recipe skips it when SYSTEMD_UNIT_DIR or OPT_ROOT
+# is redirected, so demanding it would break the staging deploys that path is for.
+SITE_REQUIRED_TOOLS = git python3 install
+ifeq ($(SYSTEMD_UNIT_DIR),/etc/systemd/system)
+ifeq ($(OPT_ROOT),/opt/shaw-spell)
+SITE_REQUIRED_TOOLS += systemctl
+endif
+endif
+
+.PHONY: site-preconditions
+site-preconditions:
+	@set -eu; \
+	echo "==> Preconditions for install-site (nothing is written until these pass)"; \
+	$(call require-tools,$(SITE_REQUIRED_TOOLS),install-site); \
+	$(call require-submodule-not-ahead,data,install-site); \
+	$(call require-files,$(addprefix $(SRC_SITE)/,$(filter-out site-daemon/%,$(SITE_INSTALLED_FILES))) \
+	                     $(addprefix $(SRC_SITE_DAEMON)/,$(patsubst site-daemon/%,%,$(filter site-daemon/%,$(SITE_INSTALLED_FILES)))) \
+	                     $(SRC_SITE)/deploy_site.py $(VK_SRC)/tools/stage.sh,install-site); \
+	$(call require-dest-dirs,$(SITE_DEST_DIRS),$(SUDO),install-site); \
+	echo "    ok: tools, sources, destinations, data submodule, font URL"
+
+# When the pages fetch from a shared origin rather than this docroot, that
+# origin is the site's only source of faces — and nothing else populates it, so
+# a deploy that skipped it would ship pages rendering in a fallback face. When
+# verdict 0 stages fonts/ into the docroot instead, FONT_ROOT is not in play.
+SITE_FONT_INSTALL :=
+ifeq ($(SITE_FONTS_VERDICT),3)
+SITE_FONT_INSTALL := install-fonts
+endif
+
+install-site: $(VK_SITE_STAMP) $(SITE_FONT_INSTALL) | site-preconditions
 	@set -eu; \
 	echo "==> Advancing the data submodule to the pinned commit"; \
 	git submodule update --init --recursive data; \
@@ -167,7 +218,7 @@ install-site: $(VK_SITE_STAMP)
 	for d in $(SITE_WEB_DIRS) site-daemon site-data hunspell; do \
 	  [ -d "$$HERE/$$d" ] || { echo "install-site: expected dir missing from staged tree: $$d" >&2; exit 1; }; \
 	done; \
-	for f in index.cgi card.cgi sitecommon.py .htaccess site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service; do \
+	for f in $(SITE_INSTALLED_FILES); do \
 	  [ -f "$$HERE/$$f" ] || { echo "install-site: expected file missing from staged tree: $$f" >&2; exit 1; }; \
 	done; \
 	echo "==> Installing Shaw-Spell site"; \
@@ -185,6 +236,7 @@ install-site: $(VK_SITE_STAMP)
 	echo "==> Daemon + data -> $(OPT_ROOT)"; \
 	$(SUDO) mkdir -p "$(OPT_ROOT)"; \
 	$(call replace-dir-tree,$$HERE,$(OPT_ROOT),site-daemon site-data hunspell,$(SUDO)); \
+	$(SUDO) mkdir -p "$(SYSTEMD_UNIT_DIR)"; \
 	$(SUDO) install -m 644 "$$HERE/site-daemon/shaw-spell-suggestd.service" \
 	                       "$(SYSTEMD_UNIT_DIR)/shaw-spell-suggestd.service"; \
 	if [ "$(SYSTEMD_UNIT_DIR)" != /etc/systemd/system ]; then \
@@ -221,6 +273,23 @@ install-site: $(VK_SITE_STAMP)
 	    echo "   (enabled but NOT started — install hunspell then: sudo systemctl start shaw-spell-suggestd)"; \
 	  fi; \
 	fi; \
+	echo; \
+	echo "==> Postflight: verifying the docroot that was just written"; \
+	for d in $(SITE_WEB_DIRS); do \
+	  $(SUDO) test -d "$(WWW_ROOT_SITE)/$$d" || { \
+	    echo "install-site: install finished but $(WWW_ROOT_SITE)/$$d is not there" >&2; exit 1; }; \
+	done; \
+	for f in $(filter-out site-daemon/%,$(SITE_INSTALLED_FILES)); do \
+	  $(SUDO) test -f "$(WWW_ROOT_SITE)/$$f" || { \
+	    echo "install-site: install finished but $(WWW_ROOT_SITE)/$$f is not there" >&2; exit 1; }; \
+	done; \
+	for f in $(SITE_EXECUTABLE_FILES); do \
+	  $(SUDO) test -x "$(WWW_ROOT_SITE)/$$f" || { \
+	    echo "install-site: $(WWW_ROOT_SITE)/$$f is not executable — Apache will serve it as text" >&2; exit 1; }; \
+	done; \
+	$(SUDO) test -f "$(SYSTEMD_UNIT_DIR)/shaw-spell-suggestd.service" || { \
+	  echo "install-site: unit missing from $(SYSTEMD_UNIT_DIR) after install" >&2; exit 1; }; \
+	echo "    ok: docroot files, executables, systemd unit"; \
 	echo; \
 	echo "============================================================"; \
 	echo "Installed:"; \

@@ -74,23 +74,53 @@ EDITOR_DATA_RUNTIME_FILES = $(LRW_LIST) supplement-combined-filtered.json \
   definitions-latin-gb.json definitions-shavian-gb.json \
   definitions-shavian-us.json patches/patches.jsonl
 
+# Sources the install copies, checked before anything is staged or written. One
+# list drives both the precondition phase and the recipe's own check, so a file
+# added to the install cannot escape being checked.
+# The STAGED virtual-keyboard.js is absent from this list because it does not
+# exist until $(VK_EDITOR_STAMP) builds it: the precondition checks the submodule
+# source it is staged from, and the recipe checks the staged copy.
+EDITOR_SOURCE_FILES = $(SRC_EDITOR)/site/editor.cgi $(SRC_EDITOR)/site/editor.js \
+                      $(SRC_EDITOR)/site/editor.css $(SRC_EDITOR)/authstore.py \
+                      $(SRC_SITE)/js/virtual-keyboard-modal.js \
+                      $(SRC_EDITOR)/shaw-spell-editord.service \
+                      $(SRC_TOOLS)/basis.py external/readlex/readlex.json \
+                      $(SRC_FONTS)/BernieSansBetaVF.woff2 \
+                      $(VK_SRC)/virtual-keyboard.js $(VK_SRC)/tools/stage.sh
+
+EDITOR_DEST_DIRS = $(WWW_ROOT_EDITOR) $(OPT_ROOT) $(VAR_LIB) $(SYSTEMD_UNIT_DIR)
+
+# systemctl only when the recipe will actually reach it — it skips the unit
+# activation for a redirected SYSTEMD_UNIT_DIR or OPT_ROOT.
+EDITOR_REQUIRED_TOOLS = git install
+ifeq ($(SYSTEMD_UNIT_DIR),/etc/systemd/system)
+ifeq ($(OPT_ROOT),/opt/shaw-spell)
+EDITOR_REQUIRED_TOOLS += systemctl
+endif
+endif
+
+.PHONY: editor-preconditions
+editor-preconditions:
+	@set -eu; \
+	echo "==> Preconditions for install-editor (nothing is written until these pass)"; \
+	$(call require-tools,$(EDITOR_REQUIRED_TOOLS),install-editor); \
+	$(call require-files,$(EDITOR_SOURCE_FILES),install-editor); \
+	$(call require-dest-dirs,$(EDITOR_DEST_DIRS),$(SUDO),install-editor); \
+	[ -d "$(DATA_REMOTE)" ] || { \
+	  echo "install-editor: the data remote is not there: $(DATA_REMOTE)" >&2; \
+	  echo "  the clone/pull below has nothing to talk to. Create the bare repo, or" >&2; \
+	  echo "  pass DATA_REMOTE=<path>." >&2; \
+	  exit 1; }; \
+	echo "    ok: tools, sources, destinations, data remote"
+
 # install-editor builds only the virtual-keyboard assets (needed for the web tier)
 # and the frequency corpus checkout (a publish-time runtime requirement — see the
 # model above); it needs NO dictionary/basis build — the basis is the cloned data
 # + copied readlex.
-install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
+install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS) | editor-preconditions
 	@set -eu; \
 	SRC_EDITOR="$(SRC_EDITOR)"; SITE="$(SRC_EDITOR)/site"; \
-	for f in "$$SITE/editor.cgi" "$$SITE/editor.js" "$$SITE/editor.css" \
-	         "$$SRC_EDITOR/authstore.py" \
-	         "$(SRC_SITE)/js/virtual-keyboard-modal.js" \
-	         "$$SITE/virtual-keyboard/virtual-keyboard.js" \
-	         "$$SRC_EDITOR/shaw-spell-editord.service" \
-	         "$(SRC_TOOLS)/basis.py" \
-	         "external/readlex/readlex.json" \
-	         "$(SRC_FONTS)/BernieSansBetaVF.woff2"; do \
-	  [ -e "$$f" ] || { echo "install-editor: missing source file: $$f" >&2; exit 1; }; \
-	done; \
+	$(call require-files,$(EDITOR_SOURCE_FILES) $$SITE/virtual-keyboard/virtual-keyboard.js,install-editor); \
 	echo "==> Installing Shaw-Spell editor (copied code + live data clone)"; \
 	echo "    web:      $(WWW_ROOT_EDITOR)"; \
 	echo "    code:     $(OPT_ROOT)/src  (copied)"; \

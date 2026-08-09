@@ -147,18 +147,25 @@ $(SITE_FONTS_VERDICT) and gave no font verdict. Run it directly to see why: \
 $(SRC_SITE)/deploy_site.py --serves-own-fonts $(FONT_URL))
 endif
 
-# The docroot-relative files the web tier installs one by one. ONE list drives
-# three things: the staged-tree preflight, the install commands, and the
-# post-install docroot verification. They were three hand-written lists, and
-# sitecommon.py was in the install but not the preflight — so it went missing
-# from production and stayed missing until the site died with ModuleNotFoundError.
-# A file added here is checked and installed; a file installed without being
-# added here is a drift this list exists to prevent.
+# The files install-site copies one by one. ONE list drives the staged-tree
+# preflight, the install commands, and the post-install docroot verification.
+# sitecommon.py was in the preflight and not the install, so a deploy checked
+# for a module it never copied and production died with ModuleNotFoundError.
 SITE_INSTALLED_FILES = index.cgi card.cgi sitecommon.py .htaccess \
                        site-daemon/suggestd.py site-daemon/shaw-spell-suggestd.service
 
 # Installed with the executable bit; everything else in the list is data.
 SITE_EXECUTABLE_FILES = index.cgi card.cgi
+
+# The docroot's own files: the list minus the daemon's, which reach $(OPT_ROOT)
+# as a whole tree rather than file by file.
+SITE_DOCROOT_FILES = $(filter-out site-daemon/%,$(SITE_INSTALLED_FILES))
+
+# $(call site-install-file,FILE) — one `install` for one docroot-relative file,
+# at 755 if SITE_EXECUTABLE_FILES names it and 644 otherwise. $$HERE is the
+# staged tree, resolved by the recipe's shell.
+site-install-file = $(SUDO) install -m $(if $(filter $(1),$(SITE_EXECUTABLE_FILES)),755,644) \
+	"$$HERE/$(1)" "$(WWW_ROOT_SITE)/$(1)"
 
 # Every destination the recipe writes to. SYSTEMD_UNIT_DIR is here because it is
 # the one path the recipe used with no mkdir -p and no check: a redirected
@@ -227,11 +234,8 @@ install-site: $(VK_SITE_STAMP) $(SITE_FONT_INSTALL) | site-preconditions
 	echo; \
 	echo "==> Web tier -> $(WWW_ROOT_SITE)"; \
 	$(SUDO) mkdir -p "$(WWW_ROOT_SITE)"; \
-	$(SUDO) install -m 755 "$$HERE/index.cgi" "$(WWW_ROOT_SITE)/index.cgi"; \
-	$(SUDO) install -m 755 "$$HERE/card.cgi" "$(WWW_ROOT_SITE)/card.cgi"; \
-	$(SUDO) install -m 644 "$$HERE/sitecommon.py" "$(WWW_ROOT_SITE)/sitecommon.py"; \
-	$(SUDO) install -m 644 "$$HERE/.htaccess" "$(WWW_ROOT_SITE)/.htaccess"; \
-	[ -f "$$HERE/.version" ] && $(SUDO) install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
+	$(foreach f,$(SITE_DOCROOT_FILES),$(call site-install-file,$(f)); \
+	)[ -f "$$HERE/.version" ] && $(SUDO) install -m 644 "$$HERE/.version" "$(WWW_ROOT_SITE)/.version" || true; \
 	$(call replace-dir-tree,$$HERE,$(WWW_ROOT_SITE),$(SITE_WEB_DIRS),$(SUDO)); \
 	echo "==> Daemon + data -> $(OPT_ROOT)"; \
 	$(SUDO) mkdir -p "$(OPT_ROOT)"; \

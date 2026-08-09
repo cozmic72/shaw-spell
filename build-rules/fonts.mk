@@ -50,14 +50,36 @@ install-fonts: $(INSTALLED_FONTS)
 # A face named by a stylesheet but absent from WEB_FONTS is the sitecommon.py
 # defect again — an install list and a requirement list drifting apart, found in
 # production. Grep the consumers for what they fetch and demand the lists agree.
+#
+# Only the stylesheets whose url() this origin answers. src/editor/site/editor.css
+# is deliberately absent: it names fonts/ relative to its own docroot, gets no
+# {{FONT_URL}} substitution, and editor.mk installs the faces beside it.
 FONT_FACE_CONSUMERS := $(SRC_SITE)/css/style.css $(VK_SRC)/virtual-keyboard.css
+
+FONT_EXTENSIONS := woff2|woff|otf|ttf|eot
+
+# The font filename in every url() a consumer contains. A newline before each
+# url() puts one per line: `.*url(` matches only the last on a line and hides
+# every earlier face. Quotes are optional and either kind, as is the path.
+#
+# Matched by extension rather than by enclosing @font-face block because the
+# faces are written url('{{FONT_URL}}/x.woff2') and the placeholder's own braces
+# end any attempt to read as far as the block's closing brace. Extensions also
+# keep out background images, which this origin does not serve.
+#
+# ERE, because BSD sed has no \| alternation and the server's GNU sed accepts
+# both — a BRE here would pass silently on the owner's Mac. The s@@@ delimiter
+# is not cosmetic: # ends a make line, which truncates the script to `sed -nE "s`
+# and leaves a check that matches nothing while still exiting 0.
+font-faces-requested = { tr '\n' ' ' < $(1); echo; } | sed 's/url(/\n&/g' \
+	| sed -nE "s@^url\([\"']?([^\"')]*/)?([^\"'/)]*\.($(FONT_EXTENSIONS)))[\"']?\).*@\2@p"
 
 .PHONY: fonts-preconditions
 fonts-preconditions:
 	@set -eu; \
 	$(call require-files,$(addprefix $(SRC_FONTS)/,$(WEB_FONTS)) $(FONT_FACE_CONSUMERS),install-fonts); \
 	$(call require-dest-dirs,$(FONT_ROOT),$(SUDO),install-fonts); \
-	REQUESTED="$$(sed -n "s/.*url('[^']*\/\([^'\/]*\)').*/\1/p" $(FONT_FACE_CONSUMERS) | sort -u)"; \
+	REQUESTED="$$( { $(foreach c,$(FONT_FACE_CONSUMERS),$(call font-faces-requested,$(c)); ) } | sort -u)"; \
 	for f in $$REQUESTED; do \
 	  case " $(WEB_FONTS) " in \
 	    *" $$f "*) ;; \

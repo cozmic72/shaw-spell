@@ -15,7 +15,7 @@ endif
 # Both install-editor and install-site hand-rolled the same "rm -rf the old
 # copy, then cp -R the new one" idiom to stage web/opt asset trees — it is
 # the single most-duplicated deploy step. This canned recipe factors it (DRY),
-# in the same $(@D)-style parametrised-recipe spirit as virtual-keyboard.mk.
+# in the same $(@D)-style parametrised-recipe spirit as shaw-keys.mk.
 #
 # It is designed to $(call) INTO a single-shell `@set -eu; \ ...` recipe: every
 # body line is backslash-continued, so the whole loop collapses to one recipe

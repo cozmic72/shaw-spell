@@ -201,7 +201,7 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png">
     <link rel="apple-touch-icon" sizes="192x192" href="apple-touch-icon-192x192.png">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="virtual-keyboard/virtual-keyboard.css">
+    <link rel="stylesheet" href="shaw-keys/shaw-keys.css">
 </head>
 <body>
     <div class="container">
@@ -213,7 +213,7 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
                 <div class="burger-dropdown" id="burgerDropdown">
                     <a href="#" onclick="openAbout(); return false;"><span id="menu-label-about">About&hellip;</span></a>
                     <a href="#" onclick="openSettings(); return false;"><span id="menu-label-settings">Settings&hellip;</span></a>
-                    <a href="#" onclick="ShawSpellKeyboard.toggle(); return false;"><span id="menu-label-show-keyboard">Show keyboard</span> (<span id="vk-shortcut">Ctrl+K</span>)</a>
+                    <a href="#" onclick="ShawSpellKeyboard.toggle(); return false;"><span id="menu-label-show-keyboard">Show keyboard</span> (<span id="sk-shortcut">Ctrl+K</span>)</a>
                     <a href="#" onclick="ShawSpellKeyboard.openSettings(); return false;"><span id="menu-label-keyboard-layout">Keyboard layout&hellip;</span></a>
                 </div>
             </div>
@@ -264,8 +264,8 @@ def generate_page(word=None, entry_html=None, error=None, settings=None,
         // Importing the wrapper rather than giving it its own tag is what
         // orders these two: the label needs window.ShawSpellKeyboard, and a
         // module body runs only after everything it imports has.
-        import './js/virtual-keyboard-modal.js';
-        document.getElementById('vk-shortcut').textContent =
+        import './js/shaw-keys-modal.js';
+        document.getElementById('sk-shortcut').textContent =
             window.ShawSpellKeyboard.shortcutLabel;
     </script>
 </body>

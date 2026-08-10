@@ -122,12 +122,12 @@ def ensure_font(project_root, site_dir):
 
 
 def check_keyboard(site_dir):
-    """`make virtual-keyboard` stages both keyboard assets into this docroot: the
+    """`make shaw-keys` stages both keyboard assets into this docroot: the
     widget dir and the shared modal wrapper. Fail here rather than let the page
     404 on an import the browser reports only in its console."""
-    for asset in ('virtual-keyboard/virtual-keyboard.js', 'virtual-keyboard-modal.js'):
+    for asset in ('shaw-keys/shaw-keys.js', 'shaw-keys-modal.js'):
         if not (site_dir / asset).exists():
-            print(f"Error: {site_dir / asset} is missing — run 'make virtual-keyboard'")
+            print(f"Error: {site_dir / asset} is missing — run 'make shaw-keys'")
             sys.exit(1)
 
 

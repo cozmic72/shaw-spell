@@ -133,7 +133,7 @@ Full license texts:
 
 ### 4. Bundled fonts
 
-`src/fonts/` vendors the faces the site and the virtual keyboard load. The
+`src/fonts/` vendors the faces the site and Shaw Keys load. The
 keyboard needs the variable cut `InterAlia-VF.otf` specifically: its CSS asks
 for that filename, and any other cut leaves Shavian letters carrying a
 variation selector rendering as their bare base letter.

@@ -74,11 +74,11 @@ EDITOR_DATA_RUNTIME_FILES = $(LRW_LIST) supplement-combined-filtered.json \
   definitions-latin-gb.json definitions-shavian-gb.json \
   definitions-shavian-us.json patches/patches.jsonl
 
-# install-editor builds only the virtual-keyboard assets (needed for the web tier)
+# install-editor builds only the Shaw Keys assets (needed for the web tier)
 # and the frequency corpus checkout (a publish-time runtime requirement — see the
 # model above); it needs NO dictionary/basis build — the basis is the cloned data
 # + copied readlex.
-install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
+install-editor: $(SK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
 	@set -eu; \
 	SRC_EDITOR="$(SRC_EDITOR)"; SITE="$(SRC_EDITOR)/site"; \
 	echo "==> Installing Shaw-Spell editor (copied code + live data clone)"; \
@@ -143,8 +143,8 @@ install-editor: $(VK_EDITOR_STAMP) $(FREQUENCY_CORPUS)
 	$(SUDO) install -m 644 "$$SITE/editor.js"    "$(WWW_ROOT_EDITOR)/editor.js"; \
 	$(SUDO) install -m 644 "$$SITE/editor.css"   "$(WWW_ROOT_EDITOR)/editor.css"; \
 	$(SUDO) install -m 644 "$(SRC_FONTS)"/*.woff2 "$(WWW_ROOT_EDITOR)/fonts/"; \
-	$(SUDO) install -m 644 "$(SRC_SITE)/js/virtual-keyboard-modal.js" "$(WWW_ROOT_EDITOR)/virtual-keyboard-modal.js"; \
-	$(call replace-dir-tree,$$SITE,$(WWW_ROOT_EDITOR),virtual-keyboard,$(SUDO)); \
+	$(SUDO) install -m 644 "$(SRC_SITE)/js/shaw-keys-modal.js" "$(WWW_ROOT_EDITOR)/shaw-keys-modal.js"; \
+	$(call replace-dir-tree,$$SITE,$(WWW_ROOT_EDITOR),shaw-keys,$(SUDO)); \
 	echo "==> systemd unit -> $(SYSTEMD_UNIT_DIR)/shaw-spell-editord.service"; \
 	$(SUDO) install -m 644 "$$SRC_EDITOR/shaw-spell-editord.service" \
 	                       "$(SYSTEMD_UNIT_DIR)/shaw-spell-editord.service"; \

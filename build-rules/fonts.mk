@@ -17,7 +17,7 @@ FONT_ROOT ?= /var/www/fonts
 #
 # The consumers, and what each contributes:
 #   src/site/css/style.css                 BernieSansBetaVF.woff2
-#   external/virtual-keyboard/*.css        InterAlia-VF.otf
+#   external/shaw-keys/*.css               InterAlia-VF.otf
 # Ormin-Regular.otf is NOT here — icons.mk bakes it into images at build time.
 # card.cgi's BernieSansBetaVF.ttf and InterAlia-Regular.otf are not here either:
 # PIL reads those from the docroot's own fonts/ beside the CGI, which

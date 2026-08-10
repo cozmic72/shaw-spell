@@ -18,6 +18,6 @@
 [submodule "data"]
 	path = data
 	url = ssh://joro.io/var/git/shaw-spell-data.git
-[submodule "external/virtual-keyboard"]
-	path = external/virtual-keyboard
-	url = git@github.com:cozmic72/virtual-keyboard.git
+[submodule "external/shaw-keys"]
+	path = external/shaw-keys
+	url = git@github.com:cozmic72/shaw-keys.git

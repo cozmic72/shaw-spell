@@ -1,5 +1,5 @@
-// Lean wrapper around the virtual-keyboard submodule's VirtualKeyboard.
-// Assets are served at /virtual-keyboard/ so the widget resolves its own
+// Lean wrapper around the shaw-keys submodule's ShawKeys.
+// Assets are served at /shaw-keys/ so the widget resolves its own
 // html/layout/png relative to import.meta.url — no urlResolver needed.
 // Exposes window.ShawSpellKeyboard = { toggle, openSettings } for buttons.
 // Cmd+K (Mac) / Ctrl+K toggles; openSettings opens the layout picker.
@@ -10,8 +10,8 @@
 //
 // Root-relative, not './': this one file is served at /js/ by the site and at
 // the docroot root by the editor, and both mount the library at
-// /virtual-keyboard/.
-import { VirtualKeyboard } from '/virtual-keyboard/virtual-keyboard.js';
+// /shaw-keys/.
+import { ShawKeys } from '/shaw-keys/shaw-keys.js';
 
 (function () {
   'use strict';
@@ -36,42 +36,42 @@ import { VirtualKeyboard } from '/virtual-keyboard/virtual-keyboard.js';
   }
 
   function create() {
-    if (!VirtualKeyboard._internal ||
-        typeof VirtualKeyboard._internal.openSettings !== 'function') {
-      throw new Error('ShawSpellKeyboard: VirtualKeyboard._internal.openSettings missing — virtual-keyboard moved it; re-point openSettings');
+    if (!ShawKeys._internal ||
+        typeof ShawKeys._internal.openSettings !== 'function') {
+      throw new Error('ShawSpellKeyboard: ShawKeys._internal.openSettings missing — shaw-keys moved it; re-point openSettings');
     }
 
-    let host = document.getElementById('virtual-keyboard-host');
+    let host = document.getElementById('shaw-keys-host');
     if (!host) {
       host = document.createElement('div');
-      host.id = 'virtual-keyboard-host';
+      host.id = 'shaw-keys-host';
       document.body.appendChild(host);
     }
 
     // init() renders blank keys until setLayout() registers labels + the
     // interception map — chain it so both arrive together.
-    const ready = VirtualKeyboard.init(host, '', null, {
+    const ready = ShawKeys.init(host, '', null, {
       autoShowOnFocus: false,
       autoLigatures: true,
     }).then(function () {
-      const st = VirtualKeyboard.getState && VirtualKeyboard.getState();
-      return VirtualKeyboard.setLayout((st && st.layout) || 'imperial');
+      const st = ShawKeys.getState && ShawKeys.getState();
+      return ShawKeys.setLayout((st && st.layout) || 'imperial');
     });
 
-    // Capture phase + stopImmediatePropagation shadows virtual-keyboard's own
+    // Capture phase + stopImmediatePropagation shadows Shaw Keys' own
     // bubble-phase Mac Cmd+K handler so the toggle never double-fires.
     document.addEventListener('keydown', function (e) {
       if (!isShortcutMatch(e)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
-      VirtualKeyboard.toggle();
+      ShawKeys.toggle();
     }, true);
 
     let attachReady = false;
     function attach(el) {
-      if (el._ssvkAttached) return;
-      el._ssvkAttached = true;
-      VirtualKeyboard.enableInterception(el);
+      if (el._shawKeysAttached) return;
+      el._shawKeysAttached = true;
+      ShawKeys.enableInterception(el);
     }
     function scan(root) {
       const list = root.querySelectorAll ? root.querySelectorAll('input, textarea') : [];
@@ -85,7 +85,7 @@ import { VirtualKeyboard } from '/virtual-keyboard/virtual-keyboard.js';
 
     document.addEventListener('focusin', function (e) {
       const el = e.target;
-      if (!isInterceptable(el) || el._ssvkAttached) return;
+      if (!isInterceptable(el) || el._shawKeysAttached) return;
       if (attachReady) { attach(el); return; }
       ready.then(function () { if (document.contains(el)) attach(el); });
     });
@@ -107,12 +107,12 @@ import { VirtualKeyboard } from '/virtual-keyboard/virtual-keyboard.js';
     }
 
     return {
-      toggle: function () { VirtualKeyboard.toggle(); },
+      toggle: function () { ShawKeys.toggle(); },
       openSettings: function () {
         // The self-contained settings dialog lives on _internal; the public
         // mountSettings needs a host container we don't have.
         return ready.then(function () {
-          return VirtualKeyboard._internal.openSettings();
+          return ShawKeys._internal.openSettings();
         });
       },
       ready: ready,

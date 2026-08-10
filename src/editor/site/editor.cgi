@@ -310,7 +310,7 @@ PAGE = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shaw-Spell — Editorial Workbench</title>
     <link rel="stylesheet" href="editor.css?v={css_v}">
-    <link rel="stylesheet" href="virtual-keyboard/virtual-keyboard.css">
+    <link rel="stylesheet" href="shaw-keys/shaw-keys.css">
 </head>
 <body>
     <header class="masthead">
@@ -543,7 +543,7 @@ PAGE = """<!DOCTYPE html>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="editor.js?v={js_v}"></script>
-    <script type="module" src="virtual-keyboard-modal.js"></script>
+    <script type="module" src="shaw-keys-modal.js"></script>
 </body>
 </html>"""
 
